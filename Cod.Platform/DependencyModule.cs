@@ -1,0 +1,28 @@
+﻿using Autofac;
+using Cod.Platform.Charges;
+
+namespace Cod.Platform
+{
+    public class DependencyModule : Module
+    {
+        protected override void Load(ContainerBuilder builder)
+        {
+            builder.RegisterType<ChargeRepository>().As<IRepository<Charge>>();
+            builder.RegisterType<ChargeNotificationRepository>().As<IRepository<ChargeNotification>>();
+            builder.RegisterType<WechatRepository>().AsSelf();
+            builder.Register(ctx => new CachedRepository<WechatEntity>(
+                ctx.Resolve<WechatRepository>(), ctx.ResolveKeyed<ICacheStore>(CacheType.Table)))
+                .As<IRepository<WechatEntity>>();
+            builder.RegisterType<TableCacheStore>().Keyed<ICacheStore>(CacheType.Table).SingleInstance();
+            builder.RegisterType<RedisCacheStore>().Keyed<ICacheStore>(CacheType.Redis);
+            builder.RegisterType<CloudSignatureIssuer>().AsImplementedInterfaces();
+            builder.RegisterType<ConfigurationProvider>().AsImplementedInterfaces();
+            builder.RegisterType<QueueMessageRepository>().AsImplementedInterfaces();
+            builder.RegisterType<BrandingRepository>().AsImplementedInterfaces();
+            builder.RegisterType<TokenValidator>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<Impediment>>().AsImplementedInterfaces();
+            builder.RegisterType<ImpedimentControl>().AsImplementedInterfaces();
+            base.Load(builder);
+        }
+    }
+}

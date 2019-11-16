@@ -1,0 +1,28 @@
+﻿using System.Security.Claims;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Microsoft.WindowsAzure.Storage.Table;
+
+namespace Cod.Platform
+{
+    public abstract class FullControl<T> : IStorageControl where T : ITableEntity
+    {
+        public bool Grantable(StorageType type, string resource) =>
+            type == StorageType.Table && resource.ToLowerInvariant() == typeof(T).Name.ToLowerInvariant();
+
+        public Task<StorageControl> GrantAsync(ClaimsPrincipal principal, StorageType type, string resource, string partition, string row, ILogger logger)
+        {
+            if (this.HasPermission(principal))
+            {
+                return Task.FromResult(new StorageControl((int)SharedAccessTablePermissions.Query, typeof(T).Name)
+                {
+                    StartPartitionKey = "-",
+                    EndPartitionKey = "z"
+                });
+            }
+            return Task.FromResult(default(StorageControl));
+        }
+
+        protected abstract bool HasPermission(ClaimsPrincipal principal);
+    }
+}
