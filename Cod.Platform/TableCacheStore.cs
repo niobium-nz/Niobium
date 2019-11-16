@@ -28,7 +28,7 @@ namespace Cod.Platform
         {
             if (String.IsNullOrWhiteSpace(partitionKey) || String.IsNullOrWhiteSpace(rowKey))
             {
-                return default(T);
+                return default;
             }
             partitionKey = partitionKey.Trim();
             rowKey = rowKey.Trim();
@@ -41,7 +41,7 @@ namespace Cod.Platform
                     this.memoryCacheExpiry.Remove(memkey);
                     var expiredcache = await CloudStorage.GetTable<Cache>().RetrieveAsync<Cache>(partitionKey, rowKey);
                     await CloudStorage.GetTable<Cache>().RemoveAsync(new[] { expiredcache });
-                    return default(T);
+                    return default;
                 }
                 return (T)this.memoryCache[memkey];
             }
@@ -51,7 +51,7 @@ namespace Cod.Platform
                 if (cache.Expiry < DateTimeOffset.UtcNow)
                 {
                     await CloudStorage.GetTable<Cache>().RemoveAsync(new[] { cache });
-                    return default(T);
+                    return default;
                 }
                 else
                 {
@@ -60,7 +60,7 @@ namespace Cod.Platform
                     return (T)Convert.ChangeType(cache.Value, typeof(T));
                 }
             }
-            return default(T);
+            return default;
         }
 
         public async Task SetAsync<T>(string partitionKey, string rowKey, T value, DateTimeOffset? expiry = null) where T : IConvertible

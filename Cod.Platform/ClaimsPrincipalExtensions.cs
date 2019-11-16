@@ -28,7 +28,7 @@ namespace Cod.Platform
             var claim = principal.Claims.SingleOrDefault(c => c.Type == key);
             if (claim == null)
             {
-                result = default(T);
+                result = default;
                 return false;
             }
             var converter = TypeDescriptor.GetConverter(typeof(T));

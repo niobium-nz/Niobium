@@ -18,7 +18,7 @@ namespace Cod.Platform
             var result = await db.StringGetAsync(key);
             if (!result.HasValue || result.IsNullOrEmpty)
             {
-                return default(T);
+                return default;
             }
             var str = (string)result;
             return (T)Convert.ChangeType(str, typeof(T));

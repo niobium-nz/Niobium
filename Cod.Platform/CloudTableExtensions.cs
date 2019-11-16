@@ -178,7 +178,7 @@ namespace Cod.Platform
                 var query = await table.ExecuteAsync(TableOperation.Retrieve<T>(partitionKey, rowKey));
                 if (query.Result == null)
                 {
-                    return default(T);
+                    return default;
                 }
                 return (T)query.Result;
             }

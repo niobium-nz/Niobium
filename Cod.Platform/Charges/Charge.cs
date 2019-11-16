@@ -1,4 +1,6 @@
-﻿namespace Cod.Platform.Charges
+﻿using Cod.Contract;
+
+namespace Cod.Platform.Charges
 {
     public class Charge
     {
