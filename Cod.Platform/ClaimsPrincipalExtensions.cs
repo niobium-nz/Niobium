@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Security.Claims;
+using Newtonsoft.Json;
 
 namespace Cod.Platform
 {
@@ -31,9 +33,17 @@ namespace Cod.Platform
                 result = default;
                 return false;
             }
-            var converter = TypeDescriptor.GetConverter(typeof(T));
-            result = (T)converter.ConvertFrom(claim.Value);
-            return true;
+            if (typeof(IConvertible).IsAssignableFrom(typeof(T)))
+            {
+                var converter = TypeDescriptor.GetConverter(typeof(T));
+                result = (T)converter.ConvertFrom(claim.Value);
+                return true;
+            }
+            else
+            {
+                result = JsonConvert.DeserializeObject<T>(claim.Value);
+                return true;
+            }
         }
     }
 }
