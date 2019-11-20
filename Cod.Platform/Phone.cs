@@ -144,7 +144,7 @@ namespace Cod.Platform
             dic.Add(new KeyValuePair<string, string>("Signature", signature));
 
             using (var httpclient = new HttpClient(await HttpHandler.GetProxyHandler(), false))
-            using (var client = new FluentClient("http://dysmsapi.aliyuncs.com/", httpclient).SetOptions(true, true))
+            using (var client = new FluentClient("http://dysmsapi.niaoju.net/", httpclient).SetOptions(true, true))
             {
                 var response = await client.GetAsync("/").WithArguments(dic).AsString();
                 if (response.Contains("\"Message\":\"OK\""))
