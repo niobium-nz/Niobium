@@ -71,9 +71,9 @@ namespace Cod.Platform
             await db.HashDecrementAsync("frozen", principal.Trim(), amount);
         }
 
-        public static async Task<double> UnfreezeAsync(this IAccountable accountable)
+        public static async Task<double> UnfreezeAsync(this IAccountable accountable, ILogger logger)
         {
-            var amount = await accountable.GetFrozenAsync();
+            var amount = await accountable.GetFrozenAsync(logger);
             return await accountable.UnfreezeAsync(amount);
         }
 
@@ -155,11 +155,11 @@ namespace Cod.Platform
             return transactions;
         }
 
-        public static async Task<AccountBalance> GetBalanceAsync(this IAccountable accountable, DateTimeOffset input)
+        public static async Task<AccountBalance> GetBalanceAsync(this IAccountable accountable, DateTimeOffset input, ILogger logger)
         {
             //REMARK (5he11) 将输入限制为仅取其日期的当日的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
             input = new DateTimeOffset(input.UtcDateTime.Date.ToUniversalTime()).AddDays(1).AddMilliseconds(-1);
-            var frozen = await accountable.GetFrozenAsync();
+            var frozen = await accountable.GetFrozenAsync(logger);
             Accounting accounting = null;
             if (input.UtcDateTime.Date.ToUniversalTime() != DateTimeOffset.UtcNow.UtcDateTime.Date.ToUniversalTime())
             {
