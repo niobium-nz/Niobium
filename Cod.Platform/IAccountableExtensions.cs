@@ -47,9 +47,22 @@ namespace Cod.Platform
                 TableOperators.And,
                 TableQuery.GenerateFilterCondition(nameof(Transaction.RowKey), QueryComparisons.GreaterThanOrEqual, Transaction.BuildRowKey(toInclusive)))));
 
-        public static async Task<double> GetFrozenAsync(this IAccountable accountable)
-          => (double)await (await RedisClient.GetDatabaseAsync()).HashGetAsync("frozen", await accountable.GetAccountingPrincipalAsync());
-
+        public static async Task<double> GetFrozenAsync(this IAccountable accountable, ILogger logger)
+        {
+            var principal = await accountable.GetAccountingPrincipalAsync();
+            System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
+            watch.Start();
+            var db = await RedisClient.GetDatabaseAsync();
+            watch.Stop();
+            var e1 = watch.ElapsedMilliseconds;
+            watch.Start();            
+            var result = (double)await db.HashGetAsync("frozen", principal);
+            watch.Stop();
+            var e2 = watch.ElapsedMilliseconds;
+            logger.LogInformation($"查询缓存中冻结金额耗时: {e1}/{e2}");
+            return result;
+        }
+        
         public static async Task FreezeAsync(this IAccountable accountable, double amount)
         {
             amount = Math.Abs(amount.ChineseRound());
