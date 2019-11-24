@@ -22,19 +22,18 @@ namespace Cod.Platform
 
         public bool Initialized { get; private set; }
 
-        public GenericDomain(Lazy<IRepository<T>> repository, Lazy<IEnumerable<IEventHandler<T>>> eventHandlers)
+        public GenericDomain(Lazy<IRepository<T>> repository,
+            Lazy<IEnumerable<IEventHandler<T>>> eventHandlers,
+            ILogger logger)
         {
             this.Pepository = repository;
             this.eventHandlers = eventHandlers;
-        }
-
-        public virtual void Initialize(ILogger logger)
-        {
             this.Logger = logger;
-            this.Initialized = true;
         }
 
-        public void Initialize(T model, ILogger logger)
+        public virtual void Initialize() => this.Initialized = true;
+
+        public void Initialize(T model)
         {
             if (!this.Initialized)
             {
@@ -42,10 +41,10 @@ namespace Cod.Platform
                 this.getPartitionKey = () => Task.FromResult(model.PartitionKey);
                 this.getRowKey = () => Task.FromResult(model.RowKey);
             }
-            this.Initialize(logger);
+            this.Initialize();
         }
 
-        public void Initialize(string partitionKey, string rowkey, ILogger logger)
+        public void Initialize(string partitionKey, string rowkey)
         {
             if (!this.Initialized)
             {
@@ -53,7 +52,7 @@ namespace Cod.Platform
                 this.getPartitionKey = () => Task.FromResult(partitionKey);
                 this.getRowKey = () => Task.FromResult(rowkey);
             }
-            this.Initialize(logger);
+            this.Initialize();
         }
 
         protected async Task TriggerAsync(object e)

@@ -13,8 +13,9 @@ namespace Cod.Platform
 
         public ImpedableDomain(Lazy<IRepository<T>> repository,
             Lazy<IEnumerable<IEventHandler<T>>> eventHandlers,
-            Lazy<IEnumerable<IImpedimentPolicy>> policies)
-            : base(repository, eventHandlers)
+            Lazy<IEnumerable<IImpedimentPolicy>> policies,
+            ILogger logger)
+            : base(repository, eventHandlers, logger)
             => this.policies = policies;
 
         public async Task ImpedeAsync(string category, int cause, ILogger logger, string policyInput = null)
