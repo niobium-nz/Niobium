@@ -1,5 +1,6 @@
 ﻿using Autofac;
 using Cod.Platform.Charges;
+using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
 {
@@ -7,6 +8,7 @@ namespace Cod.Platform
     {
         protected override void Load(ContainerBuilder builder)
         {
+            builder.Register(_ => Logger.Instance).As<ILogger>();
             builder.RegisterType<ChargeRepository>().As<IRepository<Charge>>();
             builder.RegisterType<ChargeNotificationRepository>().As<IRepository<ChargeNotification>>();
             builder.RegisterType<WechatRepository>().AsSelf();
