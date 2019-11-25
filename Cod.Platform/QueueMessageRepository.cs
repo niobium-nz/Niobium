@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Cod.Platform.Model;
-using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Queue;
 using Newtonsoft.Json;
 
@@ -11,7 +10,7 @@ namespace Cod.Platform
 {
     internal class QueueMessageRepository : IRepository<QueueMessage>
     {
-        public async Task<IEnumerable<QueueMessage>> CreateAsync(IEnumerable<QueueMessage> entities, bool replaceIfExist, ILogger logger)
+        public async Task<IEnumerable<QueueMessage>> CreateAsync(IEnumerable<QueueMessage> entities, bool replaceIfExist)
         {
             foreach (var item in entities)
             {

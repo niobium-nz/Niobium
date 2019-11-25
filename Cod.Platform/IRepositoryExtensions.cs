@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
 {
@@ -13,14 +12,14 @@ namespace Cod.Platform
         public static Task<TableQueryResult<T>> GetAsync<T>(this IRepository<T> repository, string partitionKey)
             => repository.GetAsync(partitionKey, -1);
 
-        public static Task CreateAsync<T>(this IRepository<T> repository, IEnumerable<T> entities, ILogger logger)
-            => repository.CreateAsync(entities, false, logger);
+        public static Task CreateAsync<T>(this IRepository<T> repository, IEnumerable<T> entities)
+            => repository.CreateAsync(entities, false);
 
-        public static Task CreateAsync<T>(this IRepository<T> repository, T entity, bool replaceIfExist, ILogger logger)
-            => repository.CreateAsync(new[] { entity }, replaceIfExist, logger);
+        public static Task CreateAsync<T>(this IRepository<T> repository, T entity, bool replaceIfExist)
+            => repository.CreateAsync(new[] { entity }, replaceIfExist);
 
-        public static Task CreateAsync<T>(this IRepository<T> repository, T entity, ILogger logger)
-            => repository.CreateAsync(entity, false, logger);
+        public static Task CreateAsync<T>(this IRepository<T> repository, T entity)
+            => repository.CreateAsync(entity, false);
 
         public static Task UpdateAsync<T>(this IRepository<T> repository, T entity)
             => repository.UpdateAsync(new[] { entity });

@@ -13,6 +13,6 @@ namespace Cod.Platform
 
         public T Entity { get; set; }
 
-        public ILogger Log { get; set; }
+        public ILogger Logger { get; set; }
     }
 }

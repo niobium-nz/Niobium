@@ -18,7 +18,7 @@ namespace Cod.Platform
             : base(repository, eventHandlers, logger)
             => this.policies = policies;
 
-        public async Task ImpedeAsync(string category, int cause, ILogger logger, string policyInput = null)
+        public async Task ImpedeAsync(string category, int cause, string policyInput = null)
         {
             var model = await this.GetModelAsync();
             var context = new IImpedimentContext<T>
@@ -26,20 +26,20 @@ namespace Cod.Platform
                 Entity = model,
                 Category = category,
                 Cause = cause,
-                Log = logger,
+                Logger = this.Logger,
                 PolicyInput = policyInput
             };
 
             foreach (var policy in this.policies.Value)
             {
-                await policy.ImpedeAsync(context, logger);
+                await policy.ImpedeAsync(context);
             }
 
             model.Impeded = true;
             await this.SaveModelAsync();
         }
 
-        public async Task UnimpedeAsync(string category, int cause, ILogger logger, string policyInput = null)
+        public async Task UnimpedeAsync(string category, int cause, string policyInput = null)
         {
             var model = await this.GetModelAsync();
             var context = new IImpedimentContext<T>
@@ -48,7 +48,7 @@ namespace Cod.Platform
                 Category = category,
                 Cause = cause,
                 PolicyInput = policyInput,
-                Log = logger
+                Logger = this.Logger
             };
 
             foreach (var policy in this.policies.Value)

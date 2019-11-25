@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Cod.Contract;
-using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
@@ -35,7 +34,7 @@ namespace Cod.Platform
             return existings;
         }
 
-        public async Task<bool> ImpedeAsync<T>(IImpedimentContext<T> context, ILogger logger) where T : IImpedable
+        public async Task<bool> ImpedeAsync<T>(IImpedimentContext<T> context) where T : IImpedable
         {
             if (await this.SupportAsync(context))
             {
@@ -44,7 +43,7 @@ namespace Cod.Platform
                     PartitionKey = Impediment.BuildPartitionKey(context.Entity.GetImpedementID(), context.Category),
                     RowKey = Impediment.BuildRowKey(context.Cause),
                     Policy = context.PolicyInput,
-                }, true, logger);
+                }, true);
                 return true;
             }
             return false;

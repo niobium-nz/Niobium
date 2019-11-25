@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Cod.Contract;
-using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
 {
@@ -51,7 +50,7 @@ namespace Cod.Platform
             }
         }
 
-        public Task<IEnumerable<WechatEntity>> CreateAsync(IEnumerable<WechatEntity> entities, bool replaceIfExist, ILogger logger) => throw new NotImplementedException();
+        public Task<IEnumerable<WechatEntity>> CreateAsync(IEnumerable<WechatEntity> entities, bool replaceIfExist) => throw new NotImplementedException();
 
         public Task<TableQueryResult<WechatEntity>> GetAsync(int limit) => throw new NotImplementedException();
 

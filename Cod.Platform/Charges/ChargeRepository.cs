@@ -11,23 +11,27 @@ namespace Cod.Platform.Charges
     {
         private readonly Lazy<IRepository<BrandingInfo>> brandingRepository;
         private readonly Lazy<IConfigurationProvider> configuration;
+        private readonly ILogger logger;
 
-        public ChargeRepository(Lazy<IRepository<BrandingInfo>> brandingRepository, Lazy<IConfigurationProvider> configuration)
+        public ChargeRepository(Lazy<IRepository<BrandingInfo>> brandingRepository, 
+            Lazy<IConfigurationProvider> configuration,
+            ILogger logger)
         {
             this.brandingRepository = brandingRepository;
             this.configuration = configuration;
+            this.logger = logger;
         }
 
-        public async Task<IEnumerable<Charge>> CreateAsync(IEnumerable<Charge> entities, bool replaceIfExist, ILogger logger)
+        public async Task<IEnumerable<Charge>> CreateAsync(IEnumerable<Charge> entities, bool replaceIfExist)
         {
             if (entities.All(e => e.Provider == OpenIDProvider.Wechat && e.Type == ChargeType.JSAPI))
             {
-                List<Charge> charges = new List<Charge>();
+                var charges = new List<Charge>();
                 foreach (var charge in entities)
                 {
                     var brandings = await this.brandingRepository.Value.GetAsync();
                     var branding = brandings.SingleOrDefault(b => b.WechatAppID == charge.AppID);
-                    var key = await configuration.Value.GetSettingAsync("CHARGE_SECRET");
+                    var key = await this.configuration.Value.GetSettingAsync("CHARGE_SECRET");
                     var toSign = $"{charge.AppID}|{charge.Account}|{charge.Amount}";
                     var internalSignature = SHA.SHA256Hash(toSign, key, 127);
                     var prepayid = await WechatHelper.JSAPIPay(charge.Account,

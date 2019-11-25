@@ -60,7 +60,7 @@ namespace Cod.Platform
             }
         }
 
-        public Task<IEnumerable<BrandingInfo>> CreateAsync(IEnumerable<BrandingInfo> entities, bool replaceIfExist, ILogger logger) => throw new NotImplementedException();
+        public Task<IEnumerable<BrandingInfo>> CreateAsync(IEnumerable<BrandingInfo> entities, bool replaceIfExist) => throw new NotImplementedException();
         public Task<IEnumerable<BrandingInfo>> DeleteAsync(IEnumerable<BrandingInfo> entities) => throw new NotImplementedException();
         public Task<BrandingInfo> GetAsync(string partitionKey, string rowKey) => throw new NotImplementedException();
         public Task<IEnumerable<BrandingInfo>> UpdateAsync(IEnumerable<BrandingInfo> entities) => throw new NotImplementedException();

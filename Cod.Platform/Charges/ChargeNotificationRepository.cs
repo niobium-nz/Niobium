@@ -6,30 +6,33 @@ using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform.Charges
 {
-    class ChargeNotificationRepository : IRepository<ChargeNotification>
+    internal class ChargeNotificationRepository : IRepository<ChargeNotification>
     {
         private readonly Lazy<IRepository<BrandingInfo>> brandingRepository;
         private readonly Lazy<IConfigurationProvider> configuration;
+        private readonly ILogger logger;
 
-        public ChargeNotificationRepository(Lazy<IRepository<BrandingInfo>> brandingRepository, Lazy<IConfigurationProvider> configuration)
+        public ChargeNotificationRepository(Lazy<IRepository<BrandingInfo>> brandingRepository,
+            Lazy<IConfigurationProvider> configuration,
+            ILogger logger)
         {
             this.brandingRepository = brandingRepository;
             this.configuration = configuration;
+            this.logger = logger;
         }
 
-        public async Task<IEnumerable<ChargeNotification>> CreateAsync(IEnumerable<ChargeNotification> entities, bool replaceIfExist, ILogger logger)
+        public async Task<IEnumerable<ChargeNotification>> CreateAsync(IEnumerable<ChargeNotification> entities, bool replaceIfExist)
         {
-            List<ChargeNotification> notifies = new List<ChargeNotification>();
-            var key = await configuration.Value.GetSettingAsync("CHARGE_SECRET");
+            var notifies = new List<ChargeNotification>();
+            var key = await this.configuration.Value.GetSettingAsync("CHARGE_SECRET");
             foreach (var notify in entities)
             {
-                if (notify is WechatChargeNotification)
+                if (notify is WechatChargeNotification wechatCharge)
                 {
-                    var wechatNotify = notify as WechatChargeNotification;
                     var brandings = await this.brandingRepository.Value.GetAsync();
-                    var branding = brandings.SingleOrDefault(b => b.WechatAppID == wechatNotify.AppID);
-                    if (branding != null && 
-                        WechatHelper.ValidateNotification(notify as WechatChargeNotification, branding.WechatMerchantSignature, key, logger))
+                    var branding = brandings.SingleOrDefault(b => b.WechatAppID == wechatCharge.AppID);
+                    if (branding != null &&
+                        WechatHelper.ValidateNotification(wechatCharge, branding.WechatMerchantSignature, key, this.logger))
                     {
                         notifies.Add(notify);
                     }

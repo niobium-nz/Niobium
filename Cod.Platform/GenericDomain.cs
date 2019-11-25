@@ -6,7 +6,7 @@ using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {
-    public abstract class GenericDomain<T> : IDomain<T> where T : ITableEntity
+    public abstract class GenericDomain<T> : ILoggerSite, IDomain<T> where T : ITableEntity
     {
         protected Lazy<IRepository<T>> Pepository { get; private set; }
         private readonly Lazy<IEnumerable<IEventHandler<T>>> eventHandlers;
@@ -18,7 +18,7 @@ namespace Cod.Platform
 
         protected IRepository<T> Repository => this.Pepository.Value;
 
-        protected ILogger Logger { get; private set; }
+        public ILogger Logger { get; private set; }
 
         public bool Initialized { get; private set; }
 
@@ -59,7 +59,7 @@ namespace Cod.Platform
         {
             foreach (var eventHandler in this.eventHandlers.Value)
             {
-                await eventHandler.HandleAsync(this, e, this.Logger);
+                await eventHandler.HandleAsync(this, e);
             }
         }
 

@@ -10,7 +10,7 @@ namespace Cod.Platform
 {
     public static class IAccountableExtensions
     {
-        public static async Task MakeAccountingAsync(this IAccountable accountable, IEnumerable<IAccountingAuditor> auditors, ILogger logger)
+        public static async Task MakeAccountingAsync(this IAccountable accountable, IEnumerable<IAccountingAuditor> auditors)
         {
             //REMARK (5he11) 取以当前时间为基础的昨天的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
             var targetTime = new DateTimeOffset(DateTimeOffset.UtcNow.UtcDateTime.Date.ToUniversalTime()).AddMilliseconds(-1);
@@ -18,7 +18,7 @@ namespace Cod.Platform
             if (latest.ETag == null)
             {
                 //REMARK (5he11) ETag为空指示系统中未找到任何数据，即新账号，仅生成昨天的记录即可
-                await accountable.MakeAccountingAsync(targetTime, 0, auditors, logger);
+                await accountable.MakeAccountingAsync(targetTime, 0, auditors);
             }
             else
             {
@@ -28,7 +28,7 @@ namespace Cod.Platform
                 {
                     //REMARK (5he11) 数据层存储的都是记账日当天最后一刻的时间，所以加1毫秒就是新的要创建账务的日期
                     var buildTarget = pos.AddMilliseconds(1);
-                    var accounting = await accountable.MakeAccountingAsync(buildTarget, previousBalance, auditors, logger);
+                    var accounting = await accountable.MakeAccountingAsync(buildTarget, previousBalance, auditors);
                     if (accounting == null)
                     {
                         break;
@@ -47,22 +47,25 @@ namespace Cod.Platform
                 TableOperators.And,
                 TableQuery.GenerateFilterCondition(nameof(Transaction.RowKey), QueryComparisons.GreaterThanOrEqual, Transaction.BuildRowKey(toInclusive)))));
 
-        public static async Task<double> GetFrozenAsync(this IAccountable accountable, ILogger logger)
+        public static async Task<double> GetFrozenAsync(this IAccountable accountable)
         {
             var principal = await accountable.GetAccountingPrincipalAsync();
-            System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
+            var watch = new System.Diagnostics.Stopwatch();
             watch.Start();
             var db = await RedisClient.GetDatabaseAsync();
             watch.Stop();
             var e1 = watch.ElapsedMilliseconds;
-            watch.Start();            
+            watch.Start();
             var result = (double)await db.HashGetAsync("frozen", principal);
             watch.Stop();
             var e2 = watch.ElapsedMilliseconds;
-            logger.LogInformation($"查询缓存中冻结金额耗时: {e1}/{e2}");
+            if (accountable is ILoggerSite ls)
+            {
+                ls.Logger.LogInformation($"查询缓存中冻结金额耗时: {e1}/{e2}");
+            }
             return result;
         }
-        
+
         public static async Task FreezeAsync(this IAccountable accountable, double amount)
         {
             amount = Math.Abs(amount.ChineseRound());
@@ -71,9 +74,9 @@ namespace Cod.Platform
             await db.HashDecrementAsync("frozen", principal.Trim(), amount);
         }
 
-        public static async Task<double> UnfreezeAsync(this IAccountable accountable, ILogger logger)
+        public static async Task<double> UnfreezeAsync(this IAccountable accountable)
         {
-            var amount = await accountable.GetFrozenAsync(logger);
+            var amount = await accountable.GetFrozenAsync();
             return await accountable.UnfreezeAsync(amount);
         }
 
@@ -155,11 +158,11 @@ namespace Cod.Platform
             return transactions;
         }
 
-        public static async Task<AccountBalance> GetBalanceAsync(this IAccountable accountable, DateTimeOffset input, ILogger logger)
+        public static async Task<AccountBalance> GetBalanceAsync(this IAccountable accountable, DateTimeOffset input)
         {
             //REMARK (5he11) 将输入限制为仅取其日期的当日的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
             input = new DateTimeOffset(input.UtcDateTime.Date.ToUniversalTime()).AddDays(1).AddMilliseconds(-1);
-            var frozen = await accountable.GetFrozenAsync(logger);
+            var frozen = await accountable.GetFrozenAsync();
             Accounting accounting = null;
             if (input.UtcDateTime.Date.ToUniversalTime() != DateTimeOffset.UtcNow.UtcDateTime.Date.ToUniversalTime())
             {
@@ -198,7 +201,7 @@ namespace Cod.Platform
         }
 
         private static async Task<Accounting> MakeAccountingAsync(this IAccountable accountable, DateTimeOffset input, double previousBalance,
-            IEnumerable<IAccountingAuditor> auditors, ILogger logger)
+            IEnumerable<IAccountingAuditor> auditors)
         {
             //REMARK (5he11) 将输入限制为仅取其日期的当日的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
             input = new DateTimeOffset(input.UtcDateTime.Date.ToUniversalTime()).AddDays(1).AddMilliseconds(-1);
@@ -217,7 +220,10 @@ namespace Cod.Platform
             var diff = credits + debits - delta;
             var b = (previousBalance + credits + debits).ChineseRound();
             var principal = await accountable.GetAccountingPrincipalAsync();
-            logger.LogInformation($"账务主体 {principal} 从 {transactionSearchFrom} 开始，截止到 {input} 为止的账务变化为 {credits}/{debits} 与该日缓存相差 {diff} 截止此时余额为 {b}");
+            if (accountable is ILoggerSite ls)
+            {
+                ls.Logger.LogInformation($"账务主体 {principal} 从 {transactionSearchFrom} 开始，截止到 {input} 为止的账务变化为 {credits}/{debits} 与该日缓存相差 {diff} 截止此时余额为 {b}");
+            }
 
             //if (Math.Abs(diff) > 1)
             //{
@@ -238,7 +244,7 @@ namespace Cod.Platform
             {
                 foreach (var auditor in auditors)
                 {
-                    await auditor.AuditAsync(accounting, transactions, logger);
+                    await auditor.AuditAsync(accounting, transactions);
                 }
             }
 

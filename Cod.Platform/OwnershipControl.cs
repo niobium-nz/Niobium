@@ -1,7 +1,5 @@
 ﻿using System.Security.Claims;
 using System.Threading.Tasks;
-using Cod.Contract;
-using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
@@ -13,7 +11,7 @@ namespace Cod.Platform
         public bool Grantable(StorageType type, string resource) =>
             type == StorageType.Table && resource.ToLowerInvariant() == typeof(TResource).Name.ToLowerInvariant();
 
-        public async Task<StorageControl> GrantAsync(ClaimsPrincipal principal, StorageType type, string resource, string partition, string row, ILogger logger)
+        public async Task<StorageControl> GrantAsync(ClaimsPrincipal principal, StorageType type, string resource, string partition, string row)
         {
             var grant = await this.HasPermission(principal, partition);
             if (grant)

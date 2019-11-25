@@ -1,13 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {
     public class CloudTableRepository<T> : IRepository<T> where T : ITableEntity, new()
     {
-        public async Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist, ILogger logger)
+        public async Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist)
         {
             if (replaceIfExist)
             {

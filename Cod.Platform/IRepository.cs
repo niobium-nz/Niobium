@@ -1,12 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
 {
     public interface IRepository<T>
     {
-        Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist, ILogger logger);
+        Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist);
 
         Task<IEnumerable<T>> UpdateAsync(IEnumerable<T> entities);
 

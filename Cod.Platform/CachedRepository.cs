@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
 {
@@ -16,9 +15,9 @@ namespace Cod.Platform
             this.cache = cache;
         }
 
-        public async Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist, ILogger logger)
+        public async Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist)
         {
-            var created = await this.tableRepository.CreateAsync(entities, replaceIfExist, logger);
+            var created = await this.tableRepository.CreateAsync(entities, replaceIfExist);
             foreach (var item in created)
             {
                 var c = item.GetCache();
