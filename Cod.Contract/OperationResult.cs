@@ -1,6 +1,4 @@
-﻿using Cod.Contract;
-
-namespace Cod.Platform
+﻿namespace Cod.Contract
 {
     public class OperationResult
     {

@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace Cod.Platform
+namespace Cod.Contract
 {
     public interface IConfigurationProvider
     {

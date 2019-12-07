@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Cod.Platform
 {
-    class ConfigurationProvider : IConfigurationProvider
+    class ConfigurationProvider : Cod.Contract.IConfigurationProvider
     {
         private static readonly Dictionary<string, string> caches = new Dictionary<string, string>();
 

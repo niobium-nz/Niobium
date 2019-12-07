@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
+using Cod.Contract;
 using Newtonsoft.Json;
 
 namespace Cod.Platform
@@ -52,7 +52,7 @@ namespace Cod.Platform
             foreach (var item in keys)
             {
                 var setting = await this.configuration.Value.GetSettingAsync(item);
-                if (!string.IsNullOrEmpty(setting))
+                if (!String.IsNullOrEmpty(setting))
                 {
                     var branding = JsonConvert.DeserializeObject<BrandingInfo>(setting);
                     cache.Add(item, branding);

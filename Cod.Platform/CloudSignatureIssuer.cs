@@ -1,11 +1,12 @@
-﻿using Microsoft.WindowsAzure.Storage;
+﻿using Cod.Contract;
+using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.Queue;
 using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {
-    class CloudSignatureIssuer : ISignatureIssuer
+    internal class CloudSignatureIssuer : ISignatureIssuer
     {
         public string Issue(string resource, SharedAccessTablePolicy policy, StorageControl control)
             => CloudStorage.GetTable(resource).GetSharedAccessSignature(policy, null,
