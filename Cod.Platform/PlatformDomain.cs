@@ -17,6 +17,8 @@ namespace Cod.Platform
 
         public override string RowKey => this.rowKey;
 
+        protected IRepository<T> Repository => this.repository.Value;
+
         public PlatformDomain(Lazy<IRepository<T>> repository,
             Lazy<IEnumerable<IEventHandler<IDomain<T>>>> eventHandlers)
             : base(eventHandlers) => this.repository = repository;
@@ -45,7 +47,7 @@ namespace Cod.Platform
         {
             if (!this.Initialized)
             {
-                this.getEntity = async () => await this.repository.Value.GetAsync(partitionKey, rowKey);
+                this.getEntity = async () => await this.Repository.GetAsync(partitionKey, rowKey);
                 this.partitionKey = partitionKey;
                 this.rowKey = rowKey;
             }
