@@ -1,4 +1,6 @@
-﻿namespace Cod.Contract
+﻿using System.Text;
+
+namespace Cod.Contract
 {
     public class OperationResult
     {
@@ -17,10 +19,23 @@
         public static OperationResult Create() => new OperationResult(SuccessCode);
 
         public static OperationResult Create(int code)
-            => new OperationResult(code)
+        {
+            var msg = new StringBuilder();
+            if (InternalError.Messages.ContainsKey(code))
             {
-                Message = $"{InternalError.Messages[code]} 错误代码:{code}"
+                msg.Append(InternalError.Messages[code]);
+            }
+            else
+            {
+                msg.Append("未知错误");
+            }
+            msg.Append(" 错误代码:");
+            msg.Append(code.ToString());
+            return new OperationResult(code)
+            {
+                Message = msg.ToString()
             };
+        }
     }
 
     public class OperationResult<T> : OperationResult where T : class
@@ -36,10 +51,23 @@
         public static OperationResult<T> Create(T result) => new OperationResult<T>(SuccessCode, result);
 
         public static OperationResult<T> Create(int code, object reference)
-            => new OperationResult<T>(code)
+        {
+            var msg = new StringBuilder();
+            if (InternalError.Messages.ContainsKey(code))
             {
-                Message = $"{InternalError.Messages[code]} 错误代码:{code}",
+                msg.Append(InternalError.Messages[code]);
+            }
+            else
+            {
+                msg.Append("未知错误");
+            }
+            msg.Append(" 错误代码:");
+            msg.Append(code.ToString());
+            return new OperationResult<T>(code)
+            {
+                Message = msg.ToString(),
                 Reference = reference
             };
+        }
     }
 }

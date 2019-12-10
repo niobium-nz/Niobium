@@ -2,8 +2,8 @@
 {
     public interface IEntity
     {
-        string PartitionKey { get; set; }
+        string PartitionKey { get; }
 
-        string RowKey { get; set; }
+        string RowKey { get; }
     }
 }

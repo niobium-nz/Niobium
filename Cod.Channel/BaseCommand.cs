@@ -1,22 +1,23 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
     public abstract class BaseCommand : ICommand
     {
+        protected ICommandService CommandService { get; private set; }
+
         public abstract string CommandID { get; }
 
         public virtual bool CanExecute => true;
 
-        public event EventHandler<CommandExecutionEventArgs> Executing;
-
-        public event EventHandler<CommandExecutionEventArgs> Executed;
-
         public abstract Task ExecuteAsync(object parameter);
 
-        protected virtual void OnExecuting(object sender, CommandExecutionEventArgs e) => Executing?.Invoke(sender, e);
+        protected virtual void OnExecuting(object sender, CommandExecutionEventArgs e)
+            => this.CommandService.OnExecuting(new CommandExecutionRecord(e));
 
-        protected virtual void OnExecuted(object sender, CommandExecutionEventArgs e) => Executed?.Invoke(sender, e);
+        protected virtual void OnExecuted(object sender, CommandExecutionEventArgs e)
+            => this.CommandService.OnExecuted(new CommandExecutionRecord(e));
+
+        public void Initialize(ICommandService commandService) => this.CommandService = commandService;
     }
 }

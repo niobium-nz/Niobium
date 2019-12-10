@@ -1,6 +1,4 @@
-﻿using Cod.Contract;
-
-namespace Cod.Channel
+﻿namespace Cod.Contract
 {
     public interface IDomain : IEntity
     {

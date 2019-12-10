@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
@@ -9,9 +8,7 @@ namespace Cod.Channel
 
         bool CanExecute { get; }
 
-        event EventHandler<CommandExecutionEventArgs> Executing;
-
-        event EventHandler<CommandExecutionEventArgs> Executed;
+        void Initialize(ICommandService commandService);
 
         Task ExecuteAsync(object parameter);
     }

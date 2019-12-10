@@ -1,4 +1,4 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Cod.Contract;
 
@@ -8,7 +8,7 @@ namespace Cod.Channel
     {
         AccessToken Token { get; set; }
 
-        event EventHandler AuthenticationRequired;
+        IReadOnlyDictionary<string, string> Claims { get; }
 
         Task<OperationResult> AquireTokenAsync(string username, string password);
 

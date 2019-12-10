@@ -117,7 +117,7 @@ namespace Cod.Platform
                 if (result["return_code"].ToUpperInvariant() != "SUCCESS")
                 {
                     //TODO 错误消息
-                    logger.LogInformation($"支付失败:{response}");
+                    logger.LogError($"支付失败:{response}");
                     return null;
                 }
                 return result["prepay_id"];

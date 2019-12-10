@@ -249,8 +249,7 @@ namespace Cod.Platform
             }
 
             await CloudStorage.GetTable<Accounting>().InsertAsync(new[] { accounting });
-            //TODO (5he11) Bug测试结束之后这个可以打开，可以清除垃圾数据
-            //await this.ClearDeltaAsync(input);
+            await accountable.ClearDeltaAsync(input);
             return accounting;
         }
 

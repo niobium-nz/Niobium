@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using Cod.Contract;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Newtonsoft.Json;
 
 namespace Cod.Channel
@@ -15,15 +16,21 @@ namespace Cod.Channel
         private readonly Dictionary<string, StorageSignature> signatures = new Dictionary<string, StorageSignature>();
         private readonly IConfigurationProvider configuration;
         private readonly HttpClient httpClient;
+        private readonly IEnumerable<IEventHandler<IAuthenticator>> eventHandlers;
 
         public event EventHandler AuthenticationRequired;
 
+        public IReadOnlyDictionary<string, string> Claims { get; private set; } = new Dictionary<string, string>();
+
         public AccessToken Token { get; set; }
 
-        public DefaultAuthenticator(IConfigurationProvider configuration, HttpClient httpClient)
+        public DefaultAuthenticator(IConfigurationProvider configuration,
+            HttpClient httpClient,
+            IEnumerable<IEventHandler<IAuthenticator>> eventHandlers)
         {
             this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             this.httpClient = httpClient;
+            this.eventHandlers = eventHandlers;
         }
 
         public async Task<OperationResult<StorageSignature>> AquireSignatureAsync(StorageType type, string resource, string partitionKey, string rowKey)
@@ -42,8 +49,15 @@ namespace Cod.Channel
                 }
             }
 
-            if (this.Token == null || this.Token.Expires < DateTimeOffset.UtcNow)
+            if (!this.IsAuthenticated())
             {
+                this.Token = null;
+                this.Claims = new Dictionary<string, string>();
+                this.signatures.Clear();
+                foreach (var eventHandler in this.eventHandlers)
+                {
+                    await eventHandler.HandleAsync(this);
+                }
                 return OperationResult<StorageSignature>.Create(InternalError.Unauthenticated, null);
             }
 
@@ -72,7 +86,23 @@ namespace Cod.Channel
                 this.signatures.Add(key, signature);
                 return OperationResult<StorageSignature>.Create(signature);
             }
-            return OperationResult<StorageSignature>.Create(statusCode, null); // TODO (5he11) 从body中解出来自定义错误代码，而不是HTTP响应代码
+            else if (statusCode == 401)
+            {
+                this.Token = null;
+                this.Claims = new Dictionary<string, string>();
+                this.signatures.Clear();
+                foreach (var eventHandler in this.eventHandlers)
+                {
+                    await eventHandler.HandleAsync(this);
+                }
+                return OperationResult<StorageSignature>.Create(InternalError.Unauthenticated, null);
+            }
+            else if (statusCode == 403)
+            {
+                return OperationResult<StorageSignature>.Create(InternalError.Unauthorized, null);
+            }
+
+            return OperationResult<StorageSignature>.Create(InternalError.Unknown, null);
         }
 
         public async Task<OperationResult> AquireTokenAsync(string username, string password)
@@ -88,15 +118,30 @@ namespace Cod.Channel
                 var header = response.Headers.WwwAuthenticate.SingleOrDefault();
                 if (header != null && header.Scheme == "Bearer")
                 {
-                    this.Token = new AccessToken
+                    try
                     {
-                        Token = header.Parameter,
-                        Expiry = DateTimeOffset.UtcNow.AddHours(8).ToUnixTimeSeconds(), // TODO (5he11) 从JWT中解码得到，而不是硬编码
-                    };
-                    return OperationResult.Create();
+                        var jwt = new JsonWebToken(header.Parameter);
+                        this.Claims = jwt.Claims.ToDictionary(c => c.Type, c => c.Value);
+                        this.Token = new AccessToken
+                        {
+                            Token = header.Parameter,
+                            Expiry = new DateTimeOffset(jwt.ValidTo).ToUnixTimeSeconds(),
+                        };
+                        return OperationResult.Create();
+                    }
+                    catch (ArgumentException)
+                    {
+                    }
                 }
+
+                return OperationResult.Create(InternalError.Unauthenticated);
             }
-            return OperationResult.Create(statusCode); // TODO (5he11) 从body中解出来自定义错误代码，而不是HTTP响应代码
+            else if (statusCode == 401)
+            {
+                return OperationResult.Create(InternalError.Unauthenticated);
+            }
+
+            return OperationResult.Create(InternalError.Unknown);
         }
 
         private static string BuildSignatureCacheKey(StorageType type, string resource, string partitionKey, string rowKey)
