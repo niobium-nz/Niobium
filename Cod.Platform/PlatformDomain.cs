@@ -54,5 +54,11 @@ namespace Cod.Platform
             this.Initialized = true;
             return this;
         }
+
+        protected async Task SaveEntityAsync()
+            => await this.SaveEntityAsync(new[] { await this.GetEntityAsync() });
+
+        private async Task SaveEntityAsync(IEnumerable<T> model)
+            => await this.Repository.UpdateAsync(model);
     }
 }
