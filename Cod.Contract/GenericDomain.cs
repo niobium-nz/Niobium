@@ -8,13 +8,11 @@ namespace Cod.Contract
     {
         private readonly Lazy<IEnumerable<IEventHandler<IDomain<T>>>> eventHandlers;
 
-        public bool Initialized { get; private set; }
+        public bool Initialized { get; protected set; }
 
-        public T Entity { get; private set; }
+        public abstract string PartitionKey { get; }
 
-        public string PartitionKey => this.Entity.PartitionKey;
-
-        public string RowKey => this.Entity.RowKey;
+        public abstract string RowKey { get; }
 
         public GenericDomain(Lazy<IEnumerable<IEventHandler<IDomain<T>>>> eventHandlers) => this.eventHandlers = eventHandlers;
 
@@ -22,11 +20,13 @@ namespace Cod.Contract
         {
             if (!this.Initialized)
             {
-                this.Entity = entity;
+                this.OnInitialize(entity);
             }
             this.Initialized = true;
             return this;
         }
+
+        protected virtual void OnInitialize(T entity) { }
 
         protected async Task TriggerAsync(object e)
         {

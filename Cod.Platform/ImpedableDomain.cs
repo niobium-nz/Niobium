@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
 {
-    public abstract class ImpedableDomain<T> : GenericDomain<T> where T : IEntity, IImpedable
+    public abstract class ImpedableDomain<T> : PlatformDomain<T> where T : IEntity, IImpedable
     {
         private readonly Lazy<IRepository<T>> repository;
         private readonly Lazy<IEnumerable<IImpedimentPolicy>> policies;
@@ -16,7 +16,7 @@ namespace Cod.Platform
             Lazy<IEnumerable<IEventHandler<IDomain<T>>>> eventHandlers,
             Lazy<IEnumerable<IImpedimentPolicy>> policies,
             ILogger logger)
-            : base(eventHandlers)
+            : base(repository, eventHandlers)
         {
             this.repository = repository;
             this.policies = policies;
@@ -25,9 +25,10 @@ namespace Cod.Platform
 
         public async Task ImpedeAsync(string category, int cause, string policyInput = null)
         {
+            var entity = await this.GetEntityAsync();
             var context = new IImpedimentContext<T>
             {
-                Entity = this.Entity,
+                Entity = entity,
                 Category = category,
                 Cause = cause,
                 Logger = this.logger,
@@ -39,15 +40,16 @@ namespace Cod.Platform
                 await policy.ImpedeAsync(context);
             }
 
-            this.Entity.Impeded = true;
-            await this.repository.Value.UpdateAsync(this.Entity);
+            entity.Impeded = true;
+            await this.repository.Value.UpdateAsync(entity);
         }
 
         public async Task UnimpedeAsync(string category, int cause, string policyInput = null)
         {
+            var entity = await this.GetEntityAsync();
             var context = new IImpedimentContext<T>
             {
-                Entity = this.Entity,
+                Entity = entity,
                 Category = category,
                 Cause = cause,
                 PolicyInput = policyInput,
@@ -62,8 +64,8 @@ namespace Cod.Platform
             var existings = await this.GetImpedimentsAsync();
             if (existings.Count == 0)
             {
-                this.Entity.Impeded = false;
-                await this.repository.Value.UpdateAsync(this.Entity);
+                entity.Impeded = false;
+                await this.repository.Value.UpdateAsync(entity);
             }
         }
 
@@ -84,7 +86,7 @@ namespace Cod.Platform
                 var context = new IImpedimentContext<T>()
                 {
                     Category = category,
-                    Entity = this.Entity,
+                    Entity = await this.GetEntityAsync(),
                 };
 
                 existsLockers.AddRange(await policy.GetImpedimentsAsync(context));

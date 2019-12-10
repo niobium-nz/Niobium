@@ -7,8 +7,6 @@
 
     public interface IDomain<T> : IDomain
     {
-        T Entity { get; }
-
         IDomain<T> Initialize(T entity);
     }
 }
