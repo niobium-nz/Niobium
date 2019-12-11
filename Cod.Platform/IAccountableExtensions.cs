@@ -258,7 +258,7 @@ namespace Cod.Platform
             //REMARK (5he11) 将输入限制为仅取其日期的当日的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
             input = new DateTimeOffset(input.UtcDateTime.Date.ToUniversalTime()).AddDays(1).AddMilliseconds(-1);
             var principal = await accountable.GetAccountingPrincipalAsync();
-            var searchFrom = input.AddDays(-14);
+            var searchFrom = input.AddDays(-30);
             var accountings = await CloudStorage.GetTable<Accounting>().WhereAsync<Accounting>(TableQuery.CombineFilters(
                 TableQuery.GenerateFilterCondition(nameof(Accounting.PartitionKey), QueryComparisons.Equal, Accounting.BuildPartitionKey(principal)),
                 TableOperators.And,

@@ -121,7 +121,7 @@ namespace Cod.Platform
         }
 
         public static async Task<TableQueryResult<T>> WhereAsync<T>(this CloudTable table,
-            string filter = null, TableContinuationToken continuationToken = null, int? takeCount = null, IList<string> fields = null)
+            string filter = null, TableContinuationToken continuationToken = null, int takeCount = -1, IList<string> fields = null)
             where T : ITableEntity, new()
         {
             var query = new TableQuery<T>();
@@ -133,7 +133,7 @@ namespace Cod.Platform
             {
                 query = query.Select(fields);
             }
-            if (takeCount.HasValue && takeCount.Value > 0)
+            if (takeCount > 0)
             {
                 query = query.Take(takeCount);
             }
@@ -145,7 +145,7 @@ namespace Cod.Platform
                     var queryResult = await table.ExecuteQuerySegmentedAsync(query, continuationToken);
                     result.AddRange(queryResult.Results);
                     continuationToken = queryResult.ContinuationToken;
-                    if (takeCount.HasValue && result.Count >= takeCount.Value)
+                    if (takeCount > 0 && result.Count >= takeCount)
                     {
                         break;
                     }

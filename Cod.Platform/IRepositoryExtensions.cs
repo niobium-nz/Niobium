@@ -5,13 +5,6 @@ namespace Cod.Platform
 {
     public static class IRepositoryExtensions
     {
-
-        public static Task<TableQueryResult<T>> GetAsync<T>(this IRepository<T> repository)
-            => repository.GetAsync(-1);
-
-        public static Task<TableQueryResult<T>> GetAsync<T>(this IRepository<T> repository, string partitionKey)
-            => repository.GetAsync(partitionKey, -1);
-
         public static Task CreateAsync<T>(this IRepository<T> repository, IEnumerable<T> entities)
             => repository.CreateAsync(entities, false);
 

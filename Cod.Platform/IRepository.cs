@@ -11,9 +11,9 @@ namespace Cod.Platform
 
         Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities);
 
-        Task<TableQueryResult<T>> GetAsync(int limit);
+        Task<TableQueryResult<T>> GetAsync(int limit = -1);
 
-        Task<TableQueryResult<T>> GetAsync(string partitionKey, int limit);
+        Task<TableQueryResult<T>> GetAsync(string partitionKey, int limit = -1);
 
         Task<T> GetAsync(string partitionKey, string rowKey);
     }
