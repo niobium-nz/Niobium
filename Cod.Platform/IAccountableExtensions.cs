@@ -123,10 +123,6 @@ namespace Cod.Platform
                     throw new ArgumentNullException(nameof(request.Target));
                 }
 
-                if (request.Delta == 0)
-                {
-                    throw new NotSupportedException();
-                }
                 if (!request.ID.HasValue)
                 {
                     request.ID = DateTimeOffset.UtcNow;
