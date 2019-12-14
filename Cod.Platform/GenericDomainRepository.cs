@@ -7,15 +7,15 @@ namespace Cod.Platform
 {
     public class GenericDomainRepository<TDomain, TEntity> : IDomainRepository<TDomain, TEntity>
         where TEntity : IEntity
-        where TDomain : class, IDomain<TEntity>
+        where TDomain : class, IPlatformDomain<TEntity>
     {
-        private readonly IRepository<TEntity> repository;
         private readonly Func<TDomain> createDomain;
+        private readonly Lazy<IRepository<TEntity>> repository;
 
-        public GenericDomainRepository(IRepository<TEntity> repository, Func<TDomain> createDomain)
+        public GenericDomainRepository(Func<TDomain> createDomain, Lazy<IRepository<TEntity>> repository)
         {
-            this.repository = repository;
             this.createDomain = createDomain;
+            this.repository = repository;
         }
 
         public Task<TDomain> CreateAsync(TEntity entity)
@@ -25,20 +25,16 @@ namespace Cod.Platform
             return Task.FromResult(domain);
         }
 
-        public async Task<TDomain> GetAsync(string partitionKey, string rowKey)
+        public Task<TDomain> GetAsync(string partitionKey, string rowKey)
         {
-            var entity = await this.repository.GetAsync(partitionKey, rowKey);
-            if (entity == null)
-            {
-                return default;
-            }
-
-            return await this.CreateAsync(entity);
+            var domain = this.createDomain();
+            domain.Initialize(partitionKey, rowKey);
+            return Task.FromResult(domain);
         }
 
         public async Task<IEnumerable<TDomain>> GetAsync(string partitionKey)
         {
-            var entities = await this.repository.GetAsync(partitionKey);
+            var entities = await this.repository.Value.GetAsync(partitionKey);
             var result = new TDomain[entities.Count];
 
             for (var i = 0; i < entities.Count; i++)
