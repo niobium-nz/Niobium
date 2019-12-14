@@ -12,6 +12,8 @@ namespace Cod.Platform
 
         Task<IEnumerable<TDomain>> GetAsync(string partitionKey);
 
+        Task<IEnumerable<TDomain>> GetAsync();
+
         Task<TDomain> CreateAsync(TEntity entity);
     }
 }

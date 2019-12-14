@@ -45,5 +45,17 @@ namespace Cod.Platform
             return result;
         }
 
+        public async Task<IEnumerable<TDomain>> GetAsync()
+        {
+            var entities = await this.repository.Value.GetAsync();
+            var result = new TDomain[entities.Count];
+
+            for (var i = 0; i < entities.Count; i++)
+            {
+                result[i] = await this.CreateAsync(entities[i]);
+            }
+
+            return result;
+        }
     }
 }
