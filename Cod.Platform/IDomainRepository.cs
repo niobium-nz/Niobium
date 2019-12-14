@@ -6,7 +6,7 @@ namespace Cod.Platform
 {
     public interface IDomainRepository<TDomain, TEntity>
         where TEntity : IEntity
-        where TDomain : class, IPlatformDomain<TEntity>
+        where TDomain : class, IDomain<TEntity>
     {
         Task<TDomain> GetAsync(string partitionKey, string rowKey);
 
