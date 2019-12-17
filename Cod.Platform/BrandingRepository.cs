@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Cod.Contract;
+using Cod.Platform.Model;
 using Newtonsoft.Json;
 
 namespace Cod.Platform

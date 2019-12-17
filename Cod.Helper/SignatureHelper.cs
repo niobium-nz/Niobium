@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 
-namespace Cod.Platform
+namespace Cod
 {
     public static class SignatureHelper
     {
@@ -13,16 +13,6 @@ namespace Cod.Platform
                 byte[] crypto = sha256.ComputeHash(source);
                 return crypto.ToHex();
             }
-        }
-
-        public static string ToHex(this byte[] input)
-        {
-            var result = new StringBuilder();
-            for (int i = 0; i < input.Length; i++)
-            {
-                result.Append(input[i].ToString("X2"));
-            }
-            return result.ToString().ToLower();
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace Cod.Platform
+﻿namespace Cod.Platform.Model
 {
     public class BrandingInfo
     {

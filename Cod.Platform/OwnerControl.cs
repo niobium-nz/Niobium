@@ -1,6 +1,5 @@
 ﻿using System.Security.Claims;
 using System.Threading.Tasks;
-using Cod.Contract;
 using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform

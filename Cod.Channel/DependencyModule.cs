@@ -1,5 +1,4 @@
-﻿using Cod.Contract;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 
 namespace Cod.Channel
 {

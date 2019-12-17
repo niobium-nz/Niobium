@@ -1,14 +1,14 @@
-﻿using Microsoft.Extensions.Configuration;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 
 namespace Cod.Platform
 {
-    class ConfigurationProvider : Cod.Contract.IConfigurationProvider
+    internal class ConfigurationProvider : Cod.IConfigurationProvider
     {
         private static readonly Dictionary<string, string> caches = new Dictionary<string, string>();
 

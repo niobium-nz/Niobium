@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Cod.Contract
+namespace Cod
 {
     public class InternalError
     {

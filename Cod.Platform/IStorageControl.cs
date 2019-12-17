@@ -1,6 +1,5 @@
 ﻿using System.Security.Claims;
 using System.Threading.Tasks;
-using Cod.Contract;
 
 namespace Cod.Platform
 {

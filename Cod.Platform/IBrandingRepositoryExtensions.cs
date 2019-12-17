@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
-using Cod.Contract;
+using Cod.Platform.Model;
 
 namespace Cod.Platform
 {

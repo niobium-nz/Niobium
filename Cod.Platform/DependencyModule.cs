@@ -1,5 +1,5 @@
 ﻿using Autofac;
-using Cod.Platform.Charges;
+using Cod.Platform.Model;
 using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
@@ -10,7 +10,6 @@ namespace Cod.Platform
         {
             builder.Register(_ => Logger.Instance).As<ILogger>();
             builder.RegisterType<ChargeRepository>().As<IRepository<Charge>>();
-            builder.RegisterType<ChargeNotificationRepository>().As<IRepository<ChargeNotification>>();
             builder.RegisterType<WechatRepository>().AsSelf();
             builder.Register(ctx => new CachedRepository<WechatEntity>(
                 ctx.Resolve<WechatRepository>(), ctx.ResolveKeyed<ICacheStore>(CacheType.Table)))

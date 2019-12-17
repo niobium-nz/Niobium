@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace Cod.Contract
+namespace Cod
 {
     public abstract class DomainEventHandler<TDomain, TEventArgs> : IEventHandler<TDomain>
     {

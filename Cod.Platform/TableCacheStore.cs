@@ -40,7 +40,10 @@ namespace Cod.Platform
                     this.memoryCache.Remove(memkey);
                     this.memoryCacheExpiry.Remove(memkey);
                     var expiredcache = await CloudStorage.GetTable<Cache>().RetrieveAsync<Cache>(partitionKey, rowKey);
-                    await CloudStorage.GetTable<Cache>().RemoveAsync(new[] { expiredcache });
+                    if (expiredcache != null)
+                    {
+                        await CloudStorage.GetTable<Cache>().RemoveAsync(new[] { expiredcache });
+                    }
                     return default;
                 }
                 return (T)this.memoryCache[memkey];

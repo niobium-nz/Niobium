@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Cod.Contract;
 using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform

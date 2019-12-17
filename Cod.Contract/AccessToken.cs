@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Cod.Contract
+namespace Cod
 {
     public class AccessToken
     {

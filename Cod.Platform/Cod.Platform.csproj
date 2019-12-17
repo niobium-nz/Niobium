@@ -21,7 +21,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Cod.Autofac\Cod.Autofac.csproj" />
-    <ProjectReference Include="..\Cod.Contract\Cod.Contract.csproj" />
+    <ProjectReference Include="..\Cod.Contract\Cod.Abstractions.csproj" />
+    <ProjectReference Include="..\Cod.Helper\Cod.Helper.csproj" />
   </ItemGroup>
 
 </Project>

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Cod.Contract
+namespace Cod
 {
     public abstract class GenericDomain<T> : IDomain<T> where T : IEntity
     {

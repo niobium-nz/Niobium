@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Cod.Platform
+namespace Cod
 {
     public static class DoubleExtension
     {

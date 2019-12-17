@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Cod.Contract;
+using Cod.Platform.Model;
 
 namespace Cod.Platform
 {

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Cod.Contract;
 
 namespace Cod.Channel
 {
@@ -99,7 +98,7 @@ namespace Cod.Channel
             }
 
             var baseUrl = await this.configuration.GetSettingAsync(Constants.KEY_TABLE_URL);
-            return await TableStorageHelper.GetAsync<T>(httpClient, baseUrl, signature.Result.Signature, partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, null, count);
+            return await TableStorageHelper.GetAsync<T>(this.httpClient, baseUrl, signature.Result.Signature, partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, null, count);
         }
 
     }

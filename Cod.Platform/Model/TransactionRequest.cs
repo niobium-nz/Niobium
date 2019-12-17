@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Cod.Platform
+namespace Cod.Platform.Model
 {
     public class TransactionRequest
     {

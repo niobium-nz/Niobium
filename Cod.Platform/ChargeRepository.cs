@@ -2,29 +2,25 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Cod.Contract;
-using Microsoft.Extensions.Logging;
+using Cod.Platform.Model;
 
-namespace Cod.Platform.Charges
+namespace Cod.Platform
 {
     public class ChargeRepository : IRepository<Charge>
     {
         private readonly Lazy<IRepository<BrandingInfo>> brandingRepository;
         private readonly Lazy<IConfigurationProvider> configuration;
-        private readonly ILogger logger;
 
-        public ChargeRepository(Lazy<IRepository<BrandingInfo>> brandingRepository, 
-            Lazy<IConfigurationProvider> configuration,
-            ILogger logger)
+        public ChargeRepository(Lazy<IRepository<BrandingInfo>> brandingRepository,
+            Lazy<IConfigurationProvider> configuration)
         {
             this.brandingRepository = brandingRepository;
             this.configuration = configuration;
-            this.logger = logger;
         }
 
         public async Task<IEnumerable<Charge>> CreateAsync(IEnumerable<Charge> entities, bool replaceIfExist)
         {
-            if (entities.All(e => e.Provider == OpenIDProvider.Wechat && e.Type == ChargeType.JSAPI))
+            if (entities.All(e => e.Provider == OpenIDProvider.Wechat && e.Type == ChargeType.WeChatJSAPI))
             {
                 var charges = new List<Charge>();
                 foreach (var charge in entities)
@@ -43,10 +39,9 @@ namespace Cod.Platform.Charges
                         charge.IP,
                         branding.WechatMerchantID,
                         branding.WechatMerchantNotifyUri,
-                        branding.WechatMerchantSignature,
-                        logger);
-                    var paySignature = WechatHelper.GetJSAPIPaySignature(prepayid, charge.AppID, branding.WechatMerchantSignature, logger);
-                    charge.Result = new ChargeResult(paySignature);
+                        branding.WechatMerchantSignature);
+                    var paySignature = WechatHelper.GetJSAPIPaySignature(prepayid, charge.AppID, branding.WechatMerchantSignature);
+                    charge.Params = paySignature;
                     charges.Add(charge);
                 }
                 return charges;

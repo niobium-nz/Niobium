@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace Cod.Contract
+namespace Cod
 {
     public class OperationResult
     {

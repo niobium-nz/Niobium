@@ -1,8 +1,7 @@
 ﻿using System;
-using Cod.Contract;
 using Microsoft.WindowsAzure.Storage.Table;
 
-namespace Cod.Platform
+namespace Cod.Platform.Model
 {
     public class Accounting : TableEntity
     {

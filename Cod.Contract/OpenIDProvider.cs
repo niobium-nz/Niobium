@@ -1,4 +1,4 @@
-﻿namespace Cod.Contract
+﻿namespace Cod
 {
     public enum OpenIDProvider : int
     {
