@@ -7,6 +7,8 @@ namespace Cod.Platform.Model
     {
         public string Value { get; set; }
 
+        public bool InMemory { get; set; }
+
         public DateTimeOffset Expiry { get; set; }
     }
 }

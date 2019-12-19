@@ -8,11 +8,13 @@ namespace Cod.Platform
     {
         private readonly IRepository<T> tableRepository;
         private readonly ICacheStore cache;
+        private readonly bool memoryCached;
 
-        public CachedRepository(IRepository<T> tableRepository, ICacheStore cache)
+        public CachedRepository(IRepository<T> tableRepository, ICacheStore cache, bool memoryCached)
         {
             this.tableRepository = tableRepository;
             this.cache = cache;
+            this.memoryCached = memoryCached;
         }
 
         public async Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist)
@@ -23,7 +25,7 @@ namespace Cod.Platform
                 var c = item.GetCache();
                 if (c != null)
                 {
-                    await this.cache.SetAsync(item.PartitionKey, item.RowKey, c.ToString());
+                    await this.cache.SetAsync(item.PartitionKey, item.RowKey, c.ToString(), this.memoryCached);
                 }
             }
             return created;
@@ -62,7 +64,8 @@ namespace Cod.Platform
             var cv = result2.GetCache();
             if (cv != null)
             {
-                await this.cache.SetAsync(result2.PartitionKey, result2.RowKey, cv.ToString(), result2.GetExpiry(DateTimeOffset.UtcNow));
+                await this.cache.SetAsync(result2.PartitionKey, result2.RowKey, cv.ToString(),
+                    this.memoryCached, result2.GetExpiry(DateTimeOffset.UtcNow));
             }
             return result2;
         }
@@ -75,7 +78,7 @@ namespace Cod.Platform
                 var cv = item.GetCache();
                 if (cv != null)
                 {
-                    await this.cache.SetAsync(item.PartitionKey, item.RowKey, cv.ToString());
+                    await this.cache.SetAsync(item.PartitionKey, item.RowKey, cv.ToString(), this.memoryCached);
                 }
             }
             return updated;

@@ -10,6 +10,9 @@ namespace Cod.Platform
 {
     public static class IAccountableExtensions
     {
+        private const string FROZEN_KEY = "frozen";
+        private const string DELTA_KEY = "delta";
+
         public static async Task MakeAccountingAsync(this IAccountable accountable, IEnumerable<IAccountingAuditor> auditors)
         {
             //REMARK (5he11) 取以当前时间为基础的昨天的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
@@ -49,50 +52,48 @@ namespace Cod.Platform
 
         public static async Task<double> GetFrozenAsync(this IAccountable accountable)
         {
-            var principal = await accountable.GetAccountingPrincipalAsync();
-            var watch = new System.Diagnostics.Stopwatch();
-            watch.Start();
-            var db = await RedisClient.GetDatabaseAsync();
-            watch.Stop();
-            var e1 = watch.ElapsedMilliseconds;
-            watch.Start();
-            var result = (double)await db.HashGetAsync("frozen", principal);
-            watch.Stop();
-            var e2 = watch.ElapsedMilliseconds;
-            if (accountable is ILoggerSite ls)
-            {
-                ls.Logger.LogInformation($"查询缓存中冻结金额耗时: {e1}/{e2}");
-            }
+            var pk = FROZEN_KEY;
+            var rk = await accountable.GetAccountingPrincipalAsync();
+            var result = await accountable.CacheStore.GetAsync<double>(pk, rk);
             return result;
         }
 
-        public static async Task FreezeAsync(this IAccountable accountable, double amount)
+        public static async Task<double> FreezeAsync(this IAccountable accountable, double amount)
         {
             amount = Math.Abs(amount.ChineseRound());
-            var db = await RedisClient.GetDatabaseAsync();
-            var principal = await accountable.GetAccountingPrincipalAsync();
-            await db.HashDecrementAsync("frozen", principal.Trim(), amount);
+            var pk = FROZEN_KEY;
+            var rk = await accountable.GetAccountingPrincipalAsync();
+            var currentValue = await accountable.CacheStore.GetAsync<double>(pk, rk);
+            var result = currentValue - amount;
+            await accountable.CacheStore.SetAsync(pk, rk, result, false);
+            return result;
         }
 
         public static async Task<double> UnfreezeAsync(this IAccountable accountable)
         {
-            var amount = await accountable.GetFrozenAsync();
-            return await accountable.UnfreezeAsync(amount);
+            var pk = FROZEN_KEY;
+            var rk = await accountable.GetAccountingPrincipalAsync();
+            await accountable.CacheStore.DeleteAsync(pk, rk);
+            return 0;
         }
 
         public static async Task<double> UnfreezeAsync(this IAccountable accountable, double amount)
-        {
-            var db = await RedisClient.GetDatabaseAsync();
-            var principal = await accountable.GetAccountingPrincipalAsync();
-            await db.HashDecrementAsync("frozen", principal.Trim(), amount);
-            return amount;
-        }
+            => await FreezeAsync(accountable, -amount);
 
         public static async Task<double> GetDeltaAsync(this IAccountable accountable, DateTimeOffset input)
-            => (double)await (await RedisClient.GetDatabaseAsync()).HashGetAsync($"delta-{input.ToSixDigitsDate()}", await accountable.GetAccountingPrincipalAsync());
+        {
+            var pk = $"{DELTA_KEY}-{input.ToSixDigitsDate()}";
+            var rk = await accountable.GetAccountingPrincipalAsync();
+            var result = await accountable.CacheStore.GetAsync<double>(pk, rk);
+            return result;
+        }
 
         public static async Task ClearDeltaAsync(this IAccountable accountable, DateTimeOffset input)
-            => await (await RedisClient.GetDatabaseAsync()).HashDeleteAsync($"delta-{input.ToSixDigitsDate()}", await accountable.GetAccountingPrincipalAsync());
+        {
+            var pk = $"{DELTA_KEY}-{input.ToSixDigitsDate()}";
+            var rk = await accountable.GetAccountingPrincipalAsync();
+            await accountable.CacheStore.DeleteAsync(pk, rk);
+        }
 
         public static async Task<TransactionRequest> BuildTransactionAsync(this IAccountable accountable,
             double delta, int reason, string remark, string reference, DateTimeOffset? id = null)
@@ -106,13 +107,13 @@ namespace Cod.Platform
 
         public static async Task<IEnumerable<Transaction>> MakeTransactionAsync(this IAccountable accountable,
             double delta, int reason, string remark, string reference, DateTimeOffset? id = null)
-            => await MakeTransactionAsync(new[] { await accountable.BuildTransactionAsync(delta, reason, remark, reference, id) });
+            => await MakeTransactionAsync(new[] { await accountable.BuildTransactionAsync(delta, reason, remark, reference, id) }, accountable.CacheStore);
 
-        public static async Task<IEnumerable<Transaction>> MakeTransactionAsync(TransactionRequest request)
-          => await MakeTransactionAsync(new[] { request });
+        public static async Task<IEnumerable<Transaction>> MakeTransactionAsync(TransactionRequest request, ICacheStore cacheStore)
+          => await MakeTransactionAsync(new[] { request }, cacheStore);
 
         //TODO (5he11) 此方法要加锁并且实现事务
-        public static async Task<IEnumerable<Transaction>> MakeTransactionAsync(IEnumerable<TransactionRequest> requests)
+        public static async Task<IEnumerable<Transaction>> MakeTransactionAsync(IEnumerable<TransactionRequest> requests, ICacheStore cacheStore)
         {
             var transactions = new List<Transaction>();
             var count = 0;
@@ -145,11 +146,14 @@ namespace Cod.Platform
             }
 
             await CloudStorage.GetTable<Transaction>().InsertAsync(transactions);
-
-            var db = await RedisClient.GetDatabaseAsync();
+            var now = DateTimeOffset.UtcNow.ToSixDigitsDate();
             foreach (var transaction in transactions)
             {
-                await db.HashIncrementAsync($"delta-{DateTimeOffset.UtcNow.ToSixDigitsDate()}", transaction.GetOwner(), transaction.Delta);
+                var pk = $"{DELTA_KEY}-{now}";
+                var rk = transaction.GetOwner();
+                var currentValue = await cacheStore.GetAsync<double>(pk, rk);
+                var result = currentValue + transaction.Delta;
+                await cacheStore.SetAsync(pk, rk, result, false);
             }
             return transactions;
         }

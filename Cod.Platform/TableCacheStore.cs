@@ -5,7 +5,7 @@ using Cod.Platform.Model;
 
 namespace Cod.Platform
 {
-    internal class TableCacheStore : ICacheStore
+    public class TableCacheStore : ICacheStore
     {
         private readonly Dictionary<string, object> memoryCache = new Dictionary<string, object>();
         private readonly Dictionary<string, DateTimeOffset> memoryCacheExpiry = new Dictionary<string, DateTimeOffset>();
@@ -17,6 +17,12 @@ namespace Cod.Platform
             {
                 this.memoryCache.Remove(memkey);
             }
+
+            if (this.memoryCacheExpiry.ContainsKey(memkey))
+            {
+                this.memoryCacheExpiry.Remove(memkey);
+            }
+
             var cache = await CloudStorage.GetTable<Cache>().RetrieveAsync<Cache>(partitionKey, rowKey);
             if (cache != null)
             {
@@ -58,15 +64,19 @@ namespace Cod.Platform
                 }
                 else
                 {
-                    this.memoryCache.Add(memkey, cache.Value);
-                    this.memoryCacheExpiry.Add(memkey, cache.Expiry);
+                    if (cache.InMemory)
+                    {
+                        this.memoryCache.Add(memkey, cache.Value);
+                        this.memoryCacheExpiry.Add(memkey, cache.Expiry);
+                    }
+
                     return (T)Convert.ChangeType(cache.Value, typeof(T));
                 }
             }
             return default;
         }
 
-        public async Task SetAsync<T>(string partitionKey, string rowKey, T value, DateTimeOffset? expiry = null) where T : IConvertible
+        public async Task SetAsync<T>(string partitionKey, string rowKey, T value, bool memoryCached, DateTimeOffset? expiry = null) where T : IConvertible
         {
             if (String.IsNullOrWhiteSpace(partitionKey) || String.IsNullOrWhiteSpace(rowKey))
             {
@@ -75,30 +85,37 @@ namespace Cod.Platform
             partitionKey = partitionKey.Trim();
             rowKey = rowKey.Trim();
             var memkey = $"{partitionKey}@{rowKey}";
-            if (this.memoryCache.ContainsKey(memkey))
+
+            if (memoryCached)
             {
-                this.memoryCache[memkey] = value;
-            }
-            else
-            {
-                this.memoryCache.Add(memkey, value);
-            }
-            if (expiry.HasValue)
-            {
-                if (this.memoryCacheExpiry.ContainsKey(memkey))
+                if (this.memoryCache.ContainsKey(memkey))
                 {
-                    this.memoryCacheExpiry[memkey] = expiry.Value;
+                    this.memoryCache[memkey] = value;
                 }
                 else
                 {
-                    this.memoryCacheExpiry.Add(memkey, expiry.Value);
+                    this.memoryCache.Add(memkey, value);
+                }
+
+                if (expiry.HasValue)
+                {
+                    if (this.memoryCacheExpiry.ContainsKey(memkey))
+                    {
+                        this.memoryCacheExpiry[memkey] = expiry.Value;
+                    }
+                    else
+                    {
+                        this.memoryCacheExpiry.Add(memkey, expiry.Value);
+                    }
                 }
             }
-            await CloudStorage.GetTable<Cache>().InsertAsync(new[] { new Cache
+
+            await CloudStorage.GetTable<Cache>().InsertOrReplaceAsync(new[] { new Cache
             {
                 PartitionKey = partitionKey,
                 RowKey = rowKey,
                 Value = value.ToString(),
+                InMemory = memoryCached,
                 Expiry = expiry ?? DateTimeOffset.Parse("2100-01-01T00:00:00Z")
             } });
         }

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Cod.Platform
 {
-    internal class RedisCacheStore : ICacheStore
+    public class RedisCacheStore : ICacheStore
     {
         public async Task DeleteAsync(string partitionKey, string rowKey)
         {
@@ -24,7 +24,7 @@ namespace Cod.Platform
             return (T)Convert.ChangeType(str, typeof(T));
         }
 
-        public async Task SetAsync<T>(string partitionKey, string rowKey, T value, DateTimeOffset? expiry = null) where T : IConvertible
+        public async Task SetAsync<T>(string partitionKey, string rowKey, T value, bool memoryCached, DateTimeOffset? expiry = null) where T : IConvertible
         {
             if (expiry.HasValue && DateTimeOffset.UtcNow > expiry.Value)
             {

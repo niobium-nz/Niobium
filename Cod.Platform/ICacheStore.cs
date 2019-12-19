@@ -9,6 +9,6 @@ namespace Cod.Platform
 
         Task DeleteAsync(string partitionKey, string rowKey);
 
-        Task SetAsync<T>(string partitionKey, string rowKey, T value, DateTimeOffset? expiry = null) where T : IConvertible;
+        Task SetAsync<T>(string partitionKey, string rowKey, T value, bool memoryCached, DateTimeOffset? expiry = null) where T : IConvertible;
     }
 }

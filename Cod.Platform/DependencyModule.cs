@@ -12,10 +12,10 @@ namespace Cod.Platform
             builder.RegisterType<ChargeRepository>().As<IRepository<Charge>>();
             builder.RegisterType<WechatRepository>().AsSelf();
             builder.Register(ctx => new CachedRepository<WechatEntity>(
-                ctx.Resolve<WechatRepository>(), ctx.ResolveKeyed<ICacheStore>(CacheType.Table)))
-                .As<IRepository<WechatEntity>>();
-            builder.RegisterType<TableCacheStore>().Keyed<ICacheStore>(CacheType.Table).SingleInstance();
-            builder.RegisterType<RedisCacheStore>().Keyed<ICacheStore>(CacheType.Redis);
+                    ctx.Resolve<WechatRepository>(),
+                    ctx.Resolve<ICacheStore>(),
+                    true
+                )).As<IRepository<WechatEntity>>();
             builder.RegisterType<CloudSignatureIssuer>().AsImplementedInterfaces();
             builder.RegisterType<ConfigurationProvider>().AsImplementedInterfaces();
             builder.RegisterType<QueueMessageRepository>().AsImplementedInterfaces();
