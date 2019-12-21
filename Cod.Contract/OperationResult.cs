@@ -18,7 +18,7 @@ namespace Cod
 
         public static OperationResult Create() => new OperationResult(SuccessCode);
 
-        public static OperationResult Create(int code)
+        public static OperationResult Create(int code, string description = null)
         {
             var msg = new StringBuilder();
             if (InternalError.Messages.ContainsKey(code))
@@ -28,6 +28,11 @@ namespace Cod
             else
             {
                 msg.Append("未知错误");
+            }
+            if (description != null)
+            {
+                msg.Append(":");
+                msg.Append(description);
             }
             msg.Append(" 错误代码:");
             msg.Append(code.ToString());
@@ -50,7 +55,7 @@ namespace Cod
 
         public static OperationResult<T> Create(T result) => new OperationResult<T>(SuccessCode, result);
 
-        public static OperationResult<T> Create(int code, object reference)
+        public static OperationResult<T> Create(int code, object reference, string description = null)
         {
             var msg = new StringBuilder();
             if (InternalError.Messages.ContainsKey(code))
@@ -61,12 +66,17 @@ namespace Cod
             {
                 msg.Append("未知错误");
             }
+            if (description != null)
+            {
+                msg.Append(":");
+                msg.Append(description);
+            }
             msg.Append(" 错误代码:");
             msg.Append(code.ToString());
             return new OperationResult<T>(code)
             {
                 Message = msg.ToString(),
-                Reference = reference
+                Reference = reference,
             };
         }
     }
