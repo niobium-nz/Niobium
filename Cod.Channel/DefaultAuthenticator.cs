@@ -57,7 +57,7 @@ namespace Cod.Channel
                 {
                     await eventHandler.HandleAsync(this);
                 }
-                return OperationResult<StorageSignature>.Create(InternalError.Unauthenticated, null);
+                return OperationResult<StorageSignature>.Create(InternalError.AuthenticationRequired, null);
             }
 
             var apiUrl = await this.configuration.GetSettingAsync(Constants.KEY_API_URL);
@@ -94,14 +94,16 @@ namespace Cod.Channel
                 {
                     await eventHandler.HandleAsync(this);
                 }
-                return OperationResult<StorageSignature>.Create(InternalError.Unauthenticated, null);
+                return OperationResult<StorageSignature>.Create(InternalError.AuthenticationRequired, null);
             }
-            else if (statusCode == 403)
+            else if (InternalError.Messages.ContainsKey(statusCode))
             {
-                return OperationResult<StorageSignature>.Create(InternalError.Unauthorized, null);
+                return OperationResult<StorageSignature>.Create(statusCode, null);
             }
-
-            return OperationResult<StorageSignature>.Create(InternalError.Unknown, null);
+            else
+            {
+                return OperationResult<StorageSignature>.Create(InternalError.Unknown, null);
+            }
         }
 
         public async Task<OperationResult> AquireTokenAsync(string username, string password)
@@ -133,14 +135,16 @@ namespace Cod.Channel
                     }
                 }
 
-                return OperationResult.Create(InternalError.Unauthenticated);
+                return OperationResult.Create(InternalError.AuthenticationRequired);
             }
-            else if (statusCode == 401)
+            else if (InternalError.Messages.ContainsKey(statusCode))
             {
-                return OperationResult.Create(InternalError.Unauthenticated);
+                return OperationResult.Create(statusCode);
             }
-
-            return OperationResult.Create(InternalError.Unknown);
+            else
+            {
+                return OperationResult.Create(InternalError.Unknown);
+            }
         }
 
         private static string BuildSignatureCacheKey(StorageType type, string resource, string partitionKey, string rowKey)
