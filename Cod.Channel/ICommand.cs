@@ -4,11 +4,11 @@ namespace Cod.Channel
 {
     public interface ICommand
     {
-        string CommandID { get; }
+        CommandID ID { get; }
 
         bool CanExecute { get; }
 
-        void Initialize(ICommandService commandService);
+        void Initialize(ICommander commander);
 
         Task ExecuteAsync(object parameter);
     }

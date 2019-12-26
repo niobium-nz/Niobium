@@ -5,7 +5,7 @@ namespace Cod.Channel
 {
     public interface IAuthenticator
     {
-        AccessToken Token { get; set; }
+        AccessToken Token { get; }
 
         IReadOnlyDictionary<string, string> Claims { get; }
 

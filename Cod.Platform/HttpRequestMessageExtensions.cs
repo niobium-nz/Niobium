@@ -86,7 +86,7 @@ namespace Cod.Platform
         public static async Task<ClaimsPrincipal> TryParsePrincipalAsync(this HttpRequestMessage request, string scheme = "Bearer")
         {
             var auth = request.Headers.Authorization;
-            if (auth.Scheme.ToLowerInvariant() != scheme.ToLowerInvariant())
+            if (auth == null || auth.Scheme.ToLowerInvariant() != scheme.ToLowerInvariant())
             {
                 return null;
             }

@@ -16,7 +16,7 @@ namespace Cod.Channel
 
         protected abstract Task CoreExecuteAsync();
 
-        protected virtual CommandExecutionEventArgs BuildEventArgs() => new CommandExecutionEventArgs(String.Empty, Enumerable.Empty<object>());
+        protected virtual CommandExecutionEventArgs BuildEventArgs() => new CommandExecutionEventArgs(this.ID, String.Empty, Enumerable.Empty<object>());
     }
 
     public abstract class GenericCommand<T> : BaseCommand, ICommand
@@ -34,6 +34,6 @@ namespace Cod.Channel
 
         protected abstract Task CoreExecuteAsync(T parameter);
 
-        protected virtual CommandExecutionEventArgs BuildEventArgs(T parameter) => new CommandExecutionEventArgs(String.Empty, Enumerable.Empty<object>());
+        protected virtual CommandExecutionEventArgs BuildEventArgs(T parameter) => new CommandExecutionEventArgs(this.ID, String.Empty, Enumerable.Empty<object>());
     }
 }

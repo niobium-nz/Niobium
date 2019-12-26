@@ -9,7 +9,7 @@ namespace Cod.Channel
             services.AddTransient<ICommand, LoginCommand>();
             services.AddTransient<IEventHandler<IAuthenticator>, LoginNavigationEventHandler>();
             services.AddSingleton<IAuthenticator, DefaultAuthenticator>();
-            services.AddSingleton<ICommandService, DefaultCommandService>();
+            services.AddSingleton<ICommander, DefaultCommander>();
         }
     }
 }
