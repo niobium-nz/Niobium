@@ -12,7 +12,7 @@ using Newtonsoft.Json;
 
 namespace Cod.Platform
 {
-    internal static class WechatHelper
+    public static class WechatHelper
     {
         private static string wechatHost;
         private static string wechatPayHost;

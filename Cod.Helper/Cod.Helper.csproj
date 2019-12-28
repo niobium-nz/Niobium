@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Cod</RootNamespace>
   </PropertyGroup>
 
 </Project>

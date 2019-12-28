@@ -105,7 +105,5 @@ namespace Cod
         public string GetAppID() => ParseAppID(this.PartitionKey);
 
         public OpenIDProvider GetProvider() => ParseProvider(this.PartitionKey);
-
-        public string GetImpedementID() => $"{nameof(Account).ToUpperInvariant()}-{this.GetOpenID()}";
     }
 }

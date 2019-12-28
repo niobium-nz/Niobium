@@ -6,9 +6,25 @@ namespace Cod.Platform
 {
     public class DependencyModule : Module
     {
+        private readonly string wechatReverseProxy;
+        private readonly string wechatPayReverseProxy;
+
+        public DependencyModule(string wechatReverseProxy, string wechatPayReverseProxy)
+        {
+            this.wechatReverseProxy = wechatReverseProxy;
+            this.wechatPayReverseProxy = wechatPayReverseProxy;
+        }
+
         protected override void Load(ContainerBuilder builder)
         {
             builder.Register(_ => Logger.Instance).As<ILogger>();
+            WechatHelper.Initialize(this.wechatReverseProxy, this.wechatPayReverseProxy);
+
+            builder.RegisterType<CloudTableRepository<Model.Account>>().As<IRepository<Account>>();
+            builder.RegisterType<CloudTableRepository<Model.Accounting>>().As<IRepository<Accounting>>();
+            builder.RegisterType<CloudTableRepository<Model.Entitlement>>().As<IRepository<Entitlement>>();
+            builder.RegisterType<CloudTableRepository<Model.Transaction>>().As<IRepository<Transaction>>();
+
             builder.RegisterType<ChargeRepository>().As<IRepository<Charge>>();
             builder.RegisterType<WechatRepository>().AsSelf();
             builder.Register(ctx => new CachedRepository<WechatEntity>(

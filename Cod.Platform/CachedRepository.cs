@@ -52,12 +52,8 @@ namespace Cod.Platform
             var c = await this.cache.GetAsync<string>(partitionKey, rowKey);
             if (c != null)
             {
-                var result = new T
-                {
-                    PartitionKey = partitionKey,
-                    RowKey = rowKey,
-                };
-                result.SetCache(c);
+                var result = new T();
+                result.Initialize(partitionKey, rowKey, c);
                 return result;
             }
             var result2 = await this.tableRepository.GetAsync(partitionKey, rowKey);

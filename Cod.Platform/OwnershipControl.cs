@@ -5,7 +5,7 @@ using Microsoft.Azure.Cosmos.Table;
 namespace Cod.Platform
 {
     public abstract class OwnershipControl<TResource, TOwnership> : IStorageControl
-        where TResource : ITableEntity
+        where TResource : IEntity
         where TOwnership : ITableEntity, new()
     {
         public bool Grantable(StorageType type, string resource) =>

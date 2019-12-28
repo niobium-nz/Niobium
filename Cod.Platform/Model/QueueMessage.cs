@@ -1,13 +1,16 @@
 ﻿using System;
-using Microsoft.Azure.Cosmos.Table;
 
 namespace Cod.Platform.Model
 {
-    public class QueueMessage : TableEntity, ICloneable
+    public class QueueMessage : IEntity, ICloneable
     {
         public object Body { get; set; }
 
         public TimeSpan? Delay { get; set; }
+
+        public string PartitionKey { get; set; }
+
+        public string RowKey { get; set; }
 
         public object Clone() => new QueueMessage
         {

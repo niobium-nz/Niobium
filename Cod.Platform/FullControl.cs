@@ -4,7 +4,7 @@ using Microsoft.Azure.Cosmos.Table;
 
 namespace Cod.Platform
 {
-    public abstract class FullControl<T> : IStorageControl where T : ITableEntity
+    public abstract class FullControl<T> : IStorageControl where T : IEntity
     {
         public bool Grantable(StorageType type, string resource) =>
             type == StorageType.Table && resource.ToLowerInvariant() == typeof(T).Name.ToLowerInvariant();
