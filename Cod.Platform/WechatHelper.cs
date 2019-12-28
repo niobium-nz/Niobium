@@ -5,63 +5,101 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using System.Xml;
 using Cod.Platform.Model.Wechat;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Pathoschild.Http.Client;
 
 namespace Cod.Platform
 {
     internal static class WechatHelper
     {
-        public static async Task<string> GetJSApiTicket(string appID, string secret)
+        private static string wechatHost;
+        private static string wechatPayHost;
+
+        public static void Initialize(string wechatReverseProxy, string wechatPayReverseProxy)
+        {
+            if (String.IsNullOrWhiteSpace(wechatReverseProxy))
+            {
+                throw new ArgumentException("message", nameof(wechatReverseProxy));
+            }
+
+            if (String.IsNullOrWhiteSpace(wechatPayReverseProxy))
+            {
+                throw new ArgumentException("message", nameof(wechatPayReverseProxy));
+            }
+
+            wechatHost = wechatReverseProxy;
+            wechatPayHost = wechatPayReverseProxy;
+        }
+
+        public static async Task<OperationResult<string>> GetJSApiTicket(string appID, string secret)
         {
             var token = await GetAccessToken(appID, secret);
-            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
-            using (var client = new FluentClient("http://api.weixin.niaoju.net/cgi-bin", httpclient).SetOptions(true, true))
+            if (!token.IsSuccess)
             {
-                var response = await client.GetAsync("ticket/getticket")
-                    .WithArgument("access_token", token)
-                    .WithArgument("type", "jsapi")
-                    .AsString();
-                var result = JsonConvert.DeserializeObject<JsTicketResult>(response, JsonSetting.UnderstoreCaseSetting);
-                return result.Ticket;
+                return token;
+            }
+
+            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+            {
+                var query = HttpUtility.ParseQueryString(String.Empty);
+                query["access_token"] = token.Result;
+                query["type"] = "jsapi";
+                var resp = await httpclient.GetAsync($"{wechatHost}/cgi-bin/ticket/getticket?{query.ToString()}");
+                var status = (int)resp.StatusCode;
+                var json = await resp.Content.ReadAsStringAsync();
+                if (status >= 200 && status < 400)
+                {
+                    var result = JsonConvert.DeserializeObject<JsTicketResult>(json, JsonSetting.UnderstoreCaseSetting);
+                    return OperationResult<string>.Create(result.Ticket);
+                }
+                return OperationResult<string>.Create(status, json);
             }
         }
 
-        private static async Task<string> GetAccessToken(string appID, string secret)
+        private static async Task<OperationResult<string>> GetAccessToken(string appID, string secret)
         {
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
-            using (var client = new FluentClient("http://api.weixin.niaoju.net/cgi-bin", httpclient).SetOptions(true, true))
             {
-                var response = await client.GetAsync("token")
-                    .WithArgument("grant_type", "client_credential")
-                    .WithArgument("appid", appID)
-                    .WithArgument("secret", secret)
-                    .AsString();
-                var result = JsonConvert.DeserializeObject<TokenResult>(response, JsonSetting.UnderstoreCaseSetting);
-                return result.AccessToken;
+                var query = HttpUtility.ParseQueryString(String.Empty);
+                query["grant_type"] = "client_credential";
+                query["appid"] = appID;
+                query["secret"] = secret;
+                var resp = await httpclient.GetAsync($"{wechatHost}/cgi-bin/token?{query.ToString()}");
+                var status = (int)resp.StatusCode;
+                var json = await resp.Content.ReadAsStringAsync();
+                if (status >= 200 && status < 400)
+                {
+                    var result = JsonConvert.DeserializeObject<TokenResult>(json, JsonSetting.UnderstoreCaseSetting);
+                    return OperationResult<string>.Create(result.AccessToken);
+                }
+                return OperationResult<string>.Create(status, json);
             }
         }
 
-        public static async Task<string> GetOpenIDAsync(string appID, string secret, string code)
+        public static async Task<OperationResult<string>> GetOpenIDAsync(string appID, string secret, string code)
         {
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
-            using (var client = new FluentClient("http://api.weixin.niaoju.net/sns/oauth2", httpclient).SetOptions(true, true))
             {
-                var response = await client.GetAsync("access_token")
-                    .WithArgument("appid", appID)
-                    .WithArgument("secret", secret)
-                    .WithArgument("code", code)
-                    .WithArgument("grant_type", "authorization_code")
-                    .AsString();
-                var result = JsonConvert.DeserializeObject<OpenIdResult>(response);
-                return result.Openid;
+                var query = HttpUtility.ParseQueryString(String.Empty);
+                query["appid"] = appID;
+                query["secret"] = secret;
+                query["code"] = code;
+                query["grant_type"] = "authorization_code";
+                var resp = await httpclient.GetAsync($"{wechatHost}/sns/oauth2/access_token?{query.ToString()}");
+                var status = (int)resp.StatusCode;
+                var json = await resp.Content.ReadAsStringAsync();
+                if (status >= 200 && status < 400)
+                {
+                    var result = JsonConvert.DeserializeObject<OpenIdResult>(json);
+                    return OperationResult<string>.Create(result.Openid);
+                }
+                return OperationResult<string>.Create(status, json);
             }
         }
 
-        public static async Task<string> JSAPIPay(string account, int amount, string appID, string order, string product, string attach, string ip,
+        public static async Task<OperationResult<string>> JSAPIPay(string account, int amount, string appID, string order, string product, string attach, string ip,
                     string wechatMerchantID, string wechatMerchantNotifyUri, string wechatMerchantSignature)
         {
             var nonceStr = Guid.NewGuid().ToString("N").ToUpperInvariant();
@@ -84,21 +122,22 @@ namespace Cod.Platform
             param.Add("sign", sign);
 
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
-            using (var client = new FluentClient("http://api.mch.weixin.niaoju.net", httpclient).SetOptions(true, true))
             {
-                var response = await client.PostAsync("pay/unifiedorder").WithBody(GetXML(param)).AsString();
-                var result = FromXML(response);
+                var resp = await httpclient.PostAsync($"{wechatPayHost}/pay/unifiedorder",
+                    new StringContent(GetXML(param), Encoding.UTF8, "application/xml"));
+                var status = (int)resp.StatusCode;
+                var body = await resp.Content.ReadAsStringAsync();
+                if (status < 200 || status >= 400)
+                {
+                    return OperationResult<string>.Create(status, body);
+                }
+
+                var result = FromXML(body);
                 if (result["return_code"].ToUpperInvariant() != "SUCCESS")
                 {
-                    //TODO 错误消息
-                    var logger = Logger.Instance;
-                    if (logger != null)
-                    {
-                        logger.LogError($"调用微信支付接口失败: {response}");
-                    }
-                    return null;
+                    return OperationResult<string>.Create(InternalError.Unknown, body);
                 }
-                return result["prepay_id"];
+                return OperationResult<string>.Create(result["prepay_id"]);
             }
         }
 

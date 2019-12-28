@@ -1,17 +1,22 @@
-﻿using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
-using Microsoft.WindowsAzure.Storage.Queue;
-using Microsoft.WindowsAzure.Storage.Table;
+﻿using Microsoft.Azure.Cosmos.Table;
+using Microsoft.Azure.Storage.Blob;
+using Microsoft.Azure.Storage.Queue;
 
 namespace Cod.Platform
 {
-    static class CloudStorage
+    internal static class CloudStorage
     {
-        public static CloudStorageAccount GetAccount(string connectionString)
+        public static Microsoft.Azure.Storage.CloudStorageAccount GetStorageAccount(string connectionString)
+            => Microsoft.Azure.Storage.CloudStorageAccount.Parse(connectionString);
+
+        public static Microsoft.Azure.Storage.CloudStorageAccount GetStorageAccount()
+            => GetStorageAccount(ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME));
+
+        public static CloudStorageAccount GetTableAccount(string connectionString)
             => CloudStorageAccount.Parse(connectionString);
 
-        public static CloudStorageAccount GetAccount()
-            => GetAccount(ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME));
+        public static CloudStorageAccount GetTableAccount()
+            => GetTableAccount(ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME));
 
         public static CloudTable GetTable<T>(string connectionString) where T : ITableEntity
             => GetTable(typeof(T).Name, connectionString);
@@ -20,18 +25,18 @@ namespace Cod.Platform
             => GetTable(typeof(T).Name);
 
         public static CloudTable GetTable(string tableName, string connectionString)
-            => GetAccount(connectionString).CreateCloudTableClient().GetTableReference(tableName);
+            => GetTableAccount(connectionString).CreateCloudTableClient().GetTableReference(tableName);
 
         public static CloudTable GetTable(string tableName)
-            => GetAccount().CreateCloudTableClient().GetTableReference(tableName);
+            => GetTableAccount().CreateCloudTableClient().GetTableReference(tableName);
 
         public static CloudQueue GetQueue(string queueName)
-            => GetAccount().CreateCloudQueueClient().GetQueueReference(queueName.Trim().ToLowerInvariant());
+            => GetStorageAccount().CreateCloudQueueClient().GetQueueReference(queueName.Trim().ToLowerInvariant());
 
         public static CloudBlobContainer GetBlobContainer(string containerName)
-            => GetAccount().CreateCloudBlobClient().GetContainerReference(containerName);
+            => GetStorageAccount().CreateCloudBlobClient().GetContainerReference(containerName);
 
         public static CloudBlockBlob GetBlob(string containerName, string blobName)
-            => GetAccount().CreateCloudBlobClient().GetContainerReference(containerName).GetBlockBlobReference(blobName);
+            => GetStorageAccount().CreateCloudBlobClient().GetContainerReference(containerName).GetBlockBlobReference(blobName);
     }
 }

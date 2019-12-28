@@ -1,5 +1,5 @@
 ﻿using System;
-using Microsoft.WindowsAzure.Storage.Table;
+using Microsoft.Azure.Cosmos.Table;
 
 namespace Cod.Platform.Model
 {
@@ -9,15 +9,12 @@ namespace Cod.Platform.Model
 
         public TimeSpan? Delay { get; set; }
 
-        public object Clone()
+        public object Clone() => new QueueMessage
         {
-            return new QueueMessage
-            {
-                Body = this.Body,
-                Delay = this.Delay,
-                PartitionKey = this.PartitionKey,
-                RowKey = this.RowKey,
-            };
-        }
+            Body = this.Body,
+            Delay = this.Delay,
+            PartitionKey = this.PartitionKey,
+            RowKey = this.RowKey,
+        };
     }
 }

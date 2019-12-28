@@ -2,14 +2,21 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Cod.Platform.Model;
+using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
 {
     internal class WechatRepository : IRepository<WechatEntity>
     {
         private readonly Lazy<IRepository<BrandingInfo>> repository;
+        private readonly ILogger logger;
 
-        public WechatRepository(Lazy<IRepository<BrandingInfo>> repository) => this.repository = repository;
+        public WechatRepository(Lazy<IRepository<BrandingInfo>> repository,
+            ILogger logger)
+        {
+            this.repository = repository;
+            this.logger = logger;
+        }
 
         public async Task<WechatEntity> GetAsync(string appID, string feature)
         {
@@ -31,21 +38,39 @@ namespace Cod.Platform
             if (feature == WechatEntity.BuildAPITicketRowKey())
             {
                 var result = await WechatHelper.GetJSApiTicket(appID, branding.WechatSecret);
+                if (!result.IsSuccess)
+                {
+                    this.logger.LogError($"获取微信JSAPI令牌失败: {result.Message} 参考: {result.Reference}");
+                    return new WechatEntity
+                    {
+                        PartitionKey = appID,
+                        RowKey = feature,
+                    };
+                }
                 return new WechatEntity
                 {
                     PartitionKey = appID,
                     RowKey = feature,
-                    Value = result
+                    Value = result.Result
                 };
             }
             else
             {
                 var result = await WechatHelper.GetOpenIDAsync(appID, branding.WechatSecret, feature);
+                if (!result.IsSuccess)
+                {
+                    this.logger.LogError($"获取微信OpenID失败: {result.Message} 参考: {result.Reference}");
+                    return new WechatEntity
+                    {
+                        PartitionKey = appID,
+                        RowKey = feature,
+                    };
+                }
                 return new WechatEntity
                 {
                     PartitionKey = appID,
                     RowKey = feature,
-                    Value = result
+                    Value = result.Result
                 };
             }
         }

@@ -5,6 +5,7 @@
     <Authors>Xasino Limited</Authors>
     <Company>Xasino Limited</Company>
     <Product>COD</Product>
+    <RootNamespace>Cod</RootNamespace>
   </PropertyGroup>
 
 </Project>

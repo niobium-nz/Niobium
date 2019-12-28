@@ -1,5 +1,5 @@
 ﻿using System;
-using Microsoft.WindowsAzure.Storage.Table;
+using Microsoft.Azure.Cosmos.Table;
 
 namespace Cod.Platform.Model
 {
@@ -25,9 +25,6 @@ namespace Cod.Platform.Model
 
         public static string BuildOpenIDRowKey(string authcode) => authcode.Trim();
 
-        public DateTimeOffset GetExpiry(DateTimeOffset timeStart)
-        {
-            return timeStart.AddMinutes(100);
-        }
+        public DateTimeOffset GetExpiry(DateTimeOffset timeStart) => timeStart.AddMinutes(100);
     }
 }

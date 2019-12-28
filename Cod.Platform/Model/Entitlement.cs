@@ -3,7 +3,7 @@ using Microsoft.Azure.Cosmos.Table;
 
 namespace Cod.Platform.Model
 {
-    public class Transaction : Cod.Transaction, ITableEntity
+    public class Entitlement : Cod.Entitlement, ITableEntity
     {
         public void ReadEntity(IDictionary<string, EntityProperty> properties, OperationContext operationContext) => TableEntityHelper.ReflectionRead(this, properties, operationContext);
 

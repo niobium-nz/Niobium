@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Cod.Platform.Model;
+using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
 {
@@ -10,12 +11,15 @@ namespace Cod.Platform
     {
         private readonly Lazy<IRepository<BrandingInfo>> brandingRepository;
         private readonly Lazy<IConfigurationProvider> configuration;
+        private readonly ILogger logger;
 
         public ChargeRepository(Lazy<IRepository<BrandingInfo>> brandingRepository,
-            Lazy<IConfigurationProvider> configuration)
+            Lazy<IConfigurationProvider> configuration,
+            ILogger logger)
         {
             this.brandingRepository = brandingRepository;
             this.configuration = configuration;
+            this.logger = logger;
         }
 
         public async Task<IEnumerable<Charge>> CreateAsync(IEnumerable<Charge> entities, bool replaceIfExist)
@@ -40,7 +44,13 @@ namespace Cod.Platform
                         branding.WechatMerchantID,
                         branding.WechatMerchantNotifyUri,
                         branding.WechatMerchantSignature);
-                    var paySignature = WechatHelper.GetJSAPIPaySignature(prepayid, charge.AppID, branding.WechatMerchantSignature);
+                    if (!prepayid.IsSuccess)
+                    {
+                        this.logger.LogError($"支付通道上游返回错误: {prepayid.Message} 参考: {prepayid.Reference}");
+                        continue;
+                    }
+
+                    var paySignature = WechatHelper.GetJSAPIPaySignature(prepayid.Result, charge.AppID, branding.WechatMerchantSignature);
                     charge.Params = paySignature;
                     charges.Add(charge);
                 }

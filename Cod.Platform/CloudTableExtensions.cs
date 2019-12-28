@@ -1,13 +1,12 @@
-﻿using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Table;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Azure.Cosmos.Table;
 
 namespace Cod.Platform
 {
-    static class CloudTableExtensions
+    internal static class CloudTableExtensions
     {
         public static async Task<IEnumerable<T>> InsertAsync<T>(this CloudTable table, IEnumerable<T> entitiesToCreate) where T : ITableEntity, new()
         {
@@ -27,7 +26,7 @@ namespace Cod.Platform
             bool retryOnConfliction = false)
              where T : ITableEntity, new()
         {
-            for (int i = 0; i < 3; i++)
+            for (var i = 0; i < 3; i++)
             {
                 var entitiesToReplace = new List<T>();
                 var entitiesToChange = await getEntitiesToReplace();
@@ -83,7 +82,7 @@ namespace Cod.Platform
             bool retryOnConfliction = false)
              where T : ITableEntity, new()
         {
-            for (int i = 0; i < 3; i++)
+            for (var i = 0; i < 3; i++)
             {
                 var entitiesToRemove = new List<T>();
                 var entitiesToTest = await getEntitiesToRemove();

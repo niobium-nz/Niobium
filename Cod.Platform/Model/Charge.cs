@@ -24,6 +24,15 @@ namespace Cod.Platform.Model
 
         public Dictionary<string, object> Params { get; set; }
 
+        public bool Validate() => this.Params != null
+            && this.Params.Count >= 6
+            && this.Params.ContainsKey("appId")
+            && this.Params.ContainsKey("timeStamp")
+            && this.Params.ContainsKey("nonceStr")
+            && this.Params.ContainsKey("package")
+            && this.Params.ContainsKey("signType")
+            && this.Params.ContainsKey("paySign");
+
         public string Export()
             => this.Type == ChargeType.WeChatJSAPI ? JsonConvert.SerializeObject(
                 new
