@@ -20,10 +20,10 @@ namespace Cod.Platform
             builder.Register(_ => Logger.Instance).As<ILogger>();
             WechatHelper.Initialize(this.wechatReverseProxy, this.wechatPayReverseProxy);
 
-            builder.RegisterType<CloudTableRepository<Model.Account>>().As<IRepository<Account>>();
-            builder.RegisterType<CloudTableRepository<Model.Accounting>>().As<IRepository<Accounting>>();
-            builder.RegisterType<CloudTableRepository<Model.Entitlement>>().As<IRepository<Entitlement>>();
-            builder.RegisterType<CloudTableRepository<Model.Transaction>>().As<IRepository<Transaction>>();
+            builder.RegisterType<CloudTableRepository<Model.Account>>().As<IRepository<Model.Account>>();
+            builder.RegisterType<CloudTableRepository<Model.Accounting>>().As<IRepository<Model.Accounting>>();
+            builder.RegisterType<CloudTableRepository<Model.Entitlement>>().As<IRepository<Model.Entitlement>>();
+            builder.RegisterType<CloudTableRepository<Model.Transaction>>().As<IRepository<Model.Transaction>>();
 
             builder.RegisterType<ChargeRepository>().As<IRepository<Charge>>();
             builder.RegisterType<WechatRepository>().AsSelf();
