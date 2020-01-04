@@ -18,9 +18,7 @@ namespace Cod.Platform
 
         protected IRepository<T> Repository => this.repository.Value;
 
-        public PlatformDomain(Lazy<IRepository<T>> repository,
-            Lazy<IEnumerable<IEventHandler<IDomain<T>>>> eventHandlers)
-            : base(eventHandlers) => this.repository = repository;
+        public PlatformDomain(Lazy<IRepository<T>> repository) => this.repository = repository;
 
         public async Task<T> GetEntityAsync()
         {

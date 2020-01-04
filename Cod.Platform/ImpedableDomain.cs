@@ -7,17 +7,14 @@ namespace Cod.Platform
 {
     public abstract class ImpedableDomain<T> : PlatformDomain<T> where T : IEntity, IImpedable
     {
-        private readonly Lazy<IRepository<T>> repository;
         private readonly Lazy<IEnumerable<IImpedimentPolicy>> policies;
         private readonly ILogger logger;
 
         public ImpedableDomain(Lazy<IRepository<T>> repository,
-            Lazy<IEnumerable<IEventHandler<IDomain<T>>>> eventHandlers,
             Lazy<IEnumerable<IImpedimentPolicy>> policies,
             ILogger logger)
-            : base(repository, eventHandlers)
+            : base(repository)
         {
-            this.repository = repository;
             this.policies = policies;
             this.logger = logger;
         }
@@ -40,7 +37,7 @@ namespace Cod.Platform
             }
 
             entity.Impeded = true;
-            await this.repository.Value.UpdateAsync(entity);
+            await this.Repository.UpdateAsync(entity);
         }
 
         public async Task UnimpedeAsync(string category, int cause, string policyInput = null)
@@ -64,7 +61,7 @@ namespace Cod.Platform
             if (existings.Count == 0)
             {
                 entity.Impeded = false;
-                await this.repository.Value.UpdateAsync(entity);
+                await this.Repository.UpdateAsync(entity);
             }
         }
 
