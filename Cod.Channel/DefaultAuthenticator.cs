@@ -62,7 +62,7 @@ namespace Cod.Channel
                 this.signatures.Clear();
                 foreach (var eventHandler in this.eventHandlers)
                 {
-                    await eventHandler.HandleAsync(this);
+                    await eventHandler.InvokeAsync(this);
                 }
                 await this.SaveSignaturesAsync();
                 return OperationResult<StorageSignature>.Create(InternalError.AuthenticationRequired, null);
@@ -116,7 +116,7 @@ namespace Cod.Channel
                 this.signatures.Clear();
                 foreach (var eventHandler in this.eventHandlers)
                 {
-                    await eventHandler.HandleAsync(this);
+                    await eventHandler.InvokeAsync(this);
                 }
                 await this.SaveSignaturesAsync();
                 return OperationResult<StorageSignature>.Create(InternalError.AuthenticationRequired, null);
