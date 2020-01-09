@@ -57,7 +57,7 @@ namespace Cod.Platform.Model
             this.Params = param;
         }
 
-        public override bool Success() => this.ResultCode != null && this.ResultCode.ToUpperInvariant() != "SUCCESS";
+        public override bool Success() => this.ResultCode != null && this.ResultCode.ToUpperInvariant() == "SUCCESS";
 
         public override bool Validate(string platformSecret, string merchantSecret)
         {
