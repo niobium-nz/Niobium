@@ -9,29 +9,12 @@ namespace Cod.Platform
         public string Issue(string resource, SharedAccessTablePolicy policy, StorageControl control)
             => CloudStorage.GetTable(resource).GetSharedAccessSignature(policy, null,
                 control.StartPartitionKey, control.StartRowKey, control.EndPartitionKey, control.EndRowKey,
-#if DEBUG
-                SharedAccessProtocol.HttpsOrHttp,
-#else
-                SharedAccessProtocol.HttpsOnly,
-#endif
-                null);
+                SharedAccessProtocol.HttpsOrHttp, null);
 
         public string Issue(string resource, SharedAccessQueuePolicy policy)
-            => CloudStorage.GetQueue(resource).GetSharedAccessSignature(policy, null,
-#if DEBUG
-                Microsoft.Azure.Storage.SharedAccessProtocol.HttpsOrHttp,
-#else
-                Microsoft.Azure.Storage.SharedAccessProtocol.HttpsOnly,
-#endif
-                null);
+            => CloudStorage.GetQueue(resource).GetSharedAccessSignature(policy, null, Microsoft.Azure.Storage.SharedAccessProtocol.HttpsOrHttp, null);
 
         public string Issue(string resource, SharedAccessBlobPolicy policy)
-            => CloudStorage.GetBlobContainer(resource).GetSharedAccessSignature(policy, null,
-#if DEBUG
-                Microsoft.Azure.Storage.SharedAccessProtocol.HttpsOrHttp,
-#else
-                Microsoft.Azure.Storage.SharedAccessProtocol.HttpsOnly,
-#endif
-                null);
+            => CloudStorage.GetBlobContainer(resource).GetSharedAccessSignature(policy, null, Microsoft.Azure.Storage.SharedAccessProtocol.HttpsOrHttp, null);
     }
 }
