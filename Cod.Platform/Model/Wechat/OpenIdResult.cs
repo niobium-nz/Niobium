@@ -11,5 +11,9 @@
         public string Openid { get; set; }
 
         public string Scope { get; set; }
+
+        public string Errmsg { get; set; }
+
+        public int Errcode { get; set; }
     }
 }
