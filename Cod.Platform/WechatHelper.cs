@@ -52,7 +52,14 @@ namespace Cod.Platform
                 if (status >= 200 && status < 400)
                 {
                     var result = JsonConvert.DeserializeObject<JsTicketResult>(json, JsonSetting.UnderstoreCaseSetting);
-                    return OperationResult<string>.Create(result.Ticket);
+                    if (!String.IsNullOrWhiteSpace(result.Ticket))
+                    {
+                        return OperationResult<string>.Create(result.Ticket);
+                    }
+                    else
+                    {
+                        return OperationResult<string>.Create(result.Errcode, json, result.Errmsg);
+                    }
                 }
                 return OperationResult<string>.Create(status, json);
             }
@@ -72,7 +79,14 @@ namespace Cod.Platform
                 if (status >= 200 && status < 400)
                 {
                     var result = JsonConvert.DeserializeObject<TokenResult>(json, JsonSetting.UnderstoreCaseSetting);
-                    return OperationResult<string>.Create(result.AccessToken);
+                    if (!String.IsNullOrWhiteSpace(result.AccessToken))
+                    {
+                        return OperationResult<string>.Create(result.AccessToken);
+                    }
+                    else
+                    {
+                        return OperationResult<string>.Create(result.Errcode, json, result.Errmsg);
+                    }
                 }
                 return OperationResult<string>.Create(status, json);
             }
@@ -93,7 +107,14 @@ namespace Cod.Platform
                 if (status >= 200 && status < 400)
                 {
                     var result = JsonConvert.DeserializeObject<OpenIdResult>(json);
-                    return OperationResult<string>.Create(result.Openid);
+                    if (!String.IsNullOrWhiteSpace(result.Openid))
+                    {
+                        return OperationResult<string>.Create(result.Openid);
+                    }
+                    else
+                    {
+                        return OperationResult<string>.Create(result.Errcode, json, result.Errmsg);
+                    }
                 }
                 return OperationResult<string>.Create(status, json);
             }

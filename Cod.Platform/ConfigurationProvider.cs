@@ -1,25 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 
 namespace Cod.Platform
 {
-    internal class ConfigurationProvider : Cod.IConfigurationProvider
+    public class ConfigurationProvider : IConfigurationProvider
     {
+        private static bool isSecureVaultEnabled = false;
+        private static Func<IConfigurationBuilder, IConfigurationBuilder> customConfig;
         private static readonly Dictionary<string, string> caches = new Dictionary<string, string>();
 
         private static readonly Lazy<IConfiguration> config = new Lazy<IConfiguration>(
-            () => new ConfigurationBuilder()
-#if DEBUG
-                .SetBasePath(new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName)
-                .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
-#endif
-                .AddEnvironmentVariables()
-                .Build(), LazyThreadSafetyMode.ExecutionAndPublication);
+            () =>
+            {
+                IConfigurationBuilder builder = new ConfigurationBuilder();
+                if (customConfig != null)
+                {
+                    builder = customConfig(builder);
+                }
+                return builder.AddEnvironmentVariables().Build();
+            }, LazyThreadSafetyMode.ExecutionAndPublication);
+
+        public static void Configure(Func<IConfigurationBuilder, IConfigurationBuilder> func, bool secureVaultEnabled)
+        {
+            customConfig = func;
+            isSecureVaultEnabled = secureVaultEnabled;
+        }
 
         public async Task<string> GetSettingAsync(string key, bool cache = true)
         {
@@ -31,14 +39,8 @@ namespace Cod.Platform
                 }
             }
 
-            var v = config.Value[key];
-#if DEBUG
-            if (v == null)
-            {
-                v = config.Value[$"Values:{key}"];
-            }
-#endif
-            if (v == null)
+            var v = GetSetting(key);
+            if (isSecureVaultEnabled && v == null)
             {
                 v = await SecureVault.GetSecretAsync(key);
             }
@@ -59,12 +61,12 @@ namespace Cod.Platform
 
         public static string GetSetting(string key)
         {
-#if DEBUG
-            var v = config.Value[$"Values:{key}"];
-            return v ?? config.Value[key];
-#else
-            return config.Value[key];
-#endif
+            var v = config.Value[key];
+            if (v == null)
+            {
+                v = config.Value[$"Values:{key}"];
+            }
+            return v;
         }
     }
 }
