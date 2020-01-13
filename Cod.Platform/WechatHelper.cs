@@ -99,7 +99,7 @@ namespace Cod.Platform
             }
         }
 
-        public static async Task<OperationResult<string>> JSAPIPay(string account, int amount, string appID, string order, string product, string attach, string ip,
+        public static async Task<OperationResult<string>> JSAPIPay(string account, int amount, string appID, string device, string order, string product, string attach, string ip,
                     string wechatMerchantID, string wechatMerchantNotifyUri, string wechatMerchantSignature)
         {
             var nonceStr = Guid.NewGuid().ToString("N").ToUpperInvariant();
@@ -108,6 +108,7 @@ namespace Cod.Platform
                 { "appid", appID },
                 { "mch_id", wechatMerchantID},
                 { "nonce_str" , nonceStr },
+                { "device_info" , device },
                 { "sign_type", "MD5" },
                 { "body", product },
                 { "out_trade_no", order },

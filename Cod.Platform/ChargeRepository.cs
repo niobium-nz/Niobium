@@ -37,6 +37,7 @@ namespace Cod.Platform
                     var prepayid = await WechatHelper.JSAPIPay(charge.Account,
                         charge.Amount,
                         charge.AppID,
+                        charge.Device,
                         charge.Order,
                         charge.Product,
                         internalSignature,

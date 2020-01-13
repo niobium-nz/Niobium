@@ -12,6 +12,8 @@ namespace Cod.Platform.Model
 
         public OpenIDProvider Provider { get; set; }
 
+        public string Device { get; set; }
+
         public string Order { get; set; }
 
         public string Account { get; set; }
