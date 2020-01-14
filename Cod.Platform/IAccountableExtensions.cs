@@ -163,25 +163,33 @@ namespace Cod.Platform
             //REMARK (5he11) 将输入限制为仅取其日期的当日的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
             input = new DateTimeOffset(input.UtcDateTime.Date.ToUniversalTime()).AddDays(1).AddMilliseconds(-1);
             var frozen = await accountable.GetFrozenAsync();
-            Accounting accounting = null;
+            bool queryCache;
             if (input.UtcDateTime.Date.ToUniversalTime() != DateTimeOffset.UtcNow.UtcDateTime.Date.ToUniversalTime())
             {
-                //REMARK (5he11)  提高执行效率，不查询当天的值可以尝试是否可以直接命中
-                var principal = await accountable.GetAccountingPrincipalAsync();
-                accounting = await CloudStorage.GetTable<Model.Accounting>().RetrieveAsync<Model.Accounting>(
-                    Accounting.BuildPartitionKey(principal), Accounting.BuildRowKey(input));
-            }
-
-            double balance;
-            if (accounting != null)
-            {
-                balance = accounting.Balance;
+                //REMARK (5he11) 提高执行效率，不查询当天的值可以尝试是否可以直接命中
+                queryCache = false;
             }
             else
             {
-                accounting = await accountable.GetLatestAccountingAsync(input);
-                balance = accounting.Balance;
+                //REMARK (5he11) 提高执行效率，查询当天的值时，首先尝试直接命中前一天晚上临结束时的准确账目
+                input = input.AddDays(-1);
+                queryCache = true;
+            }
 
+            double balance;
+            var principal = await accountable.GetAccountingPrincipalAsync();
+            var accounting = await CloudStorage.GetTable<Model.Accounting>().RetrieveAsync<Model.Accounting>(
+                Accounting.BuildPartitionKey(principal), Accounting.BuildRowKey(input));
+            if (accounting == null)
+            {
+                //REMARK (5he11) 若无法高效命中则使用慢速范围查询
+                accounting = await accountable.GetLatestAccountingAsync(input);
+                queryCache = true;
+            }
+            balance = accounting.Balance;
+
+            if (queryCache)
+            {
                 //REMARK (5he11) 增加1毫秒使起始值规范为第2天的0点，以此避免将以日期命名的缓存多加一遍
                 //REMARK (5he11) 但如果结果的 ETag 为空则表示是新用户，需累加其所有缓存的值即可，这里的做法是累加3天，而且输入时间减去1毫秒让循环至少执行一次
                 var pos = accounting.ETag == null ? input.AddMilliseconds(-1).AddDays(-3) : accounting.GetEnd().AddMilliseconds(1);
