@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos.Table;
 
@@ -13,24 +14,28 @@ namespace Cod.Platform
 
         public async Task<IEnumerable<Impediment>> GetImpedimentsAsync<T>(IImpedimentContext<T> context) where T : IImpedable
         {
-            var table = CloudStorage.GetTable<Impediment>();
-            string filter;
-            if (String.IsNullOrEmpty(context.Category))
+            if (await this.SupportAsync(context))
             {
-                filter = TableQuery.CombineFilters(TableQuery.GenerateFilterCondition(nameof(Impediment.PartitionKey),
-                QueryComparisons.GreaterThan, Impediment.BuildPartitionKey(context.Entity.GetImpedementID(), "0")),
-                TableOperators.And,
-                TableQuery.GenerateFilterCondition(nameof(Impediment.PartitionKey),
-                QueryComparisons.LessThan, Impediment.BuildPartitionKey(context.Entity.GetImpedementID(), "Z")));
-            }
-            else
-            {
-                filter = TableQuery.GenerateFilterCondition(nameof(Impediment.PartitionKey),
-                QueryComparisons.Equal, Impediment.BuildPartitionKey(context.Entity.GetImpedementID(), context.Category));
-            }
+                var table = CloudStorage.GetTable<Impediment>();
+                string filter;
+                if (String.IsNullOrEmpty(context.Category))
+                {
+                    filter = TableQuery.CombineFilters(TableQuery.GenerateFilterCondition(nameof(Impediment.PartitionKey),
+                    QueryComparisons.GreaterThan, Impediment.BuildPartitionKey(context.Entity.GetImpedementID(), "0")),
+                    TableOperators.And,
+                    TableQuery.GenerateFilterCondition(nameof(Impediment.PartitionKey),
+                    QueryComparisons.LessThan, Impediment.BuildPartitionKey(context.Entity.GetImpedementID(), "Z")));
+                }
+                else
+                {
+                    filter = TableQuery.GenerateFilterCondition(nameof(Impediment.PartitionKey),
+                    QueryComparisons.Equal, Impediment.BuildPartitionKey(context.Entity.GetImpedementID(), context.Category));
+                }
 
-            var existings = await table.WhereAsync<Impediment>(filter);
-            return existings;
+                var existings = await table.WhereAsync<Impediment>(filter);
+                return existings;
+            }
+            return Enumerable.Empty<Impediment>();
         }
 
         public async Task<bool> ImpedeAsync<T>(IImpedimentContext<T> context) where T : IImpedable
