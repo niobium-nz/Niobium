@@ -39,6 +39,7 @@ namespace Cod.Platform
             builder.RegisterType<TokenValidator>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Impediment>>().AsImplementedInterfaces();
             builder.RegisterType<ImpedimentControl>().AsImplementedInterfaces();
+            builder.RegisterType<ImpedementPolicyScanProvider>().AsImplementedInterfaces();
             base.Load(builder);
         }
     }
