@@ -164,6 +164,7 @@ namespace Cod.Platform
             input = new DateTimeOffset(input.UtcDateTime.Date.ToUniversalTime()).AddDays(1).AddMilliseconds(-1);
             var frozen = await accountable.GetFrozenAsync();
             bool queryCache;
+            var lastAccountDate = input;
             if (input.UtcDateTime.Date.ToUniversalTime() != DateTimeOffset.UtcNow.UtcDateTime.Date.ToUniversalTime())
             {
                 //REMARK (5he11) 提高执行效率，不查询当天的值可以尝试是否可以直接命中
@@ -171,19 +172,19 @@ namespace Cod.Platform
             }
             else
             {
+                lastAccountDate = lastAccountDate.AddDays(-1);
                 //REMARK (5he11) 提高执行效率，查询当天的值时，首先尝试直接命中前一天晚上临结束时的准确账目
-                input = input.AddDays(-1);
                 queryCache = true;
             }
 
             double balance;
             var principal = await accountable.GetAccountingPrincipalAsync();
             var accounting = await CloudStorage.GetTable<Model.Accounting>().RetrieveAsync<Model.Accounting>(
-                Accounting.BuildPartitionKey(principal), Accounting.BuildRowKey(input));
+                Accounting.BuildPartitionKey(principal), Accounting.BuildRowKey(lastAccountDate));
             if (accounting == null)
             {
                 //REMARK (5he11) 若无法高效命中则使用慢速范围查询
-                accounting = await accountable.GetLatestAccountingAsync(input);
+                accounting = await accountable.GetLatestAccountingAsync(lastAccountDate);
                 queryCache = true;
             }
             balance = accounting.Balance;
