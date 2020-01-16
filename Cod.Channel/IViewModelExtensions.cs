@@ -6,8 +6,9 @@ namespace Cod.Channel
 {
     public static class IViewModelExtensions
     {
-        public static IEnumerable<TViewModel> ToViewModel<TViewModel, TEntity>(this IEnumerable<IDomain<TEntity>> domains, Func<TViewModel> createViewModel)
-            where TViewModel : IViewModel<TEntity>
+        public static IEnumerable<TViewModel> ToViewModel<TDomain, TViewModel, TEntity>(this IEnumerable<TDomain> domains, Func<TViewModel> createViewModel)
+            where TViewModel : IViewModel<TDomain, TEntity>
+            where TDomain : IChannelDomain<TEntity>
             => domains.Select(d => (TViewModel)createViewModel().Initialize(d));
     }
 }

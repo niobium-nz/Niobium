@@ -1,7 +1,8 @@
 ﻿namespace Cod.Channel
 {
-    public interface IViewModel<T>
+    public interface IViewModel<TDomain, TEntity>
+        where TDomain : IChannelDomain<TEntity>
     {
-        IViewModel<T> Initialize(IDomain<T> domain);
+        IViewModel<TDomain, TEntity> Initialize(TDomain domain);
     }
 }
