@@ -17,23 +17,10 @@ namespace Cod.Platform
             if (await this.SupportAsync(context))
             {
                 var table = CloudStorage.GetTable<Impediment>();
-                string filter;
-                if (String.IsNullOrEmpty(context.Category))
-                {
-                    filter = TableQuery.CombineFilters(TableQuery.GenerateFilterCondition(nameof(Impediment.PartitionKey),
-                    QueryComparisons.GreaterThan, Impediment.BuildPartitionKey(context.Entity.GetImpedementID(), "0")),
-                    TableOperators.And,
-                    TableQuery.GenerateFilterCondition(nameof(Impediment.PartitionKey),
-                    QueryComparisons.LessThan, Impediment.BuildPartitionKey(context.Entity.GetImpedementID(), "Z")));
-                }
-                else
-                {
-                    filter = TableQuery.GenerateFilterCondition(nameof(Impediment.PartitionKey),
+                var filter = TableQuery.GenerateFilterCondition(nameof(Impediment.PartitionKey),
                     QueryComparisons.Equal, Impediment.BuildPartitionKey(context.Entity.GetImpedementID(), context.Category));
-                }
 
-                var existings = await table.WhereAsync<Impediment>(filter);
-                return existings;
+                return await table.WhereAsync<Impediment>(filter);
             }
             return Enumerable.Empty<Impediment>();
         }
