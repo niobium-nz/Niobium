@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Blazor.Extensions.Storage;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Cod.Channel
 {
@@ -6,6 +7,7 @@ namespace Cod.Channel
     {
         public void Load(IServiceCollection services)
         {
+            services.AddStorage();
             services.AddTransient<ICommand, LoginCommand>();
             services.AddTransient<IEventHandler<IAuthenticator>, LoginNavigationEventHandler>();
             services.AddSingleton<IAuthenticator, DefaultAuthenticator>();
