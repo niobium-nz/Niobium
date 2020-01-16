@@ -6,25 +6,26 @@ using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
-    public class GenericRepository<T> : IRepository<T>
+    public class GenericRepository<TDomain, TEntity> : IRepository<TDomain, TEntity>
+        where TDomain : IChannelDomain<TEntity>
     {
-        private readonly List<IDomain<T>> cache;
+        private readonly List<TDomain> cache;
         private readonly IConfigurationProvider configuration;
         private readonly HttpClient httpClient;
         private readonly IAuthenticator authenticator;
-        private readonly Func<IDomain<T>> createDomain;
+        private readonly Func<TDomain> createDomain;
 
         public GenericRepository(IConfigurationProvider configuration, HttpClient httpClient,
-            IAuthenticator authenticator, Func<IDomain<T>> createDomain)
+            IAuthenticator authenticator, Func<TDomain> createDomain)
         {
-            this.cache = new List<IDomain<T>>();
+            this.cache = new List<TDomain>();
             this.configuration = configuration;
             this.httpClient = httpClient;
             this.authenticator = authenticator;
             this.createDomain = createDomain;
         }
 
-        public IReadOnlyCollection<IDomain<T>> Data => this.cache;
+        public IReadOnlyCollection<TDomain> Data => this.cache;
 
         public async Task<ContinuationToken> LoadAsync(string partitionKey, string rowKey)
             => await this.LoadAsync(partitionKey, partitionKey, rowKey, rowKey, 1);
@@ -41,7 +42,7 @@ namespace Cod.Channel
         public async Task<ContinuationToken> LoadAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int count = -1)
         {
             var result = await this.FetchAsync(partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, count);
-            var domainObjects = result.Data.Select(m => this.createDomain().Initialize(m));
+            var domainObjects = result.Data.Select(m => (TDomain)this.createDomain().Initialize(m));
             this.cache.AddRange(domainObjects);
             return result.ContinuationToken;
         }
@@ -49,7 +50,7 @@ namespace Cod.Channel
         public async Task<ContinuationToken> LoadAsync(int count = -1)
             => await this.LoadAsync(null, null, null, null, count);
 
-        private async Task<TableQueryResult<T>> FetchAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int count)
+        private async Task<TableQueryResult<TEntity>> FetchAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int count)
         {
             string pk, rk;
             if (partitionKeyStart == null && partitionKeyEnd == null)
@@ -88,17 +89,17 @@ namespace Cod.Channel
             }
 
 
-            var signature = await this.authenticator.AquireSignatureAsync(StorageType.Table, typeof(T).Name, pk, rk);
+            var signature = await this.authenticator.AquireSignatureAsync(StorageType.Table, typeof(TEntity).Name, pk, rk);
             if (!signature.IsSuccess)
             {
-                return new TableQueryResult<T>
+                return new TableQueryResult<TEntity>
                 {
-                    Data = new List<T>(),
+                    Data = new List<TEntity>(),
                 };
             }
 
             var baseUrl = await this.configuration.GetSettingAsync(Constants.KEY_TABLE_URL);
-            return await TableStorageHelper.GetAsync<T>(this.httpClient, baseUrl, signature.Result.Signature, partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, null, count);
+            return await TableStorageHelper.GetAsync<TEntity>(this.httpClient, baseUrl, signature.Result.Signature, partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, null, count);
         }
 
     }

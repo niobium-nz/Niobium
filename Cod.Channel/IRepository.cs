@@ -3,9 +3,10 @@ using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
-    public interface IRepository<T>
+    public interface IRepository<TDomain, TEntity>
+        where TDomain : IChannelDomain<TEntity>
     {
-        IReadOnlyCollection<IDomain<T>> Data { get; }
+        IReadOnlyCollection<TDomain> Data { get; }
 
         Task<ContinuationToken> LoadAsync(string partitionKey, string rowKey);
 
