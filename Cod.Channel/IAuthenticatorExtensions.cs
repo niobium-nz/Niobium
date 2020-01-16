@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Cod.Channel
 {
@@ -7,20 +8,20 @@ namespace Cod.Channel
         public static bool IsAuthenticated(this IAuthenticator authenticator)
             => authenticator != null && authenticator.Token != null && authenticator.Token.Validate();
 
-        public static bool TryGetClaim(this IAuthenticator authenticator, string key, out string value)
+        public static bool TryGetClaim(this IReadOnlyDictionary<string, string> claims, string key, out string value)
         {
-            if (authenticator.Claims.ContainsKey(key))
+            if (claims.ContainsKey(key))
             {
-                value = authenticator.Claims[key];
+                value = claims[key];
                 return true;
             }
             value = null;
             return false;
         }
 
-        public static bool TryGetClaim<T>(this IAuthenticator authenticator, string key, out T value)
+        public static bool TryGetClaim<T>(this IReadOnlyDictionary<string, string> claims, string key, out T value)
         {
-            if (authenticator.TryGetClaim(key, out var v))
+            if (claims.TryGetClaim(key, out var v))
             {
                 value = JsonConvert.DeserializeObject<T>(v);
                 return true;
