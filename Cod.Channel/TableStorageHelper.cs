@@ -165,10 +165,10 @@ namespace Cod.Channel
                     }
 
                     var json = await response.Content.ReadAsStringAsync();
-                    var objs = JsonConvert.DeserializeObject<List<T>>(json);
-                    if (objs.Count > 0)
+                    var objs = JsonConvert.DeserializeObject<TableStorageResult<T>>(json);
+                    if (objs.Value.Count > 0)
                     {
-                        result.Data.AddRange(objs);
+                        result.Data.AddRange(objs.Value);
                     }
 
                     if (!result.HasMore)
