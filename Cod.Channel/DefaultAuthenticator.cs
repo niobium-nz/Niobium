@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using Blazor.Extensions.Storage.Interfaces;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Newtonsoft.Json;
 
@@ -15,6 +16,7 @@ namespace Cod.Channel
         private readonly Dictionary<string, StorageSignature> signatures = new Dictionary<string, StorageSignature>();
         private readonly IConfigurationProvider configuration;
         private readonly HttpClient httpClient;
+        private readonly ISessionStorage sessionStorage;
         private readonly IEnumerable<IEventHandler<IAuthenticator>> eventHandlers;
         private readonly Dictionary<string, string> claims;
 
@@ -33,15 +35,32 @@ namespace Cod.Channel
 
         public DefaultAuthenticator(IConfigurationProvider configuration,
             HttpClient httpClient,
+            ISessionStorage sessionStorage,
             IEnumerable<IEventHandler<IAuthenticator>> eventHandlers)
         {
             this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             this.httpClient = httpClient;
+            this.sessionStorage = sessionStorage;
             this.eventHandlers = eventHandlers;
             this.claims = new Dictionary<string, string>();
         }
 
-        public Task InitializeAsync() => Task.CompletedTask;//var token = await this.sessionStorage.GetItem<string>("accessToken");//if (!String.IsNullOrWhiteSpace(token))//{//    this.SetToken(token);//}//var ss = await this.sessionStorage.GetItem<Dictionary<string, StorageSignature>>("signatures");//if (ss != null && ss.Count > 0)//{//    foreach (var key in ss.Keys)//    {//        this.signatures.Add(key, ss[key]);//    }//}
+        public async Task InitializeAsync()
+        {
+            var token = await this.sessionStorage.GetItem<string>("accessToken");
+            if (!String.IsNullOrWhiteSpace(token))
+            {
+                this.SetToken(token);
+            }
+            var ss = await this.sessionStorage.GetItem<Dictionary<string, StorageSignature>>("signatures");
+            if (ss != null && ss.Count > 0)
+            {
+                foreach (var key in ss.Keys)
+                {
+                    this.signatures.Add(key, ss[key]);
+                }
+            }
+        }
 
         public async Task<OperationResult<StorageSignature>> AquireSignatureAsync(StorageType type, string resource, string partitionKey, string rowKey)
         {
@@ -114,7 +133,7 @@ namespace Cod.Channel
             }
         }
 
-        public async Task<OperationResult> AquireTokenAsync(string username, string password)
+        public async Task<OperationResult> AquireTokenAsync(string username, string password, bool remember)
         {
             var apiUrl = await this.configuration.GetSettingAsync(Constants.KEY_API_URL);
             var creds = Encoding.ASCII.GetBytes($"{username.Trim()}:{password.Trim()}");
@@ -128,7 +147,10 @@ namespace Cod.Channel
                 if (header != null && header.Scheme == "Bearer")
                 {
                     this.SetToken(header.Parameter);
-                    //await this.sessionStorage.SetItem("accessToken", header.Parameter);
+                    if (remember)
+                    {
+                        await this.sessionStorage.SetItem("accessToken", header.Parameter);
+                    }
                     return OperationResult.Create();
                 }
 

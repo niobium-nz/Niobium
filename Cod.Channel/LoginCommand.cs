@@ -22,7 +22,7 @@ namespace Cod.Channel
             this.Commander.SetBusy(BusyGroups.Login);
             try
             {
-                await this.authenticator.AquireTokenAsync(parameter.Username, parameter.Password);
+                await this.authenticator.AquireTokenAsync(parameter.Username, parameter.Password, parameter.Remember);
                 var returnUrl = parameter.ReturnUrl;
                 if (String.IsNullOrEmpty(returnUrl))
                 {
