@@ -166,6 +166,20 @@ namespace Cod.Channel
             }
         }
 
+        public async Task<HttpRequestMessage> PrepareAuthenticationAsync(HttpRequestMessage request)
+        {
+            if (!this.IsAuthenticated())
+            {
+                await this.CleanupAsync();
+            }
+            else
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", this.Token.Token);
+            }
+
+            return request;
+        }
+
         private void SetToken(string token)
         {
             try
