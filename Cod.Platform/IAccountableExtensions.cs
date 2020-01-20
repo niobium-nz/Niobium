@@ -68,7 +68,7 @@ namespace Cod.Platform
             var pk = FROZEN_KEY;
             var rk = await accountable.GetAccountingPrincipalAsync();
             var currentValue = await accountable.CacheStore.GetAsync<double>(pk, rk);
-            var result = currentValue - amount;
+            var result = currentValue + amount;
             await accountable.CacheStore.SetAsync(pk, rk, result, false);
             return result;
         }
@@ -91,7 +91,7 @@ namespace Cod.Platform
             var pk = FROZEN_KEY;
             var rk = await accountable.GetAccountingPrincipalAsync();
             var currentValue = await accountable.CacheStore.GetAsync<double>(pk, rk);
-            var result = currentValue + amount;
+            var result = currentValue - amount;
             await accountable.CacheStore.SetAsync(pk, rk, result, false);
             return result;
         }
@@ -221,7 +221,7 @@ namespace Cod.Platform
             {
                 Total = balance,
                 Frozen = frozen,
-                Available = balance + frozen
+                Available = balance - frozen
             };
         }
 
