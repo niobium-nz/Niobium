@@ -60,7 +60,11 @@ namespace Cod.Platform
 
         public static async Task<double> FreezeAsync(this IAccountable accountable, double amount)
         {
-            amount = Math.Abs(amount.ChineseRound());
+            amount = amount.ChineseRound();
+            if (amount < 0)
+            {
+                throw new ArgumentException("金额不应为负值", nameof(amount));
+            }
             var pk = FROZEN_KEY;
             var rk = await accountable.GetAccountingPrincipalAsync();
             var currentValue = await accountable.CacheStore.GetAsync<double>(pk, rk);
@@ -78,7 +82,19 @@ namespace Cod.Platform
         }
 
         public static async Task<double> UnfreezeAsync(this IAccountable accountable, double amount)
-            => await FreezeAsync(accountable, -amount);
+        {
+            amount = amount.ChineseRound();
+            if (amount < 0)
+            {
+                throw new ArgumentException("金额不应为负值", nameof(amount));
+            }
+            var pk = FROZEN_KEY;
+            var rk = await accountable.GetAccountingPrincipalAsync();
+            var currentValue = await accountable.CacheStore.GetAsync<double>(pk, rk);
+            var result = currentValue + amount;
+            await accountable.CacheStore.SetAsync(pk, rk, result, false);
+            return result;
+        }
 
         public static async Task<double> GetDeltaAsync(this IAccountable accountable, DateTimeOffset input)
         {
