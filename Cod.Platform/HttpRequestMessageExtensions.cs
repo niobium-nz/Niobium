@@ -46,12 +46,15 @@ namespace Cod.Platform
         {
             identity = null;
             credential = null;
+            scheme = null;
+
             var auth = request.Headers.Authorization;
-            scheme = auth.Scheme.ToLower();
-            if (String.IsNullOrWhiteSpace(auth.Parameter))
+            if (auth == null || string.IsNullOrWhiteSpace(auth.Scheme) || String.IsNullOrWhiteSpace(auth.Parameter))
             {
                 return false;
             }
+
+            scheme = auth.Scheme.ToLower();
             var base64EncodedBytes = Convert.FromBase64String(auth.Parameter);
             var credentials = Encoding.UTF8.GetString(base64EncodedBytes).Split(':');
             identity = credentials[0];
