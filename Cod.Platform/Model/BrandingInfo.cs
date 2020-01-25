@@ -10,6 +10,8 @@
 
         public string QueueUri { get; set; }
 
+        public string ChannelInstallationUri { get; set; }
+
         public string WechatAppID { get; set; }
 
         public string WechatSecret { get; set; }
