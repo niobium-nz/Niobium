@@ -9,10 +9,10 @@ namespace Cod.Platform
     {
         Task<TDomain> GetAsync(string partitionKey, string rowKey);
 
+        Task<TDomain> GetAsync(TEntity entity);
+
         Task<IEnumerable<TDomain>> GetAsync(string partitionKey);
 
         Task<IEnumerable<TDomain>> GetAsync();
-
-        Task<TDomain> CreateAsync(TEntity entity);
     }
 }

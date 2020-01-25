@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Cod.Platform
@@ -55,7 +56,25 @@ namespace Cod.Platform
         protected async Task SaveEntityAsync()
             => await this.SaveEntityAsync(new[] { await this.GetEntityAsync() });
 
-        private async Task SaveEntityAsync(IEnumerable<T> model)
-            => await this.Repository.UpdateAsync(model);
+        protected async Task SaveEntityAsync(IEnumerable<T> model)
+        {
+            if (model == null)
+            {
+                return;
+            }
+
+            var groups = model.GroupBy(m => m.ETag == null);
+            foreach (var group in groups)
+            {
+                if (group.Key)
+                {
+                    await this.Repository.CreateAsync(model);
+                }
+                else
+                {
+                    await this.Repository.UpdateAsync(model);
+                }
+            }
+        }
     }
 }

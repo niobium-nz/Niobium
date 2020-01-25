@@ -12,12 +12,18 @@ namespace Cod.Platform.Model
 
         public string RowKey { get; set; }
 
+        public string ETag { get; set; }
+
+        public DateTimeOffset Timestamp { get; set; }
+
         public object Clone() => new QueueMessage
         {
             Body = this.Body,
             Delay = this.Delay,
             PartitionKey = this.PartitionKey,
             RowKey = this.RowKey,
+            ETag = this.ETag,
+            Timestamp = this.Timestamp,
         };
     }
 }

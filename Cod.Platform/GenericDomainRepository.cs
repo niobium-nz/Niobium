@@ -17,7 +17,7 @@ namespace Cod.Platform
             this.repository = repository;
         }
 
-        public Task<TDomain> CreateAsync(TEntity entity)
+        public Task<TDomain> GetAsync(TEntity entity)
         {
             var domain = this.createDomain();
             domain.Initialize(entity);
@@ -38,7 +38,7 @@ namespace Cod.Platform
 
             for (var i = 0; i < entities.Count; i++)
             {
-                result[i] = await this.CreateAsync(entities[i]);
+                result[i] = await this.GetAsync(entities[i]);
             }
 
             return result;
@@ -51,7 +51,7 @@ namespace Cod.Platform
 
             for (var i = 0; i < entities.Count; i++)
             {
-                result[i] = await this.CreateAsync(entities[i]);
+                result[i] = await this.GetAsync(entities[i]);
             }
 
             return result;

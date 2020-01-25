@@ -1,7 +1,11 @@
 ﻿namespace Cod
 {
-    public interface IDomain : IEntity
+    public interface IDomain
     {
+        string PartitionKey { get; }
+
+        string RowKey { get; }
+
         bool Initialized { get; }
     }
 

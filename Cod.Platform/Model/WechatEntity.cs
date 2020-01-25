@@ -10,6 +10,10 @@ namespace Cod.Platform.Model
 
         public string Value { get; set; }
 
+        public string ETag { get; set; }
+
+        public DateTimeOffset Timestamp { get; set; }
+
         public IConvertible GetCache() => this.RowKey == BuildAPITicketRowKey() ? this.Value : null;
 
         public static string BuildAPITicketPartitionKey(string appID) => appID.Trim();
