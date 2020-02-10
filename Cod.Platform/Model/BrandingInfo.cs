@@ -22,7 +22,7 @@
 
         public string WechatMerchantID { get; set; }
 
-        public string DeliveryNotificationTemplateID { get; set; }
+        public string WechatDeliveryNotificationTemplateID { get; set; }
 
         public string WechatMerchantSignature { get; set; }
 
