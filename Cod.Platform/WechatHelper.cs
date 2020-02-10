@@ -92,7 +92,7 @@ namespace Cod.Platform
             }
         }
 
-        public static async Task<OperationResult<string>> TemplateMessageAsync(string appId, string secret, string openId, string templateId, object data, string link)
+        public static async Task<OperationResult<string>> SendNotificationAsync(string appId, string secret, string openId, string templateId, object data, string link)
         {
             var token = await GetAccessToken(appId, secret);
             if (!token.IsSuccess)
@@ -111,20 +111,25 @@ namespace Cod.Platform
                     Touser = openId,
                     Url = link
                 };
-
-                var content = new StringContent(JsonConvert.SerializeObject(requestData, JsonSetting.UnderstoreCaseSetting));
-                var resp = await httpclient.PostAsync($"{wechatHost}/cgi-bin/message/template/send?{query.ToString()}", content);
-                var status = (int)resp.StatusCode;
-                var json = await resp.Content.ReadAsStringAsync();
-                if (status >= 200 && status < 400)
+                using (var content = new StringContent(JsonConvert.SerializeObject(requestData, JsonSetting.UnderstoreCaseSetting)))
                 {
-                    var result = JsonConvert.DeserializeObject<WechatTemplateMessageResponse>(json);
-                    if (result.Errcode != 0)
+                    var resp = await httpclient.PostAsync($"{wechatHost}/cgi-bin/message/template/send?{query.ToString()}", content);
+                    var status = (int)resp.StatusCode;
+                    var json = await resp.Content.ReadAsStringAsync();
+                    if (status >= 200 && status < 400)
                     {
-                        return OperationResult<string>.Create(result.Errcode, json, result.Errmsg);
+                        var result = JsonConvert.DeserializeObject<WechatTemplateMessageResponse>(json);
+                        if (result.ErrCode != 0)
+                        {
+                            return OperationResult<string>.Create(result.ErrCode, json, result.ErrMsg);
+                        }
+                        else
+                        {
+                            return OperationResult<string>.Create(OperationResult.SuccessCode, json);
+                        }
                     }
+                    return OperationResult<string>.Create(status, json);
                 }
-                return OperationResult<string>.Create(status, json);
             }
         }
         public static async Task<OperationResult<string>> GetOpenIDAsync(string appID, string secret, string code)

@@ -2,10 +2,10 @@
 {
     public class WechatTemplateMessageResponse
     {
-        public int Errcode { get; set; }
+        public int ErrCode { get; set; }
 
-        public string Errmsg { get; set; }
+        public string ErrMsg { get; set; }
 
-        public string Msgid { get; set; }
+        public string MsgID { get; set; }
     }
 }
