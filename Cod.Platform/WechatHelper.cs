@@ -92,7 +92,7 @@ namespace Cod.Platform
             }
         }
 
-        public static async Task<OperationResult<string>> SendNotificationAsync(string appId, string secret, string openId, string templateId, object data, string link)
+        public static async Task<OperationResult<string>> SendNotificationAsync(string appId, string secret, string openId, string templateId, WechatNotificationParameter parameters, string link)
         {
             var token = await GetAccessToken(appId, secret);
             if (!token.IsSuccess)
@@ -106,7 +106,7 @@ namespace Cod.Platform
                 query["access_token"] = token.Result;
                 var requestData = new WechatTemplateMessageRequest
                 {
-                    Data = data,
+                    Data = parameters.ToJson(),
                     TemplateId = templateId,
                     Touser = openId,
                     Url = link
