@@ -21,7 +21,7 @@ namespace Cod.Platform
                 sb.Append($"'keyword{index}':{{'value':'{item.Value}','color':'{item.Color}'}},");
                 index++;
             }
-            sb.Append($"{{'remark':{{'value':'{this.Remark.Value}','color':'{this.Remark.Color}'}},");
+            sb.Append($"'remark':{{'value':'{this.Remark.Value}','color':'{this.Remark.Color}'}}");
             return sb.ToString();
         }
     }
