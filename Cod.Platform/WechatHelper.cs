@@ -92,6 +92,41 @@ namespace Cod.Platform
             }
         }
 
+        public static async Task<OperationResult<string>> TemplateMessageAsync(string appId, string secret, string openId, string templateId, object data, string link)
+        {
+            var token = await GetAccessToken(appId, secret);
+            if (!token.IsSuccess)
+            {
+                return token;
+            }
+
+            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+            {
+                var query = HttpUtility.ParseQueryString(String.Empty);
+                query["access_token"] = token.Result;
+                var requestData = new WechatTemplateMessageRequest
+                {
+                    Data = data,
+                    TemplateId = templateId,
+                    Touser = openId,
+                    Url = link
+                };
+
+                var content = new StringContent(JsonConvert.SerializeObject(requestData, JsonSetting.UnderstoreCaseSetting));
+                var resp = await httpclient.PostAsync($"{wechatHost}/cgi-bin/message/template/send?{query.ToString()}", content);
+                var status = (int)resp.StatusCode;
+                var json = await resp.Content.ReadAsStringAsync();
+                if (status >= 200 && status < 400)
+                {
+                    var result = JsonConvert.DeserializeObject<WechatTemplateMessageResponse>(json);
+                    if (result.Errcode != 0)
+                    {
+                        return OperationResult<string>.Create(result.Errcode, json, result.Errmsg);
+                    }
+                }
+                return OperationResult<string>.Create(status, json);
+            }
+        }
         public static async Task<OperationResult<string>> GetOpenIDAsync(string appID, string secret, string code)
         {
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
@@ -245,5 +280,7 @@ namespace Cod.Platform
                 return sign;
             }
         }
+
+
     }
 }
