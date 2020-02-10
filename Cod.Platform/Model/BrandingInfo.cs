@@ -22,6 +22,8 @@
 
         public string WechatMerchantID { get; set; }
 
+        public string DeliveryNotificationTemplateID { get; set; }
+
         public string WechatMerchantSignature { get; set; }
 
         public string WechatMerchantNotifyUri { get; set; }
