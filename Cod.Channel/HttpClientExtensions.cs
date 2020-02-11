@@ -14,10 +14,9 @@ namespace Cod.Channel
            string uri,
            string bearerToken = null,
            object body = null)
-            where T : class
         {
             var result = await httpClient.RequestAsync(method, uri, bearerToken, body);
-            T obj = null;
+            T obj = default;
             if (result.IsSuccess)
             {
                 obj = JsonConvert.DeserializeObject<T>(result.Message);
