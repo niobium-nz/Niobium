@@ -8,7 +8,7 @@ namespace Cod.Channel
     {
         IReadOnlyCollection<TDomain> Data { get; }
 
-        Task<ContinuationToken> LoadAsync(string partitionKey, string rowKey);
+        Task<TDomain> LoadAsync(string partitionKey, string rowKey);
 
         Task<ContinuationToken> LoadAsync(string partitionKey, int count = -1);
 

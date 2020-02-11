@@ -9,26 +9,31 @@ namespace Cod.Channel
     public class GenericRepository<TDomain, TEntity> : IRepository<TDomain, TEntity>
         where TDomain : IChannelDomain<TEntity>
     {
-        private readonly List<TDomain> cache;
         private readonly IConfigurationProvider configuration;
         private readonly HttpClient httpClient;
         private readonly IAuthenticator authenticator;
         private readonly Func<TDomain> createDomain;
 
+        protected List<TDomain> Cache { get; private set; }
+
         public GenericRepository(IConfigurationProvider configuration, HttpClient httpClient,
             IAuthenticator authenticator, Func<TDomain> createDomain)
         {
-            this.cache = new List<TDomain>();
+            this.Cache = new List<TDomain>();
             this.configuration = configuration;
             this.httpClient = httpClient;
             this.authenticator = authenticator;
             this.createDomain = createDomain;
         }
 
-        public IReadOnlyCollection<TDomain> Data => this.cache;
+        public IReadOnlyCollection<TDomain> Data => this.Cache;
 
-        public async Task<ContinuationToken> LoadAsync(string partitionKey, string rowKey)
-            => await this.LoadAsync(partitionKey, partitionKey, rowKey, rowKey, 1);
+        public async Task<TDomain> LoadAsync(string partitionKey, string rowKey)
+        {
+            var result = await this.FetchAsync(partitionKey, partitionKey, rowKey, rowKey, 1);
+            var domainObjects = result.Data.Select(m => (TDomain)this.createDomain().Initialize(m));
+            return domainObjects.SingleOrDefault();
+        }
 
         public async Task<ContinuationToken> LoadAsync(string partitionKey, int count = -1)
             => await this.LoadAsync(partitionKey, partitionKey, null, null, count);
@@ -43,14 +48,14 @@ namespace Cod.Channel
         {
             var result = await this.FetchAsync(partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, count);
             var domainObjects = result.Data.Select(m => (TDomain)this.createDomain().Initialize(m));
-            this.cache.AddRange(domainObjects);
+            this.Cache.AddRange(domainObjects);
             return result.ContinuationToken;
         }
 
         public async Task<ContinuationToken> LoadAsync(int count = -1)
             => await this.LoadAsync(null, null, null, null, count);
 
-        private async Task<TableQueryResult<TEntity>> FetchAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int count)
+        protected virtual async Task<TableQueryResult<TEntity>> FetchAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int count)
         {
             string pk, rk;
             if (partitionKeyStart == null && partitionKeyEnd == null)

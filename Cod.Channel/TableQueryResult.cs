@@ -2,7 +2,7 @@
 
 namespace Cod.Channel
 {
-    internal class TableQueryResult<T>
+    public class TableQueryResult<T>
     {
         public List<T> Data { get; set; }
 

@@ -43,13 +43,13 @@ namespace Cod
         }
     }
 
-    public class OperationResult<T> : OperationResult where T : class
+    public class OperationResult<T> : OperationResult
     {
-        private OperationResult(int code) : base(code)
+        protected OperationResult(int code) : base(code)
         {
         }
 
-        private OperationResult(int code, T result) : this(code) => this.Result = result;
+        public OperationResult(int code, T result) : this(code) => this.Result = result;
 
         public T Result { get; set; }
 
