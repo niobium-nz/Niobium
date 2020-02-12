@@ -17,46 +17,52 @@ namespace Cod.Channel
             this.navigator = navigator;
         }
 
-        protected override async Task CoreExecuteAsync(LoginCommandParameter parameter)
+        protected override async Task<OperationResult> CoreExecuteAsync(LoginCommandParameter parameter)
         {
             this.Commander.SetBusy(BusyGroups.Login);
             try
             {
-                await this.authenticator.AquireTokenAsync(parameter.Username, parameter.Password, parameter.Remember);
-                var returnUrl = parameter.ReturnUrl;
-                if (String.IsNullOrEmpty(returnUrl))
+                var result = await this.authenticator.AquireTokenAsync(parameter.Username, parameter.Password, parameter.Remember);
+
+                if (result.IsSuccess)
                 {
-                    var queryGroups = new Dictionary<string, string>();
-                    var uri = this.navigator.CurrentUri;
-                    var index = uri.IndexOf('?');
-                    if (index >= 0 && uri.Length > index)
+                    var returnUrl = parameter.ReturnUrl;
+                    if (String.IsNullOrEmpty(returnUrl))
                     {
-                        var querystringLength = uri.Length - index - 1;
-                        if (querystringLength > 0)
+                        var queryGroups = new Dictionary<string, string>();
+                        var uri = this.navigator.CurrentUri;
+                        var index = uri.IndexOf('?');
+                        if (index >= 0 && uri.Length > index)
                         {
-                            var querystring = uri.Substring(index + 1, querystringLength);
-                            var queries = querystring.Split('&');
-                            foreach (var query in queries)
+                            var querystringLength = uri.Length - index - 1;
+                            if (querystringLength > 0)
                             {
-                                var parts = query.Split('=');
-                                if (parts.Length == 2)
+                                var querystring = uri.Substring(index + 1, querystringLength);
+                                var queries = querystring.Split('&');
+                                foreach (var query in queries)
                                 {
-                                    queryGroups.Add(parts[0], parts[1]);
+                                    var parts = query.Split('=');
+                                    if (parts.Length == 2)
+                                    {
+                                        queryGroups.Add(parts[0], parts[1]);
+                                    }
                                 }
                             }
                         }
+
+                        if (queryGroups.ContainsKey("returnUrl"))
+                        {
+                            returnUrl = queryGroups["returnUrl"];
+                        }
                     }
 
-                    if (queryGroups.ContainsKey("returnUrl"))
+                    if (!String.IsNullOrWhiteSpace(returnUrl))
                     {
-                        returnUrl = queryGroups["returnUrl"];
+                        this.navigator.NavigateTo(returnUrl);
                     }
                 }
 
-                if (!String.IsNullOrWhiteSpace(returnUrl))
-                {
-                    this.navigator.NavigateTo(returnUrl);
-                }
+                return result;
             }
             finally
             {

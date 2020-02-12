@@ -1,24 +1,28 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace Cod.Channel
 {
-    public class CommandExecutionEventArgs : EventArgs
+    public class CommandExecutionEventArgs : EventArgs, ICloneable
     {
-        public CommandExecutionEventArgs(CommandID id, string message, IEnumerable<object> args)
+        public CommandExecutionEventArgs(CommandID id, object parameter)
         {
             this.CommandID = id;
             this.ExecutionID = Guid.NewGuid();
-            this.Message = message;
-            this.Args = args;
+            this.Parameter = parameter;
         }
 
-        public CommandID CommandID { get; set; }
+        public CommandID CommandID { get; private set; }
 
         public Guid ExecutionID { get; private set; }
 
-        public string Message { get; }
+        public object Parameter { get; private set; }
 
-        public IEnumerable<object> Args { get; }
+        public OperationResult Result { get; set; }
+
+        public object Clone() => new CommandExecutionEventArgs(this.CommandID, this.Parameter)
+        {
+            ExecutionID = this.ExecutionID,
+            Result = this.Result,
+        };
     }
 }

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
@@ -10,13 +8,15 @@ namespace Cod.Channel
         {
             var args = this.BuildEventArgs();
             this.OnExecuting(this, args);
-            await this.CoreExecuteAsync();
-            this.OnExecuted(this, args);
+            var result = await this.CoreExecuteAsync();
+            var executedArgs = (CommandExecutionEventArgs)args.Clone();
+            executedArgs.Result = result; 
+            this.OnExecuted(this, executedArgs);
         }
 
-        protected abstract Task CoreExecuteAsync();
+        protected abstract Task<OperationResult> CoreExecuteAsync();
 
-        protected virtual CommandExecutionEventArgs BuildEventArgs() => new CommandExecutionEventArgs(this.ID, String.Empty, Enumerable.Empty<object>());
+        protected virtual CommandExecutionEventArgs BuildEventArgs() => new CommandExecutionEventArgs(this.ID, null);
     }
 
     public abstract class GenericCommand<T> : BaseCommand, ICommand
@@ -27,13 +27,15 @@ namespace Cod.Channel
             {
                 var args = this.BuildEventArgs(p);
                 this.OnExecuting(this, args);
-                await this.CoreExecuteAsync(p);
-                this.OnExecuted(this, args);
+                var result = await this.CoreExecuteAsync(p);
+                var executedArgs = (CommandExecutionEventArgs)args.Clone();
+                executedArgs.Result = result;
+                this.OnExecuted(this, executedArgs);
             }
         }
 
-        protected abstract Task CoreExecuteAsync(T parameter);
+        protected abstract Task<OperationResult> CoreExecuteAsync(T parameter);
 
-        protected virtual CommandExecutionEventArgs BuildEventArgs(T parameter) => new CommandExecutionEventArgs(this.ID, String.Empty, Enumerable.Empty<object>());
+        protected virtual CommandExecutionEventArgs BuildEventArgs(T parameter) => new CommandExecutionEventArgs(this.ID, parameter);
     }
 }
