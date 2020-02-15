@@ -29,22 +29,30 @@ namespace Cod.Channel
 
         public IReadOnlyCollection<TDomain> Data => this.cache;
 
-        public async Task<TDomain> LoadAsync(string partitionKey, string rowKey, bool force = false)
+        public async Task<OperationResult<TDomain>> LoadAsync(string partitionKey, string rowKey, bool force = false)
         {
-            await this.LoadAsync(partitionKey, partitionKey, rowKey, rowKey, 1, force);
-            return this.Data.SingleOrDefault(c => c.PartitionKey == partitionKey && c.RowKey == rowKey);
+            var result = await this.LoadAsync(partitionKey, partitionKey, rowKey, rowKey, 1, force);
+            if (result.IsSuccess)
+            {
+                return OperationResult<TDomain>.Create(this.Data.SingleOrDefault(c => c.PartitionKey == partitionKey && c.RowKey == rowKey));
+            }
+            return new OperationResult<TDomain>(result.Code, default)
+            {
+                Message = result.Message,
+                Reference = result.Reference
+            };
         }
 
-        public async Task<ContinuationToken> LoadAsync(string partitionKey, int count = -1, bool force = false)
+        public async Task<OperationResult<ContinuationToken>> LoadAsync(string partitionKey, int count = -1, bool force = false)
             => await this.LoadAsync(partitionKey, partitionKey, null, null, count, force);
 
-        public async Task<ContinuationToken> LoadAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, int count = -1, bool force = false)
+        public async Task<OperationResult<ContinuationToken>> LoadAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, int count = -1, bool force = false)
             => await this.LoadAsync(partitionKey, partitionKey, rowKeyStart, rowKeyEnd, count, force);
 
-        public async Task<ContinuationToken> LoadAsync(string partitionKeyStart, string partitionKeyEnd, int count = -1, bool force = false)
+        public async Task<OperationResult<ContinuationToken>> LoadAsync(string partitionKeyStart, string partitionKeyEnd, int count = -1, bool force = false)
             => await this.LoadAsync(partitionKeyStart, partitionKeyEnd, null, null, count, force);
 
-        public async Task<ContinuationToken> LoadAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int count = -1, bool force = false)
+        public async Task<OperationResult<ContinuationToken>> LoadAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int count = -1, bool force = false)
         {
             ContinuationToken result;
             var key = new TableStorageFetchKey
@@ -59,12 +67,23 @@ namespace Cod.Channel
             if (force || !fetchHistory.ContainsKey(key))
             {
                 var response = await this.FetchAsync(partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, count);
-                result = response.ContinuationToken;
-                this.fetchHistory.Add(key, result);
-                if (response.Data.Count > 0)
+                if (response.IsSuccess)
                 {
-                    var domainObjects = response.Data.Select(m => (TDomain)this.createDomain().Initialize(m));
-                    this.AddToCache(domainObjects);
+                    result = response.Result.ContinuationToken;
+                    this.fetchHistory.Add(key, result);
+                    if (response.Result.Data.Count > 0)
+                    {
+                        var domainObjects = response.Result.Data.Select(m => (TDomain)this.createDomain().Initialize(m));
+                        this.AddToCache(domainObjects);
+                    }
+                }
+                else
+                {
+                    return new OperationResult<ContinuationToken>(response.Code, null)
+                    {
+                        Message = response.Message,
+                        Reference = response.Reference,
+                    };
                 }
             }
             else if (fetchHistory.ContainsKey(key))
@@ -76,13 +95,13 @@ namespace Cod.Channel
                 throw new NotImplementedException("TODO");
             }
 
-            return result;
+            return OperationResult<ContinuationToken>.Create(result);
         }
 
-        public async Task<ContinuationToken> LoadAsync(int count = -1, bool force = false)
+        public async Task<OperationResult<ContinuationToken>> LoadAsync(int count = -1, bool force = false)
             => await this.LoadAsync(null, null, null, null, count, force);
 
-        protected virtual async Task<TableQueryResult<TEntity>> FetchAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int count)
+        protected virtual async Task<OperationResult<TableQueryResult<TEntity>>> FetchAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int count)
         {
             string pk, rk;
             if (partitionKeyStart == null && partitionKeyEnd == null)
@@ -124,9 +143,10 @@ namespace Cod.Channel
             var signature = await this.authenticator.AquireSignatureAsync(StorageType.Table, typeof(TEntity).Name, pk, rk);
             if (!signature.IsSuccess)
             {
-                return new TableQueryResult<TEntity>
+                return new OperationResult<TableQueryResult<TEntity>>(signature.Code, null)
                 {
-                    Data = new List<TEntity>(),
+                    Message = signature.Message,
+                    Reference = signature.Reference,
                 };
             }
 

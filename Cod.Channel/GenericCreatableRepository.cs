@@ -25,7 +25,13 @@ namespace Cod.Channel
             if (result.IsSuccess)
             {
                 var keys = result.Result;
-                newEntity = await this.LoadAsync(keys.PartitionKey, keys.RowKey, true);
+                var loadResult = await this.LoadAsync(keys.PartitionKey, keys.RowKey, true);
+                if (!loadResult.IsSuccess)
+                {
+                    return loadResult;
+                }
+
+                newEntity = loadResult.Result;
                 if (newEntity != null)
                 {
                     this.AddToCache(newEntity);

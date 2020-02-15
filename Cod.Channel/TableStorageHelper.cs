@@ -20,7 +20,7 @@ namespace Cod.Channel
             { "Accept", "application/json;odata=nometadata" },
         };
 
-        public static async Task<TableQueryResult<T>> GetAsync<T>(HttpClient httpClient,
+        public static async Task<OperationResult<TableQueryResult<T>>> GetAsync<T>(HttpClient httpClient,
             string baseUrl, string connectionString,
             string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd,
             ContinuationToken continuationToken = null, int count = -1)
@@ -120,6 +120,8 @@ namespace Cod.Channel
             {
                 Data = new List<T>(),
             };
+            var statusCode = 0;
+            string upstreamErrorMessage = null;
             while (true)
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, url.ToString());
@@ -142,7 +144,8 @@ namespace Cod.Channel
                 }
 
                 var response = await httpClient.SendAsync(request);
-                var statusCode = (int)response.StatusCode;
+                var responseBody = await response.Content.ReadAsStringAsync();
+                statusCode = (int)response.StatusCode;
                 if (statusCode >= 200 && statusCode < 300)
                 {
                     string nextPK = null, nextRK = null;
@@ -164,8 +167,7 @@ namespace Cod.Channel
                         };
                     }
 
-                    var json = await response.Content.ReadAsStringAsync();
-                    var objs = JsonConvert.DeserializeObject<TableStorageResult<T>>(json);
+                    var objs = JsonConvert.DeserializeObject<TableStorageResult<T>>(responseBody);
                     if (objs.Value.Count > 0)
                     {
                         result.Data.AddRange(objs.Value);
@@ -181,9 +183,13 @@ namespace Cod.Channel
                         break;
                     }
                 }
+                else
+                {
+                    return OperationResult<TableQueryResult<T>>.Create(statusCode, upstreamErrorMessage);
+                }
             }
 
-            return result;
+            return OperationResult<TableQueryResult<T>>.Create(result);
         }
     }
 }
