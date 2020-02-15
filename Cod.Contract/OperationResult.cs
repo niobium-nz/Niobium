@@ -31,7 +31,10 @@ namespace Cod
             }
             if (description != null)
             {
-                msg.Append(":");
+                if (msg.Length > 0)
+                {
+                    msg.Append(":");
+                }
                 msg.Append(description);
             }
             msg.Append(" 错误代码:");
