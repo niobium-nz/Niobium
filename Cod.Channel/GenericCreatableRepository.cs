@@ -28,7 +28,7 @@ namespace Cod.Channel
                 newEntity = await this.LoadAsync(keys.PartitionKey, keys.RowKey);
                 if (newEntity != null)
                 {
-                    this.Cache.Add(newEntity);
+                    this.AddToCache(newEntity);
                 }
                 else
                 {

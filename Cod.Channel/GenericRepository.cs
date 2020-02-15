@@ -13,26 +13,27 @@ namespace Cod.Channel
         private readonly HttpClient httpClient;
         private readonly IAuthenticator authenticator;
         private readonly Func<TDomain> createDomain;
-
-        protected List<TDomain> Cache { get; private set; }
+        private readonly List<TDomain> cache;
 
         public GenericRepository(IConfigurationProvider configuration, HttpClient httpClient,
             IAuthenticator authenticator, Func<TDomain> createDomain)
         {
-            this.Cache = new List<TDomain>();
+            this.cache = new List<TDomain>();
             this.configuration = configuration;
             this.httpClient = httpClient;
             this.authenticator = authenticator;
             this.createDomain = createDomain;
         }
 
-        public IReadOnlyCollection<TDomain> Data => this.Cache;
+        public IReadOnlyCollection<TDomain> Data => this.cache;
 
         public async Task<TDomain> LoadAsync(string partitionKey, string rowKey)
         {
             var result = await this.FetchAsync(partitionKey, partitionKey, rowKey, rowKey, 1);
             var domainObjects = result.Data.Select(m => (TDomain)this.createDomain().Initialize(m));
-            return domainObjects.SingleOrDefault();
+            var domainObject = domainObjects.SingleOrDefault();
+            this.AddToCache(domainObject);
+            return domainObject;
         }
 
         public async Task<ContinuationToken> LoadAsync(string partitionKey, int count = -1)
@@ -48,7 +49,7 @@ namespace Cod.Channel
         {
             var result = await this.FetchAsync(partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, count);
             var domainObjects = result.Data.Select(m => (TDomain)this.createDomain().Initialize(m));
-            this.Cache.AddRange(domainObjects);
+            this.AddToCache(domainObjects);
             return result.ContinuationToken;
         }
 
@@ -107,5 +108,12 @@ namespace Cod.Channel
             return await TableStorageHelper.GetAsync<TEntity>(this.httpClient, baseUrl, signature.Result.Signature, partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, null, count);
         }
 
+        protected virtual void AddToCache(TDomain domainObject) => AddToCache(new[] { domainObject });
+
+        protected virtual void AddToCache(IEnumerable<TDomain> domainObjects)
+        {
+            this.cache.RemoveAll(c => domainObjects.Any(dobj => dobj.PartitionKey == c.PartitionKey && dobj.RowKey == c.RowKey));
+            this.cache.AddRange(domainObjects);
+        }
     }
 }
