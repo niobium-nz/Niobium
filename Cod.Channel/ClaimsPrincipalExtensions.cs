@@ -5,7 +5,7 @@ using System.Linq;
 using System.Security.Claims;
 using Newtonsoft.Json;
 
-namespace Cod.Platform
+namespace Cod.Channel
 {
     public static class ClaimsPrincipalExtensions
     {

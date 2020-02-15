@@ -73,14 +73,14 @@ namespace Cod.Platform
             };
             if (!String.IsNullOrWhiteSpace(contact))
             {
-                claims.Add(new Claim(ClaimsPrincipalExtensions.ACCOUNT_CONTACT, contact.Trim()));
+                claims.Add(new Claim(Claims.ACCOUNT_CONTACT, contact.Trim()));
                 claims.Add(new Claim(ClaimTypes.MobilePhone, contact.Trim()));
             }
 
             if (!String.IsNullOrWhiteSpace(openIDProvider) && !String.IsNullOrWhiteSpace(openIDApp))
             {
-                claims.Add(new Claim(ClaimsPrincipalExtensions.OPENID_PROVIDER, openIDProvider.Trim()));
-                claims.Add(new Claim(ClaimsPrincipalExtensions.OPENID_APP, openIDApp.Trim()));
+                claims.Add(new Claim(Claims.OPENID_PROVIDER, openIDProvider.Trim()));
+                claims.Add(new Claim(Claims.OPENID_APP, openIDApp.Trim()));
             }
 
             if (entitlements != null)
