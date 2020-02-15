@@ -37,8 +37,12 @@ namespace Cod
                 }
                 msg.Append(description);
             }
-            msg.Append(" 错误代码:");
-            msg.Append(code.ToString());
+
+            if (code != SuccessCode)
+            {
+                msg.Append(" 错误代码:");
+                msg.Append(code.ToString());
+            }
             return new OperationResult(code)
             {
                 Message = msg.ToString()
