@@ -93,7 +93,7 @@ namespace Cod.Channel
 
             if (count > 0)
             {
-                countPath = $"&$top=${count}";
+                countPath = $"&$top={count}";
             }
 
             var resource = typeof(T).Name;
