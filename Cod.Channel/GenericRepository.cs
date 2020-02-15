@@ -14,10 +14,12 @@ namespace Cod.Channel
         private readonly IAuthenticator authenticator;
         private readonly Func<TDomain> createDomain;
         private readonly List<TDomain> cache;
+        private readonly Dictionary<TableStorageFetchKey, ContinuationToken> fetchHistory;
 
         public GenericRepository(IConfigurationProvider configuration, HttpClient httpClient,
             IAuthenticator authenticator, Func<TDomain> createDomain)
         {
+            this.fetchHistory = new Dictionary<TableStorageFetchKey, ContinuationToken>();
             this.cache = new List<TDomain>();
             this.configuration = configuration;
             this.httpClient = httpClient;
@@ -27,34 +29,58 @@ namespace Cod.Channel
 
         public IReadOnlyCollection<TDomain> Data => this.cache;
 
-        public async Task<TDomain> LoadAsync(string partitionKey, string rowKey)
+        public async Task<TDomain> LoadAsync(string partitionKey, string rowKey, bool force = false)
         {
-            var result = await this.FetchAsync(partitionKey, partitionKey, rowKey, rowKey, 1);
-            var domainObjects = result.Data.Select(m => (TDomain)this.createDomain().Initialize(m));
-            var domainObject = domainObjects.SingleOrDefault();
-            this.AddToCache(domainObject);
-            return domainObject;
+            await this.LoadAsync(partitionKey, partitionKey, rowKey, rowKey, 1, force);
+            return this.Data.SingleOrDefault(c => c.PartitionKey == partitionKey && c.RowKey == rowKey);
         }
 
-        public async Task<ContinuationToken> LoadAsync(string partitionKey, int count = -1)
-            => await this.LoadAsync(partitionKey, partitionKey, null, null, count);
+        public async Task<ContinuationToken> LoadAsync(string partitionKey, int count = -1, bool force = false)
+            => await this.LoadAsync(partitionKey, partitionKey, null, null, count, force);
 
-        public async Task<ContinuationToken> LoadAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, int count = -1)
-            => await this.LoadAsync(partitionKey, partitionKey, rowKeyStart, rowKeyEnd, count);
+        public async Task<ContinuationToken> LoadAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, int count = -1, bool force = false)
+            => await this.LoadAsync(partitionKey, partitionKey, rowKeyStart, rowKeyEnd, count, force);
 
-        public async Task<ContinuationToken> LoadAsync(string partitionKeyStart, string partitionKeyEnd, int count = -1)
-            => await this.LoadAsync(partitionKeyStart, partitionKeyEnd, null, null, count);
+        public async Task<ContinuationToken> LoadAsync(string partitionKeyStart, string partitionKeyEnd, int count = -1, bool force = false)
+            => await this.LoadAsync(partitionKeyStart, partitionKeyEnd, null, null, count, force);
 
-        public async Task<ContinuationToken> LoadAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int count = -1)
+        public async Task<ContinuationToken> LoadAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int count = -1, bool force = false)
         {
-            var result = await this.FetchAsync(partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, count);
-            var domainObjects = result.Data.Select(m => (TDomain)this.createDomain().Initialize(m));
-            this.AddToCache(domainObjects);
-            return result.ContinuationToken;
+            ContinuationToken result;
+            var key = new TableStorageFetchKey
+            {
+                Count = count,
+                PartitionKeyEnd = partitionKeyEnd,
+                PartitionKeyStart = partitionKeyStart,
+                RowKeyEnd = rowKeyEnd,
+                RowKeyStart = rowKeyStart,
+            };
+
+            if (force || !fetchHistory.ContainsKey(key))
+            {
+                var response = await this.FetchAsync(partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, count);
+                result = response.ContinuationToken;
+                this.fetchHistory.Add(key, result);
+                if (response.Data.Count > 0)
+                {
+                    var domainObjects = response.Data.Select(m => (TDomain)this.createDomain().Initialize(m));
+                    this.AddToCache(domainObjects);
+                }
+            }
+            else if (fetchHistory.ContainsKey(key))
+            {
+                result = fetchHistory[key];
+            }
+            else
+            {
+                throw new NotImplementedException("TODO");
+            }
+
+            return result;
         }
 
-        public async Task<ContinuationToken> LoadAsync(int count = -1)
-            => await this.LoadAsync(null, null, null, null, count);
+        public async Task<ContinuationToken> LoadAsync(int count = -1, bool force = false)
+            => await this.LoadAsync(null, null, null, null, count, force);
 
         protected virtual async Task<TableQueryResult<TEntity>> FetchAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int count)
         {
@@ -114,6 +140,38 @@ namespace Cod.Channel
         {
             this.cache.RemoveAll(c => domainObjects.Any(dobj => dobj.PartitionKey == c.PartitionKey && dobj.RowKey == c.RowKey));
             this.cache.AddRange(domainObjects);
+        }
+
+        protected struct TableStorageFetchKey : IEquatable<TableStorageFetchKey>
+        {
+            public string PartitionKeyStart { get; set; }
+
+            public string PartitionKeyEnd { get; set; }
+
+            public string RowKeyStart { get; set; }
+
+            public string RowKeyEnd { get; set; }
+
+            public int Count { get; set; }
+
+            public override bool Equals(object obj) => obj is TableStorageFetchKey key && this.Equals(key);
+
+            public bool Equals(TableStorageFetchKey other) => this.PartitionKeyStart == other.PartitionKeyStart && this.PartitionKeyEnd == other.PartitionKeyEnd && this.RowKeyStart == other.RowKeyStart && this.RowKeyEnd == other.RowKeyEnd && this.Count == other.Count;
+
+            public override int GetHashCode()
+            {
+                var hashCode = -1203710578;
+                hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(this.PartitionKeyStart);
+                hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(this.PartitionKeyEnd);
+                hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(this.RowKeyStart);
+                hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(this.RowKeyEnd);
+                hashCode = hashCode * -1521134295 + this.Count.GetHashCode();
+                return hashCode;
+            }
+
+            public static bool operator ==(TableStorageFetchKey left, TableStorageFetchKey right) => left.Equals(right);
+
+            public static bool operator !=(TableStorageFetchKey left, TableStorageFetchKey right) => !(left == right);
         }
     }
 }
