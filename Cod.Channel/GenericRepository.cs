@@ -70,7 +70,11 @@ namespace Cod.Channel
                 if (response.IsSuccess)
                 {
                     result = response.Result.ContinuationToken;
-                    this.fetchHistory.Add(key, result);
+                    if (!this.fetchHistory.ContainsKey(key))
+                    {
+                        this.fetchHistory.Add(key, result);
+                    }
+                    
                     if (response.Result.Data.Count > 0)
                     {
                         var domainObjects = response.Result.Data.Select(m => (TDomain)this.createDomain().Initialize(m));
