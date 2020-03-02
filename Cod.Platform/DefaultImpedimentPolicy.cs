@@ -29,12 +29,25 @@ namespace Cod.Platform
         {
             if (await this.SupportAsync(context))
             {
-                await this.repository.Value.CreateAsync(new Impediment
+                var pk = Impediment.BuildPartitionKey(context.Entity.GetImpedementID(), context.Category);
+                var rk = Impediment.BuildRowKey(context.Cause);
+
+                var existing = await this.repository.Value.GetAsync(pk, rk);
+                if (existing == null)
                 {
-                    PartitionKey = Impediment.BuildPartitionKey(context.Entity.GetImpedementID(), context.Category),
-                    RowKey = Impediment.BuildRowKey(context.Cause),
-                    Policy = context.PolicyInput,
-                }, true);
+                    await this.repository.Value.CreateAsync(new Impediment
+                    {
+                        PartitionKey = pk,
+                        RowKey = rk,
+                        Policy = context.PolicyInput,
+                    }, true);
+                }
+                else if (!existing.Policy.Contains(context.PolicyInput))
+                {
+                    existing.Policy += $",{context.PolicyInput}";
+                    await this.repository.Value.UpdateAsync(existing);
+                }
+
                 return true;
             }
             return false;
@@ -49,11 +62,21 @@ namespace Cod.Platform
                 var existing = await this.repository.Value.GetAsync(Impediment.BuildPartitionKey(context.Entity.GetImpedementID(), context.Category), Impediment.BuildRowKey(context.Cause));
                 if (existing != null)
                 {
-                    if (existing.Policy == context.PolicyInput)
+                    var policies = existing.Policy.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                    if (policies.Contains(context.PolicyInput))
                     {
-                        await this.repository.Value.DeleteAsync(existing);
-                        return true;
+                        policies.Remove(context.PolicyInput);
+                        if (policies.Count == 0)
+                        {
+                            await this.repository.Value.DeleteAsync(existing);
+                        }
+                        else
+                        {
+                            existing.Policy = string.Join(",", policies);
+                            await this.repository.Value.UpdateAsync(existing);
+                        }
                     }
+                    return true;
                 }
             }
             return false;
