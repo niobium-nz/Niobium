@@ -66,6 +66,14 @@ namespace Cod.Platform
                 {
                     if (cache.InMemory)
                     {
+                        if (this.memoryCache.ContainsKey(memkey))
+                        {
+                            this.memoryCache.Remove(memkey);
+                        }
+                        if (this.memoryCacheExpiry.ContainsKey(memkey))
+                        {
+                            this.memoryCacheExpiry.Remove(memkey);
+                        }
                         this.memoryCache.Add(memkey, cache.Value);
                         this.memoryCacheExpiry.Add(memkey, cache.Expiry);
                     }
