@@ -28,9 +28,12 @@ namespace Cod.Platform
         protected virtual async Task<bool> HasPermission(ClaimsPrincipal principal, string partition)
         {
             var owner = this.GetOwnerID(principal);
-            var ownership = await CloudStorage.GetTable<TOwnership>().RetrieveAsync<TOwnership>(owner, partition);
+            var ownership = await RetrieveAsync(owner, partition);
             return ownership != null;
         }
+
+        protected async virtual Task<TOwnership> RetrieveAsync(string partitionKey, string rowKey)
+            => await CloudStorage.GetTable<TOwnership>().RetrieveAsync<TOwnership>(partitionKey, rowKey);
 
         protected virtual string GetOwnerID(ClaimsPrincipal principal) => principal.GetClaim<string>(ClaimTypes.NameIdentifier);
     }
