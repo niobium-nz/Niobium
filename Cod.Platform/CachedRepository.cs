@@ -57,11 +57,14 @@ namespace Cod.Platform
                 return result;
             }
             var result2 = await this.tableRepository.GetAsync(partitionKey, rowKey);
-            var cv = result2.GetCache();
-            if (cv != null)
+            if (result2 != null)
             {
-                await this.cache.SetAsync(result2.PartitionKey, result2.RowKey, cv.ToString(),
-                    this.memoryCached, result2.GetExpiry(DateTimeOffset.UtcNow));
+                var cv = result2.GetCache();
+                if (cv != null)
+                {
+                    await this.cache.SetAsync(result2.PartitionKey, result2.RowKey, cv.ToString(),
+                        this.memoryCached, result2.GetExpiry(DateTimeOffset.UtcNow));
+                }
             }
             return result2;
         }
