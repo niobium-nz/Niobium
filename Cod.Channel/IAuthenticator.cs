@@ -8,7 +8,7 @@ namespace Cod.Channel
     {
         AccessToken Token { get; }
 
-        Task<IReadOnlyDictionary<string, string>> GetClaimsAsync();
+        Task<OperationResult<IReadOnlyDictionary<string, string>>> GetClaimsAsync();
 
         Task<OperationResult> AquireTokenAsync(string username, string password, bool remember);
 

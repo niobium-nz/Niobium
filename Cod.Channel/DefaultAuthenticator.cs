@@ -22,13 +22,14 @@ namespace Cod.Channel
 
         public event EventHandler AuthenticationRequired;
 
-        public async Task<IReadOnlyDictionary<string, string>> GetClaimsAsync()
+        public async Task<OperationResult<IReadOnlyDictionary<string, string>>> GetClaimsAsync()
         {
             if (!this.IsAuthenticated())
             {
                 await this.CleanupAsync();
+                return OperationResult<IReadOnlyDictionary<string, string>>.Create(InternalError.AuthenticationRequired, null);
             }
-            return this.claims;
+            return OperationResult<IReadOnlyDictionary<string, string>>.Create(this.claims);
         }
 
         public AccessToken Token { get; private set; }
@@ -206,11 +207,11 @@ namespace Cod.Channel
             this.Token = null;
             this.claims.Clear();
             this.signatures.Clear();
+            await this.SaveSignaturesAsync();
             foreach (var eventHandler in this.eventHandlers)
             {
                 await eventHandler.InvokeAsync(this);
             }
-            await this.SaveSignaturesAsync();
         }
 
         private Task SaveSignaturesAsync() => Task.CompletedTask;// await this.sessionStorage.SetItem("signatures", this.signatures);

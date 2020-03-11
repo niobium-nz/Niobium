@@ -50,6 +50,21 @@ namespace Cod
             return openID.Trim();
         }
 
+        public static string BuildFullID(OpenIDProvider provider, string appID, string openID)
+        {
+            if (appID is null)
+            {
+                throw new ArgumentNullException(nameof(appID));
+            }
+
+            if (openID is null)
+            {
+                throw new ArgumentNullException(nameof(openID));
+            }
+
+            return BuildFullID(BuildPartitionKey(provider, appID), BuildRowKey(openID));
+        }
+
         public static string BuildFullID(string partitionKey, string rowKey)
         {
             if (partitionKey is null)
