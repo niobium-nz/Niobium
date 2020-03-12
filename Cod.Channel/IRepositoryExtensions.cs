@@ -10,6 +10,6 @@ namespace Cod.Channel
             int count = -1,
             bool force = false)
             where TDomain : IChannelDomain<TEntity>
-            => await repository.LoadAsync(partitionKeyPrefix, $"{partitionKeyPrefix}z", count, force);
+            => await repository.LoadAsync(partitionKeyPrefix, $"{partitionKeyPrefix}~", count, force);
     }
 }

@@ -119,9 +119,9 @@ namespace Cod.Channel
             else if (partitionKeyStart != null && partitionKeyEnd != null && partitionKeyStart != partitionKeyEnd)
             {
                 if (partitionKeyStart == partitionKeyEnd.Substring(0, partitionKeyEnd.Length - 1)
-                    && partitionKeyEnd.EndsWith("z"))
+                    && partitionKeyEnd.EndsWith("~"))
                 {
-                    pk = $"{partitionKeyStart}*";
+                    pk = partitionKeyEnd;
                 }
                 else
                 {
