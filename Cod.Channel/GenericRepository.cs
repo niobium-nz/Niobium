@@ -118,7 +118,15 @@ namespace Cod.Channel
             }
             else if (partitionKeyStart != null && partitionKeyEnd != null && partitionKeyStart != partitionKeyEnd)
             {
-                throw new NotImplementedException("TODO: querying on partition key range has not yet implemented.");
+                if (partitionKeyStart == partitionKeyEnd.Substring(0, partitionKeyEnd.Length - 1)
+                    && partitionKeyEnd.EndsWith("z"))
+                {
+                    pk = $"{partitionKeyStart}*";
+                }
+                else
+                {
+                    throw new NotImplementedException("TODO: querying on special partition key range has not yet implemented.");
+                }
             }
             else
             {
