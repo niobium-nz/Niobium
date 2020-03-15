@@ -75,6 +75,15 @@ namespace Cod.Platform
                     await this.Repository.UpdateAsync(model);
                 }
             }
+
+            if (this.Initialized)
+            {
+                var c = model.SingleOrDefault(m => m.PartitionKey == this.PartitionKey && m.RowKey == this.rowKey);
+                if (c != null)
+                {
+                    this.cache = c;
+                }
+            }
         }
     }
 }
