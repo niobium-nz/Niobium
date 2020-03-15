@@ -100,6 +100,16 @@ namespace Cod
             return partitionKey.Trim().Split('|')[1];
         }
 
+        public static string ParseOpenID(string fullID)
+        {
+            if (fullID is null)
+            {
+                throw new ArgumentNullException(nameof(fullID));
+            }
+
+            return fullID.Trim().Split('|')[2];
+        }
+
         public static void ParseFromFullID(string fullID, out OpenIDProvider provider, out string appID, out string openID)
         {
             if (fullID is null)
