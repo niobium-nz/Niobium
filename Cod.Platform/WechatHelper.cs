@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
@@ -16,6 +18,9 @@ namespace Cod.Platform
     {
         private static string wechatHost;
         private static string wechatPayHost;
+        private static readonly Dictionary<string, DateTimeOffset> tokenCacheTime = new Dictionary<string, DateTimeOffset>();
+        private static readonly Dictionary<string, string> tokenCache = new Dictionary<string, string>();
+        private static readonly TimeSpan tokenCacheExpiry = TimeSpan.FromHours(1);
 
         public static void Initialize(string wechatReverseProxy, string wechatPayReverseProxy)
         {
@@ -31,6 +36,79 @@ namespace Cod.Platform
 
             wechatHost = wechatReverseProxy;
             wechatPayHost = wechatPayReverseProxy;
+        }
+
+        public static async Task<OperationResult<string>> UploadAsync(string appId, string secret, WechatUploadKind kind, Stream input)
+        {
+            var token = await GetAccessToken(appId, secret);
+            if (!token.IsSuccess)
+            {
+                return token;
+            }
+
+            string path;
+            switch (kind)
+            {
+                case WechatUploadKind.Code:
+                    path = "cv/img/qrcode";
+                    break;
+                case WechatUploadKind.OCR:
+                    path = "cv/ocr/comm";
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+
+            var buff = new byte[512];
+            var hash = Guid.NewGuid().ToString("N").Substring(0, 16).ToLowerInvariant();
+            var request = (HttpWebRequest)WebRequest.Create($"{wechatHost}/{path}?access_token={token}");
+            request.Method = "POST";
+            request.ContentType = $"multipart/form-data; boundary=------------------------{hash}";
+            using (var requestStream = request.GetRequestStream())
+            {
+                using (var requestWriter = new StreamWriter(requestStream))
+                {
+                    var sb = new StringBuilder();
+                    sb.Append($"--------------------------{hash}\r\n");
+                    sb.Append($"Content-Disposition: form-data; name=\"img\"; filename=\"{hash}.jpg\"\r\n");
+                    sb.Append("Content-Type: image/jpeg\r\n");
+                    sb.Append("\r\n");
+                    await requestWriter.WriteAsync(sb.ToString());
+                }
+
+                if (input.CanSeek)
+                {
+                    input.Seek(0, SeekOrigin.Begin);
+                }
+
+                while (true)
+                {
+                    var read = await input.ReadAsync(buff, 0, buff.Length);
+                    if (read <= 0)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        await requestStream.WriteAsync(buff, 0, read);
+                    }
+                }
+
+                using (var requestWriter = new StreamWriter(requestStream))
+                {
+                    await requestWriter.WriteAsync($"\r\n--------------------------{hash}--\r\n");
+                }
+            }
+
+            var response = (HttpWebResponse)request.GetResponse();
+            using (var responseStream = response.GetResponseStream())
+            {
+                using (var sr = new StreamReader(responseStream))
+                {
+                    var s = await sr.ReadToEndAsync();
+                    return OperationResult<string>.Create(s);
+                }
+            }
         }
 
         public static async Task<OperationResult<string>> GetJSApiTicket(string appID, string secret)
@@ -67,6 +145,21 @@ namespace Cod.Platform
 
         private static async Task<OperationResult<string>> GetAccessToken(string appID, string secret)
         {
+            if (tokenCache.ContainsKey(appID) && tokenCacheTime.ContainsKey(appID) && DateTimeOffset.UtcNow - tokenCacheTime[appID] < tokenCacheExpiry)
+            {
+                return OperationResult<string>.Create(tokenCache[appID]);
+            }
+
+            if (tokenCache.ContainsKey(appID))
+            {
+                tokenCache.Remove(appID);
+            }
+
+            if (tokenCacheTime.ContainsKey(appID))
+            {
+                tokenCacheTime.Remove(appID);
+            }
+
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
             {
                 var query = HttpUtility.ParseQueryString(String.Empty);
@@ -81,6 +174,8 @@ namespace Cod.Platform
                     var result = JsonConvert.DeserializeObject<TokenResult>(json, JsonSetting.UnderstoreCaseSetting);
                     if (!String.IsNullOrWhiteSpace(result.AccessToken))
                     {
+                        tokenCache.Add(appID, result.AccessToken);
+                        tokenCacheTime.Add(appID, DateTimeOffset.UtcNow);
                         return OperationResult<string>.Create(result.AccessToken);
                     }
                     else
