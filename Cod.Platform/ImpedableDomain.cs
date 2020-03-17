@@ -97,7 +97,17 @@ namespace Cod.Platform
                     Entity = await this.GetEntityAsync(),
                 };
 
-                existsLockers.AddRange(await policy.GetImpedimentsAsync(context));
+                if (await policy.SupportAsync(context))
+                {
+                    var impediments = await policy.GetImpedimentsAsync(context);
+                    foreach (var item in impediments)
+                    {
+                        if (!existsLockers.Any(e => e.RowKey == item.RowKey && e.PartitionKey == item.PartitionKey))
+                        {
+                            existsLockers.Add(item);
+                        }
+                    }
+                }
             }
             return existsLockers;
         }
