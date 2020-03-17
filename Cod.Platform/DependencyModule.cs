@@ -40,6 +40,7 @@ namespace Cod.Platform
             builder.RegisterType<CloudTableRepository<Impediment>>().AsImplementedInterfaces();
             builder.RegisterType<ImpedimentControl>().AsImplementedInterfaces();
             builder.RegisterType<ImpedementPolicyScanProvider>().AsImplementedInterfaces();
+            builder.RegisterType<CloudBlobRepository>().AsImplementedInterfaces();
             base.Load(builder);
         }
     }
