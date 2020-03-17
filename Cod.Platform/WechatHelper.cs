@@ -61,7 +61,7 @@ namespace Cod.Platform
 
             var buff = new byte[512];
             var hash = Guid.NewGuid().ToString("N").Substring(0, 16).ToLowerInvariant();
-            var request = (HttpWebRequest)WebRequest.Create($"{wechatHost}/{path}?access_token={token}");
+            var request = (HttpWebRequest)WebRequest.Create($"{wechatHost}/{path}?access_token={token.Result}");
             request.Method = "POST";
             request.ContentType = $"multipart/form-data; boundary=------------------------{hash}";
             using (var requestStream = request.GetRequestStream())
@@ -106,7 +106,11 @@ namespace Cod.Platform
                 using (var sr = new StreamReader(responseStream))
                 {
                     var s = await sr.ReadToEndAsync();
-                    return OperationResult<string>.Create(s);
+                    if (s.Contains("\"errcode\":0,"))
+                    {
+                        return OperationResult<string>.Create(s);
+                    }
+                    return OperationResult<string>.Create(InternalError.InternalServerError, s);
                 }
             }
         }
