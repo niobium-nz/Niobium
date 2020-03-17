@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 
 namespace Cod.Platform
 {
@@ -74,7 +75,17 @@ namespace Cod.Platform
             return await this.GetImpedimentsAsync(category);
         }
 
-        private async Task<IReadOnlyList<Impediment>> GetImpedimentsAsync(string category = null)
+        public async Task<Impediment> GetImpedimentAsync(string category, int cause)
+        {
+            if (category is null)
+            {
+                throw new ArgumentNullException(nameof(category));
+            }
+            var impediments = await this.GetImpedimentsAsync(category, cause);
+            return impediments.SingleOrDefault();
+        }
+
+        private async Task<IReadOnlyList<Impediment>> GetImpedimentsAsync(string category = null, int cause = 0)
         {
             var existsLockers = new List<Impediment>();
             foreach (var policy in this.policies.Value)
@@ -82,6 +93,7 @@ namespace Cod.Platform
                 var context = new IImpedimentContext<T>()
                 {
                     Category = category,
+                    Cause = cause,
                     Entity = await this.GetEntityAsync(),
                 };
 
