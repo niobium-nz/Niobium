@@ -20,6 +20,12 @@ namespace Cod.Platform
                 var filter = TableQuery.GenerateFilterCondition(nameof(Impediment.PartitionKey),
                     QueryComparisons.Equal, Impediment.BuildPartitionKey(context.Entity.GetImpedementID(), context.Category));
 
+                if (context.Cause != 0)
+                {
+                    filter = TableQuery.CombineFilters(filter, TableOperators.And, TableQuery.GenerateFilterCondition(nameof(Impediment.RowKey),
+                    QueryComparisons.Equal, Impediment.BuildRowKey(context.Cause)));
+                }
+
                 return await table.WhereAsync<Impediment>(filter);
             }
             return Enumerable.Empty<Impediment>();
