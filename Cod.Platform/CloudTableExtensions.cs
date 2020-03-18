@@ -227,7 +227,25 @@ namespace Cod.Platform
                         }
                     }
                 }
-                if (batchOperation.Count > 0)
+                if (batchOperation.Count == 1)
+                {
+                    var singleOperation = batchOperation.Single();
+                    try
+                    {
+                        await table.ExecuteAsync(singleOperation);
+                    }
+                    catch (StorageException e)
+                    {
+                        var ri = e.RequestInformation;
+                        var logger = Logger.Instance;
+                        if (ri != null && logger != null)
+                        {
+                            logger.LogError($"An Error occurred with status code {ri.HttpStatusCode} while making changes to storage: {ri.HttpStatusMessage}");
+                        }
+                        throw;
+                    }
+                }
+                else if (batchOperation.Count > 0)
                 {
                     try
                     {
