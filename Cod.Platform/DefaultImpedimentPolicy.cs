@@ -68,18 +68,25 @@ namespace Cod.Platform
                 var existing = await this.repository.Value.GetAsync(Impediment.BuildPartitionKey(context.Entity.GetImpedementID(), context.Category), Impediment.BuildRowKey(context.Cause));
                 if (existing != null)
                 {
-                    var policies = existing.Policy.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries).ToList();
-                    if (policies.Contains(context.PolicyInput))
+                    if (existing.Policy == context.PolicyInput)
                     {
-                        policies.Remove(context.PolicyInput);
-                        if (policies.Count == 0)
+                        await this.repository.Value.DeleteAsync(existing);
+                    }
+                    else
+                    {
+                        var policies = existing.Policy.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                        if (policies.Contains(context.PolicyInput))
                         {
-                            await this.repository.Value.DeleteAsync(existing);
-                        }
-                        else
-                        {
-                            existing.Policy = string.Join(",", policies);
-                            await this.repository.Value.UpdateAsync(existing);
+                            policies.Remove(context.PolicyInput);
+                            if (policies.Count == 0)
+                            {
+                                await this.repository.Value.DeleteAsync(existing);
+                            }
+                            else
+                            {
+                                existing.Policy = string.Join(",", policies);
+                                await this.repository.Value.UpdateAsync(existing);
+                            }
                         }
                     }
                     return true;
