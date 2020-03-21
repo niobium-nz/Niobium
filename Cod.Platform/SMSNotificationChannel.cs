@@ -5,8 +5,6 @@ namespace Cod.Platform
 {
     public abstract class SMSNotificationChannel : INotificationChannel
     {
-        public const int Level = 1;
-
         public async Task<OperationResult> SendAsync(
             string brand,
             OpenIDProvider provider,
@@ -16,7 +14,7 @@ namespace Cod.Platform
             IReadOnlyDictionary<string, string> parameters,
             int level = 0)
         {
-            if (level != Level)
+            if (level != NotificationLevels.SMS)
             {
                 return OperationResult.Create(InternalError.NotAllowed);
             }

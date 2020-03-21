@@ -42,10 +42,10 @@ namespace Cod.Platform
                 }
                 else
                 {
-                    return await this.service.Value.SendAsync(brand, provider, appID, openID, template, parameters, ++level);
+                    break;
                 }
             }
-            throw new NotSupportedException();
+            return await this.service.Value.SendAsync(brand, provider, appID, openID, template, parameters, ++level);
         }
     }
 }
