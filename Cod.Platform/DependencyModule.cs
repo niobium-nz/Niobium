@@ -41,6 +41,8 @@ namespace Cod.Platform
             builder.RegisterType<ImpedimentControl>().AsImplementedInterfaces();
             builder.RegisterType<ImpedementPolicyScanProvider>().AsImplementedInterfaces();
             builder.RegisterType<CloudBlobRepository>().AsImplementedInterfaces();
+            builder.RegisterType<NotificationService>().AsImplementedInterfaces();
+            builder.RegisterType<AliyunRegistrationSMSNotificationChannel>().AsImplementedInterfaces();
             base.Load(builder);
         }
     }

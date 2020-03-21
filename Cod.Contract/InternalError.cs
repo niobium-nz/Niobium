@@ -8,10 +8,11 @@ namespace Cod
         public const int Success = 0;
 
         public const int BadRequest = 400;
-        public const int PaymentRequired = 402;
         public const int AuthenticationRequired = 401;
+        public const int PaymentRequired = 402;
         public const int Forbidden = 403;
         public const int NotFound = 404;
+        public const int NotAllowed = 405;
         public const int NotAcceptable = 406;
         public const int RequestTimeout = 408;
         public const int Conflict = 409;
@@ -39,6 +40,7 @@ namespace Cod
             { AuthenticationRequired, "需要登录认证" },
             { Forbidden, "权限不足" },
             { NotFound, "资源不存在" },
+            { NotAllowed, "请求不被允许" },
             { NotAcceptable, "请求不被接受" },
             { RequestTimeout, "请求超时" },
             { Conflict, "发生冲突" },
