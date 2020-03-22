@@ -12,6 +12,7 @@ namespace Cod.Platform
             string openID,
             int template,
             IReadOnlyDictionary<string, string> parameters,
-            int level = 0);
+            int startLevel = 0,
+            int maxLevel = 10);
     }
 }
