@@ -6,7 +6,6 @@ namespace Cod.Platform
     public abstract class SMSNotificationChannel : INotificationChannel
     {
         public async Task<OperationResult> SendAsync(
-            string brand,
             OpenIDProvider provider,
             string appID,
             string openID,
@@ -25,12 +24,11 @@ namespace Cod.Platform
             }
 
             return await this.SendSMSAsync(parameters[NotificationParameters.Mobile],
-                brand, provider, appID, openID, template, parameters);
+                provider, appID, openID, template, parameters);
         }
 
         protected abstract Task<OperationResult> SendSMSAsync(
             string mobile,
-            string brand,
             OpenIDProvider provider,
             string appID,
             string openID,

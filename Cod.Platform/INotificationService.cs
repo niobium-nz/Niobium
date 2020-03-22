@@ -6,7 +6,6 @@ namespace Cod.Platform
     public interface INotificationService
     {
         Task<OperationResult> SendAsync(
-            string brand,
             OpenIDProvider provider,
             string appID,
             string openID,
