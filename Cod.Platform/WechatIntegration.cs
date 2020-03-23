@@ -70,7 +70,7 @@ namespace Cod.Platform
             var path = GetOCRPath(kind);
             var query = HttpUtility.ParseQueryString(String.Empty);
             query["access_token"] = token.Result;
-            query["img_url"] = $"{wechatHost}/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}";
+            query["img_url"] = $"http://api.weixin.qq.com/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}";
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
             {
                 var resp = await httpclient.GetAsync($"{wechatHost}/{path}?{query.ToString()}");
