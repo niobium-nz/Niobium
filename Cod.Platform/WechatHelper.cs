@@ -18,27 +18,45 @@ namespace Cod.Platform
     {
         private static string wechatHost;
         private static string wechatPayHost;
-        private static readonly Dictionary<string, DateTimeOffset> tokenCacheTime = new Dictionary<string, DateTimeOffset>();
-        private static readonly Dictionary<string, string> tokenCache = new Dictionary<string, string>();
-        private static readonly TimeSpan tokenCacheExpiry = TimeSpan.FromHours(1);
+        private static Func<string, Task<string>> getAccessTokenCache;
+        private static Func<string, string, DateTimeOffset, Task> setAccessTokenCache;
 
-        public static void Initialize(string wechatReverseProxy, string wechatPayReverseProxy)
+        public static void Initialize(string wechatReverseProxy, string wechatPayReverseProxy,
+            Func<string, Task<string>> getAccessTokenCacheFunc, Func<string, string, DateTimeOffset, Task> setAccessTokenCacheFunc)
         {
-            if (String.IsNullOrWhiteSpace(wechatReverseProxy))
-            {
-                throw new ArgumentException("message", nameof(wechatReverseProxy));
-            }
-
-            if (String.IsNullOrWhiteSpace(wechatPayReverseProxy))
-            {
-                throw new ArgumentException("message", nameof(wechatPayReverseProxy));
-            }
-
-            wechatHost = wechatReverseProxy;
-            wechatPayHost = wechatPayReverseProxy;
+            getAccessTokenCache = getAccessTokenCacheFunc;
+            setAccessTokenCache = setAccessTokenCacheFunc;
+            wechatHost = wechatReverseProxy ?? throw new ArgumentNullException(nameof(wechatReverseProxy));
+            wechatPayHost = wechatPayReverseProxy ?? throw new ArgumentNullException(nameof(wechatPayReverseProxy));
         }
 
-        public static async Task<OperationResult<string>> UploadAsync(string appId, string secret, WechatUploadKind kind, Stream input)
+        public static async Task<OperationResult<Stream>> GetMediaAsync(string appId, string secret, string mediaID)
+        {
+            var token = await GetAccessToken(appId, secret);
+            if (!token.IsSuccess)
+            {
+                return OperationResult<Stream>.Create(token.Code, reference: token.Reference);
+            }
+
+            var url = $"{wechatHost}/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}";
+            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+            {
+                var resp = await httpclient.GetAsync(url);
+                var status = (int)resp.StatusCode;
+                if (status >= 200 && status < 400)
+                {
+                    using (var s = await resp.Content.ReadAsStreamAsync())
+                    {
+                        var ms = new MemoryStream();
+                        await s.CopyToAsync(ms);
+                        return OperationResult<Stream>.Create(ms);
+                    }
+                }
+                return OperationResult<Stream>.Create(status, null);
+            }
+        }
+
+        public static async Task<OperationResult<string>> PerformOCRAsync(string appId, string secret, WechatUploadKind kind, string mediaID)
         {
             var token = await GetAccessToken(appId, secret);
             if (!token.IsSuccess)
@@ -46,19 +64,36 @@ namespace Cod.Platform
                 return token;
             }
 
-            string path;
-            switch (kind)
+            var path = GetOCRPath(kind);
+            var query = HttpUtility.ParseQueryString(String.Empty);
+            query["access_token"] = token.Result;
+            query["img_url"] = $"{wechatHost}/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}";
+            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
             {
-                case WechatUploadKind.Code:
-                    path = "cv/img/qrcode";
-                    break;
-                case WechatUploadKind.OCR:
-                    path = "cv/ocr/comm";
-                    break;
-                default:
-                    throw new NotImplementedException();
+                var resp = await httpclient.GetAsync($"{wechatHost}/{path}?{query.ToString()}");
+                var status = (int)resp.StatusCode;
+                var json = await resp.Content.ReadAsStringAsync();
+                if (status >= 200 && status < 400)
+                {
+                    if (json.Contains("\"errcode\":0,"))
+                    {
+                        return OperationResult<string>.Create(json);
+                    }
+                    return OperationResult<string>.Create(InternalError.InternalServerError, json);
+                }
+                return OperationResult<string>.Create(status, json);
+            }
+        }
+
+        public static async Task<OperationResult<string>> PerformOCRAsync(string appId, string secret, WechatUploadKind kind, Stream input)
+        {
+            var token = await GetAccessToken(appId, secret);
+            if (!token.IsSuccess)
+            {
+                return token;
             }
 
+            var path = GetOCRPath(kind);
             var buff = new byte[512];
             var hash = Guid.NewGuid().ToString("N").Substring(0, 16).ToLowerInvariant();
             var request = (HttpWebRequest)WebRequest.Create($"{wechatHost}/{path}?access_token={token.Result}");
@@ -149,19 +184,13 @@ namespace Cod.Platform
 
         private static async Task<OperationResult<string>> GetAccessToken(string appID, string secret)
         {
-            if (tokenCache.ContainsKey(appID) && tokenCacheTime.ContainsKey(appID) && DateTimeOffset.UtcNow - tokenCacheTime[appID] < tokenCacheExpiry)
+            if (getAccessTokenCache != null)
             {
-                return OperationResult<string>.Create(tokenCache[appID]);
-            }
-
-            if (tokenCache.ContainsKey(appID))
-            {
-                tokenCache.Remove(appID);
-            }
-
-            if (tokenCacheTime.ContainsKey(appID))
-            {
-                tokenCacheTime.Remove(appID);
+                var token = await getAccessTokenCache(appID);
+                if (!String.IsNullOrWhiteSpace(token))
+                {
+                    return OperationResult<string>.Create(token);
+                }
             }
 
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
@@ -178,8 +207,10 @@ namespace Cod.Platform
                     var result = JsonConvert.DeserializeObject<TokenResult>(json, JsonSetting.UnderstoreCaseSetting);
                     if (!String.IsNullOrWhiteSpace(result.AccessToken))
                     {
-                        tokenCache.Add(appID, result.AccessToken);
-                        tokenCacheTime.Add(appID, DateTimeOffset.UtcNow);
+                        if (setAccessTokenCache != null)
+                        {
+                            await setAccessTokenCache(appID, result.AccessToken, DateTimeOffset.UtcNow);
+                        }
                         return OperationResult<string>.Create(result.AccessToken);
                     }
                     else
@@ -385,6 +416,17 @@ namespace Cod.Platform
             }
         }
 
-
+        private static string GetOCRPath(WechatUploadKind kind)
+        {
+            switch (kind)
+            {
+                case WechatUploadKind.Code:
+                    return "cv/img/qrcode";
+                case WechatUploadKind.OCR:
+                    return "cv/ocr/comm";
+                default:
+                    throw new NotImplementedException();
+            }
+        }
     }
 }

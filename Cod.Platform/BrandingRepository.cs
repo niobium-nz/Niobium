@@ -9,7 +9,7 @@ namespace Cod.Platform
 {
     internal class BrandingRepository : IRepository<BrandingInfo>
     {
-        private static readonly string[] keys = new[] { "DEVELOP", "BEICHAO", "NIAOJU" };
+        private static readonly string[] keys = new[] { Brands.Develop, "BEICHAO", "NIAOJU" };
         private static Dictionary<string, BrandingInfo> cache;
 
         private readonly Lazy<IConfigurationProvider> configuration;

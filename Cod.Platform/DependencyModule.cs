@@ -1,4 +1,6 @@
-﻿using Autofac;
+﻿using System;
+using System.Threading.Tasks;
+using Autofac;
 using Cod.Platform.Model;
 using Microsoft.Extensions.Logging;
 
@@ -8,17 +10,22 @@ namespace Cod.Platform
     {
         private readonly string wechatReverseProxy;
         private readonly string wechatPayReverseProxy;
+        private readonly Func<string, Task<string>> getAccessTokenCacheFunc;
+        private readonly Func<string, string, DateTimeOffset, Task> setAccessTokenCacheFunc;
 
-        public DependencyModule(string wechatReverseProxy, string wechatPayReverseProxy)
+        public DependencyModule(string wechatReverseProxy, string wechatPayReverseProxy,
+            Func<string, Task<string>> getAccessTokenCacheFunc = null, Func<string, string, DateTimeOffset, Task> setAccessTokenCacheFunc = null)
         {
             this.wechatReverseProxy = wechatReverseProxy;
             this.wechatPayReverseProxy = wechatPayReverseProxy;
+            this.getAccessTokenCacheFunc = getAccessTokenCacheFunc;
+            this.setAccessTokenCacheFunc = setAccessTokenCacheFunc;
         }
 
         protected override void Load(ContainerBuilder builder)
         {
             builder.Register(_ => Logger.Instance).As<ILogger>();
-            WechatHelper.Initialize(this.wechatReverseProxy, this.wechatPayReverseProxy);
+            WechatHelper.Initialize(this.wechatReverseProxy, this.wechatPayReverseProxy, this.getAccessTokenCacheFunc, this.setAccessTokenCacheFunc);
 
             builder.RegisterType<CloudTableRepository<Model.Account>>().As<IRepository<Model.Account>>();
             builder.RegisterType<CloudTableRepository<Model.Accounting>>().As<IRepository<Model.Accounting>>();
