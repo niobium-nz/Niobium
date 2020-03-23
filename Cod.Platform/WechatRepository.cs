@@ -9,12 +9,15 @@ namespace Cod.Platform
     internal class WechatRepository : IRepository<WechatEntity>
     {
         private readonly Lazy<IRepository<BrandingInfo>> repository;
+        private readonly Lazy<WechatIntegration> wechatIntegration;
         private readonly ILogger logger;
 
         public WechatRepository(Lazy<IRepository<BrandingInfo>> repository,
+            Lazy<WechatIntegration> wechatIntegration,
             ILogger logger)
         {
             this.repository = repository;
+            this.wechatIntegration = wechatIntegration;
             this.logger = logger;
         }
 
@@ -37,7 +40,7 @@ namespace Cod.Platform
             }
             if (feature == WechatEntity.BuildAPITicketRowKey())
             {
-                var result = await WechatHelper.GetJSApiTicket(appID, branding.WechatSecret);
+                var result = await this.wechatIntegration.Value.GetJSApiTicket(appID, branding.WechatSecret);
                 if (!result.IsSuccess)
                 {
                     this.logger.LogError($"获取微信JSAPI令牌失败: {result.Message} 参考: {result.Reference}");
@@ -56,7 +59,7 @@ namespace Cod.Platform
             }
             else
             {
-                var result = await WechatHelper.GetOpenIDAsync(appID, branding.WechatSecret, feature);
+                var result = await this.wechatIntegration.Value.GetOpenIDAsync(appID, branding.WechatSecret, feature);
                 if (!result.IsSuccess)
                 {
                     this.logger.LogError($"获取微信OpenID失败: {result.Message} 参考: {result.Reference}");

@@ -14,23 +14,26 @@ using Newtonsoft.Json;
 
 namespace Cod.Platform
 {
-    public static class WechatHelper
+    public class WechatIntegration
     {
+        private const string AccessTokenCacheKey = "AccessToken";
+        private static readonly TimeSpan AccessTokenCacheExpiry = TimeSpan.FromHours(1);
         private static string wechatHost;
         private static string wechatPayHost;
-        private static Func<string, Task<string>> getAccessTokenCache;
-        private static Func<string, string, DateTimeOffset, Task> setAccessTokenCache;
+        private readonly Lazy<ICacheStore> cacheStore;
 
-        public static void Initialize(string wechatReverseProxy, string wechatPayReverseProxy,
-            Func<string, Task<string>> getAccessTokenCacheFunc, Func<string, string, DateTimeOffset, Task> setAccessTokenCacheFunc)
+        public WechatIntegration(Lazy<ICacheStore> cacheStore)
         {
-            getAccessTokenCache = getAccessTokenCacheFunc;
-            setAccessTokenCache = setAccessTokenCacheFunc;
+            this.cacheStore = cacheStore;
+        }
+
+        public static void Initialize(string wechatReverseProxy, string wechatPayReverseProxy)
+        {
             wechatHost = wechatReverseProxy ?? throw new ArgumentNullException(nameof(wechatReverseProxy));
             wechatPayHost = wechatPayReverseProxy ?? throw new ArgumentNullException(nameof(wechatPayReverseProxy));
         }
 
-        public static async Task<OperationResult<Stream>> GetMediaAsync(string appId, string secret, string mediaID)
+        public async Task<OperationResult<Stream>> GetMediaAsync(string appId, string secret, string mediaID)
         {
             var token = await GetAccessToken(appId, secret);
             if (!token.IsSuccess)
@@ -56,7 +59,7 @@ namespace Cod.Platform
             }
         }
 
-        public static async Task<OperationResult<string>> PerformOCRAsync(string appId, string secret, WechatUploadKind kind, string mediaID)
+        public async Task<OperationResult<string>> PerformOCRAsync(string appId, string secret, WechatUploadKind kind, string mediaID)
         {
             var token = await GetAccessToken(appId, secret);
             if (!token.IsSuccess)
@@ -85,7 +88,7 @@ namespace Cod.Platform
             }
         }
 
-        public static async Task<OperationResult<string>> PerformOCRAsync(string appId, string secret, WechatUploadKind kind, Stream input)
+        public async Task<OperationResult<string>> PerformOCRAsync(string appId, string secret, WechatUploadKind kind, Stream input)
         {
             var token = await GetAccessToken(appId, secret);
             if (!token.IsSuccess)
@@ -150,7 +153,7 @@ namespace Cod.Platform
             }
         }
 
-        public static async Task<OperationResult<string>> GetJSApiTicket(string appID, string secret)
+        public async Task<OperationResult<string>> GetJSApiTicket(string appID, string secret)
         {
             var token = await GetAccessToken(appID, secret);
             if (!token.IsSuccess)
@@ -182,15 +185,12 @@ namespace Cod.Platform
             }
         }
 
-        private static async Task<OperationResult<string>> GetAccessToken(string appID, string secret)
+        private async Task<OperationResult<string>> GetAccessToken(string appID, string secret)
         {
-            if (getAccessTokenCache != null)
+            var token = await cacheStore.Value.GetAsync<string>(appID, AccessTokenCacheKey);
+            if (!String.IsNullOrWhiteSpace(token))
             {
-                var token = await getAccessTokenCache(appID);
-                if (!String.IsNullOrWhiteSpace(token))
-                {
-                    return OperationResult<string>.Create(token);
-                }
+                return OperationResult<string>.Create(token);
             }
 
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
@@ -207,10 +207,7 @@ namespace Cod.Platform
                     var result = JsonConvert.DeserializeObject<TokenResult>(json, JsonSetting.UnderstoreCaseSetting);
                     if (!String.IsNullOrWhiteSpace(result.AccessToken))
                     {
-                        if (setAccessTokenCache != null)
-                        {
-                            await setAccessTokenCache(appID, result.AccessToken, DateTimeOffset.UtcNow);
-                        }
+                        await cacheStore.Value.SetAsync(appID, AccessTokenCacheKey, result.AccessToken, true, DateTimeOffset.UtcNow.Add(AccessTokenCacheExpiry));
                         return OperationResult<string>.Create(result.AccessToken);
                     }
                     else
@@ -222,7 +219,7 @@ namespace Cod.Platform
             }
         }
 
-        public static async Task<OperationResult<string>> SendNotificationAsync(string appId, string secret, string openId, string templateId, WechatNotificationParameter parameters, string link)
+        public async Task<OperationResult<string>> SendNotificationAsync(string appId, string secret, string openId, string templateId, WechatNotificationParameter parameters, string link)
         {
             var token = await GetAccessToken(appId, secret);
             if (!token.IsSuccess)
@@ -262,7 +259,7 @@ namespace Cod.Platform
                 }
             }
         }
-        public static async Task<OperationResult<string>> GetOpenIDAsync(string appID, string secret, string code)
+        public async Task<OperationResult<string>> GetOpenIDAsync(string appID, string secret, string code)
         {
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
             {
@@ -290,7 +287,7 @@ namespace Cod.Platform
             }
         }
 
-        public static async Task<OperationResult<string>> JSAPIPay(string account, int amount, string appID, string device, string order, string product, string attach, string ip,
+        public async Task<OperationResult<string>> JSAPIPay(string account, int amount, string appID, string device, string order, string product, string attach, string ip,
                     string wechatMerchantID, string wechatMerchantNotifyUri, string wechatMerchantSignature)
         {
             var nonceStr = Guid.NewGuid().ToString("N").ToUpperInvariant();
@@ -310,7 +307,7 @@ namespace Cod.Platform
                 { "trade_type", "JSAPI" },
                 { "attach", attach }
             };
-            var sign = param.MD5Sign(wechatMerchantSignature);
+            var sign = MD5Sign(param, wechatMerchantSignature);
             param.Add("sign", sign);
 
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
@@ -333,7 +330,7 @@ namespace Cod.Platform
             }
         }
 
-        public static Dictionary<string, object> GetJSAPIPaySignature(string prepayID, string appID, string wechatMerchantSignature)
+        public Dictionary<string, object> GetJSAPIPaySignature(string prepayID, string appID, string wechatMerchantSignature)
         {
             var nonceStr = Guid.NewGuid().ToString("N").ToUpperInvariant();
             var timeStamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -346,32 +343,12 @@ namespace Cod.Platform
                     { "package", package },
                     { "signType", "MD5" }
                 };
-            var signature = resultParam.MD5Sign(wechatMerchantSignature);
+            var signature = MD5Sign(resultParam, wechatMerchantSignature);
             resultParam.Add("paySign", signature);
             return resultParam;
         }
 
-        private static string GetXML(Dictionary<string, object> source)
-        {
-            var xml = new StringBuilder();
-            xml.Append("<xml>");
-            foreach (var pair in source)
-            {
-                //字段值不能为null，会影响后续流程
-                if (pair.Value.GetType() == typeof(int))
-                {
-                    xml.Append("<" + pair.Key + ">" + pair.Value + "</" + pair.Key + ">");
-                }
-                else if (pair.Value.GetType() == typeof(string))
-                {
-                    xml.Append("<" + pair.Key + ">" + "<![CDATA[" + pair.Value + "]]></" + pair.Key + ">");
-                }
-            }
-            xml.Append("</xml>");
-            return xml.ToString();
-        }
-
-        public static Dictionary<string, string> FromXML(string xml)
+        internal static Dictionary<string, string> FromXML(string xml)
         {
             var xmlDoc = new XmlDocument() { XmlResolver = null };
             xmlDoc.LoadXml(xml);
@@ -386,13 +363,13 @@ namespace Cod.Platform
             return result;
         }
 
-        public static string MD5Sign(this Dictionary<string, object> param, string signKey)
+        internal static string MD5Sign(Dictionary<string, object> param, string signKey)
         {
             var sorted = param.Select(kv => new KeyValuePair<string, string>(kv.Key, kv.Value.ToString())).OrderBy(p => p.Key);
-            return sorted.MD5Sign(signKey);
+            return MD5Sign(sorted, signKey);
         }
 
-        public static string MD5Sign(this IOrderedEnumerable<KeyValuePair<string, string>> items, string signKey)
+        internal static string MD5Sign(IOrderedEnumerable<KeyValuePair<string, string>> items, string signKey)
         {
             var tosign = "";
             foreach (var item in items)
@@ -414,6 +391,26 @@ namespace Cod.Platform
                 var sign = sb.ToString().ToUpper();
                 return sign;
             }
+        }
+
+        private static string GetXML(Dictionary<string, object> source)
+        {
+            var xml = new StringBuilder();
+            xml.Append("<xml>");
+            foreach (var pair in source)
+            {
+                //字段值不能为null，会影响后续流程
+                if (pair.Value.GetType() == typeof(int))
+                {
+                    xml.Append("<" + pair.Key + ">" + pair.Value + "</" + pair.Key + ">");
+                }
+                else if (pair.Value.GetType() == typeof(string))
+                {
+                    xml.Append("<" + pair.Key + ">" + "<![CDATA[" + pair.Value + "]]></" + pair.Key + ">");
+                }
+            }
+            xml.Append("</xml>");
+            return xml.ToString();
         }
 
         private static string GetOCRPath(WechatUploadKind kind)

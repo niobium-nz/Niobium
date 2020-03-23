@@ -11,14 +11,17 @@ namespace Cod.Platform
     {
         private readonly Lazy<IRepository<BrandingInfo>> brandingRepository;
         private readonly Lazy<IConfigurationProvider> configuration;
+        private readonly Lazy<WechatIntegration> wechatIntegration;
         private readonly ILogger logger;
 
         public ChargeRepository(Lazy<IRepository<BrandingInfo>> brandingRepository,
             Lazy<IConfigurationProvider> configuration,
+            Lazy<WechatIntegration> wechatIntegration,
             ILogger logger)
         {
             this.brandingRepository = brandingRepository;
             this.configuration = configuration;
+            this.wechatIntegration = wechatIntegration;
             this.logger = logger;
         }
 
@@ -34,7 +37,7 @@ namespace Cod.Platform
                     var key = await this.configuration.Value.GetSettingAsync("CHARGE_SECRET");
                     var toSign = $"{charge.AppID}|{charge.Account}|{charge.Amount}";
                     var internalSignature = SHA.SHA256Hash(toSign, key, 127);
-                    var prepayid = await WechatHelper.JSAPIPay(charge.Account,
+                    var prepayid = await this.wechatIntegration.Value.JSAPIPay(charge.Account,
                         charge.Amount,
                         charge.AppID,
                         charge.Device,
@@ -51,7 +54,7 @@ namespace Cod.Platform
                         continue;
                     }
 
-                    var paySignature = WechatHelper.GetJSAPIPaySignature(prepayid.Result, charge.AppID, branding.WechatMerchantSignature);
+                    var paySignature = this.wechatIntegration.Value.GetJSAPIPaySignature(prepayid.Result, charge.AppID, branding.WechatMerchantSignature);
                     charge.Params = paySignature;
                     charges.Add(charge);
                 }

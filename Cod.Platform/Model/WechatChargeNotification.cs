@@ -22,7 +22,7 @@ namespace Cod.Platform.Model
 
         protected override void ParseContent(string content)
         {
-            var param = WechatHelper.FromXML(content);
+            var param = WechatIntegration.FromXML(content);
             this.Reference = param["transaction_id"];
             this.AppID = param["appid"];
             this.MerchantID = param["mch_id"];
@@ -67,7 +67,7 @@ namespace Cod.Platform.Model
                 return false;
             }
 
-            var signature = this.Params.Where(k => k.Key != "sign").OrderBy(k => k.Key).MD5Sign(merchantSecret);
+            var signature = WechatIntegration.MD5Sign(this.Params.Where(k => k.Key != "sign").OrderBy(k => k.Key), merchantSecret);
             if (signature != this.WechatSignature)
             {
                 this.LogError($"验证微信签名失败. 微信返回签名:{this.WechatSignature} 自签:{signature}");

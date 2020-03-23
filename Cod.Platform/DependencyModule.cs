@@ -25,8 +25,7 @@ namespace Cod.Platform
         protected override void Load(ContainerBuilder builder)
         {
             builder.Register(_ => Logger.Instance).As<ILogger>();
-            WechatHelper.Initialize(this.wechatReverseProxy, this.wechatPayReverseProxy, this.getAccessTokenCacheFunc, this.setAccessTokenCacheFunc);
-
+            builder.RegisterType<WechatIntegration>();
             builder.RegisterType<CloudTableRepository<Model.Account>>().As<IRepository<Model.Account>>();
             builder.RegisterType<CloudTableRepository<Model.Accounting>>().As<IRepository<Model.Accounting>>();
             builder.RegisterType<CloudTableRepository<Model.Entitlement>>().As<IRepository<Model.Entitlement>>();
