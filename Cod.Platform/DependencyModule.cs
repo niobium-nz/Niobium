@@ -8,20 +8,6 @@ namespace Cod.Platform
 {
     public class DependencyModule : Module
     {
-        private readonly string wechatReverseProxy;
-        private readonly string wechatPayReverseProxy;
-        private readonly Func<string, Task<string>> getAccessTokenCacheFunc;
-        private readonly Func<string, string, DateTimeOffset, Task> setAccessTokenCacheFunc;
-
-        public DependencyModule(string wechatReverseProxy, string wechatPayReverseProxy,
-            Func<string, Task<string>> getAccessTokenCacheFunc = null, Func<string, string, DateTimeOffset, Task> setAccessTokenCacheFunc = null)
-        {
-            this.wechatReverseProxy = wechatReverseProxy;
-            this.wechatPayReverseProxy = wechatPayReverseProxy;
-            this.getAccessTokenCacheFunc = getAccessTokenCacheFunc;
-            this.setAccessTokenCacheFunc = setAccessTokenCacheFunc;
-        }
-
         protected override void Load(ContainerBuilder builder)
         {
             builder.Register(_ => Logger.Instance).As<ILogger>();
