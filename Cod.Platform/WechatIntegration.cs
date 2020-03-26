@@ -16,7 +16,7 @@ namespace Cod.Platform
 {
     public class WechatIntegration
     {
-        private const string WechatHost = "http://api.weixin.qq.com";
+        private const string WechatHost = "https://api.weixin.qq.com";
         private const string AccessTokenCacheKey = "AccessToken";
         private static readonly TimeSpan AccessTokenCacheExpiry = TimeSpan.FromHours(1);
         private static string wechatProxyHost;
