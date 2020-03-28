@@ -12,6 +12,7 @@ namespace Cod.Channel
             services.AddTransient<IEventHandler<IAuthenticator>, LoginNavigationEventHandler>();
             services.AddSingleton<IAuthenticator, DefaultAuthenticator>();
             services.AddSingleton<ICommander, DefaultCommander>();
+            services.AddSingleton<INotificationService, NotificationService>();
         }
     }
 }
