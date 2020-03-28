@@ -16,9 +16,10 @@ namespace Cod.Platform
 {
     public class WechatIntegration
     {
+        private const string WechatHost = "https://api.weixin.qq.com";
         private const string AccessTokenCacheKey = "AccessToken";
         private static readonly TimeSpan AccessTokenCacheExpiry = TimeSpan.FromHours(1);
-        private static string wechatHost;
+        private static string wechatProxyHost;
         private static string wechatPayHost;
         private readonly Lazy<ICacheStore> cacheStore;
 
@@ -29,7 +30,7 @@ namespace Cod.Platform
 
         public static void Initialize(string wechatReverseProxy, string wechatPayReverseProxy)
         {
-            wechatHost = wechatReverseProxy ?? throw new ArgumentNullException(nameof(wechatReverseProxy));
+            wechatProxyHost = wechatReverseProxy ?? throw new ArgumentNullException(nameof(wechatReverseProxy));
             wechatPayHost = wechatPayReverseProxy ?? throw new ArgumentNullException(nameof(wechatPayReverseProxy));
         }
 
@@ -41,7 +42,7 @@ namespace Cod.Platform
                 return OperationResult<Stream>.Create(token.Code, reference: token.Reference);
             }
 
-            var url = $"{wechatHost}/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}";
+            var url = $"{WechatHost}/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}";
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
             {
                 var resp = await httpclient.GetAsync(url);
@@ -70,10 +71,10 @@ namespace Cod.Platform
             var path = GetOCRPath(kind);
             var query = HttpUtility.ParseQueryString(String.Empty);
             query["access_token"] = token.Result;
-            query["img_url"] = $"{wechatHost}/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}";
+            query["img_url"] = $"{WechatHost}/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}";
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
             {
-                var resp = await httpclient.GetAsync($"{wechatHost}/{path}?{query.ToString()}");
+                var resp = await httpclient.GetAsync($"{WechatHost}/{path}?{query.ToString()}");
                 var status = (int)resp.StatusCode;
                 var json = await resp.Content.ReadAsStringAsync();
                 if (status >= 200 && status < 400)
@@ -99,7 +100,7 @@ namespace Cod.Platform
             var path = GetOCRPath(kind);
             var buff = new byte[512];
             var hash = Guid.NewGuid().ToString("N").Substring(0, 16).ToLowerInvariant();
-            var request = (HttpWebRequest)WebRequest.Create($"{wechatHost}/{path}?access_token={token.Result}");
+            var request = (HttpWebRequest)WebRequest.Create($"{WechatHost}/{path}?access_token={token.Result}");
             request.Method = "POST";
             request.ContentType = $"multipart/form-data; boundary=------------------------{hash}";
             using (var requestStream = request.GetRequestStream())
@@ -166,7 +167,7 @@ namespace Cod.Platform
                 var query = HttpUtility.ParseQueryString(String.Empty);
                 query["access_token"] = token.Result;
                 query["type"] = "jsapi";
-                var resp = await httpclient.GetAsync($"{wechatHost}/cgi-bin/ticket/getticket?{query.ToString()}");
+                var resp = await httpclient.GetAsync($"{WechatHost}/cgi-bin/ticket/getticket?{query.ToString()}");
                 var status = (int)resp.StatusCode;
                 var json = await resp.Content.ReadAsStringAsync();
                 if (status >= 200 && status < 400)
@@ -199,7 +200,7 @@ namespace Cod.Platform
                 query["grant_type"] = "client_credential";
                 query["appid"] = appID;
                 query["secret"] = secret;
-                var resp = await httpclient.GetAsync($"{wechatHost}/cgi-bin/token?{query.ToString()}");
+                var resp = await httpclient.GetAsync($"{wechatProxyHost}/cgi-bin/token?{query.ToString()}");
                 var status = (int)resp.StatusCode;
                 var json = await resp.Content.ReadAsStringAsync();
                 if (status >= 200 && status < 400)
@@ -240,7 +241,7 @@ namespace Cod.Platform
                 };
                 using (var content = new StringContent(JsonConvert.SerializeObject(requestData, JsonSetting.UnderstoreCaseSetting)))
                 {
-                    var resp = await httpclient.PostAsync($"{wechatHost}/cgi-bin/message/template/send?{query.ToString()}", content);
+                    var resp = await httpclient.PostAsync($"{WechatHost}/cgi-bin/message/template/send?{query.ToString()}", content);
                     var status = (int)resp.StatusCode;
                     var json = await resp.Content.ReadAsStringAsync();
                     if (status >= 200 && status < 400)
@@ -268,7 +269,7 @@ namespace Cod.Platform
                 query["secret"] = secret;
                 query["code"] = code;
                 query["grant_type"] = "authorization_code";
-                var resp = await httpclient.GetAsync($"{wechatHost}/sns/oauth2/access_token?{query.ToString()}");
+                var resp = await httpclient.GetAsync($"{WechatHost}/sns/oauth2/access_token?{query.ToString()}");
                 var status = (int)resp.StatusCode;
                 var json = await resp.Content.ReadAsStringAsync();
                 if (status >= 200 && status < 400)
@@ -327,6 +328,29 @@ namespace Cod.Platform
                     return OperationResult<string>.Create(InternalError.Unknown, body);
                 }
                 return OperationResult<string>.Create(result["prepay_id"]);
+            }
+        }
+
+        public async Task<OperationResult<WechatUserInfo>> GetUserInfoAsync(string appId, string secret, string openID, string lang = "zh_CN")
+        {
+            var token = await GetAccessToken(appId, secret);
+            if (!token.IsSuccess)
+            {
+                return OperationResult<WechatUserInfo>.Create(token.Code, token.Message);
+            }
+
+            var url = $"{WechatHost}/cgi-bin/user/info?access_token={token.Result}&openid={openID}&lang={lang}";
+            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+            {
+                var resp = await httpclient.GetAsync(url);
+                var status = (int)resp.StatusCode;
+                if (status >= 200 && status < 400)
+                {
+                    var json = await resp.Content.ReadAsStringAsync();
+                    var result = JsonConvert.DeserializeObject<WechatUserInfo>(json);
+                    return OperationResult<WechatUserInfo>.Create(result);
+                }
+                return OperationResult<WechatUserInfo>.Create(status, null);
             }
         }
 
