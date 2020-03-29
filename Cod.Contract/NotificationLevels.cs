@@ -1,4 +1,4 @@
-﻿namespace Cod.Platform
+﻿namespace Cod
 {
     public abstract class NotificationLevels
     {
