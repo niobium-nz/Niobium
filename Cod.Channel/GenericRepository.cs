@@ -43,18 +43,18 @@ namespace Cod.Channel
             };
         }
 
-        public async Task<OperationResult<ContinuationToken>> LoadAsync(string partitionKey, int count = -1, bool force = false)
-            => await this.LoadAsync(partitionKey, partitionKey, null, null, count, force);
+        public async Task<OperationResult<IReadOnlyCollection<TDomain>>> LoadAsync(string partitionKey, int count = -1, bool force = false, bool continueToLoadMore = false)
+            => await this.LoadAsync(partitionKey, partitionKey, null, null, count, force, continueToLoadMore);
 
-        public async Task<OperationResult<ContinuationToken>> LoadAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, int count = -1, bool force = false)
-            => await this.LoadAsync(partitionKey, partitionKey, rowKeyStart, rowKeyEnd, count, force);
+        public async Task<OperationResult<IReadOnlyCollection<TDomain>>> LoadAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, int count = -1, bool force = false, bool continueToLoadMore = false)
+            => await this.LoadAsync(partitionKey, partitionKey, rowKeyStart, rowKeyEnd, count, force, continueToLoadMore);
 
-        public async Task<OperationResult<ContinuationToken>> LoadAsync(string partitionKeyStart, string partitionKeyEnd, int count = -1, bool force = false)
-            => await this.LoadAsync(partitionKeyStart, partitionKeyEnd, null, null, count, force);
+        public async Task<OperationResult<IReadOnlyCollection<TDomain>>> LoadAsync(string partitionKeyStart, string partitionKeyEnd, int count = -1, bool force = false, bool continueToLoadMore = false)
+            => await this.LoadAsync(partitionKeyStart, partitionKeyEnd, null, null, count, force, continueToLoadMore);
 
-        public async Task<OperationResult<ContinuationToken>> LoadAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int count = -1, bool force = false)
+        public async Task<OperationResult<IReadOnlyCollection<TDomain>>> LoadAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int count = -1, bool force = false, bool continueToLoadMore = false)
         {
-            ContinuationToken result;
+            IReadOnlyCollection<TDomain> result = null;
             var key = new TableStorageFetchKey
             {
                 Count = count,
@@ -64,48 +64,69 @@ namespace Cod.Channel
                 RowKeyStart = rowKeyStart,
             };
 
+            var proceed = false;
+            ContinuationToken continuationToken = null;
             if (force || !fetchHistory.ContainsKey(key))
             {
-                var response = await this.FetchAsync(partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, count);
-                if (response.IsSuccess)
+                if (continueToLoadMore)
                 {
-                    result = response.Result.ContinuationToken;
-                    if (!this.fetchHistory.ContainsKey(key))
-                    {
-                        this.fetchHistory.Add(key, result);
-                    }
-                    
-                    if (response.Result.Data.Count > 0)
-                    {
-                        var domainObjects = response.Result.Data.Select(m => (TDomain)this.createDomain().Initialize(m));
-                        this.AddToCache(domainObjects);
-                    }
+                    throw new NotSupportedException($"{nameof(force)} and {nameof(continueToLoadMore)} cannot be both true.");
                 }
-                else
-                {
-                    return new OperationResult<ContinuationToken>(response.Code, null)
-                    {
-                        Message = response.Message,
-                        Reference = response.Reference,
-                    };
-                }
+
+                proceed = true;
             }
             else if (fetchHistory.ContainsKey(key))
             {
-                result = fetchHistory[key];
+                if (continueToLoadMore)
+                {
+                    continuationToken = fetchHistory[key];                    
+                    proceed = true;
+                }
+                else
+                {
+                    result = new List<TDomain>();
+                }
             }
             else
             {
                 throw new NotImplementedException("TODO");
             }
 
-            return OperationResult<ContinuationToken>.Create(result);
+            if (proceed)
+            {
+                var response = await this.FetchAsync(partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, count, continuationToken);
+                if (response.IsSuccess)
+                {
+                    if (this.fetchHistory.ContainsKey(key))
+                    {
+                        this.fetchHistory.Remove(key);
+                    }
+                    this.fetchHistory.Add(key, response.Result.ContinuationToken);
+
+                    if (response.Result.Data.Count > 0)
+                    {
+                        var domainObjects = response.Result.Data.Select(m => (TDomain)this.createDomain().Initialize(m)).ToList();
+                        this.AddToCache(domainObjects);
+                        result = domainObjects;
+                    }
+                }
+                else
+                {
+                    return new OperationResult<IReadOnlyCollection<TDomain>>(response.Code, null)
+                    {
+                        Message = response.Message,
+                        Reference = response.Reference,
+                    };
+                }
+            }
+            
+            return OperationResult<IReadOnlyCollection<TDomain>>.Create(result);
         }
 
-        public async Task<OperationResult<ContinuationToken>> LoadAsync(int count = -1, bool force = false)
-            => await this.LoadAsync(null, null, null, null, count, force);
+        public async Task<OperationResult<IReadOnlyCollection<TDomain>>> LoadAsync(int count = -1, bool force = false, bool continueToLoadMore = false)
+            => await this.LoadAsync(null, null, null, null, count, force, continueToLoadMore);
 
-        protected virtual async Task<OperationResult<TableQueryResult<TEntity>>> FetchAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int count)
+        protected virtual async Task<OperationResult<TableQueryResult<TEntity>>> FetchAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int count, ContinuationToken continuationToken)
         {
             string pk, rk;
             if (partitionKeyStart == null && partitionKeyEnd == null)
@@ -163,7 +184,7 @@ namespace Cod.Channel
             }
 
             var baseUrl = await this.configuration.GetSettingAsync(Constants.KEY_TABLE_URL);
-            return await TableStorageHelper.GetAsync<TEntity>(this.httpClient, baseUrl, signature.Result.Signature, partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, null, count);
+            return await TableStorageHelper.GetAsync<TEntity>(this.httpClient, baseUrl, signature.Result.Signature, partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, continuationToken, count);
         }
 
         protected virtual void AddToCache(TDomain domainObject) => AddToCache(new[] { domainObject });
