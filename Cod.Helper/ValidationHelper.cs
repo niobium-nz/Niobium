@@ -48,6 +48,20 @@ namespace Cod
                 }
             }
 
+            if (model is IValidateable validateable)
+            {
+                var customErrors = validateable.Validate();
+                if (customErrors.Count > 0)
+                {
+                    isValid = false;
+                }
+
+                foreach (var key in customErrors.Keys)
+                {
+                    result.AddError(key, customErrors[key]);
+                }
+            }
+
             return isValid;
         }
     }
