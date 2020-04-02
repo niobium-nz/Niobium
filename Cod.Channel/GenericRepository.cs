@@ -68,7 +68,7 @@ namespace Cod.Channel
             ContinuationToken continuationToken = null;
             if (force || !fetchHistory.ContainsKey(key))
             {
-                if (continueToLoadMore)
+                if (force && continueToLoadMore)
                 {
                     throw new NotSupportedException($"{nameof(force)} and {nameof(continueToLoadMore)} cannot be both true.");
                 }
