@@ -27,7 +27,7 @@ namespace Cod
             }
             else
             {
-                msg.Append("未知错误");
+                msg.Append("Unknown Error");
             }
             if (description != null)
             {
@@ -40,8 +40,9 @@ namespace Cod
 
             if (code != SuccessCode)
             {
-                msg.Append(" 错误代码:");
+                msg.Append(" [0x");
                 msg.Append(code.ToString());
+                msg.Append("]");
             }
             return new OperationResult(code)
             {
@@ -71,15 +72,16 @@ namespace Cod
             }
             else
             {
-                msg.Append("未知错误");
+                msg.Append("Unknown Error");
             }
             if (description != null)
             {
                 msg.Append(":");
                 msg.Append(description);
             }
-            msg.Append(" 错误代码:");
+            msg.Append(" [0x");
             msg.Append(code.ToString());
+            msg.Append("]");
             return new OperationResult<T>(code)
             {
                 Message = msg.ToString(),

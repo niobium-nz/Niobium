@@ -2,7 +2,7 @@
 
 namespace Cod
 {
-    public interface IValidateable
+    public interface IValidatable
     {
         IReadOnlyDictionary<string, string> Validate();
     }

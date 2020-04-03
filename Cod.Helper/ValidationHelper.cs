@@ -47,8 +47,7 @@ namespace Cod
                     }
                 }
             }
-
-            if (model is IValidateable validateable)
+            else if (model is IValidatable validateable)
             {
                 var customErrors = validateable.Validate();
                 if (customErrors.Count > 0)

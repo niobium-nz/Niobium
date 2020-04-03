@@ -36,5 +36,7 @@ namespace Cod
             value = result;
             return b;
         }
+
+        public IDictionary<string, List<string>> ToDictionary() => this.errors;
     }
 }
