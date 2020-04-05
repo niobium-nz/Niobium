@@ -16,9 +16,9 @@ namespace Cod.Platform
         }
 
         public async Task<OperationResult> SendAsync(
-            OpenIDProvider provider,
-            string appID,
-            string openID,
+            string brand,
+            string account,
+            NotificationContext context,
             int template,
             IReadOnlyDictionary<string, string> parameters,
             int startLevel = 0,
@@ -32,7 +32,7 @@ namespace Cod.Platform
 
             foreach (var channel in channels.Value)
             {
-                var result = await channel.SendAsync(provider, appID, openID, template, parameters, level);
+                var result = await channel.SendAsync(brand, account, context, template, parameters, level);
                 if (result.IsSuccess)
                 {
                     return result;
@@ -46,7 +46,7 @@ namespace Cod.Platform
                     break;
                 }
             }
-            return await this.service.Value.SendAsync(provider, appID, openID, template, parameters, ++level);
+            return await this.service.Value.SendAsync(brand, account, context, template, parameters, ++level);
         }
     }
 }

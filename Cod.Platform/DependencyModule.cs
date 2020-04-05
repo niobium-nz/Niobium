@@ -16,6 +16,7 @@ namespace Cod.Platform
             builder.RegisterType<CloudTableRepository<Model.Accounting>>().As<IRepository<Model.Accounting>>();
             builder.RegisterType<CloudTableRepository<Model.Entitlement>>().As<IRepository<Model.Entitlement>>();
             builder.RegisterType<CloudTableRepository<Model.Transaction>>().As<IRepository<Model.Transaction>>();
+            builder.RegisterType<CloudTableRepository<Model.OpenID>>().As<IRepository<Model.OpenID>>();
 
             builder.RegisterType<ChargeRepository>().As<IRepository<Charge>>();
             builder.RegisterType<WechatRepository>().AsSelf();

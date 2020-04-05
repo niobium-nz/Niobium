@@ -6,9 +6,9 @@ namespace Cod.Platform
     public interface INotificationService
     {
         Task<OperationResult> SendAsync(
-            OpenIDProvider provider,
-            string appID,
-            string openID,
+            string brand,
+            string account,
+            NotificationContext context,
             int template,
             IReadOnlyDictionary<string, string> parameters,
             int startLevel = 0,
