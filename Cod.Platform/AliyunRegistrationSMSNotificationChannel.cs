@@ -15,12 +15,12 @@ namespace Cod.Platform
         {
         }
 
-        protected override string CreateAliyunTemplate(int template)
-            => template == NotificationTemplates.RegistrationVerification ? "SMS_172980267" : null;
+        protected override Task<string> CreateAliyunTemplateAsync(int template)
+            => Task.FromResult(template == NotificationTemplates.RegistrationVerification ? "SMS_172980267" : null);
 
-        protected override string CreateAliyunTemplateParameter(int template, IReadOnlyDictionary<string, string> parameters)
-            => parameters.ContainsKey(NotificationParameters.VerificationCode)
+        protected override Task<string> CreateAliyunTemplateParameterAsync(int template, IReadOnlyDictionary<string, string> parameters)
+            => Task.FromResult(parameters.ContainsKey(NotificationParameters.VerificationCode)
                 ? REGISTRATION_SMS_PARAM.Replace("CODE", parameters[NotificationParameters.VerificationCode])
-                : null;
+                : null);
     }
 }
