@@ -15,12 +15,29 @@ namespace Cod.Platform
         {
         }
 
+        protected async override Task<OperationResult> SendSMSAsync(
+            string brand,
+            string mobile,
+            int template,
+            IReadOnlyDictionary<string, string> parameters)
+        {
+            if (template != NotificationTemplates.RegistrationVerification)
+            {
+                return OperationResult.Create(InternalError.NotAllowed);
+            }
+
+            if (!parameters.ContainsKey(NotificationParameters.VerificationCode))
+            {
+                return OperationResult.Create(InternalError.BadRequest);
+            }
+
+            return await base.SendSMSAsync(brand, mobile, template, parameters);
+        }
+
         protected override Task<string> CreateAliyunTemplateAsync(int template)
-            => Task.FromResult(template == NotificationTemplates.RegistrationVerification ? "SMS_172980267" : null);
+            => Task.FromResult("SMS_172980267");
 
         protected override Task<string> CreateAliyunTemplateParameterAsync(int template, IReadOnlyDictionary<string, string> parameters)
-            => Task.FromResult(parameters.ContainsKey(NotificationParameters.VerificationCode)
-                ? REGISTRATION_SMS_PARAM.Replace("CODE", parameters[NotificationParameters.VerificationCode])
-                : null);
+            => Task.FromResult(REGISTRATION_SMS_PARAM.Replace("CODE", parameters[NotificationParameters.VerificationCode]));
     }
 }
