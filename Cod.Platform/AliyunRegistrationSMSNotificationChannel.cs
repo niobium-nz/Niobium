@@ -19,7 +19,7 @@ namespace Cod.Platform
             string brand,
             string mobile,
             int template,
-            IReadOnlyDictionary<string, string> parameters)
+            IReadOnlyDictionary<string, object> parameters)
         {
             if (template != NotificationTemplates.RegistrationVerification)
             {
@@ -37,7 +37,7 @@ namespace Cod.Platform
         protected override Task<string> CreateAliyunTemplateAsync(int template)
             => Task.FromResult("SMS_172980267");
 
-        protected override Task<string> CreateAliyunTemplateParameterAsync(int template, IReadOnlyDictionary<string, string> parameters)
-            => Task.FromResult(REGISTRATION_SMS_PARAM.Replace("CODE", parameters[NotificationParameters.VerificationCode]));
+        protected override Task<string> CreateAliyunTemplateParameterAsync(int template, IReadOnlyDictionary<string, object> parameters)
+            => Task.FromResult(REGISTRATION_SMS_PARAM.Replace("CODE", parameters.GetString(NotificationParameters.VerificationCode)));
     }
 }

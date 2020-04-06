@@ -19,7 +19,7 @@ namespace Cod.Platform
             string account,
             NotificationContext context,
             int template,
-            IReadOnlyDictionary<string, string> parameters,
+            IReadOnlyDictionary<string, object> parameters,
             int level = 0)
         {
             if (level != NotificationLevels.Push)
@@ -64,6 +64,6 @@ namespace Cod.Platform
             string brand,
             IReadOnlyCollection<NotificationContext> targets,
             int template,
-            IReadOnlyDictionary<string, string> parameters);
+            IReadOnlyDictionary<string, object> parameters);
     }
 }

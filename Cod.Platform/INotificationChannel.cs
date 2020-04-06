@@ -10,7 +10,7 @@ namespace Cod.Platform
             string account,
             NotificationContext context,
             int template,
-            IReadOnlyDictionary<string, string> parameters,
+            IReadOnlyDictionary<string, object> parameters,
             int level = 0);
     }
 }

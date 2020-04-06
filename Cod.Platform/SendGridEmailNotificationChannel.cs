@@ -27,7 +27,7 @@ namespace Cod.Platform
             string account,
             NotificationContext context,
             int template,
-            IReadOnlyDictionary<string, string> parameters, int level = 0)
+            IReadOnlyDictionary<string, object> parameters, int level = 0)
         {
             if (level != NotificationLevels.Email)
             {
@@ -52,7 +52,7 @@ namespace Cod.Platform
             string account,
             NotificationContext context,
             int template,
-            IReadOnlyDictionary<string, string> parameters)
+            IReadOnlyDictionary<string, object> parameters)
         {
             var requestObj = await this.MakeRequestAsync(brand, account, context, template, parameters);
             var requestData = JsonConvert.SerializeObject(requestObj, JsonSetting.UnderstoreCaseSetting);
@@ -79,6 +79,6 @@ namespace Cod.Platform
             string account,
             NotificationContext context,
             int template,
-            IReadOnlyDictionary<string, string> parameters);
+            IReadOnlyDictionary<string, object> parameters);
     }
 }

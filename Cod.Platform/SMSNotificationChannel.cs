@@ -12,7 +12,7 @@ namespace Cod.Platform
             string account,
             NotificationContext context,
             int template,
-            IReadOnlyDictionary<string, string> parameters,
+            IReadOnlyDictionary<string, object> parameters,
             int level = 0)
         {
             if (level != NotificationLevels.SMS)
@@ -43,7 +43,7 @@ namespace Cod.Platform
             string brand,
             string mobile,
             int template,
-            IReadOnlyDictionary<string, string> parameters);
+            IReadOnlyDictionary<string, object> parameters);
 
         protected static bool ValidateChineseMobileNumber(string input)
             => !string.IsNullOrWhiteSpace(input)

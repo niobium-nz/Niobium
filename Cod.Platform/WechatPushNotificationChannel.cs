@@ -26,7 +26,7 @@ namespace Cod.Platform
             string brand,
             IReadOnlyCollection<NotificationContext> targets,
             int template,
-            IReadOnlyDictionary<string, string> parameters)
+            IReadOnlyDictionary<string, object> parameters)
         {
             var brandcache = new Dictionary<string, BrandingInfo>();
             var result = true;
@@ -84,18 +84,18 @@ namespace Cod.Platform
             BrandingInfo brand,
             NotificationContext target,
             int template,
-            IReadOnlyDictionary<string, string> parameters);
+            IReadOnlyDictionary<string, object> parameters);
 
         protected abstract Task<WechatNotificationParameter> GetTemplateParameterAsync(
             BrandingInfo brand,
             NotificationContext target,
             int template,
-            IReadOnlyDictionary<string, string> parameters);
+            IReadOnlyDictionary<string, object> parameters);
 
         protected abstract Task<string> GetTemplateLinkAsync(
             BrandingInfo brand,
             NotificationContext target,
             int template,
-            IReadOnlyDictionary<string, string> parameters);
+            IReadOnlyDictionary<string, object> parameters);
     }
 }
