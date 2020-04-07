@@ -1,6 +1,6 @@
 ﻿namespace Cod.Platform
 {
-    internal class BaiduIntegrationResponse
+    public class BaiduIntegrationResponse
     {
         public string Error { get; set; }
 

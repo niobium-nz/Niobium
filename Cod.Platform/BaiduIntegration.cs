@@ -17,12 +17,12 @@ namespace Cod.Platform
             this.cacheStore = cacheStore;
         }
 
-        public async Task<OperationResult<string>> PerformOCRAsync(string key, string secret, string mediaURL)
+        public async Task<OperationResult<BaiduOCRResponse>> PerformOCRAsync(string key, string secret, string mediaURL)
         {
             var token = await GetAccessToken(key, secret);
             if (!token.IsSuccess)
             {
-                return token;
+                return OperationResult<BaiduOCRResponse>.Create(token.Code, reference: token);
             }
 
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
@@ -43,11 +43,11 @@ namespace Cod.Platform
                         var result = JsonConvert.DeserializeObject<BaiduOCRResponse>(json, JsonSetting.UnderstoreCaseSetting);
                         if (result.Error != null)
                         {
-                            return OperationResult<string>.Create(json);
+                            return OperationResult<BaiduOCRResponse>.Create(result);
                         }
-                        return OperationResult<string>.Create(InternalError.InternalServerError, json);
+                        return OperationResult<BaiduOCRResponse>.Create(InternalError.InternalServerError, json);
                     }
-                    return OperationResult<string>.Create(status, json);
+                    return OperationResult<BaiduOCRResponse>.Create(status, json);
                 }
             }
         }

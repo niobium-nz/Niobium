@@ -1,6 +1,6 @@
 ﻿namespace Cod.Platform
 {
-    internal class BaiduOCRResultAccuracy
+    public class BaiduOCRResultAccuracy
     {
         public double Variance { get; set; }
 

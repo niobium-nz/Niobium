@@ -1,6 +1,6 @@
 ﻿namespace Cod.Platform
 {
-    internal class BaiduOCRResponse : BaiduIntegrationResponse
+    public class BaiduOCRResponse : BaiduIntegrationResponse
     {
         public long LogID { get; set; }
 

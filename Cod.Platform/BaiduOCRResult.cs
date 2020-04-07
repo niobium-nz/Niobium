@@ -1,6 +1,6 @@
 ﻿namespace Cod.Platform
 {
-    internal class BaiduOCRResult
+    public class BaiduOCRResult
     {
         public string Words { get; set; }
 
