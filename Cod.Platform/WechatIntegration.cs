@@ -34,18 +34,28 @@ namespace Cod.Platform
             wechatPayHost = wechatPayReverseProxy ?? throw new ArgumentNullException(nameof(wechatPayReverseProxy));
         }
 
-        public async Task<OperationResult<Stream>> GetMediaAsync(string appId, string secret, string mediaID)
+        public async Task<OperationResult<string>> GenerateMediaDownloadUrl(string appId, string secret, string mediaID)
         {
             var token = await GetAccessToken(appId, secret);
             if (!token.IsSuccess)
             {
-                return OperationResult<Stream>.Create(token.Code, reference: token.Reference);
+                return token;
             }
 
-            var url = $"{WechatHost}/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}";
+            return OperationResult<string>.Create($"{WechatHost}/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}");
+        }
+
+        public async Task<OperationResult<Stream>> GetMediaAsync(string appId, string secret, string mediaID)
+        {
+            var url = await this.GenerateMediaDownloadUrl(appId, secret, mediaID);
+            if (!url.IsSuccess)
+            {
+                return OperationResult<Stream>.Create(url.Code, reference: url.Reference);
+            }
+
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
             {
-                var resp = await httpclient.GetAsync(url);
+                var resp = await httpclient.GetAsync(url.Result);
                 var status = (int)resp.StatusCode;
                 if (status >= 200 && status < 400)
                 {
