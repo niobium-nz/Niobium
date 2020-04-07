@@ -12,6 +12,7 @@ namespace Cod.Platform
         {
             builder.Register(_ => Logger.Instance).As<ILogger>();
             builder.RegisterType<WechatIntegration>();
+            builder.RegisterType<BaiduIntegration>();
             builder.RegisterType<CloudTableRepository<Model.Account>>().As<IRepository<Model.Account>>();
             builder.RegisterType<CloudTableRepository<Model.Accounting>>().As<IRepository<Model.Accounting>>();
             builder.RegisterType<CloudTableRepository<Model.Entitlement>>().As<IRepository<Model.Entitlement>>();
