@@ -35,13 +35,13 @@ namespace Cod.Platform
                     { "probability", "true" },
                 }))
                 {
-                    var resp = await httpclient.GetAsync($"{Host}/rest/2.0/ocr/v1/general_basic");
+                    var resp = await httpclient.PostAsync($"{Host}/rest/2.0/ocr/v1/general_basic", post);
                     var status = (int)resp.StatusCode;
                     var json = await resp.Content.ReadAsStringAsync();
                     if (status >= 200 && status < 400)
                     {
                         var result = JsonConvert.DeserializeObject<BaiduOCRResponse>(json, JsonSetting.UnderstoreCaseSetting);
-                        if (result.Error != null)
+                        if (result.WordsResult != null && result.WordsResult.Length > 0)
                         {
                             return OperationResult<BaiduOCRResponse>.Create(result);
                         }
