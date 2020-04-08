@@ -20,42 +20,52 @@ namespace Cod.Platform
             this.logger = logger;
         }
 
-        public async Task ImpedeAsync(string category, int cause, string policyInput = null)
+        public async Task ImpedeAsync(string category, int cause, string policyInput = null) => await this.ImpedeAsync(category, new int[] { cause }, policyInput);
+
+        public async Task ImpedeAsync(string category, IEnumerable<int> causes, string policyInput = null)
         {
             var entity = await this.GetEntityAsync();
-            var context = new IImpedimentContext<T>
+            foreach (var cause in causes)
             {
-                Entity = entity,
-                Category = category,
-                Cause = cause,
-                Logger = this.logger,
-                PolicyInput = policyInput
-            };
+                var context = new IImpedimentContext<T>
+                {
+                    Entity = entity,
+                    Category = category,
+                    Cause = cause,
+                    Logger = this.logger,
+                    PolicyInput = policyInput
+                };
 
-            foreach (var policy in this.policies.Value)
-            {
-                await policy.ImpedeAsync(context);
+                foreach (var policy in this.policies.Value)
+                {
+                    await policy.ImpedeAsync(context);
+                }
             }
 
             entity.Impeded = true;
             await this.Repository.UpdateAsync(entity);
         }
 
-        public async Task UnimpedeAsync(string category, int cause, string policyInput = null)
+        public async Task UnimpedeAsync(string category, int cause, string policyInput = null) => await this.UnimpedeAsync(category, new int[] { cause }, policyInput);
+
+        public async Task UnimpedeAsync(string category, IEnumerable<int> causes, string policyInput = null)
         {
             var entity = await this.GetEntityAsync();
-            var context = new IImpedimentContext<T>
+            foreach (var cause in causes)
             {
-                Entity = entity,
-                Category = category,
-                Cause = cause,
-                PolicyInput = policyInput,
-                Logger = this.logger
-            };
+                var context = new IImpedimentContext<T>
+                {
+                    Entity = entity,
+                    Category = category,
+                    Cause = cause,
+                    PolicyInput = policyInput,
+                    Logger = this.logger
+                };
 
-            foreach (var policy in this.policies.Value)
-            {
-                await policy.UnimpedeAsync(context);
+                foreach (var policy in this.policies.Value)
+                {
+                    await policy.UnimpedeAsync(context);
+                }
             }
 
             var existings = await this.GetImpedimentsAsync();
