@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 namespace Cod.Channel
 {
     public class GenericRepository<TDomain, TEntity> : IRepository<TDomain, TEntity>
+        where TEntity : IEntity
         where TDomain : IChannelDomain<TEntity>
     {
         private readonly IConfigurationProvider configuration;
@@ -106,7 +107,7 @@ namespace Cod.Channel
                     if (response.Result.Data.Count > 0)
                     {
                         var domainObjects = response.Result.Data.Select(m => (TDomain)this.createDomain().Initialize(m)).ToList();
-                        this.AddToCache(domainObjects);
+                        this.Cache(domainObjects);
                         result = domainObjects;
                     }
                 }
@@ -187,13 +188,23 @@ namespace Cod.Channel
             return await TableStorageHelper.GetAsync<TEntity>(this.httpClient, baseUrl, signature.Result.Signature, partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, continuationToken, count);
         }
 
-        protected virtual void AddToCache(TDomain domainObject) => AddToCache(new[] { domainObject });
+        protected virtual void Cache(TDomain domainObject) => Cache(new[] { domainObject });
 
-        protected virtual void AddToCache(IEnumerable<TDomain> domainObjects)
+        protected virtual void Cache(IEnumerable<TDomain> domainObjects)
         {
-            this.cache.RemoveAll(c => domainObjects.Any(dobj => dobj.PartitionKey == c.PartitionKey && dobj.RowKey == c.RowKey));
+            this.Uncache(domainObjects);
             this.cache.AddRange(domainObjects);
         }
+
+        protected virtual void Uncache(TDomain domainObject) => Uncache(new[] { domainObject });
+
+        protected virtual void Uncache(IEnumerable<TDomain> domainObjects)
+            => this.cache.RemoveAll(c => domainObjects.Any(dobj => dobj.PartitionKey == c.PartitionKey && dobj.RowKey == c.RowKey));
+
+        protected virtual void Uncache(TEntity entity) => Uncache(new[] { entity });
+
+        protected virtual void Uncache(IEnumerable<TEntity> entities)
+            => this.cache.RemoveAll(c => entities.Any(en => en.PartitionKey == c.PartitionKey && en.RowKey == c.RowKey));
 
         protected struct TableStorageFetchKey : IEquatable<TableStorageFetchKey>
         {
