@@ -10,6 +10,6 @@ namespace Cod.Channel
 
         void Initialize(ICommander commander);
 
-        Task<object> ExecuteAsync(object parameter);
+        Task<OperationResult> ExecuteAsync(object parameter);
     }
 }

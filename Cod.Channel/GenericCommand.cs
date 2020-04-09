@@ -4,7 +4,7 @@ namespace Cod.Channel
 {
     public abstract class GenericCommand : BaseCommand, ICommand
     {
-        public override async Task<object> ExecuteAsync(object parameter)
+        public override async Task<OperationResult> ExecuteAsync(object parameter)
         {
             var args = this.BuildEventArgs();
             this.OnExecuting(this, args);
@@ -21,8 +21,9 @@ namespace Cod.Channel
     }
 
     public abstract class GenericCommand<TReturn> : BaseCommand, ICommand
+        where TReturn : OperationResult
     {
-        public override async Task<object> ExecuteAsync(object parameter)
+        public override async Task<OperationResult> ExecuteAsync(object parameter)
         {
             var args = this.BuildEventArgs();
             this.OnExecuting(this, args);
@@ -30,17 +31,18 @@ namespace Cod.Channel
             var executedArgs = (CommandExecutionEventArgs)args.Clone();
             executedArgs.Result = result;
             this.OnExecuted(this, executedArgs);
-            return result.Result;
+            return result;
         }
 
-        protected abstract Task<OperationResult<TReturn>> CoreExecuteAsync();
+        protected abstract Task<TReturn> CoreExecuteAsync();
 
         protected virtual CommandExecutionEventArgs BuildEventArgs() => new CommandExecutionEventArgs(this.ID, null);
     }
 
     public abstract class GenericCommand<TParameter, TReturn> : BaseCommand, ICommand
+        where TReturn : OperationResult
     {
-        public override async Task<object> ExecuteAsync(object parameter)
+        public override async Task<OperationResult> ExecuteAsync(object parameter)
         {
             if (parameter is TParameter p)
             {
@@ -50,13 +52,13 @@ namespace Cod.Channel
                 var executedArgs = (CommandExecutionEventArgs)args.Clone();
                 executedArgs.Result = result;
                 this.OnExecuted(this, executedArgs);
-                return result.Result;
+                return result;
             }
 
             return null;
         }
 
-        protected abstract Task<OperationResult<TReturn>> CoreExecuteAsync(TParameter parameter);
+        protected abstract Task<TReturn> CoreExecuteAsync(TParameter parameter);
 
         protected virtual CommandExecutionEventArgs BuildEventArgs(TParameter parameter) => new CommandExecutionEventArgs(this.ID, parameter);
     }

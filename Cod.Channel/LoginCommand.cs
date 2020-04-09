@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
-    internal class LoginCommand : GenericCommand<LoginCommandParameter, bool>
+    internal class LoginCommand : GenericCommand<LoginCommandParameter, OperationResult<bool>>
     {
         private readonly IAuthenticator authenticator;
         private readonly INavigator navigator;
@@ -64,10 +64,7 @@ namespace Cod.Channel
                     return OperationResult<bool>.Create(true);
                 }
 
-                var error = OperationResult<bool>.Create(result.Code, result.Reference);
-                error.Result = false;
-                error.Message = result.Message;
-                return error;
+                return new OperationResult<bool>(result);
             }
             finally
             {

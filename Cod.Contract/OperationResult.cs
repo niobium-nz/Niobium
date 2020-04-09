@@ -16,6 +16,12 @@ namespace Cod
 
         protected OperationResult(int code) => this.Code = code;
 
+        public OperationResult(OperationResult result) : this(result.Code)
+        {
+            this.Message = result.Message;
+            this.Reference = result.Reference;
+        }
+
         public static OperationResult Create() => new OperationResult(SuccessCode);
 
         public static OperationResult Create(int code, string description = null)
@@ -54,6 +60,10 @@ namespace Cod
     public class OperationResult<T> : OperationResult
     {
         protected OperationResult(int code) : base(code)
+        {
+        }
+
+        public OperationResult(OperationResult result) : base(result)
         {
         }
 
