@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
-    internal class LoginCommand : GenericCommand<LoginCommandParameter>
+    internal class LoginCommand : GenericCommand<LoginCommandParameter, bool>
     {
         private readonly IAuthenticator authenticator;
         private readonly INavigator navigator;
@@ -17,7 +17,7 @@ namespace Cod.Channel
             this.navigator = navigator;
         }
 
-        protected override async Task<OperationResult> CoreExecuteAsync(LoginCommandParameter parameter)
+        protected override async Task<OperationResult<bool>> CoreExecuteAsync(LoginCommandParameter parameter)
         {
             this.Commander.SetBusy(BusyGroups.Login);
             try
@@ -60,9 +60,14 @@ namespace Cod.Channel
                     {
                         this.navigator.NavigateTo(returnUrl);
                     }
+
+                    return OperationResult<bool>.Create(true);
                 }
 
-                return result;
+                var error = OperationResult<bool>.Create(result.Code, result.Reference);
+                error.Result = false;
+                error.Message = result.Message;
+                return error;
             }
             finally
             {

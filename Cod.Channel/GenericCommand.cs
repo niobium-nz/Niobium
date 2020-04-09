@@ -4,14 +4,15 @@ namespace Cod.Channel
 {
     public abstract class GenericCommand : BaseCommand, ICommand
     {
-        public override async Task ExecuteAsync(object parameter)
+        public override async Task<object> ExecuteAsync(object parameter)
         {
             var args = this.BuildEventArgs();
             this.OnExecuting(this, args);
             var result = await this.CoreExecuteAsync();
             var executedArgs = (CommandExecutionEventArgs)args.Clone();
-            executedArgs.Result = result; 
+            executedArgs.Result = result;
             this.OnExecuted(this, executedArgs);
+            return result;
         }
 
         protected abstract Task<OperationResult> CoreExecuteAsync();
@@ -19,11 +20,11 @@ namespace Cod.Channel
         protected virtual CommandExecutionEventArgs BuildEventArgs() => new CommandExecutionEventArgs(this.ID, null);
     }
 
-    public abstract class GenericCommand<T> : BaseCommand, ICommand
+    public abstract class GenericCommand<TParameter, TReturn> : BaseCommand, ICommand
     {
-        public override async Task ExecuteAsync(object parameter)
+        public override async Task<object> ExecuteAsync(object parameter)
         {
-            if (parameter is T p)
+            if (parameter is TParameter p)
             {
                 var args = this.BuildEventArgs(p);
                 this.OnExecuting(this, args);
@@ -31,11 +32,14 @@ namespace Cod.Channel
                 var executedArgs = (CommandExecutionEventArgs)args.Clone();
                 executedArgs.Result = result;
                 this.OnExecuted(this, executedArgs);
+                return result.Result;
             }
+
+            return null;
         }
 
-        protected abstract Task<OperationResult> CoreExecuteAsync(T parameter);
+        protected abstract Task<OperationResult<TReturn>> CoreExecuteAsync(TParameter parameter);
 
-        protected virtual CommandExecutionEventArgs BuildEventArgs(T parameter) => new CommandExecutionEventArgs(this.ID, parameter);
+        protected virtual CommandExecutionEventArgs BuildEventArgs(TParameter parameter) => new CommandExecutionEventArgs(this.ID, parameter);
     }
 }

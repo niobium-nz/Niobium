@@ -8,7 +8,8 @@ namespace Cod.Channel
         : GenericRepository<TDomain, TEntity>,
         ICreatableRepository<TDomain, TEntity, TCreateParams>,
         IUpdatableRepository<TDomain, TEntity>,
-        IDeletableRepository<TDomain, TEntity>
+        IDeletableRepository<TDomain, TEntity>,
+        ICRUDRepository<TDomain, TEntity, TCreateParams>
         where TEntity : IEntity
         where TDomain : IChannelDomain<TEntity>
         where TCreateParams : class
@@ -42,7 +43,8 @@ namespace Cod.Channel
                 }
                 else
                 {
-                    //REMARK (5he11) 这个情况不太可能出现，如果真的出现了，那就是存储层有较大延迟，刚存入的数据无法读出导致的
+                    //REMARK (5he11) This seems not possible but if it ever occurred,
+                    // it means the storage layer has high latency causes data retrieved does not reflect its realtime state.
                     throw new NotImplementedException("Please refer to comment in source code.");
                 }
             }
@@ -82,7 +84,8 @@ namespace Cod.Channel
                 }
                 else
                 {
-                    //REMARK (5he11) 这个情况不太可能出现，如果真的出现了，那就是存储层有较大延迟，刚存入的数据无法读出导致的
+                    //REMARK (5he11) This seems not possible but if it ever occurred,
+                    // it means the storage layer has high latency causes data retrieved does not reflect its realtime state.
                     throw new NotImplementedException("Please refer to comment in source code.");
                 }
             }
