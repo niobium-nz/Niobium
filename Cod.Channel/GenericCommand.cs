@@ -20,6 +20,24 @@ namespace Cod.Channel
         protected virtual CommandExecutionEventArgs BuildEventArgs() => new CommandExecutionEventArgs(this.ID, null);
     }
 
+    public abstract class GenericCommand<TReturn> : BaseCommand, ICommand
+    {
+        public override async Task<object> ExecuteAsync(object parameter)
+        {
+            var args = this.BuildEventArgs();
+            this.OnExecuting(this, args);
+            var result = await this.CoreExecuteAsync();
+            var executedArgs = (CommandExecutionEventArgs)args.Clone();
+            executedArgs.Result = result;
+            this.OnExecuted(this, executedArgs);
+            return result.Result;
+        }
+
+        protected abstract Task<OperationResult<TReturn>> CoreExecuteAsync();
+
+        protected virtual CommandExecutionEventArgs BuildEventArgs() => new CommandExecutionEventArgs(this.ID, null);
+    }
+
     public abstract class GenericCommand<TParameter, TReturn> : BaseCommand, ICommand
     {
         public override async Task<object> ExecuteAsync(object parameter)
