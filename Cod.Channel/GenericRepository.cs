@@ -14,21 +14,22 @@ namespace Cod.Channel
         private readonly HttpClient httpClient;
         private readonly IAuthenticator authenticator;
         private readonly Func<TDomain> createDomain;
-        private readonly List<TDomain> cache;
         private readonly Dictionary<TableStorageFetchKey, ContinuationToken> fetchHistory;
 
         public GenericRepository(IConfigurationProvider configuration, HttpClient httpClient,
             IAuthenticator authenticator, Func<TDomain> createDomain)
         {
             this.fetchHistory = new Dictionary<TableStorageFetchKey, ContinuationToken>();
-            this.cache = new List<TDomain>();
+            this.CachedData = new List<TDomain>();
             this.configuration = configuration;
             this.httpClient = httpClient;
             this.authenticator = authenticator;
             this.createDomain = createDomain;
         }
 
-        public IReadOnlyCollection<TDomain> Data => this.cache;
+        protected List<TDomain> CachedData { get; private set; }
+
+        public virtual IReadOnlyCollection<TDomain> Data => this.CachedData;
 
         public async Task<OperationResult<TDomain>> LoadAsync(string partitionKey, string rowKey, bool force = false)
         {
@@ -80,7 +81,7 @@ namespace Cod.Channel
             {
                 if (continueToLoadMore)
                 {
-                    continuationToken = fetchHistory[key];                    
+                    continuationToken = fetchHistory[key];
                     proceed = true;
                 }
                 else
@@ -120,7 +121,7 @@ namespace Cod.Channel
                     };
                 }
             }
-            
+
             return OperationResult<IReadOnlyCollection<TDomain>>.Create(result);
         }
 
@@ -193,18 +194,18 @@ namespace Cod.Channel
         protected virtual void Cache(IEnumerable<TDomain> domainObjects)
         {
             this.Uncache(domainObjects);
-            this.cache.AddRange(domainObjects);
+            this.CachedData.AddRange(domainObjects);
         }
 
         protected virtual void Uncache(TDomain domainObject) => Uncache(new[] { domainObject });
 
         protected virtual void Uncache(IEnumerable<TDomain> domainObjects)
-            => this.cache.RemoveAll(c => domainObjects.Any(dobj => dobj.PartitionKey == c.PartitionKey && dobj.RowKey == c.RowKey));
+            => this.CachedData.RemoveAll(c => domainObjects.Any(dobj => dobj.PartitionKey == c.PartitionKey && dobj.RowKey == c.RowKey));
 
         protected virtual void Uncache(TEntity entity) => Uncache(new[] { entity });
 
         protected virtual void Uncache(IEnumerable<TEntity> entities)
-            => this.cache.RemoveAll(c => entities.Any(en => en.PartitionKey == c.PartitionKey && en.RowKey == c.RowKey));
+            => this.CachedData.RemoveAll(c => entities.Any(en => en.PartitionKey == c.PartitionKey && en.RowKey == c.RowKey));
 
         protected struct TableStorageFetchKey : IEquatable<TableStorageFetchKey>
         {

@@ -120,32 +120,35 @@ namespace Cod.Channel
             {
                 Data = new List<T>(),
             };
-            var statusCode = 0;
             string upstreamErrorMessage = null;
             while (true)
             {
-                var request = new HttpRequestMessage(HttpMethod.Get, url.ToString());
-                foreach (var key in TableStorageRequestHeaders.Keys)
-                {
-                    request.Headers.Add(key, TableStorageRequestHeaders[key]);
-                }
+                var u = new StringBuilder(url.ToString());
 
                 if (continuationToken != null)
                 {
                     if (!String.IsNullOrWhiteSpace(continuationToken.NextPartitionKey))
                     {
-                        request.Headers.Add("x-ms-continuation-NextPartitionKey", continuationToken.NextPartitionKey);
+                        u.Append("&NextPartitionKey=");
+                        u.Append(continuationToken.NextPartitionKey);
                     }
 
                     if (!String.IsNullOrWhiteSpace(continuationToken.NextRowKey))
                     {
-                        request.Headers.Add("x-ms-continuation-NextRowKey", continuationToken.NextRowKey);
+                        u.Append("&NextRowKey=");
+                        u.Append(continuationToken.NextRowKey);
                     }
+                }
+
+                var request = new HttpRequestMessage(HttpMethod.Get, u.ToString());
+                foreach (var key in TableStorageRequestHeaders.Keys)
+                {
+                    request.Headers.Add(key, TableStorageRequestHeaders[key]);
                 }
 
                 var response = await httpClient.SendAsync(request);
                 var responseBody = await response.Content.ReadAsStringAsync();
-                statusCode = (int)response.StatusCode;
+                var statusCode = (int)response.StatusCode;
                 if (statusCode >= 200 && statusCode < 300)
                 {
                     string nextPK = null, nextRK = null;

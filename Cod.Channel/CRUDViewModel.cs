@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
@@ -13,86 +14,73 @@ namespace Cod.Channel
 
         public TItemViewModel Updating { get; private set; }
 
-        protected abstract ICommand CreateCommand { get; }
+        protected virtual ICommand CreateCommand { get => throw new NotImplementedException(); }
 
-        protected abstract ICommand UpdateCommand { get; }
+        protected virtual ICommand UpdateCommand { get => throw new NotImplementedException(); }
 
-        protected abstract ICommand DeleteCommand { get; }
+        protected virtual ICommand DeleteCommand { get => throw new NotImplementedException(); }
 
         protected virtual Task SetErrorAsync(string error) => Task.CompletedTask;
 
-        public void RequestCreating()
+        protected virtual object ToEntity(TItemViewModel updateParameter) => throw new NotImplementedException();
+
+        public virtual void RequestCreating()
         {
             this.CreatingValidationState = null;
             this.Creating = new TCreateParameter();
         }
 
-        public void CancelCreating()
+        public virtual void CancelCreating()
         {
             this.Creating = default;
             this.CreatingValidationState = null;
         }
 
-        public void RequestUpdating(TItemViewModel entity)
+        public virtual void RequestUpdating(TItemViewModel entity)
         {
             this.UpdatingValidationState = null;
             this.Updating = entity;
         }
 
-        public void CancelUpdating()
+        public virtual void CancelUpdating()
         {
             this.Updating = default;
             this.UpdatingValidationState = null;
         }
 
-        public async Task CreateAsync()
-        {
-            if (this.Creating != null)
-            {
-                var result = await this.CreateCommand.ExecuteAsync(this.Creating);
-                if (result.IsSuccess)
+        public virtual async Task CreateAsync()
+            => await ViewModelHelper.ValidateAndExecuteAsync(
+                () => Task.FromResult(this.CreateCommand),
+                () => Task.FromResult<object>(this.Creating),
+                state =>
                 {
-                    this.Creating = default;
-                    this.CreatingValidationState = null;
-                }
-                else
-                {
-                    await SetErrorAsync(result.Message);
-                    if (result.Code == InternalError.BadRequest)
+                    if (state == null)
                     {
-                        this.CreatingValidationState = result.Reference as ValidationState;
+                        this.Creating = default;
                     }
-                }
-            }
-        }
+                    this.CreatingValidationState = state;
+                    return Task.CompletedTask;
+                },
+                error => SetErrorAsync(error));
 
-        public async Task UpdateAsync()
-        {
-            if (this.Updating != null)
-            {
-                var result = await this.UpdateCommand.ExecuteAsync(this.Updating);
-                if (result.IsSuccess)
+        public virtual async Task UpdateAsync()
+            => await ViewModelHelper.ValidateAndExecuteAsync(
+                () => Task.FromResult(this.UpdateCommand),
+                () => Task.FromResult(this.ToEntity(this.Updating)),
+                state =>
                 {
-                    this.Updating = default;
-                    this.UpdatingValidationState = null;
-                }
-                else
-                {
-                    await SetErrorAsync(result.Message);
-                    if (result.Code == InternalError.BadRequest)
+                    if (state == null)
                     {
-                        this.UpdatingValidationState = result.Reference as ValidationState;
+                        this.Updating = default;
                     }
-                }
-            }
-        }
+                    this.UpdatingValidationState = state;
+                    return Task.CompletedTask;
+                },
+                error => SetErrorAsync(error));
 
-        public async Task DeleteAsync(TItemViewModel entity)
+        public virtual async Task DeleteAsync(StorageKey key)
         {
-            if (entity != null)
-            {
-                await this.DeleteCommand.ExecuteAsync(entity);
-            }
+            await this.DeleteCommand.ExecuteAsync(key);
         }
     }
 }

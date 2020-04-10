@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -55,14 +56,19 @@ namespace Cod.Channel
             };
         }
 
-        public async Task<OperationResult> DeleteAsync(TEntity entity)
+        public async Task<OperationResult> DeleteAsync(StorageKey key)
         {
-            var result = await this.DeleteCoreAsync(entity);
-            if (result.IsSuccess)
+            var domain = this.Data.SingleOrDefault(d => d.PartitionKey == key.PartitionKey && d.RowKey == key.RowKey);
+            if (domain != null)
             {
-                this.Uncache(entity);
+                var result = await this.DeleteCoreAsync(domain.Entity);
+                if (result.IsSuccess)
+                {
+                    this.Uncache(domain);
+                }
+                return result;
             }
-            return result;
+            return OperationResult.Create();
         }
 
         public async Task<OperationResult<TDomain>> UpdateAsync(TEntity entity)

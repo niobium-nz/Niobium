@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Cod.Channel
@@ -29,7 +30,19 @@ namespace Cod.Channel
 
         public IReadOnlyDictionary<string, IReadOnlyCollection<string>> Busy => this.busyStatus;
 
-        public ICommand Get(CommandID id) => this.commands.SingleOrDefault(c => c.ID == id);
+        public ICommand Get(CommandID id)
+        {
+            var result = this.commands.Where(c => c.ID == id).ToList();
+            if (result.Count == 0)
+            {
+                throw new NotSupportedException($"No command found with ID {id.Group}.{id.Name}");
+            }
+            if (result.Count > 1)
+            {
+                throw new NotSupportedException($"Multiple commands found with ID {id.Group}.{id.Name}");
+            }
+            return result[0];
+        }
 
         public IEnumerable<ICommand> Get() => this.commands;
 
