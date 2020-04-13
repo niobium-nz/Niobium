@@ -5,7 +5,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
-using Blazor.Extensions.Storage.Interfaces;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Newtonsoft.Json;
 
@@ -16,7 +15,6 @@ namespace Cod.Channel
         private readonly Dictionary<string, StorageSignature> signatures = new Dictionary<string, StorageSignature>();
         private readonly IConfigurationProvider configuration;
         private readonly HttpClient httpClient;
-        private readonly ISessionStorage sessionStorage;
         private readonly IEnumerable<IEventHandler<IAuthenticator>> eventHandlers;
         private readonly Dictionary<string, string> claims;
 
@@ -36,24 +34,30 @@ namespace Cod.Channel
 
         public DefaultAuthenticator(IConfigurationProvider configuration,
             HttpClient httpClient,
-            ISessionStorage sessionStorage,
             IEnumerable<IEventHandler<IAuthenticator>> eventHandlers)
         {
             this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             this.httpClient = httpClient;
-            this.sessionStorage = sessionStorage;
             this.eventHandlers = eventHandlers;
             this.claims = new Dictionary<string, string>();
         }
 
+        protected virtual Task<string> GetSavedTokenAsync() => Task.FromResult(String.Empty);
+
+        protected virtual Task SaveTokenAsync(string token) => Task.CompletedTask;
+
+        protected virtual Task<Dictionary<string, StorageSignature>> GetSavedSignaturesAsync() => Task.FromResult<Dictionary<string, StorageSignature>>(null);
+
+        protected virtual Task SaveSignaturesAsync(Dictionary<string, StorageSignature> signatures) => Task.CompletedTask;
+
         public async Task InitializeAsync()
         {
-            var token = await this.sessionStorage.GetItem<string>("accessToken");
+            var token = await this.GetSavedTokenAsync();
             if (!String.IsNullOrWhiteSpace(token))
             {
                 this.SetToken(token);
             }
-            var ss = await this.sessionStorage.GetItem<Dictionary<string, StorageSignature>>("signatures");
+            var ss = await this.GetSavedSignaturesAsync();
             if (ss != null && ss.Count > 0)
             {
                 foreach (var key in ss.Keys)
@@ -77,7 +81,7 @@ namespace Cod.Channel
                 if (this.signatures[key].Expires < DateTimeOffset.UtcNow)
                 {
                     this.signatures.Remove(key);
-                    await this.SaveSignaturesAsync();
+                    await this.SaveSignaturesAsync(this.signatures);
                 }
                 else
                 {
@@ -109,7 +113,7 @@ namespace Cod.Channel
                 var json = await response.Content.ReadAsStringAsync();
                 var signature = JsonConvert.DeserializeObject<StorageSignature>(json);
                 this.signatures.Add(key, signature);
-                await this.SaveSignaturesAsync();
+                await this.SaveSignaturesAsync(this.signatures);
                 return OperationResult<StorageSignature>.Create(signature);
             }
             else if (statusCode == 401)
@@ -121,7 +125,7 @@ namespace Cod.Channel
                 {
                     await eventHandler.InvokeAsync(this);
                 }
-                await this.SaveSignaturesAsync();
+                await this.SaveSignaturesAsync(this.signatures);
                 return OperationResult<StorageSignature>.Create(InternalError.AuthenticationRequired, null);
             }
             else if (InternalError.Messages.ContainsKey(statusCode))
@@ -150,7 +154,7 @@ namespace Cod.Channel
                     this.SetToken(header.Parameter);
                     if (remember)
                     {
-                        await this.sessionStorage.SetItem("accessToken", header.Parameter);
+                        await this.SaveTokenAsync(header.Parameter);
                     }
                     return OperationResult.Create();
                 }
@@ -207,14 +211,12 @@ namespace Cod.Channel
             this.Token = null;
             this.claims.Clear();
             this.signatures.Clear();
-            await this.SaveSignaturesAsync();
+            await this.SaveSignaturesAsync(this.signatures);
             foreach (var eventHandler in this.eventHandlers)
             {
                 await eventHandler.InvokeAsync(this);
             }
         }
-
-        private Task SaveSignaturesAsync() => Task.CompletedTask;// await this.sessionStorage.SetItem("signatures", this.signatures);
 
         private static string BuildSignatureCacheKey(string token, StorageType type, string resource, string partitionKey, string rowKey)
             => $"{token}|{(int)type}|{resource}|{partitionKey}|{rowKey}";
