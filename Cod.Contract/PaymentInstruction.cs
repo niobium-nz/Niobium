@@ -2,17 +2,17 @@
 {
     public class PaymentInstruction
     {
-        public PaymentInstruction(int amount, string reference, string instruction)
-        {
-            this.Amount = amount;
-            this.Reference = reference;
-            this.Instruction = instruction;
-        }
+        /// <summary>
+        /// 金额 单位为分
+        /// </summary>
+        public int Amount { get; set; }
 
-        public int Amount { get; private set; }
+        public string Reference { get; set; }
 
-        public string Reference { get; private set; }
+        public string Instruction { get; set; }
 
-        public string Instruction { get; private set; }
+        public PaymentMethod Method { get; set; }
+
+        public int Reason { get; set; }
     }
 }
