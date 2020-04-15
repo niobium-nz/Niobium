@@ -29,7 +29,7 @@ namespace Cod
                 }
                 else
                 {
-                    throw new NotSupportedException($"Validation not supported on: {exp.ToString()}");
+                    throw new NotSupportedException($"Validation not supported on: {exp}");
                 }
 
                 var func = exp.Compile();
@@ -45,19 +45,6 @@ namespace Cod
                     {
                         result.AddError(member, item.ErrorMessage);
                     }
-                }
-            }
-            else if (model is IValidatable validateable)
-            {
-                var customErrors = validateable.Validate();
-                if (customErrors.Count > 0)
-                {
-                    isValid = false;
-                }
-
-                foreach (var key in customErrors.Keys)
-                {
-                    result.AddError(key, customErrors[key]);
                 }
             }
 

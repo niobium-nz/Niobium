@@ -10,7 +10,7 @@ namespace Cod.Channel
 
         public virtual bool CanExecute => true;
 
-        public abstract Task<OperationResult> ExecuteAsync(object parameter);
+        public abstract Task<CommandExecutionEventArgs> ExecuteAsync(object parameter);
 
         protected virtual void OnExecuting(object sender, CommandExecutionEventArgs e)
             => this.Commander.OnExecuting(new CommandExecutionRecord(e));

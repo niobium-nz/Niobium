@@ -3,16 +3,12 @@ using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
-    public abstract class CRUDListViewModel<TCreateParameter, TItemViewModel>
+    public abstract class CRUDListViewModel<TCreateParameter, TUpdateParameter>
         where TCreateParameter : new()
     {
-        public ValidationState CreatingValidationState { get; private set; }
-
         public TCreateParameter Creating { get; private set; }
 
-        public ValidationState UpdatingValidationState { get; private set; }
-
-        public TItemViewModel Updating { get; private set; }
+        public TUpdateParameter Updating { get; private set; }
 
         protected virtual ICommand CreateCommand { get => throw new NotImplementedException(); }
 
@@ -20,67 +16,46 @@ namespace Cod.Channel
 
         protected virtual ICommand DeleteCommand { get => throw new NotImplementedException(); }
 
-        protected virtual Task SetErrorAsync(string error) => Task.CompletedTask;
+        protected virtual Task OnCreateError(CommandExecutionEventArgs args) => Task.CompletedTask;
 
-        protected virtual object ToEntity(TItemViewModel updateParameter) => throw new NotImplementedException();
-
-        public virtual void RequestCreating()
-        {
-            this.CreatingValidationState = null;
-            this.Creating = new TCreateParameter();
-        }
-
-        public virtual void CancelCreating()
+        protected virtual Task OnCreateSuccess(CommandExecutionEventArgs args)
         {
             this.Creating = default;
-            this.CreatingValidationState = null;
+            return Task.CompletedTask;
         }
 
-        public virtual void RequestUpdating(TItemViewModel entity)
-        {
-            this.UpdatingValidationState = null;
-            this.Updating = entity;
-        }
+        protected virtual Task OnUpdateError(CommandExecutionEventArgs args) => Task.CompletedTask;
 
-        public virtual void CancelUpdating()
+        protected virtual Task OnUpdateSuccess(CommandExecutionEventArgs args)
         {
             this.Updating = default;
-            this.UpdatingValidationState = null;
+            return Task.CompletedTask;
         }
+
+        protected virtual object BuildUpdateParameter() => throw new NotImplementedException();
+
+        public virtual void RequestCreating(object parameter) => this.Creating = new TCreateParameter();
+
+        public virtual void CancelCreating() => this.Creating = default;
+
+        public virtual void RequestUpdating(TUpdateParameter obj, object parameter) => this.Updating = obj;
+
+        public virtual void CancelUpdating() => this.Updating = default;
 
         public virtual async Task CreateAsync()
             => await ViewModelHelper.ValidateAndExecuteAsync(
                 () => Task.FromResult(this.CreateCommand),
                 () => Task.FromResult<object>(this.Creating),
-                state =>
-                {
-                    if (state == null)
-                    {
-                        this.Creating = default;
-                    }
-                    this.CreatingValidationState = state;
-                    return Task.CompletedTask;
-                },
-                error => SetErrorAsync(error));
+                this.OnCreateSuccess,
+                this.OnCreateError);
 
         public virtual async Task UpdateAsync()
             => await ViewModelHelper.ValidateAndExecuteAsync(
                 () => Task.FromResult(this.UpdateCommand),
-                () => Task.FromResult(this.ToEntity(this.Updating)),
-                state =>
-                {
-                    if (state == null)
-                    {
-                        this.Updating = default;
-                    }
-                    this.UpdatingValidationState = state;
-                    return Task.CompletedTask;
-                },
-                error => SetErrorAsync(error));
+                () => Task.FromResult(this.BuildUpdateParameter()),
+                this.OnUpdateSuccess,
+                this.OnUpdateError);
 
-        public virtual async Task DeleteAsync(StorageKey key)
-        {
-            await this.DeleteCommand.ExecuteAsync(key);
-        }
+        public virtual async Task DeleteAsync(StorageKey key) => await this.DeleteCommand.ExecuteAsync(key);
     }
 }

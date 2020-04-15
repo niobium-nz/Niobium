@@ -4,7 +4,7 @@ namespace Cod.Channel
 {
     public abstract class GenericCommand : BaseCommand, ICommand
     {
-        public override async Task<OperationResult> ExecuteAsync(object parameter)
+        public override async Task<CommandExecutionEventArgs> ExecuteAsync(object parameter)
         {
             var args = this.BuildEventArgs();
             this.OnExecuting(this, args);
@@ -12,7 +12,7 @@ namespace Cod.Channel
             var executedArgs = (CommandExecutionEventArgs)args.Clone();
             executedArgs.Result = result;
             this.OnExecuted(this, executedArgs);
-            return result;
+            return executedArgs;
         }
 
         protected abstract Task<OperationResult> CoreExecuteAsync();
@@ -23,7 +23,7 @@ namespace Cod.Channel
     public abstract class GenericCommand<TReturn> : BaseCommand, ICommand
         where TReturn : OperationResult
     {
-        public override async Task<OperationResult> ExecuteAsync(object parameter)
+        public override async Task<CommandExecutionEventArgs> ExecuteAsync(object parameter)
         {
             var args = this.BuildEventArgs();
             this.OnExecuting(this, args);
@@ -31,7 +31,7 @@ namespace Cod.Channel
             var executedArgs = (CommandExecutionEventArgs)args.Clone();
             executedArgs.Result = result;
             this.OnExecuted(this, executedArgs);
-            return result;
+            return executedArgs;
         }
 
         protected abstract Task<TReturn> CoreExecuteAsync();
@@ -42,7 +42,7 @@ namespace Cod.Channel
     public abstract class GenericCommand<TParameter, TReturn> : BaseCommand, ICommand
         where TReturn : OperationResult
     {
-        public override async Task<OperationResult> ExecuteAsync(object parameter)
+        public override async Task<CommandExecutionEventArgs> ExecuteAsync(object parameter)
         {
             if (parameter is TParameter p)
             {
@@ -52,7 +52,7 @@ namespace Cod.Channel
                 var executedArgs = (CommandExecutionEventArgs)args.Clone();
                 executedArgs.Result = result;
                 this.OnExecuted(this, executedArgs);
-                return result;
+                return executedArgs;
             }
 
             return null;
