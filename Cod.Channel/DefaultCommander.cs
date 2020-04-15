@@ -69,7 +69,7 @@ namespace Cod.Channel
             }
         }
 
-        public void SetBusy(string group, string name)
+        public IDisposable SetBusy(string group, string name)
         {
             if (!this.busyStatus.ContainsKey(group))
             {
@@ -80,6 +80,7 @@ namespace Cod.Channel
             {
                 list.Add(name);
             }
+            return new BusyState(this, group, name);
         }
 
         public void UnsetBusy(string group, string name)

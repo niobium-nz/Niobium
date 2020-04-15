@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
+    public abstract class CRUDListViewModel<T> : CRUDListViewModel<T, T> where T : new() { }
+
     public abstract class CRUDListViewModel<TCreateParameter, TUpdateParameter>
         where TCreateParameter : new()
     {
@@ -34,11 +36,11 @@ namespace Cod.Channel
 
         protected virtual object BuildUpdateParameter() => throw new NotImplementedException();
 
-        public virtual void RequestCreating(object parameter) => this.Creating = new TCreateParameter();
+        public virtual void RequestCreating(object parameter = null) => this.Creating = new TCreateParameter();
 
         public virtual void CancelCreating() => this.Creating = default;
 
-        public virtual void RequestUpdating(TUpdateParameter obj, object parameter) => this.Updating = obj;
+        public virtual void RequestUpdating(TUpdateParameter obj, object parameter = null) => this.Updating = obj;
 
         public virtual void CancelUpdating() => this.Updating = default;
 

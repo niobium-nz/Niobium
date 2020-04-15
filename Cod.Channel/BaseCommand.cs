@@ -2,6 +2,11 @@
 
 namespace Cod.Channel
 {
+    public abstract class BaseCommand<T> : BaseCommand, ICommand<T>
+    {
+        public abstract Task<CommandExecutionEventArgs> ExecuteAsync(T parameter);
+    }
+
     public abstract class BaseCommand : ICommand
     {
         protected ICommander Commander { get; private set; }

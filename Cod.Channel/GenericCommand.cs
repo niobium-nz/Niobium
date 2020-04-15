@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
@@ -39,9 +40,12 @@ namespace Cod.Channel
         protected virtual CommandExecutionEventArgs BuildEventArgs() => new CommandExecutionEventArgs(this.ID, null);
     }
 
-    public abstract class GenericCommand<TParameter, TReturn> : BaseCommand, ICommand
+    public abstract class GenericCommand<TParameter, TReturn> : BaseCommand<TParameter>, ICommand<TParameter>
         where TReturn : OperationResult
     {
+        public override Task<CommandExecutionEventArgs> ExecuteAsync(TParameter parameter)
+            => this.ExecuteAsync((object)parameter);
+
         public override async Task<CommandExecutionEventArgs> ExecuteAsync(object parameter)
         {
             if (parameter is TParameter p)
@@ -54,8 +58,10 @@ namespace Cod.Channel
                 this.OnExecuted(this, executedArgs);
                 return executedArgs;
             }
-
-            return null;
+            else
+            {
+                throw new NotSupportedException($"Command parameter type is not support: {parameter.GetType()}");
+            }
         }
 
         protected abstract Task<TReturn> CoreExecuteAsync(TParameter parameter);

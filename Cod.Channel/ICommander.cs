@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Cod.Channel
 {
@@ -14,7 +15,7 @@ namespace Cod.Channel
 
         IEnumerable<ICommand> Get();
 
-        void SetBusy(string group, string name);
+        IDisposable SetBusy(string group, string name);
 
         void UnsetBusy(string group, string name);
 

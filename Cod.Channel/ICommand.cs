@@ -2,6 +2,11 @@
 
 namespace Cod.Channel
 {
+    public interface ICommand<T> : ICommand
+    {
+        Task<CommandExecutionEventArgs> ExecuteAsync(T parameter);
+    }
+
     public interface ICommand
     {
         CommandID ID { get; }
