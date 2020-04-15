@@ -12,11 +12,11 @@ namespace Cod.Channel
 
         public TUpdateParameter Updating { get; private set; }
 
-        protected virtual ICommand CreateCommand { get => throw new NotImplementedException(); }
+        protected virtual ICommand<TCreateParameter> CreateCommand { get => throw new NotImplementedException(); }
 
-        protected virtual ICommand UpdateCommand { get => throw new NotImplementedException(); }
+        protected virtual ICommand<TUpdateParameter> UpdateCommand { get => throw new NotImplementedException(); }
 
-        protected virtual ICommand DeleteCommand { get => throw new NotImplementedException(); }
+        protected virtual ICommand<StorageKey> DeleteCommand { get => throw new NotImplementedException(); }
 
         protected virtual Task OnCreateError(CommandExecutionEventArgs args) => Task.CompletedTask;
 
@@ -45,18 +45,30 @@ namespace Cod.Channel
         public virtual void CancelUpdating() => this.Updating = default;
 
         public virtual async Task CreateAsync()
-            => await ViewModelHelper.ValidateAndExecuteAsync(
-                () => Task.FromResult(this.CreateCommand),
-                () => Task.FromResult<object>(this.Creating),
-                this.OnCreateSuccess,
-                this.OnCreateError);
+        {
+            var result = await this.CreateCommand.ExecuteAsync(this.Creating);
+            if (result.Result.IsSuccess)
+            {
+                await this.OnCreateSuccess(result);
+            }
+            else
+            {
+                await this.OnCreateError(result);
+            }
+        }
 
         public virtual async Task UpdateAsync()
-            => await ViewModelHelper.ValidateAndExecuteAsync(
-                () => Task.FromResult(this.UpdateCommand),
-                () => Task.FromResult(this.BuildUpdateParameter()),
-                this.OnUpdateSuccess,
-                this.OnUpdateError);
+        {
+            var result = await this.UpdateCommand.ExecuteAsync(this.Updating);
+            if (result.Result.IsSuccess)
+            {
+                await this.OnUpdateSuccess(result);
+            }
+            else
+            {
+                await this.OnUpdateError(result);
+            }
+        }
 
         public virtual async Task DeleteAsync(StorageKey key) => await this.DeleteCommand.ExecuteAsync(key);
     }
