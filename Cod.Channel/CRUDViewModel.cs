@@ -34,13 +34,17 @@ namespace Cod.Channel
             return Task.CompletedTask;
         }
 
-        protected virtual object BuildUpdateParameter() => throw new NotImplementedException();
-
         public virtual void RequestCreating(object parameter = null) => this.Creating = new TCreateParameter();
 
         public virtual void CancelCreating() => this.Creating = default;
 
-        public virtual void RequestUpdating(TUpdateParameter obj, object parameter = null) => this.Updating = obj;
+        public virtual void RequestUpdating(object parameter = null)
+        {
+            if (parameter != null && parameter is TUpdateParameter p)
+            {
+                this.Updating = p;
+            }
+        }
 
         public virtual void CancelUpdating() => this.Updating = default;
 
