@@ -8,9 +8,9 @@ namespace Cod.Channel
     public abstract class CRUDListViewModel<TCreateParameter, TUpdateParameter>
         where TCreateParameter : new()
     {
-        public TCreateParameter Creating { get; private set; }
+        public TCreateParameter Creating { get; protected set; }
 
-        public TUpdateParameter Updating { get; private set; }
+        public TUpdateParameter Updating { get; protected set; }
 
         protected virtual ICommand<TCreateParameter> CreateCommand { get => throw new NotImplementedException(); }
 

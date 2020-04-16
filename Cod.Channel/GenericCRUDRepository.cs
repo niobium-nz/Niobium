@@ -5,12 +5,37 @@ using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
+    public abstract class GenericCRUDRepository<TDomain, TEntity>
+        : GenericCRUDRepository<TDomain, TEntity, TEntity>,
+        ICRUDRepository<TDomain, TEntity>
+        where TEntity : class, IEntity
+        where TDomain : IChannelDomain<TEntity>
+    {
+        public GenericCRUDRepository(IConfigurationProvider configuration, HttpClient httpClient, IAuthenticator authenticator, Func<TDomain> createDomain)
+            : base(configuration, httpClient, authenticator, createDomain)
+        {
+        }
+    }
+
     public abstract class GenericCRUDRepository<TDomain, TEntity, TCreateParams>
+        : GenericCRUDRepository<TDomain, TEntity, TCreateParams, TCreateParams>,
+        ICRUDRepository<TDomain, TEntity, TCreateParams>
+        where TEntity : IEntity
+        where TDomain : IChannelDomain<TEntity>
+        where TCreateParams : class
+    {
+        public GenericCRUDRepository(IConfigurationProvider configuration, HttpClient httpClient, IAuthenticator authenticator, Func<TDomain> createDomain)
+            : base(configuration, httpClient, authenticator, createDomain)
+        {
+        }
+    }
+
+    public abstract class GenericCRUDRepository<TDomain, TEntity, TCreateParams, TUpdateParams>
         : GenericRepository<TDomain, TEntity>,
         ICreatableRepository<TDomain, TEntity, TCreateParams>,
-        IUpdatableRepository<TDomain, TEntity>,
+        IUpdatableRepository<TDomain, TEntity, TUpdateParams>,
         IDeletableRepository<TDomain, TEntity>,
-        ICRUDRepository<TDomain, TEntity, TCreateParams>
+        ICRUDRepository<TDomain, TEntity, TCreateParams, TUpdateParams>
         where TEntity : IEntity
         where TDomain : IChannelDomain<TEntity>
         where TCreateParams : class
@@ -71,13 +96,14 @@ namespace Cod.Channel
             return OperationResult.Create();
         }
 
-        public async Task<OperationResult<TDomain>> UpdateAsync(TEntity entity)
+        public async Task<OperationResult<TDomain>> UpdateAsync(TUpdateParams parameters)
         {
             TDomain newEntity = default;
-            var result = await this.UpdateCoreAsync(entity);
+            var result = await this.UpdateCoreAsync(parameters);
             if (result.IsSuccess)
             {
-                var loadResult = await this.LoadAsync(entity.PartitionKey, entity.RowKey, true);
+                var keys = result.Result;
+                var loadResult = await this.LoadAsync(keys.PartitionKey, keys.RowKey, true);
                 if (!loadResult.IsSuccess)
                 {
                     return loadResult;
@@ -102,7 +128,7 @@ namespace Cod.Channel
             };
         }
 
-        protected virtual Task<OperationResult> UpdateCoreAsync(TEntity entity) => throw new NotImplementedException();
+        protected virtual Task<OperationResult<StorageKey>> UpdateCoreAsync(TUpdateParams parameters) => throw new NotImplementedException();
 
         protected virtual Task<OperationResult<StorageKey>> CreateCoreAsync(TCreateParams parameters) => throw new NotImplementedException();
 

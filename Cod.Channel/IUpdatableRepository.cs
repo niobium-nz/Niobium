@@ -2,9 +2,9 @@
 
 namespace Cod.Channel
 {
-    public interface IUpdatableRepository<TDomain, TEntity> : IRepository<TDomain, TEntity>
+    public interface IUpdatableRepository<TDomain, TEntity, TUpdateParams> : IRepository<TDomain, TEntity>
         where TDomain : IChannelDomain<TEntity>
     {
-        Task<OperationResult<TDomain>> UpdateAsync(TEntity entity);
+        Task<OperationResult<TDomain>> UpdateAsync(TUpdateParams parameter);
     }
 }
