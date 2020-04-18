@@ -30,6 +30,8 @@ namespace Cod
 
         public DateTimeOffset AuthCodeExpiry { get; set; }
 
+        public DateTimeOffset? Created { get; set; }
+
         public static string BuildPartitionKey(OpenIDProvider provider, string appID)
         {
             if (appID is null)

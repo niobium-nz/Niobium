@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using Autofac;
+﻿using Autofac;
 using Cod.Platform.Model;
 using Microsoft.Extensions.Logging;
 
@@ -17,7 +15,10 @@ namespace Cod.Platform
             builder.RegisterType<CloudTableRepository<Model.Accounting>>().As<IRepository<Model.Accounting>>();
             builder.RegisterType<CloudTableRepository<Model.Entitlement>>().As<IRepository<Model.Entitlement>>();
             builder.RegisterType<CloudTableRepository<Model.Transaction>>().As<IRepository<Model.Transaction>>();
-            builder.RegisterType<CloudTableRepository<Model.OpenID>>().As<IRepository<Model.OpenID>>();
+            builder.RegisterType<CloudTableRepository<Model.OpenID>>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<Model.Login>>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<Model.User>>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<Model.MobileLocation>>().AsImplementedInterfaces();
 
             builder.RegisterType<ChargeRepository>().As<IRepository<Charge>>();
             builder.RegisterType<WechatRepository>().AsSelf();
@@ -37,6 +38,7 @@ namespace Cod.Platform
             builder.RegisterType<CloudBlobRepository>().AsImplementedInterfaces();
             builder.RegisterType<NotificationService>().AsImplementedInterfaces();
             builder.RegisterType<AliyunRegistrationSMSNotificationChannel>().AsImplementedInterfaces();
+            builder.RegisterType<OpenIDManager>().AsImplementedInterfaces();
             base.Load(builder);
         }
     }

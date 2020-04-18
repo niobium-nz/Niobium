@@ -3,9 +3,11 @@ using Microsoft.Azure.Cosmos.Table;
 
 namespace Cod.Platform
 {
-    public class Impediment : TableEntity
+    public class Impediment : TableEntity, IEntity
     {
         public string Policy { get; set; }
+
+        public DateTimeOffset? Created { get; set; }
 
         public string GetCategory() => this.PartitionKey.Split('-')[1];
 

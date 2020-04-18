@@ -15,7 +15,7 @@ namespace Cod.Platform
             IReadOnlyDictionary<string, object> parameters,
             int level = 0)
         {
-            if (level != NotificationLevels.SMS)
+            if (level != (int)OpenIDKind.SMS)
             {
                 return OperationResult.Create(InternalError.NotAllowed);
             }

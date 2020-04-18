@@ -14,6 +14,8 @@ namespace Cod
 
         public string Value { get; set; }
 
+        public DateTimeOffset? Created { get; set; }
+ 
         public static string BuildPartitionKey(OpenIDProvider provider, string appID, string accountID)
         {
             if (appID is null)

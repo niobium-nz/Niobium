@@ -1,20 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using Cod.Platform.Model;
 
 namespace Cod.Platform
 {
     public abstract class PushNotificationChannel : INotificationChannel
     {
-        private readonly Lazy<IRepository<OpenID>> repository;
+        private readonly Lazy<IOpenIDManager> openIDManager;
 
-        public PushNotificationChannel(Lazy<IRepository<OpenID>> repository)
+        public PushNotificationChannel(Lazy<IOpenIDManager> openIDManager)
         {
-            this.repository = repository;
+            this.openIDManager = openIDManager;
         }
 
-        public async Task<OperationResult> SendAsync(
+        public virtual async Task<OperationResult> SendAsync(
             string brand,
             string account,
             NotificationContext context,
@@ -22,35 +22,25 @@ namespace Cod.Platform
             IReadOnlyDictionary<string, object> parameters,
             int level = 0)
         {
-            if (level != NotificationLevels.Push)
+            if (level == (int)OpenIDKind.Email
+                || level == (int)OpenIDKind.PhoneCall
+                || level == (int)OpenIDKind.SMS)
             {
                 return OperationResult.Create(InternalError.NotAllowed);
             }
 
-            var targets = new List<NotificationContext>();
-            if (context.Provider != OpenIDProvider.Nest)
+            IEnumerable<NotificationContext> targets;
+            if (context != null)
             {
-                targets.Add(context);
+                targets = new List<NotificationContext> { context };
             }
             else
             {
-                for (int i = 0; i < 10; i++)
-                {
-                    var openID = await repository.Value.GetAsync(
-                        OpenID.BuildPartitionKey(this.ProviderSupport, i, context.UserID),
-                        OpenID.BuildRowKey(context.UserID));
-                    if (openID == null)
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        targets.Add(new NotificationContext(openID.GetProvider(), openID.AppID, openID.UserID));
-                    }
-                }
+                var openid = await openIDManager.Value.GetChannelsAsync(account, level);
+                targets = openid.Select(i => new NotificationContext(level, i.GetApp(), i.GetAccount()));
             }
 
-            if (targets.Count == 0)
+            if (!targets.Any())
             {
                 return OperationResult.Create(InternalError.NotAllowed);
             }
@@ -58,11 +48,9 @@ namespace Cod.Platform
             return await this.SendPushAsync(brand, targets, template, parameters);
         }
 
-        protected abstract OpenIDProvider ProviderSupport { get; }
-
         protected abstract Task<OperationResult> SendPushAsync(
             string brand,
-            IReadOnlyCollection<NotificationContext> targets,
+            IEnumerable<NotificationContext> targets,
             int template,
             IReadOnlyDictionary<string, object> parameters);
     }

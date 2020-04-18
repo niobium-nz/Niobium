@@ -29,7 +29,7 @@ namespace Cod.Platform
             int template,
             IReadOnlyDictionary<string, object> parameters, int level = 0)
         {
-            if (level != NotificationLevels.Email)
+            if (level != (int)OpenIDKind.Email)
             {
                 return OperationResult.Create(InternalError.NotAllowed);
             }

@@ -11,20 +11,18 @@ namespace Cod.Platform
         private readonly Lazy<WechatIntegration> wechatIntegration;
 
         public WechatPushNotificationChannel(
-            Lazy<IRepository<OpenID>> repository,
+            Lazy<IOpenIDManager> openIDManager,
             Lazy<IRepository<BrandingInfo>> brandingRepository,
             Lazy<WechatIntegration> wechatIntegration)
-            : base(repository)
+            : base(openIDManager)
         {
             this.brandingRepository = brandingRepository;
             this.wechatIntegration = wechatIntegration;
         }
 
-        protected override OpenIDProvider ProviderSupport => OpenIDProvider.Wechat;
-
         protected async override Task<OperationResult> SendPushAsync(
             string brand,
-            IReadOnlyCollection<NotificationContext> targets,
+            IEnumerable<NotificationContext> targets,
             int template,
             IReadOnlyDictionary<string, object> parameters)
         {
@@ -32,7 +30,7 @@ namespace Cod.Platform
             var result = true;
             foreach (var target in targets)
             {
-                var cacheKey = $"{(int)target.Provider}|{target.AppID}";
+                var cacheKey = $"{target.Kind}|{target.AppID}";
                 BrandingInfo brandingInfo;
                 if (brandcache.ContainsKey(cacheKey))
                 {

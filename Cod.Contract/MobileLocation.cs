@@ -18,6 +18,8 @@ namespace Cod
 
         public string Isp { get; set; }
 
+        public DateTimeOffset? Created { get; set; }
+  
         public static string BuildPartitionKey(string mobile) => mobile.Trim().Substring(0, 2);
 
         public static string BuildRowKey(string mobile) => mobile.Trim().Substring(2, 5);

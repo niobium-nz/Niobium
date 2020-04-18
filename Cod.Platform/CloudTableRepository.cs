@@ -1,13 +1,19 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos.Table;
 
 namespace Cod.Platform
 {
-    public class CloudTableRepository<T> : IRepository<T> where T : ITableEntity, new()
+    public class CloudTableRepository<T> : IRepository<T>, IQueryableRepository<T> where T : ITableEntity, IEntity, new()
     {
         public async Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist)
         {
+            foreach (var entity in entities)
+            {
+                entity.Created = DateTimeOffset.UtcNow;
+            }
+
             if (replaceIfExist)
             {
                 return await CloudStorage.GetTable<T>().InsertOrReplaceAsync(entities);
@@ -34,5 +40,16 @@ namespace Cod.Platform
 
         public async Task<TableQueryResult<T>> GetAsync(int limit)
             => await CloudStorage.GetTable<T>().WhereAsync<T>(takeCount: limit);
+
+        public async Task<TableQueryResult<T>> GetAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, int limit = -1)
+            => await CloudStorage.GetTable<T>().WhereAsync<T>(
+                TableQuery.CombineFilters(
+                    TableQuery.GenerateFilterCondition(nameof(ITableEntity.PartitionKey), QueryComparisons.Equal, partitionKey),
+                TableOperators.And,
+                    TableQuery.CombineFilters(
+                        TableQuery.GenerateFilterCondition(nameof(ITableEntity.RowKey), QueryComparisons.GreaterThanOrEqual, rowKeyStart),
+                    TableOperators.And,
+                        TableQuery.GenerateFilterCondition(nameof(ITableEntity.RowKey), QueryComparisons.LessThanOrEqual, rowKeyEnd))),
+                takeCount: limit);
     }
 }

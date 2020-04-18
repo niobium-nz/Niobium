@@ -18,6 +18,8 @@ namespace Cod
 
         public double Balance { get; set; }
 
+        public DateTimeOffset? Created { get; set; }
+
         public string GetPrincipal() => this.PartitionKey;
 
         public void SetPrincipal(string value) => this.PartitionKey = BuildPartitionKey(value);

@@ -3,16 +3,16 @@
     public class NotificationContext
     {
         public NotificationContext(
-            OpenIDProvider provider,
+            int kind,
             string appID,
             string userID)
         {
-            this.Provider = provider;
+            this.Kind = kind;
             this.AppID = appID;
             this.UserID = userID;
         }
 
-        public OpenIDProvider Provider { get; private set; }
+        public int Kind { get; private set; }
 
         public string AppID { get; private set; }
 

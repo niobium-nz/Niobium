@@ -14,6 +14,8 @@ namespace Cod.Platform.Model
 
         public DateTimeOffset Timestamp { get; set; }
 
+        public DateTimeOffset? Created { get; set; }
+
         public IConvertible GetCache() => this.RowKey == BuildAPITicketRowKey() ? this.Value : null;
 
         public static string BuildAPITicketPartitionKey(string appID) => appID.Trim();
