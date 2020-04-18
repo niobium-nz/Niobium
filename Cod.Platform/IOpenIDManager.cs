@@ -5,7 +5,7 @@ namespace Cod.Platform
 {
     public interface IOpenIDManager
     {
-        Task RegisterAsync(string account, int kind, string identity, bool overrideIfExists);
+        Task RegisterAsync(string account, int kind, string identity, bool overrideIfExists, string offsetPrefix = null);
 
         Task<IEnumerable<Model.OpenID>> GetChannelsAsync(string account);
 

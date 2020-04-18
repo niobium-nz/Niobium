@@ -28,26 +28,26 @@ namespace Cod.Platform
                 OpenID.BuildRowKeyStart(kind),
                 OpenID.BuildRowKeyEnd(kind));
 
-        public async Task RegisterAsync(string account, int kind, string identity, bool overrideIfExists)
+        public async Task RegisterAsync(string account, int kind, string identity, bool overrideIfExists, string offsetPrefix = null)
         {
             var entity = new Model.OpenID
             {
                 PartitionKey = OpenID.BuildPartitionKey(account),
                 Identity = identity,
             };
-            await this.RetryRegistration(entity, 0, overrideIfExists);
+            await this.RetryRegistration(entity, 0, overrideIfExists, offsetPrefix);
         }
 
-        private async Task RetryRegistration(Model.OpenID entity, int retryCount, bool overrideIfExists)
+        private async Task RetryRegistration(Model.OpenID entity, int retryCount, bool overrideIfExists, string offsetPrefix)
         {
             var kind = entity.GetKind();
             if (retryCount == 0)
             {
-                entity.RowKey = OpenID.BuildRowKey(kind);
+                entity.RowKey = OpenID.BuildRowKey(kind, offsetPrefix);
             }
             else
             {
-                entity.RowKey = OpenID.BuildRowKey(kind, retryCount.ToString());
+                entity.RowKey = OpenID.BuildRowKey(kind, $"{offsetPrefix}-{retryCount}");
             }
 
             try
@@ -58,7 +58,7 @@ namespace Cod.Platform
             {
                 if (e.RequestInformation.HttpStatusCode == 419)
                 {
-                    await this.RetryRegistration(entity, ++retryCount, overrideIfExists);
+                    await this.RetryRegistration(entity, ++retryCount, overrideIfExists, offsetPrefix);
                 }
                 else
                 {
