@@ -7,10 +7,10 @@ namespace Cod.Platform
     {
         Task RegisterAsync(string account, int kind, string identity, bool overrideIfExists);
 
-        Task<IEnumerable<OpenID>> GetChannelsAsync(string account);
+        Task<IEnumerable<Model.OpenID>> GetChannelsAsync(string account);
 
-        Task<IEnumerable<OpenID>> GetChannelsAsync(string account, int kind);
+        Task<IEnumerable<Model.OpenID>> GetChannelsAsync(string account, int kind);
 
-        Task<OpenID> GetChannelAsync(string account, int kind, string identifier);
+        Task<Model.OpenID> GetChannelAsync(string account, int kind, string identifier);
     }
 }

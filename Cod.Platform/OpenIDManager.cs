@@ -7,22 +7,22 @@ namespace Cod.Platform
 {
     internal class OpenIDManager : IOpenIDManager
     {
-        private readonly Lazy<IQueryableRepository<OpenID>> repository;
+        private readonly Lazy<IQueryableRepository<Model.OpenID>> repository;
 
-        public OpenIDManager(Lazy<IQueryableRepository<OpenID>> repository)
+        public OpenIDManager(Lazy<IQueryableRepository<Model.OpenID>> repository)
         {
             this.repository = repository;
         }
 
-        public async Task<OpenID> GetChannelAsync(string account, int kind, string identifier)
+        public async Task<Model.OpenID> GetChannelAsync(string account, int kind, string identifier)
             => await this.repository.Value.GetAsync(
                 OpenID.BuildPartitionKey(account),
                 OpenID.BuildRowKey(kind, identifier));
 
-        public async Task<IEnumerable<OpenID>> GetChannelsAsync(string account)
+        public async Task<IEnumerable<Model.OpenID>> GetChannelsAsync(string account)
             => await this.repository.Value.GetAsync(OpenID.BuildPartitionKey(account));
 
-        public async Task<IEnumerable<OpenID>> GetChannelsAsync(string account, int kind)
+        public async Task<IEnumerable<Model.OpenID>> GetChannelsAsync(string account, int kind)
             => await this.repository.Value.GetAsync(
                 OpenID.BuildPartitionKey(account),
                 OpenID.BuildRowKeyStart(kind),
@@ -30,7 +30,7 @@ namespace Cod.Platform
 
         public async Task RegisterAsync(string account, int kind, string identity, bool overrideIfExists)
         {
-            var entity = new OpenID
+            var entity = new Model.OpenID
             {
                 PartitionKey = OpenID.BuildPartitionKey(account),
                 Identity = identity,
@@ -38,7 +38,7 @@ namespace Cod.Platform
             await this.RetryRegistration(entity, 0, overrideIfExists);
         }
 
-        private async Task RetryRegistration(OpenID entity, int retryCount, bool overrideIfExists)
+        private async Task RetryRegistration(Model.OpenID entity, int retryCount, bool overrideIfExists)
         {
             var kind = entity.GetKind();
             if (retryCount == 0)
