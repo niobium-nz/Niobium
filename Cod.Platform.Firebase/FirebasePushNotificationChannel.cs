@@ -61,7 +61,7 @@ namespace Cod.Platform
                     token = t.AccessToken;
                 }
 
-                var message = await this.GetMessageAsync(target);
+                var message = await this.GetMessageAsync(brand, template, target, parameters);
                 var request = new FirebaseMessageRequest { Message = message };
                 using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
                 {
@@ -95,6 +95,10 @@ namespace Cod.Platform
 
         protected abstract Task<GoogleCredential> GetCredentialAsync(NotificationContext context);
 
-        protected abstract Task<FirebaseMessage> GetMessageAsync(NotificationContext context);
+        protected abstract Task<FirebaseMessage> GetMessageAsync(
+            string brand,
+            int template,
+            NotificationContext context,
+            IReadOnlyDictionary<string, object> parameters);
     }
 }
