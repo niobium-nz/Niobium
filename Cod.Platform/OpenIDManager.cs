@@ -28,26 +28,44 @@ namespace Cod.Platform
                 OpenID.BuildRowKeyStart(kind),
                 OpenID.BuildRowKeyEnd(kind));
 
-        public async Task RegisterAsync(string account, int kind, string identity, bool overrideIfExists, string offsetPrefix = null)
+        public async Task RegisterAsync(IEnumerable<OpenIDRegistration> registrations)
         {
-            var entity = new Model.OpenID
+            // TODO (5he11) poor performance, better to use batch operation
+            foreach (var registration in registrations)
             {
-                PartitionKey = OpenID.BuildPartitionKey(account),
-                Identity = identity,
-            };
-            await this.RetryRegistration(entity, 0, overrideIfExists, offsetPrefix);
+                var entity = new Model.OpenID
+                {
+                    PartitionKey = OpenID.BuildPartitionKey(registration.Account),
+                    Identity = registration.Identity,
+                };
+                await this.RetryRegistration(entity, registration.App, 0, registration.OverrideIfExists, registration.OffsetPrefix);
+            }
         }
 
-        private async Task RetryRegistration(Model.OpenID entity, int retryCount, bool overrideIfExists, string offsetPrefix)
+        private async Task RetryRegistration(Model.OpenID entity, string app, int retryCount, bool overrideIfExists, string offsetPrefix)
         {
             var kind = entity.GetKind();
-            if (retryCount == 0)
+            if (String.IsNullOrWhiteSpace(app))
             {
-                entity.RowKey = OpenID.BuildRowKey(kind, offsetPrefix);
+                if (retryCount == 0)
+                {
+                    entity.RowKey = OpenID.BuildRowKey(kind, offsetPrefix);
+                }
+                else
+                {
+                    entity.RowKey = OpenID.BuildRowKey(kind, $"{offsetPrefix}-{retryCount}");
+                }
             }
             else
             {
-                entity.RowKey = OpenID.BuildRowKey(kind, $"{offsetPrefix}-{retryCount}");
+                if (retryCount == 0)
+                {
+                    entity.RowKey = OpenID.BuildRowKey(kind, app, offsetPrefix);
+                }
+                else
+                {
+                    entity.RowKey = OpenID.BuildRowKey(kind, app, $"{offsetPrefix}-{retryCount}");
+                }
             }
 
             try
@@ -58,7 +76,7 @@ namespace Cod.Platform
             {
                 if (e.RequestInformation.HttpStatusCode == 419)
                 {
-                    await this.RetryRegistration(entity, ++retryCount, overrideIfExists, offsetPrefix);
+                    await this.RetryRegistration(entity, app, ++retryCount, overrideIfExists, offsetPrefix);
                 }
                 else
                 {
