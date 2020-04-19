@@ -20,6 +20,21 @@ namespace Cod.Platform
             this.wechatIntegration = wechatIntegration;
         }
 
+        public async override Task<OperationResult> SendAsync(
+            string brand,
+            string account,
+            NotificationContext context,
+            int template,
+            IReadOnlyDictionary<string, object> parameters,
+            int level = 0)
+        {
+            if (level != (int)OpenIDKind.Wechat)
+            {
+                return OperationResult.Create(InternalError.NotAllowed);
+            }
+            return await base.SendAsync(brand, account, context, template, parameters, level);
+        }
+
         protected async override Task<OperationResult> SendPushAsync(
             string brand,
             IEnumerable<NotificationContext> targets,

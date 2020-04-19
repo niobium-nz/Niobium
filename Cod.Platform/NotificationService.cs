@@ -21,8 +21,8 @@ namespace Cod.Platform
             NotificationContext context,
             int template,
             IReadOnlyDictionary<string, object> parameters,
-            int startLevel = 0,
-            int maxLevel = 10)
+            int startLevel = 1,
+            int maxLevel = 100)
         {
             var level = startLevel;
             if (level > maxLevel)

@@ -53,7 +53,7 @@ namespace Cod.Platform
                 }
                 else
                 {
-                    entity.RowKey = OpenID.BuildRowKey(kind, $"{offsetPrefix}-{retryCount}");
+                    entity.RowKey = OpenID.BuildRowKey(kind, $"{offsetPrefix}{retryCount}");
                 }
             }
             else
@@ -64,7 +64,7 @@ namespace Cod.Platform
                 }
                 else
                 {
-                    entity.RowKey = OpenID.BuildRowKey(kind, app, $"{offsetPrefix}-{retryCount}");
+                    entity.RowKey = OpenID.BuildRowKey(kind, app, $"{offsetPrefix}{retryCount}");
                 }
             }
 
