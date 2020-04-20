@@ -50,7 +50,7 @@ namespace Cod
                 app = String.Empty;
             }
 
-            return $"{BuildRowKeyStart(kind, app)}|{identifier.Trim()}";
+            return $"{BuildRowKeyStart(kind, app)}{identifier.Trim()}";
         }
 
         public static string BuildRowKeyStart(OpenIDKind kind) => BuildRowKeyStart((int)kind);
@@ -79,11 +79,7 @@ namespace Cod
             return parts.Length == 3 ? parts[1] : null;
         }
 
-        public int GetKind()
-        {
-            var parts = this.RowKey.Split('|');
-            return Int32.Parse(parts[parts.Length - 1]);
-        }
+        public int GetKind() => Int32.Parse(this.RowKey.Split('|')[0]);
 
         public bool IsKindOf(OpenIDKind type) => this.IsKindOf((int)type);
 
