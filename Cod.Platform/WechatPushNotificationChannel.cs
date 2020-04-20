@@ -45,7 +45,7 @@ namespace Cod.Platform
             var result = true;
             foreach (var target in targets)
             {
-                var cacheKey = $"{target.Kind}|{target.AppID}";
+                var cacheKey = $"{target.Kind}|{target.App}";
                 BrandingInfo brandingInfo;
                 if (brandcache.ContainsKey(cacheKey))
                 {
@@ -69,9 +69,9 @@ namespace Cod.Platform
                 var parameter = await this.GetTemplateParameterAsync(brandingInfo, target, template, parameters);
                 var link = await this.GetTemplateLinkAsync(brandingInfo, target, template, parameters);
                 var notificationResult = await this.wechatIntegration.Value.SendNotificationAsync(
-                    target.AppID,
+                    target.App,
                     brandingInfo.WechatSecret,
-                    target.UserID,
+                    target.Identity,
                     templateID,
                     parameter,
                     link);

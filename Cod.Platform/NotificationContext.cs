@@ -4,18 +4,22 @@
     {
         public NotificationContext(
             int kind,
-            string appID,
-            string userID)
+            string app,
+            string user,
+            string identity)
         {
             this.Kind = kind;
-            this.AppID = appID;
-            this.UserID = userID;
+            this.App = app;
+            this.User = user;
+            this.Identity = identity;
         }
 
         public int Kind { get; private set; }
 
-        public string AppID { get; private set; }
+        public string App { get; private set; }
 
-        public string UserID { get; private set; }
+        public string User { get; private set; }
+
+        public string Identity { get; private set; }
     }
 }

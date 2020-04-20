@@ -46,7 +46,7 @@ namespace Cod.Platform
             var success = true;
             foreach (var target in targets)
             {
-                var token = await cacheStore.Value.GetAsync<string>(target.AppID, AccessTokenCacheKey);
+                var token = await cacheStore.Value.GetAsync<string>(target.App, AccessTokenCacheKey);
                 if (String.IsNullOrWhiteSpace(token))
                 {
                     var cred = await this.GetCredentialAsync(target);
@@ -56,7 +56,7 @@ namespace Cod.Platform
                     if (t.ExpiresInSeconds.HasValue)
                     {
                         var expiry = DateTimeOffset.UtcNow.AddSeconds(t.ExpiresInSeconds.Value - 1000);
-                        await cacheStore.Value.SetAsync(target.AppID, AccessTokenCacheKey, t.AccessToken, true, expiry);
+                        await cacheStore.Value.SetAsync(target.App, AccessTokenCacheKey, t.AccessToken, true, expiry);
                     }
                     token = t.AccessToken;
                 }
@@ -66,17 +66,18 @@ namespace Cod.Platform
                 using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
                 {
                     httpclient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                    using (var content = new StringContent(JsonConvert.SerializeObject(request, JsonSetting.CamelCaseSetting), Encoding.UTF8, "application/json"))
+                    var json = JsonConvert.SerializeObject(request, JsonSetting.CamelCaseSetting);
+                    using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
                     {
                         var resp = await httpclient.PostAsync("https://fcm.googleapis.com/v1/projects/queuesafe/messages:send", content);
                         var status = (int)resp.StatusCode;
                         if (status < 200 || status >= 400)
                         {
                             success = false;
-                            var json = await resp.Content.ReadAsStringAsync();
+                            var error = await resp.Content.ReadAsStringAsync();
                             if (Logger.Instance != null)
                             {
-                                Logger.Instance.LogError($"An error occurred while making request to Firebase with status code {status}: {json}");
+                                Logger.Instance.LogError($"An error occurred while making request to Firebase with status code {status}: {error}");
                             }
                         }
                     }
