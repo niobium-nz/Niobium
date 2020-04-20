@@ -45,6 +45,11 @@ namespace Cod
                 identifier = String.Empty;
             }
 
+            if (app is null)
+            {
+                app = String.Empty;
+            }
+
             return $"{BuildRowKeyStart(kind, app)}|{identifier.Trim()}";
         }
 

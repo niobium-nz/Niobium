@@ -36,6 +36,7 @@ namespace Cod.Platform
                 var entity = new Model.OpenID
                 {
                     PartitionKey = OpenID.BuildPartitionKey(registration.Account),
+                    RowKey = OpenID.BuildRowKey(registration.Kind, registration.App, registration.OffsetPrefix),
                     Identity = registration.Identity,
                 };
                 await this.RetryRegistration(entity, registration.App, 0, registration.OverrideIfExists, registration.OffsetPrefix);
