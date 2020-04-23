@@ -46,6 +46,12 @@ namespace Cod.Platform
             var success = true;
             foreach (var target in targets)
             {
+                var message = await this.GetMessageAsync(brand, template, target, parameters);
+                if (message == null)
+                {
+                    continue;
+                }
+
                 var token = await cacheStore.Value.GetAsync<string>(target.App, AccessTokenCacheKey);
                 if (String.IsNullOrWhiteSpace(token))
                 {
@@ -61,7 +67,6 @@ namespace Cod.Platform
                     token = t.AccessToken;
                 }
 
-                var message = await this.GetMessageAsync(brand, template, target, parameters);
                 var request = new FirebaseMessageRequest { Message = message };
                 using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
                 {
