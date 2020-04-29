@@ -10,7 +10,7 @@ namespace Cod.Channel
 
         Task<OperationResult<IReadOnlyDictionary<string, string>>> GetClaimsAsync();
 
-        Task<OperationResult> AquireTokenAsync(string username, string password, bool remember);
+        Task<OperationResult> AquireTokenAsync(string scheme, string username, string password, bool remember);
 
         Task<OperationResult<StorageSignature>> AquireSignatureAsync(StorageType type, string resource, string partitionKey, string rowKey);
 

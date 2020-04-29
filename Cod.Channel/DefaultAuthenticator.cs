@@ -138,12 +138,12 @@ namespace Cod.Channel
             }
         }
 
-        public async Task<OperationResult> AquireTokenAsync(string username, string password, bool remember)
+        public async Task<OperationResult> AquireTokenAsync(string scheme, string username, string password, bool remember)
         {
             var apiUrl = await this.configuration.GetSettingAsync(Constants.KEY_API_URL);
             var creds = Encoding.ASCII.GetBytes($"{username.Trim()}:{password.Trim()}");
             var request = new HttpRequestMessage(HttpMethod.Get, $"{apiUrl}/v1/token");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(creds));
+            request.Headers.Authorization = new AuthenticationHeaderValue(scheme, Convert.ToBase64String(creds));
             var response = await this.httpClient.SendAsync(request);
             var statusCode = (int)response.StatusCode;
             if (statusCode >= 200 && statusCode < 300)
