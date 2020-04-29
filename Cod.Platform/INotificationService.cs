@@ -12,6 +12,6 @@ namespace Cod.Platform
             int template,
             IReadOnlyDictionary<string, object> parameters,
             int startLevel = 0,
-            int maxLevel = 10);
+            int maxLevel = 100);
     }
 }
