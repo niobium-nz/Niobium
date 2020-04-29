@@ -12,7 +12,7 @@ namespace Cod.Platform
 
         public WechatNotificationKeyword Remark { get; set; }
 
-        public object ToJson()
+        public string ToJson()
         {
             var sb = new StringBuilder();
             var index = 1;
@@ -23,8 +23,7 @@ namespace Cod.Platform
                 index++;
             }
             sb.Append($"\"remark\":{{\"value\":\"{this.Remark.Value}\",\"color\":\"{this.Remark.Color}\"}}}}");
-            var content = sb.ToString();
-            return JsonConvert.DeserializeObject<dynamic>(content);
+            return sb.ToString();
         }
     }
 

@@ -242,14 +242,16 @@ namespace Cod.Platform
             {
                 var query = HttpUtility.ParseQueryString(String.Empty);
                 query["access_token"] = token.Result;
-                var requestData = new WechatTemplateMessageRequest
+                var request = new WechatTemplateMessageRequest
                 {
-                    Data = parameters.ToJson(),
+                    Data = "JSON_DATA",
                     TemplateId = templateId,
                     Touser = openId,
                     Url = link
                 };
-                using (var content = new StringContent(JsonConvert.SerializeObject(requestData, JsonSetting.UnderstoreCaseSetting)))
+                var data = JsonConvert.SerializeObject(request, JsonSetting.UnderstoreCaseSetting);
+                data = data.Replace("JSON_DATA", parameters.ToJson());
+                using (var content = new StringContent(data))
                 {
                     var resp = await httpclient.PostAsync($"https://{WechatHost}/cgi-bin/message/template/send?{query.ToString()}", content);
                     var status = (int)resp.StatusCode;
