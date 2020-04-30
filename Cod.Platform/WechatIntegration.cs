@@ -21,7 +21,6 @@ namespace Cod.Platform
         private const string AccessTokenCacheKey = "AccessToken";
         private static readonly TimeSpan AccessTokenCacheExpiry = TimeSpan.FromHours(1);
         private static string wechatProxyHost;
-        private static string wechatPayHost;
         private readonly Lazy<ICacheStore> cacheStore;
 
         public WechatIntegration(Lazy<ICacheStore> cacheStore)
@@ -29,10 +28,9 @@ namespace Cod.Platform
             this.cacheStore = cacheStore;
         }
 
-        public static void Initialize(string wechatReverseProxy, string wechatPayReverseProxy)
+        public static void Initialize(string wechatReverseProxy)
         {
             wechatProxyHost = wechatReverseProxy ?? throw new ArgumentNullException(nameof(wechatReverseProxy));
-            wechatPayHost = wechatPayReverseProxy ?? throw new ArgumentNullException(nameof(wechatPayReverseProxy));
         }
 
         public async Task<OperationResult<string>> GenerateMediaDownloadUrl(string appId, string secret, string mediaID)
