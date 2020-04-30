@@ -17,6 +17,7 @@ namespace Cod.Platform
     public class WechatIntegration
     {
         private const string WechatHost = "api.weixin.qq.com";
+        private const string WechatPayHost = "api.mch.weixin.qq.com";
         private const string AccessTokenCacheKey = "AccessToken";
         private static readonly TimeSpan AccessTokenCacheExpiry = TimeSpan.FromHours(1);
         private static string wechatProxyHost;
@@ -325,7 +326,7 @@ namespace Cod.Platform
 
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
             {
-                var resp = await httpclient.PostAsync($"https://{wechatPayHost}/pay/unifiedorder",
+                var resp = await httpclient.PostAsync($"https://{WechatPayHost}/pay/unifiedorder",
                     new StringContent(GetXML(param), Encoding.UTF8, "application/xml"));
                 var status = (int)resp.StatusCode;
                 var body = await resp.Content.ReadAsStringAsync();
