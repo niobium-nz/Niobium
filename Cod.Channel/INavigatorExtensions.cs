@@ -1,4 +1,6 @@
-﻿using System.Collections.Specialized;
+﻿using System;
+using System.Collections.Specialized;
+using System.Net;
 using System.Web;
 
 namespace Cod.Channel
@@ -6,6 +8,19 @@ namespace Cod.Channel
     public static class INavigatorExtensions
     {
         private readonly static NameValueCollection EmptyQueryString = new NameValueCollection();
+
+        public static void CheckAndPerformGoto(this INavigator navigator)
+        {
+            var queries = navigator.GetQueryStrings();
+            var go = queries.Get("go");
+            if (!String.IsNullOrWhiteSpace(go))
+            {
+                queries.Remove("go");
+                var queryString = queries.ToString();
+                go = WebUtility.UrlDecode(go);
+                navigator.NavigateTo($"{navigator.BaseUri}{go}?{queryString}");
+            }
+        }
 
         public static NameValueCollection GetQueryStrings(this INavigator navigator)
         {

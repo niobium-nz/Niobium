@@ -27,6 +27,11 @@ namespace Cod.Platform
                 return OperationResult<BaiduCodeScanResponse>.Create(token.Code, reference: token);
             }
 
+            if (stream.CanSeek)
+            {
+                stream.Seek(0, SeekOrigin.Begin);
+            }
+
             byte[] data;
             byte[] buffer = new byte[16 * 1024];
             using (MemoryStream ms = new MemoryStream())

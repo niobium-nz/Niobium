@@ -49,7 +49,7 @@ namespace Cod.Channel
             }
 
             returnUrl = WebUtility.UrlEncode(returnUrl);
-            var callbackUrl = WebUtility.UrlEncode(this.Navigator.BaseUri + this.Handler);
+            var callbackUrl = WebUtility.UrlEncode($"{this.Navigator.BaseUri}?go={this.Handler}");
             var type = await this.Browser.GetBrowserTypeAsync();
             if (type == BrowserType.Wechat)
             {
