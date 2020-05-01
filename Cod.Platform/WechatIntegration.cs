@@ -17,10 +17,10 @@ namespace Cod.Platform
     public class WechatIntegration
     {
         private const string WechatHost = "api.weixin.qq.com";
+        private const string WechatPayHost = "api.mch.weixin.qq.com";
         private const string AccessTokenCacheKey = "AccessToken";
         private static readonly TimeSpan AccessTokenCacheExpiry = TimeSpan.FromHours(1);
         private static string wechatProxyHost;
-        private static string wechatPayHost;
         private readonly Lazy<ICacheStore> cacheStore;
 
         public WechatIntegration(Lazy<ICacheStore> cacheStore)
@@ -28,10 +28,9 @@ namespace Cod.Platform
             this.cacheStore = cacheStore;
         }
 
-        public static void Initialize(string wechatReverseProxy, string wechatPayReverseProxy)
+        public static void Initialize(string wechatReverseProxy)
         {
             wechatProxyHost = wechatReverseProxy ?? throw new ArgumentNullException(nameof(wechatReverseProxy));
-            wechatPayHost = wechatPayReverseProxy ?? throw new ArgumentNullException(nameof(wechatPayReverseProxy));
         }
 
         public async Task<OperationResult<string>> GenerateMediaDownloadUrl(string appId, string secret, string mediaID)
@@ -242,14 +241,16 @@ namespace Cod.Platform
             {
                 var query = HttpUtility.ParseQueryString(String.Empty);
                 query["access_token"] = token.Result;
-                var requestData = new WechatTemplateMessageRequest
+                var request = new WechatTemplateMessageRequest
                 {
-                    Data = parameters.ToJson(),
+                    Data = "JSON_DATA",
                     TemplateId = templateId,
                     Touser = openId,
                     Url = link
                 };
-                using (var content = new StringContent(JsonConvert.SerializeObject(requestData, JsonSetting.UnderstoreCaseSetting)))
+                var data = JsonConvert.SerializeObject(request, JsonSetting.UnderstoreCaseSetting);
+                data = data.Replace("JSON_DATA", parameters.ToJson());
+                using (var content = new StringContent(data))
                 {
                     var resp = await httpclient.PostAsync($"https://{WechatHost}/cgi-bin/message/template/send?{query.ToString()}", content);
                     var status = (int)resp.StatusCode;
@@ -323,7 +324,7 @@ namespace Cod.Platform
 
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
             {
-                var resp = await httpclient.PostAsync($"https://{wechatPayHost}/pay/unifiedorder",
+                var resp = await httpclient.PostAsync($"https://{WechatPayHost}/pay/unifiedorder",
                     new StringContent(GetXML(param), Encoding.UTF8, "application/xml"));
                 var status = (int)resp.StatusCode;
                 var body = await resp.Content.ReadAsStringAsync();

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.Text;
 
 namespace Cod.Platform
@@ -15,13 +16,13 @@ namespace Cod.Platform
         {
             var sb = new StringBuilder();
             var index = 1;
-            sb.Append($"{{'frist':{{'value':'{this.First.Value}','color':'{this.First.Color}'}},");
+            sb.Append($"{{\"frist\":{{\"value\":\"{this.First.Value}\",\"color\":\"{this.First.Color}\"}},");
             foreach (var item in this.Keywords)
             {
-                sb.Append($"'keyword{index}':{{'value':'{item.Value}','color':'{item.Color}'}},");
+                sb.Append($"\"keyword{index}\":{{\"value\":\"{item.Value}\",\"color\":\"{item.Color}\"}},");
                 index++;
             }
-            sb.Append($"'remark':{{'value':'{this.Remark.Value}','color':'{this.Remark.Color}'}}");
+            sb.Append($"\"remark\":{{\"value\":\"{this.Remark.Value}\",\"color\":\"{this.Remark.Color}\"}}}}");
             return sb.ToString();
         }
     }
