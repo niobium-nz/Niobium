@@ -81,6 +81,7 @@ namespace Cod.Platform
             {
                 str += $"&url={mediaURL}";
             }
+            str = WebUtility.UrlEncode(str);
 
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
             {
