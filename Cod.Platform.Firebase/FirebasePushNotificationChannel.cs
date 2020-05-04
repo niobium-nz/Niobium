@@ -14,7 +14,7 @@ namespace Cod.Platform
     public abstract class FirebasePushNotificationChannel : PushNotificationChannel
     {
         private readonly Lazy<ICacheStore> cacheStore;
-        private const string AccessTokenCacheKey = "GoogleAccessToken";
+        private const string AccessTokenCacheKey = "GooglePushAccessToken";
 
         public FirebasePushNotificationChannel(Lazy<IOpenIDManager> openIDManager, Lazy<ICacheStore> cacheStore)
             : base(openIDManager)

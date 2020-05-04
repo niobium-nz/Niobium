@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Cod.Platform</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="jose-jwt" Version="2.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cod.Contract\Cod.Abstractions.csproj" />
+    <ProjectReference Include="..\Cod.Helper\Cod.Helper.csproj" />
+    <ProjectReference Include="..\Cod.Platform\Cod.Platform.csproj" />
+  </ItemGroup>
+
+</Project>
