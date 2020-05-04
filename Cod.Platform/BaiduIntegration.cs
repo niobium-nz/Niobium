@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -32,23 +33,12 @@ namespace Cod.Platform
                 stream.Seek(0, SeekOrigin.Begin);
             }
 
-            byte[] data;
-            byte[] buffer = new byte[16 * 1024];
-            using (MemoryStream ms = new MemoryStream())
-            {
-                int read;
-                while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    ms.Write(buffer, 0, read);
-                }
-                data = ms.ToArray();
-            }
-            var base64 = WebUtility.UrlEncode(Convert.ToBase64String(data));
-
+            var buff = stream.ToByteArray();
+            var base64 = WebUtility.UrlEncode(Convert.ToBase64String(buff));
             var str = $"access_token={token.Result}&image={base64}";
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
             {
-                using (var post = new StringContent(str, System.Text.Encoding.UTF8, "application/x-www-form-urlencoded"))
+                using (var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded"))
                 {
                     var resp = await httpclient.PostAsync($"{Host}/rest/2.0/ocr/v1/qrcode", post);
                     var status = (int)resp.StatusCode;
@@ -67,7 +57,7 @@ namespace Cod.Platform
             }
         }
 
-        public async Task<OperationResult<BaiduOCRResponse>> PerformOCRAsync(string key, string secret, string mediaURL, bool tryHarder)
+        public async Task<OperationResult<BaiduOCRResponse>> PerformOCRAsync(string key, string secret, string mediaURL, Stream stream, bool tryHarder)
         {
             var token = await GetAccessToken(key, secret);
             if (!token.IsSuccess)
@@ -75,15 +65,26 @@ namespace Cod.Platform
                 return OperationResult<BaiduOCRResponse>.Create(token.Code, reference: token);
             }
 
+            var str = $"access_token={token.Result}&detect_direction=true&probability=true";
+            if (tryHarder)
+            {
+                if (stream.CanSeek)
+                {
+                    stream.Seek(0, SeekOrigin.Begin);
+                }
+
+                var buff = stream.ToByteArray();
+                var base64 = WebUtility.UrlEncode(Convert.ToBase64String(buff));
+                str += $"&image={base64}";
+            }
+            else
+            {
+                str += $"&url={mediaURL}";
+            }
+
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
             {
-                using (var post = new FormUrlEncodedContent(new Dictionary<string, string>
-                {
-                    { "access_token", token.Result },
-                    { "url", mediaURL },
-                    { "detect_direction", "true" },
-                    { "probability", "true" },
-                }))
+                using (var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded"))
                 {
                     var path = tryHarder ? "rest/2.0/ocr/v1/accurate_basic" : "rest/2.0/ocr/v1/general_basic";
                     var resp = await httpclient.PostAsync($"{Host}/{path}", post);
