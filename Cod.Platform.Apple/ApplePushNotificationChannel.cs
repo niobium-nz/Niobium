@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -47,8 +48,8 @@ namespace Cod.Platform
             var success = true;
             foreach (var target in targets)
             {
-                var message = await this.GetMessageAsync(brand, template, target, parameters);
-                if (message == null)
+                var messages = await this.GetMessagesAsync(brand, template, target, parameters);
+                if (messages == null || !messages.Any())
                 {
                     continue;
                 }
@@ -61,42 +62,45 @@ namespace Cod.Platform
 
                 using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
                 {
-                    using (var request = new HttpRequestMessage(HttpMethod.Post, $"https://api.sandbox.push.apple.com/3/device/{target.Identity}"))
+                    foreach (var message in messages)
                     {
-                        request.Version = new Version(2, 0);
-                        request.Headers.Add("apns-push-type", message.Background ? "background" : "alert");
-                        request.Headers.Add("apns-id", message.ID.ToString());
-                        request.Headers.Add("apns-expiration", message.Expires.ToUnixTimeSeconds().ToString());
-                        request.Headers.Add("apns-topic", message.Topic);
-                        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                        using (var request = new HttpRequestMessage(HttpMethod.Post, $"https://api.sandbox.push.apple.com/3/device/{target.Identity}"))
+                        {
+                            request.Version = new Version(2, 0);
+                            request.Headers.Add("apns-push-type", message.Background ? "background" : "alert");
+                            request.Headers.Add("apns-id", message.ID.ToString());
+                            request.Headers.Add("apns-expiration", message.Expires.ToUnixTimeSeconds().ToString());
+                            request.Headers.Add("apns-topic", message.Topic);
+                            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                        var sb = new StringBuilder();
-                        if (message.Background)
-                        {
-                            sb.Append("{\"aps\":{\"alert\":\"");
-                            sb.Append((string)message.Message);
-                            sb.Append("\"}}");
-                        }
-                        else
-                        {
-                            sb.Append("{\"aps\":{\"content-available\":1},");
-                            var json = JsonConvert.SerializeObject(message.Message);
-                            sb.Append(json.Substring(1));
-                        }
-
-                        using (var content = new StringContent(sb.ToString(), Encoding.UTF8, "application/json"))
-                        {
-                            request.Content = content;
-                            using (var resp = await httpclient.SendAsync(request))
+                            var sb = new StringBuilder();
+                            if (message.Background)
                             {
-                                var status = (int)resp.StatusCode;
-                                if (status < 200 || status >= 400)
+                                sb.Append("{\"aps\":{\"alert\":\"");
+                                sb.Append((string)message.Message);
+                                sb.Append("\"}}");
+                            }
+                            else
+                            {
+                                sb.Append("{\"aps\":{\"content-available\":1},");
+                                var json = JsonConvert.SerializeObject(message.Message);
+                                sb.Append(json.Substring(1));
+                            }
+
+                            using (var content = new StringContent(sb.ToString(), Encoding.UTF8, "application/json"))
+                            {
+                                request.Content = content;
+                                using (var resp = await httpclient.SendAsync(request))
                                 {
-                                    success = false;
-                                    var error = await resp.Content.ReadAsStringAsync();
-                                    if (Logger.Instance != null)
+                                    var status = (int)resp.StatusCode;
+                                    if (status < 200 || status >= 400)
                                     {
-                                        Logger.Instance.LogError($"An error occurred while making request to APN with status code {status}: {error}");
+                                        success = false;
+                                        var error = await resp.Content.ReadAsStringAsync();
+                                        if (Logger.Instance != null)
+                                        {
+                                            Logger.Instance.LogError($"An error occurred while making request to APN with status code {status}: {error}");
+                                        }
                                     }
                                 }
                             }
@@ -117,7 +121,7 @@ namespace Cod.Platform
 
         protected abstract Task<ApplePushCredential> GetCredentialAsync(NotificationContext context);
 
-        protected abstract Task<ApplePushNotification> GetMessageAsync(
+        protected abstract Task<IEnumerable<ApplePushNotification>> GetMessagesAsync(
             string brand,
             int template,
             NotificationContext context,
