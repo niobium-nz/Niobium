@@ -24,6 +24,11 @@ namespace Cod.Platform
             this.cacheStore = cacheStore;
         }
 
+        protected virtual string ApplePushNotificationHost
+        {
+            get => "api.sandbox.push.apple.com";
+        }
+
         public async override Task<OperationResult> SendAsync(string brand,
             string account,
             NotificationContext context,
@@ -58,13 +63,14 @@ namespace Cod.Platform
                 if (String.IsNullOrWhiteSpace(token))
                 {
                     token = await this.IssueTokenAsync(target);
+                    await cacheStore.Value.SetAsync(target.App, AccessTokenCacheKey, token, false, DateTimeOffset.UtcNow.AddMinutes(30));
                 }
 
                 using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
                 {
                     foreach (var message in messages)
                     {
-                        using (var request = new HttpRequestMessage(HttpMethod.Post, $"https://api.sandbox.push.apple.com/3/device/{target.Identity}"))
+                        using (var request = new HttpRequestMessage(HttpMethod.Post, $"https://{ApplePushNotificationHost}/3/device/{target.Identity}"))
                         {
                             request.Version = new Version(2, 0);
                             request.Headers.Add("apns-push-type", message.Background ? "background" : "alert");
@@ -76,15 +82,15 @@ namespace Cod.Platform
                             var sb = new StringBuilder();
                             if (message.Background)
                             {
-                                sb.Append("{\"aps\":{\"alert\":\"");
-                                sb.Append((string)message.Message);
-                                sb.Append("\"}}");
-                            }
-                            else
-                            {
                                 sb.Append("{\"aps\":{\"content-available\":1},");
                                 var json = JsonConvert.SerializeObject(message.Message);
                                 sb.Append(json.Substring(1));
+                            }
+                            else
+                            {
+                                sb.Append("{\"aps\":{\"alert\":\"");
+                                sb.Append((string)message.Message);
+                                sb.Append("\"}}");
                             }
 
                             using (var content = new StringContent(sb.ToString(), Encoding.UTF8, "application/json"))
