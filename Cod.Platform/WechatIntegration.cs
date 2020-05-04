@@ -249,7 +249,7 @@ namespace Cod.Platform
                     Url = link
                 };
                 var data = JsonConvert.SerializeObject(request, JsonSetting.UnderstoreCaseSetting);
-                data = data.Replace("JSON_DATA", parameters.ToJson());
+                data = data.Replace("\"JSON_DATA\"", parameters.ToJson());
                 using (var content = new StringContent(data))
                 {
                     var resp = await httpclient.PostAsync($"https://{WechatHost}/cgi-bin/message/template/send?{query.ToString()}", content);
