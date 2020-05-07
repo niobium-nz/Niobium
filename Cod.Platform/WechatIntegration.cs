@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Web;
 using System.Xml;
 using Cod.Platform.Model.Wechat;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace Cod.Platform
@@ -62,7 +63,22 @@ namespace Cod.Platform
                     {
                         var ms = new MemoryStream();
                         await s.CopyToAsync(ms);
-                        return OperationResult<Stream>.Create(ms);
+
+                        if (ms.Length > 1024)
+                        {
+                            return OperationResult<Stream>.Create(ms);
+                        }
+                        else
+                        {
+                            using (var sr = new StreamReader(ms))
+                            {
+                                var err = sr.ReadToEndAsync();
+                                if (Logger.Instance != null)
+                                {
+                                    Logger.Instance.LogError($"An error occurred while trying to download media {mediaID} from Wechat with status code {status}: {err}");
+                                }
+                            }
+                        }
                     }
                 }
                 return OperationResult<Stream>.Create(status, null);
