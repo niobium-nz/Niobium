@@ -41,28 +41,21 @@ namespace Cod.Platform
             int template,
             IReadOnlyDictionary<string, object> parameters)
         {
-            var brandcache = new Dictionary<string, BrandingInfo>();
-            var result = true;
+            var result = false;
             foreach (var target in targets)
             {
                 var cacheKey = $"{target.Kind}|{target.App}";
-                BrandingInfo brandingInfo;
-                if (brandcache.ContainsKey(cacheKey))
-                {
-                    brandingInfo = brandcache[cacheKey];
-                }
-                else
-                {
-                    brandingInfo = await this.brandingRepository.Value.GetByBrandAsync(brand);
-                }
+                var brandingInfo = await this.brandingRepository.Value.GetByBrandAsync(brand);
 
                 if (brandingInfo == null)
                 {
                     return OperationResult.Create(InternalError.InternalServerError);
                 }
-                else
+
+                if (brandingInfo.WechatAppID != target.App)
                 {
-                    brandcache.Add(cacheKey, brandingInfo);
+                    //REMARK (5he11) 当前推送的上下文所基于的品牌与推送目标的AppID不一致时应该跳过
+                    continue;
                 }
 
                 var templateID = await this.GetTemplateIDAsync(brandingInfo, target, template, parameters);
@@ -77,9 +70,9 @@ namespace Cod.Platform
                     link);
 
 
-                if (!notificationResult.IsSuccess)
+                if (notificationResult.IsSuccess)
                 {
-                    result = false;
+                    result = true;
                 }
             }
 
