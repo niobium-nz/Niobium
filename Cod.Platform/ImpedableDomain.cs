@@ -25,6 +25,11 @@ namespace Cod.Platform
         public async Task ImpedeAsync(string category, IEnumerable<int> causes, string policyInput = null)
         {
             var entity = await this.GetEntityAsync();
+            if (entity == null)
+            {
+                return;
+            }
+
             foreach (var cause in causes)
             {
                 var context = new IImpedimentContext<T>
@@ -51,6 +56,11 @@ namespace Cod.Platform
         public async Task UnimpedeAsync(string category, IEnumerable<int> causes, string policyInput = null)
         {
             var entity = await this.GetEntityAsync();
+            if (entity == null)
+            {
+                return;
+            }
+
             foreach (var cause in causes)
             {
                 var context = new IImpedimentContext<T>
