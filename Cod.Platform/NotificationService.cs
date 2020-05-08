@@ -6,16 +6,14 @@ namespace Cod.Platform
 {
     internal class NotificationService : INotificationService
     {
-        private readonly Lazy<INotificationService> service;
         private readonly Lazy<IEnumerable<INotificationChannel>> channels;
 
-        public NotificationService(Lazy<INotificationService> service, Lazy<IEnumerable<INotificationChannel>> channels)
+        public NotificationService(Lazy<IEnumerable<INotificationChannel>> channels)
         {
-            this.service = service;
             this.channels = channels;
         }
 
-        public async Task<OperationResult> SendAsync(
+        public async Task<OperationResult<int>> SendAsync(
             string brand,
             string account,
             NotificationContext context,
@@ -27,7 +25,7 @@ namespace Cod.Platform
             var level = startLevel;
             if (level > maxLevel)
             {
-                return OperationResult.Create(InternalError.InternalServerError);
+                return OperationResult<int>.Create(InternalError.InternalServerError, null);
             }
 
             foreach (var channel in channels.Value)
@@ -35,7 +33,7 @@ namespace Cod.Platform
                 var result = await channel.SendAsync(brand, account, context, template, parameters, level);
                 if (result.IsSuccess)
                 {
-                    return result;
+                    return new OperationResult<int>(result) { Result = level };
                 }
                 else if (result.Code == InternalError.NotAllowed)
                 {
@@ -46,7 +44,7 @@ namespace Cod.Platform
                     break;
                 }
             }
-            return await this.service.Value.SendAsync(brand, account, context, template, parameters, ++level);
+            return await this.SendAsync(brand, account, context, template, parameters, ++level);
         }
     }
 }

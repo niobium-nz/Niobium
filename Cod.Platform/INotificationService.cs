@@ -5,7 +5,7 @@ namespace Cod.Platform
 {
     public interface INotificationService
     {
-        Task<OperationResult> SendAsync(
+        Task<OperationResult<int>> SendAsync(
             string brand,
             string account,
             NotificationContext context,
