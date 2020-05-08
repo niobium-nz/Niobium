@@ -75,12 +75,13 @@ namespace Cod.Platform
                         }
                         else
                         {
+                            ms.Seek(0, SeekOrigin.Begin);
                             using (var sr = new StreamReader(ms))
                             {
                                 var err = await sr.ReadToEndAsync();
                                 if (Logger.Instance != null)
                                 {
-                                    Logger.Instance.LogError($"An error occurred while trying to download media {mediaID} from Wechat with status code {status}: {err}");
+                                    Logger.Instance.LogError($"An error occurred while trying to download media {mediaID} from Wechat with status code={status} length={s.Length}: {err}");
                                 }
                             }
                         }
