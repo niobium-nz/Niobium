@@ -45,8 +45,13 @@ namespace Cod.Platform
             return OperationResult<string>.Create($"http://{WechatHost}/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}");
         }
 
-        public async Task<OperationResult<Stream>> GetMediaAsync(string appId, string secret, string mediaID)
+        public async Task<OperationResult<Stream>> GetMediaAsync(string appId, string secret, string mediaID, int retry = 0)
         {
+            if (retry > 3)
+            {
+                return OperationResult<Stream>.Create((int)HttpStatusCode.InternalServerError, null);
+            }
+
             var url = await this.GenerateMediaDownloadUrl(appId, secret, mediaID);
             if (!url.IsSuccess)
             {
@@ -81,7 +86,7 @@ namespace Cod.Platform
                         }
                     }
                 }
-                return OperationResult<Stream>.Create(status, null);
+                return await GetMediaAsync(appId, secret, mediaID, ++retry);
             }
         }
 
