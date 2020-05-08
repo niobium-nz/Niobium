@@ -28,6 +28,10 @@
 
         public string WechatMerchantNotifyUri { get; set; }
 
+        public string SMSIntegrationKey { get; set; }
+
+        public string SMSIntegrationSecret { get; set; }
+
         public static string BuildPartitionKey(string brand) => brand.Trim().ToUpperInvariant();
     }
 }
