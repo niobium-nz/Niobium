@@ -36,7 +36,7 @@ namespace Cod.Platform
 
         public async Task<OperationResult<string>> GenerateMediaDownloadUrl(string appId, string secret, string mediaID)
         {
-            var token = await GetAccessToken(appId, secret);
+            var token = await GetAccessTokenAsync(appId, secret);
             if (!token.IsSuccess)
             {
                 return token;
@@ -79,9 +79,14 @@ namespace Cod.Platform
                             using (var sr = new StreamReader(ms))
                             {
                                 var err = await sr.ReadToEndAsync();
+                                if (err.Contains("\"errcode\":40001,"))
+                                {
+                                    await RevokeAccessTokenAsync(appId);
+                                }
+
                                 if (Logger.Instance != null)
                                 {
-                                    Logger.Instance.LogError($"An error occurred while trying to download media {mediaID} from Wechat with status code={status} length={s.Length}: {err}");
+                                    Logger.Instance.LogError($"An error occurred while trying to download media {mediaID} from Wechat with status code={status}: {err}");
                                 }
                             }
                         }
@@ -93,7 +98,7 @@ namespace Cod.Platform
 
         public async Task<OperationResult<string>> PerformOCRAsync(string appId, string secret, WechatUploadKind kind, string mediaID)
         {
-            var token = await GetAccessToken(appId, secret);
+            var token = await GetAccessTokenAsync(appId, secret);
             if (!token.IsSuccess)
             {
                 return token;
@@ -114,6 +119,17 @@ namespace Cod.Platform
                     {
                         return OperationResult<string>.Create(json);
                     }
+
+                    if (json.Contains("\"errcode\":40001,"))
+                    {
+                        await RevokeAccessTokenAsync(appId);
+                        return await PerformOCRAsync(appId, secret, kind, mediaID);
+                    }
+
+                    if (Logger.Instance != null)
+                    {
+                        Logger.Instance.LogError($"An error occurred while trying to Perform OCR over media {mediaID} from Wechat with status code={status}: {json}");
+                    }
                     return OperationResult<string>.Create(InternalError.InternalServerError, json);
                 }
                 return OperationResult<string>.Create(status, json);
@@ -122,7 +138,7 @@ namespace Cod.Platform
 
         public async Task<OperationResult<string>> PerformOCRAsync(string appId, string secret, WechatUploadKind kind, Stream input)
         {
-            var token = await GetAccessToken(appId, secret);
+            var token = await GetAccessTokenAsync(appId, secret);
             if (!token.IsSuccess)
             {
                 return token;
@@ -180,6 +196,17 @@ namespace Cod.Platform
                     {
                         return OperationResult<string>.Create(s);
                     }
+
+                    if (s.Contains("\"errcode\":40001,"))
+                    {
+                        await RevokeAccessTokenAsync(appId);
+                        return await PerformOCRAsync(appId, secret, kind, input);
+                    }
+
+                    if (Logger.Instance != null)
+                    {
+                        Logger.Instance.LogError($"An error occurred while trying to Perform OCR over stream media with status code={(int)response.StatusCode}: {s}");
+                    }
                     return OperationResult<string>.Create(InternalError.InternalServerError, s);
                 }
             }
@@ -187,7 +214,7 @@ namespace Cod.Platform
 
         public async Task<OperationResult<string>> GetJSApiTicket(string appID, string secret)
         {
-            var token = await GetAccessToken(appID, secret);
+            var token = await GetAccessTokenAsync(appID, secret);
             if (!token.IsSuccess)
             {
                 return token;
@@ -208,16 +235,25 @@ namespace Cod.Platform
                     {
                         return OperationResult<string>.Create(result.Ticket);
                     }
-                    else
+
+                    if (json.Contains("\"errcode\":40001,"))
                     {
-                        return OperationResult<string>.Create(result.Errcode, json, result.Errmsg);
+                        await RevokeAccessTokenAsync(appID);
+                        return await GetJSApiTicket(appID, secret);
                     }
+
+                    if (Logger.Instance != null)
+                    {
+                        Logger.Instance.LogError($"An error occurred while trying to get JSAPI ticket for {appID} with status code={status}: {json}");
+                    }
+
+                    return OperationResult<string>.Create(result.Errcode, json, result.Errmsg);
                 }
                 return OperationResult<string>.Create(status, json);
             }
         }
 
-        private async Task<OperationResult<string>> GetAccessToken(string appID, string secret)
+        private async Task<OperationResult<string>> GetAccessTokenAsync(string appID, string secret)
         {
             var token = await cacheStore.Value.GetAsync<string>(appID, AccessTokenCacheKey);
             if (!String.IsNullOrWhiteSpace(token))
@@ -251,9 +287,12 @@ namespace Cod.Platform
             }
         }
 
+        private async Task RevokeAccessTokenAsync(string appID)
+            => await cacheStore.Value.DeleteAsync(appID, AccessTokenCacheKey);
+
         public async Task<OperationResult<string>> SendNotificationAsync(string appId, string secret, string openId, string templateId, WechatNotificationParameter parameters, string link)
         {
-            var token = await GetAccessToken(appId, secret);
+            var token = await GetAccessTokenAsync(appId, secret);
             if (!token.IsSuccess)
             {
                 return token;
@@ -312,10 +351,19 @@ namespace Cod.Platform
                     {
                         return OperationResult<string>.Create(result.Openid);
                     }
-                    else
+
+                    if (json.Contains("\"errcode\":40001,"))
                     {
-                        return OperationResult<string>.Create(result.Errcode, json, result.Errmsg);
+                        await RevokeAccessTokenAsync(appID);
+                        return await GetOpenIDAsync(appID, secret, code);
                     }
+
+                    if (Logger.Instance != null)
+                    {
+                        Logger.Instance.LogError($"An error occurred while trying to send Wechat notification for {appID} with status code={status}: {json}");
+                    }
+
+                    return OperationResult<string>.Create(result.Errcode, json, result.Errmsg);
                 }
                 return OperationResult<string>.Create(status, json);
             }
@@ -366,7 +414,7 @@ namespace Cod.Platform
 
         public async Task<OperationResult<WechatUserInfo>> GetUserInfoAsync(string appId, string secret, string openID, string lang = "zh_CN")
         {
-            var token = await GetAccessToken(appId, secret);
+            var token = await GetAccessTokenAsync(appId, secret);
             if (!token.IsSuccess)
             {
                 return OperationResult<WechatUserInfo>.Create(token.Code, token.Message);
@@ -380,6 +428,18 @@ namespace Cod.Platform
                 if (status >= 200 && status < 400)
                 {
                     var json = await resp.Content.ReadAsStringAsync();
+
+                    if (json.Contains("\"errcode\":40001,"))
+                    {
+                        await RevokeAccessTokenAsync(appId);
+                        return await GetUserInfoAsync(appId, secret, openID, lang);
+                    }
+
+                    if (Logger.Instance != null)
+                    {
+                        Logger.Instance.LogError($"An error occurred while trying to get user info for {openID} with status code={status}: {json}");
+                    }
+
                     var result = JsonConvert.DeserializeObject<WechatUserInfo>(json);
                     return OperationResult<WechatUserInfo>.Create(result);
                 }
