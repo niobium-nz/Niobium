@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 
 namespace Cod.Channel
 {
-    internal class DefaultAuthenticator : IAuthenticator
+    public class DefaultAuthenticator : IAuthenticator
     {
         private readonly Dictionary<string, StorageSignature> signatures = new Dictionary<string, StorageSignature>();
         private readonly IConfigurationProvider configuration;
@@ -50,7 +50,7 @@ namespace Cod.Channel
 
         protected virtual Task SaveSignaturesAsync(Dictionary<string, StorageSignature> signatures) => Task.CompletedTask;
 
-        public async Task InitializeAsync()
+        public virtual async Task InitializeAsync()
         {
             var token = await this.GetSavedTokenAsync();
             if (!String.IsNullOrWhiteSpace(token))
@@ -67,7 +67,7 @@ namespace Cod.Channel
             }
         }
 
-        public async Task<OperationResult<StorageSignature>> AquireSignatureAsync(StorageType type, string resource, string partitionKey, string rowKey)
+        public virtual async Task<OperationResult<StorageSignature>> AquireSignatureAsync(StorageType type, string resource, string partitionKey, string rowKey)
         {
             if (!this.IsAuthenticated())
             {
@@ -138,7 +138,7 @@ namespace Cod.Channel
             }
         }
 
-        public async Task<OperationResult> AquireTokenAsync(string scheme, string username, string password, bool remember)
+        public virtual async Task<OperationResult> AquireTokenAsync(string scheme, string username, string password, bool remember)
         {
             var apiUrl = await this.configuration.GetSettingAsync(Constants.KEY_API_URL);
             var creds = Encoding.ASCII.GetBytes($"{username.Trim()}:{password.Trim()}");
@@ -185,7 +185,7 @@ namespace Cod.Channel
             return request;
         }
 
-        private void SetToken(string token)
+        protected void SetToken(string token)
         {
             try
             {
