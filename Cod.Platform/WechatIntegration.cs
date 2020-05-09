@@ -360,7 +360,7 @@ namespace Cod.Platform
 
                     if (Logger.Instance != null)
                     {
-                        Logger.Instance.LogError($"An error occurred while trying to send Wechat notification for {appID} with status code={status}: {json}");
+                        Logger.Instance.LogError($"An error occurred while trying to get Wechat open ID for {appID} with status code={status}: {json}");
                     }
 
                     return OperationResult<string>.Create(result.Errcode, json, result.Errmsg);
