@@ -47,7 +47,7 @@ namespace Cod.Platform
             foreach (var target in targets)
             {
                 var message = await this.GetMessageAsync(brand, template, target, parameters);
-                if (message == null)
+                if (message == null || message.Message == null)
                 {
                     continue;
                 }
@@ -67,14 +67,14 @@ namespace Cod.Platform
                     token = t.AccessToken;
                 }
 
-                var request = new FirebaseMessageRequest { Message = message };
+                var request = new FirebaseMessageRequest { Message = message.Message };
                 using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
                 {
                     httpclient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                     var json = JsonConvert.SerializeObject(request, JsonSetting.CamelCaseSetting);
                     using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
                     {
-                        var resp = await httpclient.PostAsync("https://fcm.googleapis.com/v1/projects/queuesafe/messages:send", content);
+                        var resp = await httpclient.PostAsync($"https://fcm.googleapis.com/v1/projects/{message.ProjectID}/messages:send", content);
                         var status = (int)resp.StatusCode;
                         if (status < 200 || status >= 400)
                         {
@@ -101,7 +101,7 @@ namespace Cod.Platform
 
         protected abstract Task<GoogleCredential> GetCredentialAsync(NotificationContext context);
 
-        protected abstract Task<FirebaseMessage> GetMessageAsync(
+        protected abstract Task<ProjectScopeFirebaseMessage> GetMessageAsync(
             string brand,
             int template,
             NotificationContext context,
