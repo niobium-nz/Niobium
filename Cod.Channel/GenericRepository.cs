@@ -195,9 +195,10 @@ namespace Cod.Channel
         {
             foreach (var item in domainObjects)
             {
-                var i = this.CachedData.IndexOf(item);
-                if (i >= 0)
+                var existing = this.CachedData.SingleOrDefault(d => d.PartitionKey == item.PartitionKey && d.RowKey == item.RowKey);
+                if (existing != null)
                 {
+                    var i = this.CachedData.IndexOf(existing);
                     this.CachedData[i] = item;
                 }
                 else
