@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Cod.Platform.Model;
 
@@ -13,7 +14,7 @@ namespace Cod.Platform
             {
                 return result[0];
             }
-            return null;
+            throw new ArgumentOutOfRangeException($"The specified branding info cannot be found: {brand}");
         }
 
         public static async Task<BrandingInfo> GetAsync(this IRepository<BrandingInfo> repository, OpenIDProvider provider, string appID)
@@ -21,9 +22,15 @@ namespace Cod.Platform
             if (provider == OpenIDProvider.Wechat)
             {
                 var results = await repository.GetAsync(100);
-                return results.SingleOrDefault(r => r.WechatAppID == appID);
+                var result = results.SingleOrDefault(r => r.WechatAppID == appID);
+                if (result != null)
+                {
+                    return result;
+                }
+
+                throw new ArgumentOutOfRangeException($"The specified branding info cannot be found: {appID}");
             }
-            return null;
+            throw new NotSupportedException();
         }
     }
 }

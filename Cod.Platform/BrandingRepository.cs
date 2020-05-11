@@ -34,7 +34,7 @@ namespace Cod.Platform
                 return new TableQueryResult<BrandingInfo>(new[] { cache[partitionKey] }, null);
             }
 
-            return new TableQueryResult<BrandingInfo>(new BrandingInfo[0], null);
+            throw new ArgumentOutOfRangeException($"The specified branding info cannot be found: {partitionKey}");
         }
 
         public async Task<TableQueryResult<BrandingInfo>> GetAsync(int limit)
