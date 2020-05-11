@@ -193,8 +193,18 @@ namespace Cod.Channel
 
         protected virtual void Cache(IEnumerable<TDomain> domainObjects)
         {
-            this.Uncache(domainObjects);
-            this.CachedData.AddRange(domainObjects);
+            foreach (var item in domainObjects)
+            {
+                var i = this.CachedData.IndexOf(item);
+                if (i >= 0)
+                {
+                    this.CachedData[i] = item;
+                }
+                else
+                {
+                    this.CachedData.Add(item);
+                }
+            }
         }
 
         protected virtual void Uncache(TDomain domainObject) => Uncache(new[] { domainObject });
