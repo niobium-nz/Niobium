@@ -22,39 +22,44 @@ namespace Cod
 
         public string LastIP { get; set; }
 
-        public string Businesses { get; set; }
+        public string Roles { get; set; }
 
-        public static string BuildPartitionKey(Guid user)
-            => BuildRowKey(user).Substring(0, 3);
+        public bool IsBusinessThePartitionKey { get; set; }
 
-        public static string BuildRowKey(Guid user)
-            => user.ToString("N").ToUpperInvariant();
+        public static User Reverse(User input)
+            => new User
+            {
+                IsBusinessThePartitionKey = !input.IsBusinessThePartitionKey,
+                Created = input.Created,
+                Disabled = input.Disabled,
+                FirstIP = input.FirstIP,
+                LastIP = input.LastIP,
+                PartitionKey = input.RowKey,
+                RowKey = input.PartitionKey,
+                Roles = input.Roles,
+            };
 
-        public IEnumerable<Guid> GetBusinesses()
-            => this.Businesses == null ? Enumerable.Empty<Guid>() : this.Businesses.Split(',').Select(p => Guid.Parse(p));
+        public User Reverse() => Reverse(this);
 
-        public void AddToBusiness(Guid business)
+        public Guid GetBusiness()
+            => this.IsBusinessThePartitionKey ? Guid.Parse(this.PartitionKey) : Guid.Parse(this.RowKey);
+
+        public void SetBusiness(Guid value)
         {
-            var str = business.ToString("N").ToUpperInvariant();
-            if (String.IsNullOrWhiteSpace(this.Businesses))
-            {
-                this.Businesses = str;
-            }
-            else if (!this.Businesses.Contains(str))
-            {
-                this.Businesses += $"{str},";
-            }
+            if (this.IsBusinessThePartitionKey) this.PartitionKey = value.ToString("N").ToUpperInvariant();
+            else this.RowKey = value.ToString("N").ToUpperInvariant();
         }
 
-        public void RemoveFromBusiness(Guid business)
+        public Guid GetID()
+            => this.IsBusinessThePartitionKey ? Guid.Parse(this.RowKey) : Guid.Parse(this.PartitionKey);
+
+        public void SetID(Guid value)
         {
-            var businesses = GetBusinesses().ToList();
-            if (businesses.Contains(business))
-            {
-                businesses.Remove(business);
-                var strs = businesses.Select(b => b.ToString("N").ToUpperInvariant());
-                this.Businesses = String.Join(",", strs);
-            }
+            if (this.IsBusinessThePartitionKey) this.RowKey = value.ToString("N").ToUpperInvariant();
+            else this.PartitionKey = value.ToString("N").ToUpperInvariant();
         }
+
+        public IEnumerable<string> GetRoles()
+            => this.Roles == null ? Enumerable.Empty<string>() : this.Roles.Split(',');
     }
 }
