@@ -26,21 +26,6 @@ namespace Cod
 
         public bool IsBusinessThePartitionKey { get; set; }
 
-        public static User Reverse(User input)
-            => new User
-            {
-                IsBusinessThePartitionKey = !input.IsBusinessThePartitionKey,
-                Created = input.Created,
-                Disabled = input.Disabled,
-                FirstIP = input.FirstIP,
-                LastIP = input.LastIP,
-                PartitionKey = input.RowKey,
-                RowKey = input.PartitionKey,
-                Roles = input.Roles,
-            };
-
-        public User Reverse() => Reverse(this);
-
         public Guid GetBusiness()
             => this.IsBusinessThePartitionKey ? Guid.Parse(this.PartitionKey) : Guid.Parse(this.RowKey);
 
