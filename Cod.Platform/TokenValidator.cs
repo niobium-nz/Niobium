@@ -20,7 +20,7 @@ namespace Cod.Platform
             this.store = store;
         }
 
-        public async Task<string> CreateAsync(Guid? user, string nameIdentifier, string contact, string openIDProvider, string openIDApp,
+        public async Task<string> CreateAsync(Guid? group, Guid? user, string nameIdentifier, string contact, string openIDProvider, string openIDApp,
             IEnumerable<string> roles = null, IEnumerable<KeyValuePair<string, string>> entitlements = null)
         {
             var dic = new Dictionary<string, string>();
@@ -61,10 +61,10 @@ namespace Cod.Platform
                 }
             }
 
-            return await this.BuildAsync(user, nameIdentifier, contact, openIDProvider, openIDApp, dic);
+            return await this.BuildAsync(group, user, nameIdentifier, contact, openIDProvider, openIDApp, dic);
         }
 
-        private async Task<string> BuildAsync(Guid? user, string nameIdentifier, string contact,
+        private async Task<string> BuildAsync(Guid? group, Guid? user, string nameIdentifier, string contact,
             string openIDProvider, string openIDApp, IReadOnlyDictionary<string, string> entitlements = null)
         {
             var claims = new List<Claim>
@@ -74,6 +74,10 @@ namespace Cod.Platform
             if (user.HasValue)
             {
                 claims.Add(new Claim(ClaimTypes.Sid, User.BuildKey(user.Value)));
+            }
+            if (group.HasValue)
+            {
+                claims.Add(new Claim(ClaimTypes.GroupSid, User.BuildKey(group.Value)));
             }
             if (!String.IsNullOrWhiteSpace(contact))
             {
