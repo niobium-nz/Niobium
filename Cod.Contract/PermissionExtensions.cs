@@ -90,7 +90,7 @@ namespace Cod
                 .Select(c => new
                 {
                     c.Key,
-                    Scope = c.Parts[0].Trim().ToUpperInvariant(),
+                    Scope = c.Parts[0].Trim(),
                     Entitlements = c.Parts[1],
                 })
                 .Select(c => new
