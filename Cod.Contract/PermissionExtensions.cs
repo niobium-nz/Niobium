@@ -1,0 +1,111 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Cod
+{
+    public static class PermissionExtensions
+    {
+        public static string BuildEntitlement(this Permission permission)
+        {
+            if (permission is null)
+            {
+                throw new ArgumentNullException(nameof(permission));
+            }
+
+            var wildcard = permission.IsWildcard ? "*" : String.Empty;
+            return $"{permission.Scope}{wildcard}{Entitlements.ScopeSplitor}{String.Join(Entitlements.ValueSplitor[0], permission.Entitlements)}";
+        }
+
+        public static bool TryGetClaim(this IReadOnlyDictionary<string, string> claims, string key, out string value)
+        {
+            if (claims.ContainsKey(key))
+            {
+                value = claims[key];
+                return true;
+            }
+            value = null;
+            return false;
+        }
+
+        public static IEnumerable<string> QueryEntitlements(this IEnumerable<Permission> permissions, string scope)
+        {
+            if (scope is null)
+            {
+                throw new ArgumentNullException(nameof(scope));
+            }
+
+            scope = scope.Trim().ToUpperInvariant();
+
+            return permissions
+                .Where(p => (scope.Length > 0 && p.Scope == scope) || (p.IsWildcard && scope.StartsWith(p.Scope)))
+                .SelectMany(p => p.Entitlements);
+        }
+
+        public static IEnumerable<string> QueryScope(this IEnumerable<Permission> permissions, string entitlement)
+        {
+            if (String.IsNullOrWhiteSpace(entitlement))
+            {
+                throw new ArgumentNullException(nameof(entitlement));
+            }
+
+            entitlement = entitlement.Trim().ToUpperInvariant();
+
+            return permissions
+                .Where(p => p.Entitlements.Contains(entitlement))
+                .Select(p => p.IsWildcard ? $"{p.Scope}*" : p.Scope);
+        }
+
+        public static bool IsAccessGrant(this IEnumerable<Permission> permissions, string entitlement)
+            => permissions.IsAccessGrant(String.Empty, entitlement);
+
+        public static bool IsAccessGrant(this IEnumerable<Permission> permissions, string scope, string entitlement)
+        {
+            if (scope is null)
+            {
+                throw new ArgumentNullException(nameof(scope));
+            }
+
+            if (String.IsNullOrWhiteSpace(entitlement))
+            {
+                throw new ArgumentNullException(nameof(entitlement));
+            }
+
+            scope = scope.Trim().ToUpperInvariant();
+            entitlement = entitlement.Trim().ToUpperInvariant();
+
+            return permissions
+                .Where(p => (scope.Length > 0 && p.Scope == scope) || (p.IsWildcard && scope.StartsWith(p.Scope)))
+                .Any(p => p.Entitlements.Contains(entitlement));
+        }
+
+        public static IEnumerable<Permission> ToPermissions(this IEnumerable<KeyValuePair<string, string>> input)
+            => input.Where(c => c.Key != null && c.Value != null && c.Key.StartsWith(Entitlements.CategoryNamingPrefix))
+                .Select(c => new
+                {
+                    c.Key,
+                    Parts = c.Value.Split(Entitlements.ScopeSplitor, StringSplitOptions.RemoveEmptyEntries),
+                })
+                .Where(c => c.Parts.Length == 2)
+                .Select(c => new
+                {
+                    c.Key,
+                    Scope = c.Parts[0].Trim().ToUpperInvariant(),
+                    Entitlements = c.Parts[1],
+                })
+                .Select(c => new
+                {
+                    c.Key,
+                    IsWildcard = c.Scope.EndsWith("*"),
+                    c.Scope,
+                    Entitlements = c.Entitlements.Split(Entitlements.ValueSplitor, StringSplitOptions.RemoveEmptyEntries),
+                })
+                .Select(c => new Permission
+                {
+                    Category = c.Key,
+                    Entitlements = c.Entitlements.Select(e => e.Trim().ToUpperInvariant()),
+                    IsWildcard = c.IsWildcard,
+                    Scope = c.IsWildcard ? c.Scope.Substring(0, c.Scope.Length == 0 ? 0 : c.Scope.Length - 1) : c.Scope,
+                });
+    }
+}

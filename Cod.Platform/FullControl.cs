@@ -11,7 +11,7 @@ namespace Cod.Platform
 
         public Task<StorageControl> GrantAsync(ClaimsPrincipal principal, StorageType type, string resource, string partition, string row)
         {
-            if (this.HasPermission(principal))
+            if (resource == typeof(T).Name && this.HasPermission(principal, partition, row))
             {
                 return Task.FromResult(new StorageControl((int)SharedAccessTablePermissions.Query, typeof(T).Name)
                 {
@@ -22,6 +22,6 @@ namespace Cod.Platform
             return Task.FromResult(default(StorageControl));
         }
 
-        protected abstract bool HasPermission(ClaimsPrincipal principal);
+        protected abstract bool HasPermission(ClaimsPrincipal principal, string partition, string row);
     }
 }
