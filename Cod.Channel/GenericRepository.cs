@@ -56,7 +56,7 @@ namespace Cod.Channel
 
         public async Task<OperationResult<IReadOnlyCollection<TDomain>>> LoadAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int count = -1, bool force = false, bool continueToLoadMore = false)
         {
-            IReadOnlyCollection<TDomain> result = null;
+            IReadOnlyCollection<TDomain> result = new List<TDomain>();
             var key = new TableStorageFetchKey
             {
                 Count = count,
@@ -83,10 +83,6 @@ namespace Cod.Channel
                 {
                     continuationToken = fetchHistory[key];
                     proceed = true;
-                }
-                else
-                {
-                    result = new List<TDomain>();
                 }
             }
             else
