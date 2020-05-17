@@ -37,7 +37,6 @@ namespace Cod.Platform
             builder.RegisterType<ImpedementPolicyScanProvider>().AsImplementedInterfaces();
             builder.RegisterType<CloudBlobRepository>().AsImplementedInterfaces();
             builder.RegisterType<NotificationService>().AsImplementedInterfaces();
-            builder.RegisterType<AliyunRegistrationSMSNotificationChannel>().AsImplementedInterfaces();
             builder.RegisterType<OpenIDManager>().AsImplementedInterfaces();
             base.Load(builder);
         }
