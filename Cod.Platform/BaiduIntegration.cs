@@ -20,7 +20,7 @@ namespace Cod.Platform
             this.cacheStore = cacheStore;
         }
 
-        public async Task<OperationResult<BaiduCodeScanResponse>> ScanCodeAsync(string key, string secret, Stream stream)
+        public async Task<OperationResult<BaiduCodeScanResponse>> ScanCodeAsync(string key, string secret, Stream stream, int retry = 0)
         {
             var token = await GetAccessToken(key, secret);
             if (!token.IsSuccess)
@@ -36,28 +36,48 @@ namespace Cod.Platform
             var buff = stream.ToByteArray();
             var base64 = WebUtility.UrlEncode(Convert.ToBase64String(buff));
             var str = $"access_token={token.Result}&image={base64}";
-            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+
+            try
             {
-                using (var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded"))
+                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false) { Timeout = TimeSpan.FromSeconds(5) })
                 {
-                    var resp = await httpclient.PostAsync($"{Host}/rest/2.0/ocr/v1/qrcode", post);
-                    var status = (int)resp.StatusCode;
-                    var json = await resp.Content.ReadAsStringAsync();
-                    if (status >= 200 && status < 400)
+                    using (var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded"))
                     {
-                        var result = JsonConvert.DeserializeObject<BaiduCodeScanResponse>(json, JsonSetting.UnderstoreCaseSetting);
-                        if (result.CodesResult != null && result.CodesResult.Length > 0)
+                        var resp = await httpclient.PostAsync($"{Host}/rest/2.0/ocr/v1/qrcode", post);
+                        var status = (int)resp.StatusCode;
+                        var json = await resp.Content.ReadAsStringAsync();
+                        if (status >= 200 && status < 400)
                         {
-                            return OperationResult<BaiduCodeScanResponse>.Create(result);
+                            var result = JsonConvert.DeserializeObject<BaiduCodeScanResponse>(json, JsonSetting.UnderstoreCaseSetting);
+                            if (result.CodesResult != null && result.CodesResult.Length > 0)
+                            {
+                                return OperationResult<BaiduCodeScanResponse>.Create(result);
+                            }
+                            return OperationResult<BaiduCodeScanResponse>.Create(InternalError.InternalServerError, json);
                         }
-                        return OperationResult<BaiduCodeScanResponse>.Create(InternalError.InternalServerError, json);
+                        return OperationResult<BaiduCodeScanResponse>.Create(status, json);
                     }
-                    return OperationResult<BaiduCodeScanResponse>.Create(status, json);
                 }
             }
+            catch (TaskCanceledException)
+            {
+                if (retry > 3)
+                {
+                    return OperationResult<BaiduCodeScanResponse>.Create(InternalError.GatewayTimeout, null);
+                }
+
+                return await ScanCodeAsync(key, secret, stream, ++retry);
+            }
+
         }
 
-        public async Task<OperationResult<BaiduOCRResponse>> PerformOCRAsync(string key, string secret, string mediaURL, Stream stream, bool tryHarder)
+        public async Task<OperationResult<BaiduOCRResponse>> PerformOCRAsync(
+            string key,
+            string secret,
+            string mediaURL,
+            Stream stream,
+            bool tryHarder,
+            int retry = 0)
         {
             var token = await GetAccessToken(key, secret);
             if (!token.IsSuccess)
@@ -82,29 +102,41 @@ namespace Cod.Platform
                 str += $"&url={WebUtility.UrlEncode(mediaURL)}";
             }
 
-            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+            try
             {
-                using (var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded"))
+                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false) { Timeout = TimeSpan.FromSeconds(5) })
                 {
-                    var path = tryHarder ? "rest/2.0/ocr/v1/accurate_basic" : "rest/2.0/ocr/v1/general_basic";
-                    var resp = await httpclient.PostAsync($"{Host}/{path}", post);
-                    var status = (int)resp.StatusCode;
-                    var json = await resp.Content.ReadAsStringAsync();
-                    if (status >= 200 && status < 400)
+                    using (var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded"))
                     {
-                        var result = JsonConvert.DeserializeObject<BaiduOCRResponse>(json, JsonSetting.UnderstoreCaseSetting);
-                        if (result.WordsResult != null && result.WordsResult.Length > 0)
+                        var path = tryHarder ? "rest/2.0/ocr/v1/accurate_basic" : "rest/2.0/ocr/v1/general_basic";
+                        var resp = await httpclient.PostAsync($"{Host}/{path}", post);
+                        var status = (int)resp.StatusCode;
+                        var json = await resp.Content.ReadAsStringAsync();
+                        if (status >= 200 && status < 400)
                         {
-                            return OperationResult<BaiduOCRResponse>.Create(result);
+                            var result = JsonConvert.DeserializeObject<BaiduOCRResponse>(json, JsonSetting.UnderstoreCaseSetting);
+                            if (result.WordsResult != null && result.WordsResult.Length > 0)
+                            {
+                                return OperationResult<BaiduOCRResponse>.Create(result);
+                            }
+                            return OperationResult<BaiduOCRResponse>.Create(InternalError.InternalServerError, json);
                         }
-                        return OperationResult<BaiduOCRResponse>.Create(InternalError.InternalServerError, json);
+                        return OperationResult<BaiduOCRResponse>.Create(status, json);
                     }
-                    return OperationResult<BaiduOCRResponse>.Create(status, json);
                 }
+            }
+            catch (TaskCanceledException)
+            {
+                if (retry > 3)
+                {
+                    return OperationResult<BaiduOCRResponse>.Create(InternalError.GatewayTimeout, null);
+                }
+
+                return await PerformOCRAsync(key, secret, mediaURL, stream, tryHarder, ++retry);
             }
         }
 
-        private async Task<OperationResult<string>> GetAccessToken(string key, string secret)
+        private async Task<OperationResult<string>> GetAccessToken(string key, string secret, int retry = 0)
         {
             var token = await cacheStore.Value.GetAsync<string>(key, AccessTokenCacheKey);
             if (!String.IsNullOrWhiteSpace(token))
@@ -112,33 +144,45 @@ namespace Cod.Platform
                 return OperationResult<string>.Create(token);
             }
 
-            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+            try
             {
-                using (var post = new FormUrlEncodedContent(new Dictionary<string, string>
+                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+                {
+                    using (var post = new FormUrlEncodedContent(new Dictionary<string, string>
                 {
                     { "grant_type", "client_credentials" },
                     { "client_id", key },
                     { "client_secret", secret },
                 }))
-                {
-                    var resp = await httpclient.PostAsync($"{Host}/oauth/2.0/token", post);
-                    var status = (int)resp.StatusCode;
-                    var json = await resp.Content.ReadAsStringAsync();
-                    if (status >= 200 && status < 400)
                     {
-                        var result = JsonConvert.DeserializeObject<BaiduAccessTokenResponse>(json, JsonSetting.UnderstoreCaseSetting);
-                        if (!String.IsNullOrWhiteSpace(result.AccessToken))
+                        var resp = await httpclient.PostAsync($"{Host}/oauth/2.0/token", post);
+                        var status = (int)resp.StatusCode;
+                        var json = await resp.Content.ReadAsStringAsync();
+                        if (status >= 200 && status < 400)
                         {
-                            await cacheStore.Value.SetAsync(key, AccessTokenCacheKey, result.AccessToken, true, DateTimeOffset.UtcNow.Add(result.GetExpiry()));
-                            return OperationResult<string>.Create(result.AccessToken);
+                            var result = JsonConvert.DeserializeObject<BaiduAccessTokenResponse>(json, JsonSetting.UnderstoreCaseSetting);
+                            if (!String.IsNullOrWhiteSpace(result.AccessToken))
+                            {
+                                await cacheStore.Value.SetAsync(key, AccessTokenCacheKey, result.AccessToken, true, DateTimeOffset.UtcNow.Add(result.GetExpiry()));
+                                return OperationResult<string>.Create(result.AccessToken);
+                            }
+                            else
+                            {
+                                return OperationResult<string>.Create(InternalError.InternalServerError, result, result.ErrorDescription);
+                            }
                         }
-                        else
-                        {
-                            return OperationResult<string>.Create(InternalError.InternalServerError, result, result.ErrorDescription);
-                        }
+                        return OperationResult<string>.Create(status, json);
                     }
-                    return OperationResult<string>.Create(status, json);
                 }
+            }
+            catch (TaskCanceledException)
+            {
+                if (retry > 3)
+                {
+                    return OperationResult<string>.Create(InternalError.GatewayTimeout, null);
+                }
+
+                return await GetAccessToken(key, secret, ++retry);
             }
         }
     }
