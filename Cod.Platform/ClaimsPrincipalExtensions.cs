@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Security.Claims;
@@ -8,6 +9,8 @@ namespace Cod.Platform
 {
     public static class ClaimsPrincipalExtensions
     {
+        private static readonly Type[] ConvertibleTypes = new[] { typeof(Guid), typeof(DateTime), typeof(DateTimeOffset), typeof(TimeSpan), };
+
         public static bool PermissionsGrant(this ClaimsPrincipal principal, string entitlement)
         {
             var permissions = principal.GetPermissions();
@@ -43,9 +46,10 @@ namespace Cod.Platform
                 return false;
             }
 
-            var converter = TypeDescriptor.GetConverter(typeof(T));
-            if (typeof(TypeConverter) != converter.GetType())
+            var t = typeof(T);
+            if (typeof(IConvertible).IsAssignableFrom(t) || ConvertibleTypes.Contains(t))
             {
+                var converter = TypeDescriptor.GetConverter(t);
                 result = (T)converter.ConvertFrom(claim.Value);
                 return true;
             }
