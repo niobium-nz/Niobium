@@ -57,25 +57,30 @@ namespace Cod
         }
 
         public static bool IsAccessGrant(this IEnumerable<Permission> permissions, string entitlement)
-            => permissions.IsAccessGrant(String.Empty, entitlement);
+            => permissions.IsAccessGrant(null, entitlement);
 
         public static bool IsAccessGrant(this IEnumerable<Permission> permissions, string scope, string entitlement)
         {
-            if (scope is null)
+            if (String.IsNullOrWhiteSpace(scope))
             {
                 throw new ArgumentNullException(nameof(scope));
+            }
+            else
+            {
+                scope = scope.Trim().ToUpperInvariant();
             }
 
             if (String.IsNullOrWhiteSpace(entitlement))
             {
                 throw new ArgumentNullException(nameof(entitlement));
             }
-
-            scope = scope.Trim().ToUpperInvariant();
-            entitlement = entitlement.Trim().ToUpperInvariant();
+            else
+            {
+                entitlement = entitlement.Trim().ToUpperInvariant();
+            }
 
             return permissions
-                .Where(p => (scope.Length > 0 && p.Scope == scope) || (p.IsWildcard && scope.StartsWith(p.Scope)))
+                .Where(p => scope == null || (scope.Length > 0 && p.Scope == scope) || (p.IsWildcard && scope.StartsWith(p.Scope)))
                 .Any(p => p.Entitlements.Contains(entitlement));
         }
 
