@@ -61,11 +61,7 @@ namespace Cod
 
         public static bool IsAccessGrant(this IEnumerable<Permission> permissions, string scope, string entitlement)
         {
-            if (String.IsNullOrWhiteSpace(scope))
-            {
-                throw new ArgumentNullException(nameof(scope));
-            }
-            else
+            if (scope != null)
             {
                 scope = scope.Trim().ToUpperInvariant();
             }
