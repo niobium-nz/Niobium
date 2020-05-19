@@ -46,9 +46,6 @@ namespace Cod.Platform
                     await policy.ImpedeAsync(context);
                 }
             }
-
-            entity.Impeded = true;
-            await this.Repository.UpdateAsync(entity);
         }
 
         public async Task UnimpedeAsync(string category, int cause, string policyInput = null) => await this.UnimpedeAsync(category, new int[] { cause }, policyInput);
@@ -76,13 +73,6 @@ namespace Cod.Platform
                 {
                     await policy.UnimpedeAsync(context);
                 }
-            }
-
-            var existings = await this.GetImpedimentsAsync();
-            if (existings.Count == 0)
-            {
-                entity.Impeded = false;
-                await this.Repository.UpdateAsync(entity);
             }
         }
 
