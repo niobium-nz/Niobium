@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -22,6 +23,11 @@ namespace Cod.Platform
 
         public async Task<OperationResult<BaiduCodeScanResponse>> ScanCodeAsync(string key, string secret, Stream stream, int retry = 0)
         {
+            if (retry > 3)
+            {
+                return OperationResult<BaiduCodeScanResponse>.Create(InternalError.GatewayTimeout, null);
+            }
+
             var token = await GetAccessToken(key, secret);
             if (!token.IsSuccess)
             {
@@ -39,7 +45,7 @@ namespace Cod.Platform
 
             try
             {
-                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false) { Timeout = TimeSpan.FromSeconds(5) })
+                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false) { Timeout = TimeSpan.FromSeconds(3) })
                 {
                     using (var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded"))
                     {
@@ -61,14 +67,15 @@ namespace Cod.Platform
             }
             catch (TaskCanceledException)
             {
-                if (retry > 3)
-                {
-                    return OperationResult<BaiduCodeScanResponse>.Create(InternalError.GatewayTimeout, null);
-                }
-
-                return await ScanCodeAsync(key, secret, stream, ++retry);
+            }
+            catch (SocketException)
+            {
+            }
+            catch (IOException)
+            {
             }
 
+            return await ScanCodeAsync(key, secret, stream, ++retry);
         }
 
         public async Task<OperationResult<BaiduOCRResponse>> PerformOCRAsync(
@@ -79,6 +86,11 @@ namespace Cod.Platform
             bool tryHarder,
             int retry = 0)
         {
+            if (retry > 3)
+            {
+                return OperationResult<BaiduOCRResponse>.Create(InternalError.GatewayTimeout, null);
+            }
+
             var token = await GetAccessToken(key, secret);
             if (!token.IsSuccess)
             {
@@ -104,7 +116,7 @@ namespace Cod.Platform
 
             try
             {
-                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false) { Timeout = TimeSpan.FromSeconds(5) })
+                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false) { Timeout = TimeSpan.FromSeconds(2) })
                 {
                     using (var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded"))
                     {
@@ -127,13 +139,15 @@ namespace Cod.Platform
             }
             catch (TaskCanceledException)
             {
-                if (retry > 3)
-                {
-                    return OperationResult<BaiduOCRResponse>.Create(InternalError.GatewayTimeout, null);
-                }
-
-                return await PerformOCRAsync(key, secret, mediaURL, stream, tryHarder, ++retry);
             }
+            catch (SocketException)
+            {
+            }
+            catch (IOException)
+            {
+            }
+
+            return await PerformOCRAsync(key, secret, mediaURL, stream, tryHarder, ++retry);
         }
 
         private async Task<OperationResult<string>> GetAccessToken(string key, string secret, int retry = 0)

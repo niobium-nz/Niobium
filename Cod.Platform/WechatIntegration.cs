@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -58,42 +59,55 @@ namespace Cod.Platform
                 return OperationResult<Stream>.Create(url.Code, reference: url.Reference);
             }
 
-            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+            try
             {
-                var resp = await httpclient.GetAsync(url.Result);
-                var status = (int)resp.StatusCode;
-                if (status >= 200 && status < 400)
+                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false) { Timeout = TimeSpan.FromSeconds(1) })
                 {
-                    using (var s = await resp.Content.ReadAsStreamAsync())
+                    var resp = await httpclient.GetAsync(url.Result);
+                    var status = (int)resp.StatusCode;
+                    if (status >= 200 && status < 400)
                     {
-                        var ms = new MemoryStream();
-                        await s.CopyToAsync(ms);
+                        using (var s = await resp.Content.ReadAsStreamAsync())
+                        {
+                            var ms = new MemoryStream();
+                            await s.CopyToAsync(ms);
 
-                        if (ms.Length > 1024)
-                        {
-                            return OperationResult<Stream>.Create(ms);
-                        }
-                        else
-                        {
-                            ms.Seek(0, SeekOrigin.Begin);
-                            using (var sr = new StreamReader(ms))
+                            if (ms.Length > 1024)
                             {
-                                var err = await sr.ReadToEndAsync();
-                                if (err.Contains("\"errcode\":40001,"))
+                                return OperationResult<Stream>.Create(ms);
+                            }
+                            else
+                            {
+                                ms.Seek(0, SeekOrigin.Begin);
+                                using (var sr = new StreamReader(ms))
                                 {
-                                    await RevokeAccessTokenAsync(appId);
-                                }
+                                    var err = await sr.ReadToEndAsync();
+                                    if (err.Contains("\"errcode\":40001,"))
+                                    {
+                                        await RevokeAccessTokenAsync(appId);
+                                    }
 
-                                if (Logger.Instance != null)
-                                {
-                                    Logger.Instance.LogError($"An error occurred while trying to download media {mediaID} from Wechat with status code={status}: {err}");
+                                    if (Logger.Instance != null)
+                                    {
+                                        Logger.Instance.LogError($"An error occurred while trying to download media {mediaID} from Wechat with status code={status}: {err}");
+                                    }
                                 }
                             }
                         }
                     }
                 }
-                return await GetMediaAsync(appId, secret, mediaID, ++retry);
             }
+            catch (TaskCanceledException)
+            {
+            }
+            catch (SocketException)
+            {
+            }
+            catch (IOException)
+            {
+            }
+
+            return await GetMediaAsync(appId, secret, mediaID, ++retry);
         }
 
         public async Task<OperationResult<string>> PerformOCRAsync(string appId, string secret, WechatUploadKind kind, string mediaID)
