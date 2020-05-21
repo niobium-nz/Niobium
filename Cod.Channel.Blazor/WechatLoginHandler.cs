@@ -33,7 +33,7 @@ namespace Cod.Channel
             if (!String.IsNullOrWhiteSpace(loginID))
             {
                 var apiUrl = await this.Configuration.GetSettingAsync(Constants.KEY_API_URL);
-                var apiLoginUrl = $"{apiUrl}/v1/wechat/login?id={loginID}";
+                var apiLoginUrl = $"{apiUrl}/v1/wechat/login?id={loginID}&code={code}";
                 this.Navigator.NavigateTo(apiLoginUrl);
             }
 
