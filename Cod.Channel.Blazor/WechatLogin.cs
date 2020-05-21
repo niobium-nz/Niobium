@@ -1,14 +1,19 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace Cod.Channel
 {
     public class WechatLogin : ComponentBase
     {
         private const string WechatAuthorizeUrl = "https://open.weixin.qq.com/connect/oauth2/authorize?appid={APPID}&redirect_uri={REDIRECT}&response_type=code&scope=snsapi_userinfo&state={STATE}";
-        private const string WechatQRConnectUrl = "https://open.weixin.qq.com/connect/qrconnect?appid={APPID}&redirect_uri={REDIRECT}&response_type=code&scope=snsapi_userinfo&state={STATE}";
+        private const int QRCodeCheckMaxRetry = 100;
+        private static readonly TimeSpan QRCodeCheckInterval = TimeSpan.FromSeconds(3);
+        private string loginID;
 
         [Parameter]
         public string AppID { get; set; }
@@ -16,11 +21,32 @@ namespace Cod.Channel
         [Parameter]
         public string Handler { get; set; }
 
+        [Parameter]
+        public bool QRCodeTimeout { get; set; }
+
+        [Parameter]
+        public string QRCodeElementID { get; set; }
+
+        [Parameter]
+        public int QRCodeWidth { get; set; }
+
+        [Parameter]
+        public int QRCodeHeight { get; set; }
+
         [Inject]
         protected IBrowser Browser { get; set; }
 
         [Inject]
         protected INavigator Navigator { get; set; }
+
+        [Inject]
+        protected IJSRuntime JSRuntime { get; set; }
+
+        [Inject]
+        protected HttpClient HttpClient { get; set; }
+
+        [Inject]
+        protected IConfigurationProvider Configuration { get; set; }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2208:Instantiate argument exceptions correctly", Justification = "BlazorComponentParameter")]
         protected async override Task OnInitializedAsync()
@@ -48,23 +74,76 @@ namespace Cod.Channel
                 returnUrl = String.Empty;
             }
 
-            returnUrl = WebUtility.UrlEncode(returnUrl);
-            var callbackUrl = WebUtility.UrlEncode($"{this.Navigator.BaseUri}?go={this.Handler}");
+            var baseUrl = WechatAuthorizeUrl.Replace("{APPID}", this.AppID);
             var type = await this.Browser.GetBrowserTypeAsync();
             if (type == BrowserType.Wechat)
             {
-                this.Navigator.NavigateTo(WechatAuthorizeUrl
-                    .Replace("{APPID}", this.AppID)
-                    .Replace("{REDIRECT}", callbackUrl)
-                    .Replace("{STATE}", returnUrl));
+                var callbackUrl = $"{this.Navigator.BaseUri}?go={this.Handler}";
+                this.Navigator.NavigateTo(baseUrl
+                    .Replace("{REDIRECT}", WebUtility.UrlEncode(callbackUrl), StringComparison.InvariantCulture)
+                    .Replace("{STATE}", WebUtility.UrlEncode(returnUrl), StringComparison.InvariantCulture));
             }
             else
             {
-                this.Navigator.NavigateTo(WechatQRConnectUrl
-                    .Replace("{APPID}", this.AppID)
-                    .Replace("{REDIRECT}", callbackUrl)
-                    .Replace("{STATE}", returnUrl));
+                if (String.IsNullOrWhiteSpace(this.QRCodeElementID))
+                {
+                    throw new ArgumentNullException(nameof(this.QRCodeElementID));
+                }
+
+                await this.PerformQRCodeLogin(returnUrl, baseUrl);
             }
+        }
+
+        private async Task PerformQRCodeLogin(string returnUrl, string baseUrl)
+        {
+            this.QRCodeTimeout = false;
+            this.loginID = Guid.NewGuid().ToString("N");
+            var apiUrl = await this.Configuration.GetSettingAsync(Constants.KEY_API_URL);
+            var apiLoginUrl = $"{apiUrl}/v1/wechat/login?id={this.loginID}";
+            var param = new List<object>
+                {
+                    this.QRCodeElementID,
+                    baseUrl.Replace("{REDIRECT}", WebUtility.UrlEncode(apiLoginUrl), StringComparison.InvariantCulture)
+                        .Replace("{STATE}", String.Empty, StringComparison.InvariantCulture),
+                };
+            if (this.QRCodeWidth > 0 && this.QRCodeHeight > 0)
+            {
+                param.Add(this.QRCodeWidth);
+                param.Add(this.QRCodeHeight);
+            }
+
+            await this.JSRuntime.InvokeVoidAsync("generateQRCode", param.ToArray());
+            var code = await this.CheckLoginAsync();
+
+            if (code == null)
+            {
+                this.QRCodeTimeout = true;
+            }
+            else
+            {
+                this.Navigator.NavigateTo($"{this.Navigator.BaseUri}{this.Handler}?code={code}&state={WebUtility.UrlEncode(returnUrl)}");
+            }
+        }
+
+        private async Task<string> CheckLoginAsync()
+        {
+            var count = 0;
+            while (count < QRCodeCheckMaxRetry)
+            {
+                var resp = await this.HttpClient.RequestAsync<string>(
+                    HttpMethod.Get,
+                    $"{await this.Configuration.GetSettingAsync(Constants.KEY_API_URL)}/v1/wechat/login/{this.loginID}");
+
+                if (resp.IsSuccess && !String.IsNullOrWhiteSpace(resp.Result))
+                {
+                    return resp.Result;
+                }
+
+                await Task.Delay(QRCodeCheckInterval);
+                count++;
+            }
+
+            return null;
         }
     }
 }

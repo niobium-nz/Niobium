@@ -5,6 +5,11 @@ namespace Cod
 {
     public static class Base64
     {
+        public static string Encode(byte[] input)
+        {
+            return Convert.ToBase64String(input);
+        }
+
         public static string Encode(string plainText)
         {
             var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
