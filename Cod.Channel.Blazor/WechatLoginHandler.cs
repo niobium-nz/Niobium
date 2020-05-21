@@ -35,6 +35,7 @@ namespace Cod.Channel
                 var apiUrl = await this.Configuration.GetSettingAsync(Constants.KEY_API_URL);
                 var apiLoginUrl = $"{apiUrl}/v1/wechat/login?id={loginID}&code={code}";
                 this.Navigator.NavigateTo(apiLoginUrl);
+                return;
             }
 
             var loginCommand = this.Commander.Get<LoginCommandParameter>(Commands.Login);
