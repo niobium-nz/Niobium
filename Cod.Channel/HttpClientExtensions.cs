@@ -14,7 +14,6 @@ namespace Cod.Channel
            string uri,
            string bearerToken = null,
            object body = null)
-            where T : class
         {
             var result = await httpClient.RequestAsync(method, uri, bearerToken, body);
             T obj = default;
@@ -22,7 +21,7 @@ namespace Cod.Channel
             {
                 if (typeof(T) == typeof(string))
                 {
-                    obj = result.Message as T;
+                    obj = (T)Convert.ChangeType(result.Message, typeof(T));
                 }
                 else
                 {
