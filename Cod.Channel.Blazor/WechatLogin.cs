@@ -98,12 +98,11 @@ namespace Cod.Channel
         {
             this.QRCodeTimeout = false;
             this.loginID = Guid.NewGuid().ToString("N");
-            var apiUrl = await this.Configuration.GetSettingAsync(Constants.KEY_API_URL);
-            var apiLoginUrl = $"{apiUrl}/v1/wechat/login?id={this.loginID}";
+            var callbackUrl = $"{this.Navigator.BaseUri}?go={this.Handler}&id={this.loginID}";
             var param = new List<object>
                 {
                     this.QRCodeElementID,
-                    baseUrl.Replace("{REDIRECT}", WebUtility.UrlEncode(apiLoginUrl), StringComparison.InvariantCulture)
+                    baseUrl.Replace("{REDIRECT}", WebUtility.UrlEncode(callbackUrl), StringComparison.InvariantCulture)
                         .Replace("{STATE}", String.Empty, StringComparison.InvariantCulture),
                 };
             if (this.QRCodeWidth > 0 && this.QRCodeHeight > 0)

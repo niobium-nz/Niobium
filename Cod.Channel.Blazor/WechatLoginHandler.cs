@@ -16,35 +16,48 @@ namespace Cod.Channel
         [Inject]
         protected ICommander Commander { get; set; }
 
+        [Inject]
+        protected IConfigurationProvider Configuration { get; set; }
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2208:Instantiate argument exceptions correctly", Justification = "BlazorComponentParameter")]
         protected async override Task OnInitializedAsync()
         {
             var queries = this.Navigator.GetQueryStrings();
             var code = queries.Get("code");
-            if (!String.IsNullOrWhiteSpace(code))
+            if (String.IsNullOrWhiteSpace(code))
             {
-                var loginCommand = this.Commander.Get<LoginCommandParameter>(Commands.Login);
-                var parameter = new LoginCommandParameter(Authentication.WechatLoginScheme, this.AppID, code);
-                var result = await loginCommand.ExecuteAsync(parameter);
-                if (result.Result.IsSuccess)
-                {
-                    var returnUrl = queries.Get("state");
-                    if (String.IsNullOrWhiteSpace(returnUrl))
-                    {
-                        returnUrl = this.Navigator.BaseUri;
-                    }
+                return;
+            }
 
-                    returnUrl = WebUtility.UrlDecode(returnUrl);
-                    var currentHost = new Uri(this.Navigator.BaseUri).Host;
-                    var targetHost = new Uri(returnUrl).Host;
-                    if (currentHost.ToUpperInvariant() == targetHost.ToUpperInvariant())
-                    {
-                        this.Navigator.NavigateTo(returnUrl);
-                    }
+            var loginID = queries.Get("id");
+            if (!String.IsNullOrWhiteSpace(loginID))
+            {
+                var apiUrl = await this.Configuration.GetSettingAsync(Constants.KEY_API_URL);
+                var apiLoginUrl = $"{apiUrl}/v1/wechat/login?id={loginID}";
+                this.Navigator.NavigateTo(apiLoginUrl);
+            }
+
+            var loginCommand = this.Commander.Get<LoginCommandParameter>(Commands.Login);
+            var parameter = new LoginCommandParameter(Authentication.WechatLoginScheme, this.AppID, code);
+            var result = await loginCommand.ExecuteAsync(parameter);
+            if (result.Result.IsSuccess)
+            {
+                var returnUrl = queries.Get("state");
+                if (String.IsNullOrWhiteSpace(returnUrl))
+                {
+                    returnUrl = this.Navigator.BaseUri;
                 }
 
-                this.Navigator.NavigateTo(this.Navigator.BaseUri);
+                returnUrl = WebUtility.UrlDecode(returnUrl);
+                var currentHost = new Uri(this.Navigator.BaseUri).Host;
+                var targetHost = new Uri(returnUrl).Host;
+                if (currentHost.ToUpperInvariant() == targetHost.ToUpperInvariant())
+                {
+                    this.Navigator.NavigateTo(returnUrl);
+                }
             }
+
+            this.Navigator.NavigateTo(this.Navigator.BaseUri);
         }
     }
 }
