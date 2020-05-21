@@ -174,6 +174,13 @@ namespace Cod.Platform
             return transactions;
         }
 
+        public static async Task<Model.Transaction> GetTransactionAsync(this IAccountable accountable, DateTimeOffset id)
+        {
+            var target = await accountable.GetAccountingPrincipalAsync();
+            var transaction = await CloudStorage.GetTable<Model.Transaction>().RetrieveAsync<Model.Transaction>(target, Model.Transaction.BuildRowKey(id));
+            return transaction;
+        }
+
         public static async Task<AccountBalance> GetBalanceAsync(this IAccountable accountable, DateTimeOffset input)
         {
             //REMARK (5he11) 将输入限制为仅取其日期的当日的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
