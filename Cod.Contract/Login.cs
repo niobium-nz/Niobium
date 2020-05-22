@@ -14,7 +14,7 @@ namespace Cod
 
         public DateTimeOffset? Created { get; set; }
 
-        public string Password { get; set; }
+        public string Credentials { get; set; }
 
         public Guid User { get; set; }
 
