@@ -15,7 +15,7 @@ namespace Cod
         public string Value { get; set; }
 
         public DateTimeOffset? Created { get; set; }
- 
+
         public static string BuildPartitionKey(OpenIDProvider provider, string appID, string accountID)
         {
             if (appID is null)
@@ -30,6 +30,13 @@ namespace Cod
 
             return $"{(int)provider}|{appID.Trim()}|{accountID.Trim()}";
         }
+
+        public static string BuildPartitionKey(Guid id)
+        {
+            return id.ToString("N").ToUpperInvariant();
+        }
+
+        public Guid GetUser() => Guid.Parse(this.PartitionKey);
 
         public string GetFullAccountID() => this.PartitionKey.Trim();
 
