@@ -14,6 +14,8 @@ namespace Cod
 
         public DateTimeOffset? Created { get; set; }
 
+        public string Password { get; set; }
+
         public Guid User { get; set; }
 
         public static string BuildPartitionKey(OpenIDKind kind)
