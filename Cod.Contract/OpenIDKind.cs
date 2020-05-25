@@ -17,5 +17,7 @@
         SMS = 70,
 
         PhoneCall = 80,
+
+        Username = 90
     }
 }
