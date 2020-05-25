@@ -26,7 +26,7 @@ namespace Cod.Platform
             var cache = await CloudStorage.GetTable<Cache>().RetrieveAsync<Cache>(partitionKey, rowKey);
             if (cache != null)
             {
-                await CloudStorage.GetTable<Cache>().RemoveAsync(new[] { cache });
+                await CloudStorage.GetTable<Cache>().RemoveAsync(new[] { cache }, true);
             }
         }
 
@@ -48,7 +48,7 @@ namespace Cod.Platform
                     var expiredcache = await CloudStorage.GetTable<Cache>().RetrieveAsync<Cache>(partitionKey, rowKey);
                     if (expiredcache != null)
                     {
-                        await CloudStorage.GetTable<Cache>().RemoveAsync(new[] { expiredcache });
+                        await CloudStorage.GetTable<Cache>().RemoveAsync(new[] { expiredcache }, true);
                     }
                     return default;
                 }
@@ -59,7 +59,7 @@ namespace Cod.Platform
             {
                 if (cache.Expiry < DateTimeOffset.UtcNow)
                 {
-                    await CloudStorage.GetTable<Cache>().RemoveAsync(new[] { cache });
+                    await CloudStorage.GetTable<Cache>().RemoveAsync(new[] { cache }, true);
                     return default;
                 }
                 else

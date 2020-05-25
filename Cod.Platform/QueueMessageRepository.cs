@@ -29,7 +29,7 @@ namespace Cod.Platform
             return entities;
         }
 
-        public Task<IEnumerable<QueueMessage>> DeleteAsync(IEnumerable<QueueMessage> entities) => throw new NotImplementedException();
+        public Task<IEnumerable<QueueMessage>> DeleteAsync(IEnumerable<QueueMessage> entities, bool successIfNotExist = false) => throw new NotImplementedException();
 
         public async Task<TableQueryResult<QueueMessage>> GetAsync(string partitionKey, int limit)
             => new TableQueryResult<QueueMessage>((await CloudStorage.GetQueue(partitionKey).PeekMessagesAsync(limit)).Select(m => new QueueMessage

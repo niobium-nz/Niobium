@@ -71,7 +71,7 @@ namespace Cod.Platform
             return entitiesToReplace;
         }
 
-        public static async Task<IEnumerable<T>> RemoveAsync<T>(this CloudTable table, IEnumerable<T> entitiesToRemove) where T : ITableEntity, new()
+        public static async Task<IEnumerable<T>> RemoveAsync<T>(this CloudTable table, IEnumerable<T> entitiesToRemove, bool successIfNotExist = false) where T : ITableEntity, new()
         {
             await table.ExecuteBatchAsync(entitiesToRemove, (batch, entity) => batch.Delete(entity));
             return entitiesToRemove;
@@ -80,7 +80,8 @@ namespace Cod.Platform
         public static async Task RemoveAsync<T>(this CloudTable table,
             Func<Task<IEnumerable<T>>> getEntitiesToRemove,
             Func<T, Task<bool>> predicate,
-            bool retryOnConfliction = false)
+            bool retryOnConfliction = false,
+            bool successIfNotExist = false)
              where T : ITableEntity, new()
         {
             for (var i = 0; i < 3; i++)
@@ -102,6 +103,11 @@ namespace Cod.Platform
                 }
                 catch (StorageException e)
                 {
+                    if (successIfNotExist && e.RequestInformation.HttpStatusCode == 404)
+                    {
+                        continue;
+                    }
+
                     if (e.RequestInformation.HttpStatusCode == 400 || e.RequestInformation.HttpStatusCode == 412)
                     {
                         if (i + 1 == 3)

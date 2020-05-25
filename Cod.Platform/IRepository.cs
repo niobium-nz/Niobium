@@ -9,7 +9,7 @@ namespace Cod.Platform
 
         Task<IEnumerable<T>> UpdateAsync(IEnumerable<T> entities);
 
-        Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities);
+        Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities, bool successIfNotExist = false);
 
         Task<TableQueryResult<T>> GetAsync(int limit = -1);
 

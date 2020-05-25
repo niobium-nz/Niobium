@@ -31,9 +31,9 @@ namespace Cod.Platform
             return created;
         }
 
-        public async Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities)
+        public async Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities, bool successIfNotExist = false)
         {
-            var deleted = await this.tableRepository.DeleteAsync(entities);
+            var deleted = await this.tableRepository.DeleteAsync(entities, successIfNotExist);
             foreach (var item in deleted)
             {
                 await this.cache.DeleteAsync(item.PartitionKey, item.RowKey);
