@@ -35,6 +35,11 @@ namespace Cod
                 throw new ArgumentNullException(nameof(scope));
             }
 
+            if (permissions == null || !permissions.Any())
+            {
+                return Enumerable.Empty<string>();
+            }
+
             scope = scope.Trim().ToUpperInvariant();
 
             return permissions
@@ -47,6 +52,11 @@ namespace Cod
             if (String.IsNullOrWhiteSpace(entitlement))
             {
                 throw new ArgumentNullException(nameof(entitlement));
+            }
+
+            if (permissions == null || !permissions.Any())
+            {
+                return Enumerable.Empty<string>();
             }
 
             entitlement = entitlement.Trim().ToUpperInvariant();
@@ -64,6 +74,11 @@ namespace Cod
             if (scope != null)
             {
                 scope = scope.Trim().ToUpperInvariant();
+            }
+
+            if (permissions == null || !permissions.Any())
+            {
+                return false;
             }
 
             if (String.IsNullOrWhiteSpace(entitlement))
