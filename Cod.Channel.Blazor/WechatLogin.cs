@@ -22,6 +22,9 @@ namespace Cod.Channel
         public string Handler { get; set; }
 
         [Parameter]
+        public string PostScanHandler { get; set; }
+
+        [Parameter]
         public bool QRCodeTimeout { get; set; }
 
         [Parameter]
@@ -98,7 +101,17 @@ namespace Cod.Channel
         {
             this.QRCodeTimeout = false;
             this.loginID = Guid.NewGuid().ToString("N");
-            var callbackUrl = $"{this.Navigator.BaseUri}?go={this.Handler}&id={this.loginID}";
+
+            string callbackUrl;
+            if (String.IsNullOrWhiteSpace(this.PostScanHandler))
+            {
+                callbackUrl = $"{this.Navigator.BaseUri}?go={this.Handler}&id={this.loginID}";
+            }
+            else
+            {
+                callbackUrl = $"{this.PostScanHandler}?id={this.loginID}";
+            }
+
             var param = new List<object>
                 {
                     this.QRCodeElementID,
