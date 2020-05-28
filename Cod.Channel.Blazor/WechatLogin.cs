@@ -109,7 +109,7 @@ namespace Cod.Channel
             }
             else
             {
-                callbackUrl = $"{this.PostScanHandler}?id={this.loginID}";
+                callbackUrl = $"{this.Navigator.BaseUri}{this.PostScanHandler}?id={this.loginID}";
             }
 
             var param = new List<object>
