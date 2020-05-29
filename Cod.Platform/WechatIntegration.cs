@@ -335,6 +335,11 @@ namespace Cod.Platform
                         var result = JsonConvert.DeserializeObject<WechatTemplateMessageResponse>(json);
                         if (result.ErrCode != 0)
                         {
+                            if (Logger.Instance != null)
+                            {
+                                Logger.Instance.LogError($"An error occurred while trying to send Wechat notification to {openId} on {appId} with status code={status}: {json}");
+                            }
+
                             return OperationResult<string>.Create(result.ErrCode, json, result.ErrMsg);
                         }
                         else
@@ -342,6 +347,12 @@ namespace Cod.Platform
                             return OperationResult<string>.Create(OperationResult.SuccessCode, json);
                         }
                     }
+
+                    if (Logger.Instance != null)
+                    {
+                        Logger.Instance.LogError($"An error occurred while trying to send Wechat notification to {openId} on {appId} with status code={status}: {json}");
+                    }
+
                     return OperationResult<string>.Create(status, json);
                 }
             }
