@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Cod.Contract\Cod.Abstractions.csproj" />
+    <ProjectReference Include="..\Cod.Helper\Cod.Helper.csproj" />
   </ItemGroup>
 
 </Project>

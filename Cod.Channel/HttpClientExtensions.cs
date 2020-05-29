@@ -19,15 +19,9 @@ namespace Cod.Channel
             T obj = default;
             if (result.IsSuccess)
             {
-                if (typeof(T) == typeof(string))
-                {
-                    obj = (T)Convert.ChangeType(result.Message, typeof(T));
-                }
-                else
-                {
-                    obj = JsonConvert.DeserializeObject<T>(result.Message);
-                }
+                obj = TypeConverter.Convert<T>(result.Message);
             }
+
             return new OperationResult<T>(result.Code, obj)
             {
                 Reference = result.Reference,
