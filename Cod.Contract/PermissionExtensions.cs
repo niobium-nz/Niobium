@@ -40,7 +40,7 @@ namespace Cod
                 return Enumerable.Empty<string>();
             }
 
-            scope = scope.Trim().ToUpperInvariant();
+            scope = scope.Trim();
 
             return permissions
                 .Where(p => (scope.Length > 0 && p.Scope == scope) || (p.IsWildcard && scope.StartsWith(p.Scope)))
@@ -73,7 +73,7 @@ namespace Cod
         {
             if (scope != null)
             {
-                scope = scope.Trim().ToUpperInvariant();
+                scope = scope.Trim();
             }
 
             if (permissions == null || !permissions.Any())
