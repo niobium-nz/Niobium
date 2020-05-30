@@ -44,9 +44,5 @@ namespace Cod.Platform
             string mobile,
             int template,
             IReadOnlyDictionary<string, object> parameters);
-
-        protected static bool ValidateChineseMobileNumber(string input)
-            => !string.IsNullOrWhiteSpace(input)
-            && ((input.Length == 11 && input.All(char.IsDigit)) || input.StartsWith("+86"));
     }
 }

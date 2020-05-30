@@ -1,12 +1,39 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace Cod
 {
     public static class ValidationHelper
     {
+        public static bool ValidateChineseMobileNumber(string input)
+        {
+            if (String.IsNullOrWhiteSpace(input))
+            {
+                return false;
+            }
+
+            if (input.StartsWith("0086"))
+            {
+                input = input.Substring(4, input.Length - 4);
+            }
+
+            if (input.StartsWith("+86"))
+            {
+                input = input.Substring(3, input.Length - 3);
+            }
+
+            if (input.Length != 11 || !input.All(char.IsDigit) || input[0] != '1')
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+
         public static bool TryValidate<TEntity>(this TEntity model, out ValidationState result)
                => TryValidate<TEntity, string>(model, null, out result);
 
