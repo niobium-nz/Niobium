@@ -29,7 +29,7 @@ namespace Cod.Platform
                 )).As<IRepository<WechatEntity>>();
             builder.RegisterType<CloudSignatureIssuer>().AsImplementedInterfaces();
             builder.RegisterType<ConfigurationProvider>().AsImplementedInterfaces();
-            builder.RegisterType<QueueMessageRepository>().AsImplementedInterfaces();
+            builder.RegisterType<PlatformQueue>().AsImplementedInterfaces();
             builder.RegisterType<BrandingRepository>().AsImplementedInterfaces();
             builder.RegisterType<TokenValidator>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Impediment>>().AsImplementedInterfaces();

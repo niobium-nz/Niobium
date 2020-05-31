@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 
 namespace Cod.Channel
 {
@@ -13,6 +14,12 @@ namespace Cod.Channel
             }
             return null;
         }
+
+        public static bool IsBusy(this ICommander commander, string group)
+            => commander.IsBusy(group, String.Empty);
+
+        public static bool IsBusy(this ICommander commander, string group, string name)
+            => commander.Busy.ContainsKey(group) && commander.Busy[group].Contains(name);
 
         public static IDisposable SetBusy(this ICommander commander, string group) => commander.SetBusy(group, String.Empty);
 

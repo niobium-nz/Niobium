@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -12,7 +13,7 @@ namespace Cod.Channel
 {
     public class DefaultAuthenticator : IAuthenticator
     {
-        private readonly Dictionary<string, StorageSignature> signatures = new Dictionary<string, StorageSignature>();
+        private readonly ConcurrentDictionary<string, StorageSignature> signatures = new ConcurrentDictionary<string, StorageSignature>();
         private readonly IConfigurationProvider configuration;
         private readonly HttpClient httpClient;
         private readonly IEnumerable<IEventHandler<IAuthenticator>> eventHandlers;
@@ -46,9 +47,9 @@ namespace Cod.Channel
 
         protected virtual Task SaveTokenAsync(string token) => Task.CompletedTask;
 
-        protected virtual Task<Dictionary<string, StorageSignature>> GetSavedSignaturesAsync() => Task.FromResult<Dictionary<string, StorageSignature>>(null);
+        protected virtual Task<IDictionary<string, StorageSignature>> GetSavedSignaturesAsync() => Task.FromResult<IDictionary<string, StorageSignature>>(null);
 
-        protected virtual Task SaveSignaturesAsync(Dictionary<string, StorageSignature> signatures) => Task.CompletedTask;
+        protected virtual Task SaveSignaturesAsync(IDictionary<string, StorageSignature> signatures) => Task.CompletedTask;
 
         public virtual async Task InitializeAsync()
         {
@@ -62,7 +63,7 @@ namespace Cod.Channel
             {
                 foreach (var key in ss.Keys)
                 {
-                    this.signatures.Add(key, ss[key]);
+                    this.signatures.AddOrUpdate(key, k => ss[key], (k, v) => ss[key]);
                 }
             }
         }
@@ -80,7 +81,7 @@ namespace Cod.Channel
             {
                 if (this.signatures[key].Expires < DateTimeOffset.UtcNow)
                 {
-                    this.signatures.Remove(key);
+                    this.signatures.TryRemove(key, out _);
                     await this.SaveSignaturesAsync(this.signatures);
                 }
                 else
@@ -112,7 +113,7 @@ namespace Cod.Channel
             {
                 var json = await response.Content.ReadAsStringAsync();
                 var signature = JsonConvert.DeserializeObject<StorageSignature>(json);
-                this.signatures.Add(key, signature);
+                this.signatures.AddOrUpdate(key, k => signature, (k, v) => signature);
                 await this.SaveSignaturesAsync(this.signatures);
                 return OperationResult<StorageSignature>.Create(signature);
             }

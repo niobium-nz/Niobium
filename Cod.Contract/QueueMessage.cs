@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Cod.Platform.Model
+namespace Cod
 {
     public class QueueMessage : IEntity, ICloneable
     {
