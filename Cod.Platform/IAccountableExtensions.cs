@@ -152,7 +152,8 @@ namespace Cod.Platform
                     Delta = request.Delta,
                     Remark = request.Remark,
                     Reason = request.Reason,
-                    Reference = request.Reference
+                    Reference = request.Reference,
+                    Created = DateTimeOffset.UtcNow,
                 };
                 transaction.SetOwner(request.Target);
                 var id = request.ID.Value.AddMilliseconds(count);
@@ -267,7 +268,8 @@ namespace Cod.Platform
             {
                 Balance = (previousBalance + credits + debits).ChineseRound(),
                 Credits = credits.ChineseRound(),
-                Debits = debits.ChineseRound()
+                Debits = debits.ChineseRound(),
+                Created = DateTimeOffset.UtcNow,
             };
             accounting.SetPrincipal(principal);
             accounting.SetEnd(input);

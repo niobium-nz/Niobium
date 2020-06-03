@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Cod
 {
-    public class User : IEntity
+    public class User : IEntity, IImpedable
     {
         public string PartitionKey { get; set; }
 
@@ -94,5 +94,7 @@ namespace Cod
                 }
             }
         }
+
+        public string GetImpedementID() => $"{nameof(Account).ToUpperInvariant()}-{this.RowKey}";
     }
 }
