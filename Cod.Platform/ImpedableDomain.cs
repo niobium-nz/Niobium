@@ -57,7 +57,11 @@ namespace Cod.Platform
             {
                 return;
             }
+            await this.UnimpedeAsync(entity, category, causes, policyInput);
+        }
 
+        public async Task UnimpedeAsync(T entity, string category, IEnumerable<int> causes, string policyInput = null)
+        {
             foreach (var cause in causes)
             {
                 var context = new IImpedimentContext<T>
