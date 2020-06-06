@@ -71,7 +71,7 @@ namespace Cod.Platform
                 using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
                 {
                     httpclient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                    var json = JsonConvert.SerializeObject(request, JsonSetting.CamelCaseSetting);
+                    var json = JsonConvert.SerializeObject(request, JsonSetting.CamelCase);
                     using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
                     {
                         var resp = await httpclient.PostAsync($"https://fcm.googleapis.com/v1/projects/{message.ProjectID}/messages:send", content);

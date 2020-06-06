@@ -55,7 +55,7 @@ namespace Cod.Platform
             IReadOnlyDictionary<string, object> parameters)
         {
             var requestObj = await this.MakeRequestAsync(brand, account, context, template, parameters);
-            var requestData = JsonConvert.SerializeObject(requestObj, JsonSetting.UnderstoreCaseSetting);
+            var requestData = JsonConvert.SerializeObject(requestObj, JsonSetting.UnderstoreCase);
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
             {
                 httpclient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Key);

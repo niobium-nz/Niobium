@@ -54,7 +54,7 @@ namespace Cod.Platform
                         var json = await resp.Content.ReadAsStringAsync();
                         if (status >= 200 && status < 400)
                         {
-                            var result = JsonConvert.DeserializeObject<BaiduCodeScanResponse>(json, JsonSetting.UnderstoreCaseSetting);
+                            var result = JsonConvert.DeserializeObject<BaiduCodeScanResponse>(json, JsonSetting.UnderstoreCase);
                             if (result.CodesResult != null && result.CodesResult.Length > 0)
                             {
                                 return OperationResult<BaiduCodeScanResponse>.Create(result);
@@ -126,7 +126,7 @@ namespace Cod.Platform
                         var json = await resp.Content.ReadAsStringAsync();
                         if (status >= 200 && status < 400)
                         {
-                            var result = JsonConvert.DeserializeObject<BaiduOCRResponse>(json, JsonSetting.UnderstoreCaseSetting);
+                            var result = JsonConvert.DeserializeObject<BaiduOCRResponse>(json, JsonSetting.UnderstoreCase);
                             if (result.WordsResult != null && result.WordsResult.Length > 0)
                             {
                                 return OperationResult<BaiduOCRResponse>.Create(result);
@@ -174,7 +174,7 @@ namespace Cod.Platform
                         var json = await resp.Content.ReadAsStringAsync();
                         if (status >= 200 && status < 400)
                         {
-                            var result = JsonConvert.DeserializeObject<BaiduAccessTokenResponse>(json, JsonSetting.UnderstoreCaseSetting);
+                            var result = JsonConvert.DeserializeObject<BaiduAccessTokenResponse>(json, JsonSetting.UnderstoreCase);
                             if (!String.IsNullOrWhiteSpace(result.AccessToken))
                             {
                                 await cacheStore.Value.SetAsync(key, AccessTokenCacheKey, result.AccessToken, true, DateTimeOffset.UtcNow.Add(result.GetExpiry()));

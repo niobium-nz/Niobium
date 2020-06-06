@@ -244,7 +244,7 @@ namespace Cod.Platform
                 var json = await resp.Content.ReadAsStringAsync();
                 if (status >= 200 && status < 400)
                 {
-                    var result = JsonConvert.DeserializeObject<JsTicketResult>(json, JsonSetting.UnderstoreCaseSetting);
+                    var result = JsonConvert.DeserializeObject<JsTicketResult>(json, JsonSetting.UnderstoreCase);
                     if (!String.IsNullOrWhiteSpace(result.Ticket))
                     {
                         return OperationResult<string>.Create(result.Ticket);
@@ -286,7 +286,7 @@ namespace Cod.Platform
                 var json = await resp.Content.ReadAsStringAsync();
                 if (status >= 200 && status < 400)
                 {
-                    var result = JsonConvert.DeserializeObject<TokenResult>(json, JsonSetting.UnderstoreCaseSetting);
+                    var result = JsonConvert.DeserializeObject<TokenResult>(json, JsonSetting.UnderstoreCase);
                     if (!String.IsNullOrWhiteSpace(result.AccessToken))
                     {
                         await cacheStore.Value.SetAsync(appID, AccessTokenCacheKey, result.AccessToken, true, DateTimeOffset.UtcNow.Add(AccessTokenCacheExpiry));
@@ -323,7 +323,7 @@ namespace Cod.Platform
                     Touser = openId,
                     Url = link
                 };
-                var data = JsonConvert.SerializeObject(request, JsonSetting.UnderstoreCaseSetting);
+                var data = JsonConvert.SerializeObject(request, JsonSetting.UnderstoreCase);
                 data = data.Replace("\"JSON_DATA\"", parameters.ToJson());
                 using (var content = new StringContent(data))
                 {
