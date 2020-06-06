@@ -24,7 +24,7 @@ namespace Cod
                     result += $"{timeSpan.Minutes}分钟";
                 }
 
-                if (timeSpan.Seconds > 00)
+                if (timeSpan.Seconds > 0)
                 {
                     result += $"{timeSpan.Seconds}秒钟";
                 }
