@@ -4,7 +4,7 @@ namespace Cod
 {
     public static class TimeSpanExtensions
     {
-        public static string ToDisplay(this TimeSpan timeSpan)
+        public static string ToDisplay(this TimeSpan timeSpan, bool displaySeconds = false)
         {
             var result = string.Empty;
             if (timeSpan.Days > 0)
@@ -17,9 +17,24 @@ namespace Cod
                 result += $"{timeSpan.Hours}小时";
             }
 
-            if (timeSpan.Minutes > 0)
+            if (displaySeconds)
             {
-                result += $"{timeSpan.Minutes}分";
+                if (timeSpan.Minutes > 0 || timeSpan.Seconds > 0)
+                {
+                    result += $"{timeSpan.Minutes}分钟";
+                }
+
+                if (timeSpan.Seconds > 00)
+                {
+                    result += $"{timeSpan.Seconds}秒钟";
+                }
+            }
+            else
+            {
+                if (timeSpan.Minutes > 0)
+                {
+                    result += $"{timeSpan.Minutes}分钟";
+                }
             }
 
             return result;
