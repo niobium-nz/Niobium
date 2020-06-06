@@ -6,9 +6,41 @@ namespace Cod.Channel
 {
     public static class IViewModelExtensions
     {
-        public static IEnumerable<TViewModel> ToViewModel<TEntity, TViewModel, TDomain>(this IEnumerable<TDomain> domains, Func<TViewModel> createViewModel, TEntity dummy)
+        public static IList<TViewModel> Refresh<TEntity, TViewModel, TDomain>(
+            this IList<TViewModel> existings,
+            IEnumerable<TDomain> refreshments,
+            Func<TViewModel> createViewModel, TEntity dummy)
             where TViewModel : IViewModel<TDomain, TEntity>
             where TDomain : IChannelDomain<TEntity>
-            => domains.Select(d => (TViewModel)createViewModel().Initialize(d));
+            where TEntity : IEntity
+        {
+            if (existings == null)
+            {
+                existings = new List<TViewModel>();
+            }
+
+            foreach (var refreshment in refreshments)
+            {
+                var changed = existings.SingleOrDefault(e =>
+                    e.PartitionKey == refreshment.PartitionKey
+                    && e.RowKey == refreshment.RowKey
+                    && e.ETag != refreshment.Entity.ETag);
+                if (changed != null)
+                {
+                    changed.Initialize(refreshment);
+                }
+
+                var added = !existings.Any(e =>
+                    e.PartitionKey == refreshment.PartitionKey
+                    && e.RowKey == refreshment.RowKey);
+                if (added)
+                {
+                    var vm = (TViewModel)createViewModel().Initialize(refreshment);
+                    existings.Add(vm);
+                }
+            }
+
+            return existings;
+        }
     }
 }

@@ -5,6 +5,7 @@ namespace Cod.Channel
 {
     public interface IRepository<TDomain, TEntity>
         where TDomain : IChannelDomain<TEntity>
+        where TEntity : IEntity
     {
         IReadOnlyCollection<TDomain> Data { get; }
 

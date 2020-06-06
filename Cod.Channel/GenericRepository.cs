@@ -103,9 +103,7 @@ namespace Cod.Channel
 
                     if (response.Result.Data.Count > 0)
                     {
-                        var domainObjects = response.Result.Data.Select(m => (TDomain)this.createDomain().Initialize(m)).ToList();
-                        this.Cache(domainObjects);
-                        result = domainObjects;
+                        result = this.Cache(response.Result.Data);
                     }
                 }
                 else
@@ -185,23 +183,32 @@ namespace Cod.Channel
             return await TableStorageHelper.GetAsync<TEntity>(this.httpClient, baseUrl, signature.Result.Signature, partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, continuationToken, count);
         }
 
-        protected virtual void Cache(TDomain domainObject) => Cache(new[] { domainObject });
-
-        protected virtual void Cache(IEnumerable<TDomain> domainObjects)
+        protected virtual IReadOnlyCollection<TDomain> Cache(IEnumerable<TEntity> entities)
         {
-            foreach (var item in domainObjects)
+            var result = new List<TDomain>();
+
+            foreach (var entity in entities)
             {
-                var existing = this.CachedData.SingleOrDefault(d => d.PartitionKey == item.PartitionKey && d.RowKey == item.RowKey);
+                var existing = this.CachedData.SingleOrDefault(d => d.PartitionKey == entity.PartitionKey && d.RowKey == entity.RowKey);
                 if (existing != null)
                 {
-                    var i = this.CachedData.IndexOf(existing);
-                    this.CachedData[i] = item;
+                    if (existing.Entity.ETag != entity.ETag)
+                    {
+                        var i = this.CachedData.IndexOf(existing);
+                        var d = this.ToDomain(entity);
+                        this.CachedData[i] = d;
+                        result.Add(d);
+                    }
                 }
                 else
                 {
-                    this.CachedData.Add(item);
+                    var d = this.ToDomain(entity);
+                    this.CachedData.Add(d);
+                    result.Add(d);
                 }
             }
+
+            return result;
         }
 
         protected virtual void Uncache(TDomain domainObject) => Uncache(new[] { domainObject });
@@ -213,6 +220,8 @@ namespace Cod.Channel
 
         protected virtual void Uncache(IEnumerable<TEntity> entities)
             => this.CachedData.RemoveAll(c => entities.Any(en => en.PartitionKey == c.PartitionKey && en.RowKey == c.RowKey));
+
+        protected virtual TDomain ToDomain(TEntity entity) => (TDomain)this.createDomain().Initialize(entity);
 
         protected struct TableStorageFetchKey : IEquatable<TableStorageFetchKey>
         {

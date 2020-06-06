@@ -63,16 +63,6 @@ namespace Cod.Channel
                 }
 
                 newEntity = loadResult.Result;
-                if (newEntity != null)
-                {
-                    this.Cache(newEntity);
-                }
-                else
-                {
-                    //REMARK (5he11) This seems not possible but if it ever occurred,
-                    // it means the storage layer has high latency causes data retrieved does not reflect its realtime state.
-                    throw new NotImplementedException("Please refer to comment in source code.");
-                }
             }
             return new OperationResult<TDomain>(result.Code, newEntity)
             {
@@ -110,16 +100,6 @@ namespace Cod.Channel
                 }
 
                 newEntity = loadResult.Result;
-                if (newEntity != null)
-                {
-                    this.Cache(newEntity);
-                }
-                else
-                {
-                    //REMARK (5he11) This seems not possible but if it ever occurred,
-                    // it means the storage layer has high latency causes data retrieved does not reflect its realtime state.
-                    throw new NotImplementedException("Please refer to comment in source code.");
-                }
             }
             return new OperationResult<TDomain>(result.Code, newEntity)
             {

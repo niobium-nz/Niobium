@@ -2,7 +2,14 @@
 {
     public interface IViewModel<TDomain, TEntity>
         where TDomain : IChannelDomain<TEntity>
+        where TEntity : IEntity
     {
+        string PartitionKey { get; }
+
+        string RowKey { get; }
+
+        string ETag { get; }
+
         IViewModel<TDomain, TEntity> Initialize(TDomain domain);
     }
 }

@@ -3,6 +3,7 @@
     public interface ICRUDRepository<TDomain, TEntity>
        : IDeletableRepository<TDomain, TEntity>
        where TDomain : IChannelDomain<TEntity>
+       where TEntity : IEntity
     {
     }
 
@@ -11,6 +12,7 @@
        IDeletableRepository<TDomain, TEntity>
        where TDomain : IChannelDomain<TEntity>
        where TCreateParams : class
+       where TEntity : IEntity
     {
     }
 
@@ -20,6 +22,7 @@
         IDeletableRepository<TDomain, TEntity>
         where TDomain : IChannelDomain<TEntity>
         where TCreateParams : class
+        where TEntity : IEntity
     {
     }
 }
