@@ -7,7 +7,7 @@ namespace Cod
         public static string ToDisplay(this TimeSpan timeSpan)
         {
             var result = string.Empty;
-            if (timeSpan.Days >= 1)
+            if (timeSpan.Days > 0)
             {
                 result += $"{timeSpan.Days}天";
             }
@@ -19,7 +19,7 @@ namespace Cod
 
             if (timeSpan.Minutes > 0)
             {
-                result += $"{timeSpan.Hours}分";
+                result += $"{timeSpan.Minutes}分";
             }
 
             return result;
