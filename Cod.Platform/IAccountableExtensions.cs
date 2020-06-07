@@ -112,7 +112,7 @@ namespace Cod.Platform
         }
 
         public static async Task<TransactionRequest> BuildTransactionAsync(this IAccountable accountable,
-            double delta, int reason, string remark, string reference, DateTimeOffset? id = null)
+            double delta, int reason, string remark, string reference, string id = null)
             => new TransactionRequest(await accountable.GetAccountingPrincipalAsync(), delta)
             {
                 Reason = reason,
@@ -122,7 +122,7 @@ namespace Cod.Platform
             };
 
         public static async Task<IEnumerable<Model.Transaction>> MakeTransactionAsync(this IAccountable accountable,
-            double delta, int reason, string remark, string reference, DateTimeOffset? id = null)
+            double delta, int reason, string remark, string reference, string id = null)
             => await MakeTransactionAsync(new[] { await accountable.BuildTransactionAsync(delta, reason, remark, reference, id) }, accountable.CacheStore);
 
         public static async Task<IEnumerable<Model.Transaction>> MakeTransactionAsync(TransactionRequest request, ICacheStore cacheStore)
@@ -140,9 +140,9 @@ namespace Cod.Platform
                     throw new ArgumentNullException(nameof(request.Target));
                 }
 
-                if (!request.ID.HasValue)
+                if (request.ID == null)
                 {
-                    request.ID = DateTimeOffset.UtcNow;
+                    request.ID = Transaction.BuildRowKey(DateTimeOffset.UtcNow);
                 }
                 request.Delta = request.Delta.ChineseRound();
                 request.Target = request.Target.Trim();
@@ -156,8 +156,7 @@ namespace Cod.Platform
                     Created = DateTimeOffset.UtcNow,
                 };
                 transaction.SetOwner(request.Target);
-                var id = request.ID.Value.AddMilliseconds(count);
-                transaction.SetCreated(id);
+                transaction.RowKey = request.ID;
                 transactions.Add(transaction);
                 count++;
             }

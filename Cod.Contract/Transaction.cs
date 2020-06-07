@@ -26,10 +26,6 @@ namespace Cod
 
         public string GetOwner() => this.PartitionKey;
 
-        public DateTimeOffset GetCreated() => ParseRowKey(this.RowKey);
-
-        public void SetCreated(DateTimeOffset created) => this.RowKey = BuildRowKey(created);
-
         public static string BuildPartitionKey(string owner) => owner.Trim();
 
         public static string BuildRowKey(DateTimeOffset created) => created.ToReverseUnixTimestamp();

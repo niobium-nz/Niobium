@@ -4,7 +4,7 @@ namespace Cod.Platform.Model
 {
     public class TransactionRequest
     {
-        public DateTimeOffset? ID { get; set; }
+        public string ID { get; set; }
 
         public string Target { get; set; }
 
