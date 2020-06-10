@@ -18,6 +18,8 @@ namespace Cod
 
         public Guid User { get; set; }
 
+        public Guid Business { get; set; }
+
         public static string BuildPartitionKey(OpenIDKind kind)
             => BuildPartitionKey((int)kind);
 
