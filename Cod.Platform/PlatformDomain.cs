@@ -53,6 +53,16 @@ namespace Cod.Platform
             return this;
         }
 
+        public IDomain<T> ReInitialize(string partitionKey, string rowKey)
+        {
+            if (this.Initialized)
+            {
+                this.Initialized = false;
+            }
+
+            return this.Initialize(partitionKey, rowKey);
+        }
+
         protected async Task SaveEntityAsync()
             => await this.SaveEntityAsync(new[] { await this.GetEntityAsync() });
 
