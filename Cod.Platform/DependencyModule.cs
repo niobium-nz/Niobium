@@ -19,6 +19,7 @@ namespace Cod.Platform
             builder.RegisterType<CloudTableRepository<Model.OpenID>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Model.Login>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Model.User>>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<Model.Business>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Model.MobileLocation>>().AsImplementedInterfaces();
             builder.RegisterType<GenericDomainRepository<UserDomain, Model.User>>().As<IDomainRepository<UserDomain, Model.User>>();
 
