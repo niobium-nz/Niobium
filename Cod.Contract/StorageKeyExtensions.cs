@@ -4,14 +4,19 @@ namespace Cod
 {
     public static class StorageKeyExtensions
     {
+        /// <summary>
+        /// Login
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
         public static string BuildFullID(this StorageKey key)
         {
-            return $"{key.PartitionKey}-{key.RowKey}";
+            return $"{key.PartitionKey}$$${key.RowKey}";
         }
 
         public static StorageKey ParseFullID(string fullID)
         {
-            var splited = fullID.Split(new string[] { "-" }, System.StringSplitOptions.RemoveEmptyEntries);
+            var splited = fullID.Split(new string[] { "$$$" }, System.StringSplitOptions.RemoveEmptyEntries);
             if (splited.Length == 2)
             {
                 return new StorageKey { PartitionKey = splited[0], RowKey = splited[1] };
