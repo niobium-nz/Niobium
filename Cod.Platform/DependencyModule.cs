@@ -9,7 +9,6 @@ namespace Cod.Platform
         protected override void Load(ContainerBuilder builder)
         {
             builder.Register(_ => Logger.Instance).As<ILogger>();
-            builder.RegisterType<UserDomain>();
             builder.RegisterType<WechatIntegration>();
             builder.RegisterType<BaiduIntegration>();
             builder.RegisterType<CloudTableRepository<Model.Account>>().As<IRepository<Model.Account>>();
@@ -21,7 +20,12 @@ namespace Cod.Platform
             builder.RegisterType<CloudTableRepository<Model.User>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Model.Business>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Model.MobileLocation>>().AsImplementedInterfaces();
+
+            builder.RegisterType<UserDomain>();
             builder.RegisterType<GenericDomainRepository<UserDomain, Model.User>>().As<IDomainRepository<UserDomain, Model.User>>();
+
+            builder.RegisterType<BusinessDomain>();
+            builder.RegisterType<GenericDomainRepository<BusinessDomain, Model.Business>>().As<IDomainRepository<BusinessDomain, Model.Business>>();
 
             builder.RegisterType<ChargeRepository>().As<IRepository<Charge>>();
             builder.RegisterType<WechatRepository>().AsSelf();
