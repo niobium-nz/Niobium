@@ -20,7 +20,7 @@ namespace Cod
 
         public string Reference { get; set; }
 
-        public string Order { get; set; }
+        public string Corelation { get; set; }
 
         public DateTimeOffset? Created { get; set; }
 

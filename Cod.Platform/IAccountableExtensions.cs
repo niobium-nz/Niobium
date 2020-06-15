@@ -112,18 +112,19 @@ namespace Cod.Platform
         }
 
         public static async Task<TransactionRequest> BuildTransactionAsync(this IAccountable accountable,
-            double delta, int reason, string remark, string reference, string id = null)
+            double delta, int reason, string remark, string reference, string id = null, string corelation = null)
             => new TransactionRequest(await accountable.GetAccountingPrincipalAsync(), delta)
             {
                 Reason = reason,
                 ID = id,
                 Reference = reference,
                 Remark = remark,
+                Corelation = corelation,
             };
 
         public static async Task<IEnumerable<Model.Transaction>> MakeTransactionAsync(this IAccountable accountable,
-            double delta, int reason, string remark, string reference, string id = null)
-            => await MakeTransactionAsync(new[] { await accountable.BuildTransactionAsync(delta, reason, remark, reference, id) }, accountable.CacheStore);
+            double delta, int reason, string remark, string reference, string id = null, string corelation = null)
+            => await MakeTransactionAsync(new[] { await accountable.BuildTransactionAsync(delta, reason, remark, reference, id, corelation) }, accountable.CacheStore);
 
         public static async Task<IEnumerable<Model.Transaction>> MakeTransactionAsync(TransactionRequest request, ICacheStore cacheStore)
           => await MakeTransactionAsync(new[] { request }, cacheStore);
@@ -153,7 +154,7 @@ namespace Cod.Platform
                     Remark = request.Remark,
                     Reason = request.Reason,
                     Reference = request.Reference,
-                    Created = DateTimeOffset.UtcNow,
+                    Corelation = request.Corelation,
                 };
                 transaction.SetOwner(request.Target);
                 transaction.RowKey = request.ID;
