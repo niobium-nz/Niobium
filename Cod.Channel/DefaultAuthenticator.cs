@@ -172,6 +172,18 @@ namespace Cod.Channel
             }
         }
 
+        public async Task CleanupAsync()
+        {
+            this.Token = null;
+            this.claims.Clear();
+            this.signatures.Clear();
+            await this.SaveSignaturesAsync(this.signatures);
+            foreach (var eventHandler in this.eventHandlers)
+            {
+                await eventHandler.InvokeAsync(this);
+            }
+        }
+
         public async Task<HttpRequestMessage> PrepareAuthenticationAsync(HttpRequestMessage request)
         {
             if (!this.IsAuthenticated())
@@ -204,18 +216,6 @@ namespace Cod.Channel
             }
             catch (ArgumentException)
             {
-            }
-        }
-
-        private async Task CleanupAsync()
-        {
-            this.Token = null;
-            this.claims.Clear();
-            this.signatures.Clear();
-            await this.SaveSignaturesAsync(this.signatures);
-            foreach (var eventHandler in this.eventHandlers)
-            {
-                await eventHandler.InvokeAsync(this);
             }
         }
 

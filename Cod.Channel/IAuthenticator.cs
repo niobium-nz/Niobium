@@ -17,5 +17,7 @@ namespace Cod.Channel
         Task<OperationResult<StorageSignature>> AquireSignatureAsync(StorageType type, string resource, string partitionKey, string rowKey);
 
         Task<HttpRequestMessage> PrepareAuthenticationAsync(HttpRequestMessage request);
+
+        Task CleanupAsync();
     }
 }
