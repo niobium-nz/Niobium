@@ -16,6 +16,8 @@ namespace Cod.Platform.Model
 
         public string Reference { get; set; }
 
+        public string Order { get; set; }
+
         public TransactionRequest(string target, double delta)
         {
             this.Target = target;

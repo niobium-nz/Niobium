@@ -20,6 +20,8 @@ namespace Cod
 
         public string Reference { get; set; }
 
+        public string Order { get; set; }
+
         public DateTimeOffset? Created { get; set; }
 
         public void SetOwner(string value) => this.PartitionKey = BuildPartitionKey(value);
