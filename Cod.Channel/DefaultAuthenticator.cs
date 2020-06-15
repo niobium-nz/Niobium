@@ -176,6 +176,7 @@ namespace Cod.Channel
         {
             this.Token = null;
             this.claims.Clear();
+            await this.SaveTokenAsync(string.Empty);
             this.signatures.Clear();
             await this.SaveSignaturesAsync(this.signatures);
             foreach (var eventHandler in this.eventHandlers)
