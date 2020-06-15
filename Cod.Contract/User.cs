@@ -95,6 +95,6 @@ namespace Cod
             }
         }
 
-        public string GetImpedementID() => $"{nameof(Account).ToUpperInvariant()}-{this.RowKey}";
+        public string GetImpedementID() => $"{nameof(Account).ToUpperInvariant()}-{this.GetID()}";
     }
 }
