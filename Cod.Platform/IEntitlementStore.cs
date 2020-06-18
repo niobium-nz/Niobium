@@ -4,6 +4,6 @@ namespace Cod.Platform
 {
     public interface IEntitlementStore
     {
-        IReadOnlyDictionary<string, string> Get(string role);
+        IReadOnlyDictionary<string, string> Get(string role, string scope);
     }
 }

@@ -23,40 +23,54 @@ namespace Cod.Platform
         public async Task<string> CreateAsync(Guid? group, Guid? user, string nameIdentifier, string contact, string openIDProvider, string openIDApp,
             IEnumerable<string> roles = null, IEnumerable<KeyValuePair<string, string>> entitlements = null)
         {
-            var dic = new Dictionary<string, string>();
+            var dic = new List<KeyValuePair<string, string>>();
             if (entitlements != null)
             {
-                foreach (var item in entitlements)
-                {
-                    if (dic.ContainsKey(item.Key))
-                    {
-                        dic[item.Key] = $"{dic[item.Key]},{item.Value}";
-                    }
-                    else
-                    {
-                        dic.Add(item.Key, item.Value);
-                    }
-                }
+                dic.AddRange(entitlements);
             }
 
             if (roles != null)
             {
-                foreach (var role in roles)
+                foreach (var r in roles)
                 {
-                    var roleEntitlement = this.store.Value.Get(role);
-                    foreach (var k in roleEntitlement.Keys)
+                    string scope = null;
+                    var isBusinessScoped = false;
+                    var roleparts = r.Split(Entitlements.ScopeSplitor, StringSplitOptions.RemoveEmptyEntries);
+                    IReadOnlyDictionary<string, string> roleEntitlement;
+                    if (roleparts.Length == 2)
                     {
-                        if (dic.ContainsKey(k))
+                        scope = roleparts[1];
+                        isBusinessScoped = Guid.TryParse(scope, out _);
+                        if (isBusinessScoped)
                         {
-                            var exist = dic[k].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
-                            var current = roleEntitlement[k].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
-                            var values = exist.Concat(current).Distinct();
-                            dic[k] = String.Join(",", values);
+                            roleEntitlement = this.store.Value.Get(roleparts[0], Entitlements.BusinessScopePlaceholder);
                         }
                         else
                         {
-                            dic.Add(k, roleEntitlement[k]);
+                            roleEntitlement = this.store.Value.Get(roleparts[0], Entitlements.CustomScopePlaceholder);
                         }
+                    }
+                    else
+                    {
+                        roleEntitlement = this.store.Value.Get(r, null);
+                    }
+
+                    foreach (var k in roleEntitlement.Keys)
+                    {
+                        var v = roleEntitlement[k];
+                        if (scope != null)
+                        {
+                            if (isBusinessScoped)
+                            {
+                                v = v.Replace(Entitlements.BusinessScopePlaceholder, scope);
+                            }
+                            else
+                            {
+                                v = v.Replace(Entitlements.CustomScopePlaceholder, scope);
+                            }
+                        }
+
+                        dic.Add(new KeyValuePair<string, string>(k, v));
                     }
                 }
             }
@@ -65,7 +79,7 @@ namespace Cod.Platform
         }
 
         private async Task<string> BuildAsync(Guid? group, Guid? user, string nameIdentifier, string contact,
-            string openIDProvider, string openIDApp, IReadOnlyDictionary<string, string> entitlements = null)
+            string openIDProvider, string openIDApp, IEnumerable<KeyValuePair<string, string>> entitlements = null)
         {
             var claims = new List<Claim>
             {
