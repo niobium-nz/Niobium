@@ -16,29 +16,20 @@ namespace Cod
 
         public DateTimeOffset? Created { get; set; }
 
-        public static string BuildPartitionKey(OpenIDProvider provider, string appID, string accountID)
+        public static string BuildPartitionKey(Guid user) => user.ToKey();
+
+        public static string BuildRowKey(string entitlement) => $"{Entitlements.CategoryNamingPrefix}{entitlement.Trim().ToUpperInvariant()}";
+
+        public static string BuildRowKey(string entitlement, ushort offset)
         {
-            if (appID is null)
+            if (offset <= 0)
             {
-                throw new ArgumentNullException(nameof(appID));
+                throw new NotSupportedException();
             }
-
-            if (accountID is null)
-            {
-                throw new ArgumentNullException(nameof(accountID));
-            }
-
-            return $"{(int)provider}|{appID.Trim()}|{accountID.Trim()}";
-        }
-
-        public static string BuildPartitionKey(Guid id)
-        {
-            return id.ToString("N").ToUpperInvariant();
+            return $"{Entitlements.CategoryNamingPrefix}{entitlement.Trim().ToUpperInvariant()}-{offset}";
         }
 
         public Guid GetUser() => Guid.Parse(this.PartitionKey);
-
-        public string GetFullAccountID() => this.PartitionKey.Trim();
 
         public string GetKey() => this.RowKey.Trim();
     }
