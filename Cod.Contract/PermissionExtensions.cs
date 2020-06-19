@@ -17,11 +17,11 @@ namespace Cod
             return $"{permission.Scope}{wildcard}{Entitlements.ScopeSplitor}{String.Join(Entitlements.ValueSplitor[0], permission.Entitlements)}";
         }
 
-        public static bool TryGetClaim(this IReadOnlyDictionary<string, string> claims, string key, out string value)
+        public static bool TryGetClaim(this IEnumerable<KeyValuePair<string, string>> claims, string key, out string value)
         {
-            if (claims.ContainsKey(key))
+            if (claims.Any(kv => kv.Key == key))
             {
-                value = claims[key];
+                value = claims.Single(kv => kv.Key == key).Value;
                 return true;
             }
             value = null;

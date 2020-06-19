@@ -10,7 +10,7 @@ namespace Cod.Channel
 
         Task InitializeAsync();
 
-        Task<OperationResult<IReadOnlyDictionary<string, string>>> GetClaimsAsync();
+        Task<OperationResult<IEnumerable<KeyValuePair<string, string>>>> GetClaimsAsync();
 
         Task<OperationResult> AquireTokenAsync(string scheme, string username, string password, bool remember);
 

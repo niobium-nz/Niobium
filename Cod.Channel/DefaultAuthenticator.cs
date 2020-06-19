@@ -17,18 +17,18 @@ namespace Cod.Channel
         private readonly IConfigurationProvider configuration;
         private readonly HttpClient httpClient;
         private readonly IEnumerable<IEventHandler<IAuthenticator>> eventHandlers;
-        private readonly Dictionary<string, string> claims;
+        private readonly ConcurrentBag<KeyValuePair<string, string>> claims;
 
         public event EventHandler AuthenticationRequired;
 
-        public async Task<OperationResult<IReadOnlyDictionary<string, string>>> GetClaimsAsync()
+        public async Task<OperationResult<IEnumerable<KeyValuePair<string, string>>>> GetClaimsAsync()
         {
             if (!this.IsAuthenticated())
             {
                 await this.CleanupAsync();
-                return OperationResult<IReadOnlyDictionary<string, string>>.Create(InternalError.AuthenticationRequired, null);
+                return OperationResult<IEnumerable<KeyValuePair<string, string>>>.Create(InternalError.AuthenticationRequired, null);
             }
-            return OperationResult<IReadOnlyDictionary<string, string>>.Create(this.claims);
+            return OperationResult<IEnumerable<KeyValuePair<string, string>>>.Create(this.claims);
         }
 
         public AccessToken Token { get; private set; }
@@ -40,7 +40,7 @@ namespace Cod.Channel
             this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             this.httpClient = httpClient;
             this.eventHandlers = eventHandlers;
-            this.claims = new Dictionary<string, string>();
+            this.claims = new ConcurrentBag<KeyValuePair<string, string>>();
         }
 
         protected virtual Task<string> GetSavedTokenAsync() => Task.FromResult(String.Empty);
@@ -119,14 +119,7 @@ namespace Cod.Channel
             }
             else if (statusCode == 401)
             {
-                this.Token = null;
-                this.claims.Clear();
-                this.signatures.Clear();
-                foreach (var eventHandler in this.eventHandlers)
-                {
-                    await eventHandler.InvokeAsync(this);
-                }
-                await this.SaveSignaturesAsync(this.signatures);
+                await this.CleanupAsync();
                 return OperationResult<StorageSignature>.Create(InternalError.AuthenticationRequired, null);
             }
             else if (InternalError.Messages.ContainsKey(statusCode))
@@ -175,7 +168,11 @@ namespace Cod.Channel
         public async Task CleanupAsync()
         {
             this.Token = null;
-            this.claims.Clear();
+            while (this.claims.Count > 0)
+            {
+                this.claims.TryTake(out _);
+            }
+
             await this.SaveTokenAsync(string.Empty);
             this.signatures.Clear();
             await this.SaveSignaturesAsync(this.signatures);
@@ -204,10 +201,10 @@ namespace Cod.Channel
             try
             {
                 var jwt = new JsonWebToken(token);
-                var dic = jwt.Claims.ToDictionary(c => c.Type, c => c.Value);
-                foreach (var key in dic.Keys)
+                var pairs = jwt.Claims.Select(c => new KeyValuePair<string, string>(c.Type, c.Value));
+                foreach (var pair in pairs)
                 {
-                    this.claims.Add(key, dic[key]);
+                    this.claims.Add(pair);
                 }
                 this.Token = new AccessToken
                 {
