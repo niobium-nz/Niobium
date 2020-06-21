@@ -13,6 +13,8 @@ namespace Cod.Channel
 {
     public class DefaultAuthenticator : IAuthenticator
     {
+        private static string savedToken;
+
         private readonly ConcurrentDictionary<string, StorageSignature> signatures = new ConcurrentDictionary<string, StorageSignature>();
         private readonly IConfigurationProvider configuration;
         private readonly HttpClient httpClient;
@@ -43,9 +45,13 @@ namespace Cod.Channel
             this.claims = new ConcurrentBag<KeyValuePair<string, string>>();
         }
 
-        protected virtual Task<string> GetSavedTokenAsync() => Task.FromResult(String.Empty);
+        protected virtual Task<string> GetSavedTokenAsync() => savedToken == null ? Task.FromResult(String.Empty) : Task.FromResult(savedToken);
 
-        protected virtual Task SaveTokenAsync(string token) => Task.CompletedTask;
+        protected virtual Task SaveTokenAsync(string token)
+        {
+            savedToken = token;
+            return Task.CompletedTask;
+        }
 
         protected virtual Task<IDictionary<string, StorageSignature>> GetSavedSignaturesAsync() => Task.FromResult<IDictionary<string, StorageSignature>>(null);
 
@@ -175,6 +181,7 @@ namespace Cod.Channel
 
             await this.SaveTokenAsync(string.Empty);
             this.signatures.Clear();
+            savedToken = null;
             await this.SaveSignaturesAsync(this.signatures);
             foreach (var eventHandler in this.eventHandlers)
             {

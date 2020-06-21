@@ -21,6 +21,10 @@ namespace Cod
         {
             if (claims.Any(kv => kv.Key == key))
             {
+                foreach (var item in claims)
+                {
+                    Console.WriteLine($"{item.Key} -> {item.Value}");
+                }
                 value = claims.Single(kv => kv.Key == key).Value;
                 return true;
             }
