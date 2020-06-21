@@ -45,7 +45,7 @@ namespace Cod.Channel
             this.claims = new ConcurrentBag<KeyValuePair<string, string>>();
         }
 
-        protected virtual Task<string> GetSavedTokenAsync() => savedToken == null ? Task.FromResult(String.Empty) : Task.FromResult(savedToken);
+        protected virtual Task<string> GetSavedTokenAsync() => String.IsNullOrWhiteSpace(savedToken) ? Task.FromResult(String.Empty) : Task.FromResult(savedToken);
 
         protected virtual Task SaveTokenAsync(string token)
         {
@@ -62,7 +62,7 @@ namespace Cod.Channel
             var token = await this.GetSavedTokenAsync();
             if (!String.IsNullOrWhiteSpace(token))
             {
-                this.SetToken(token);
+                await this.SetTokenAsync(token);
             }
             var ss = await this.GetSavedSignaturesAsync();
             if (ss != null && ss.Count > 0)
@@ -151,7 +151,7 @@ namespace Cod.Channel
                 var header = response.Headers.WwwAuthenticate.SingleOrDefault();
                 if (header != null && header.Scheme == "Bearer")
                 {
-                    this.SetToken(header.Parameter);
+                    await this.SetTokenAsync(header.Parameter);
                     if (remember)
                     {
                         await this.SaveTokenAsync(header.Parameter);
@@ -203,8 +203,9 @@ namespace Cod.Channel
             return request;
         }
 
-        protected void SetToken(string token)
+        protected async Task SetTokenAsync(string token)
         {
+            await this.CleanupAsync();
             try
             {
                 var jwt = new JsonWebToken(token);
