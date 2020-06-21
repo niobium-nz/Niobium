@@ -22,6 +22,12 @@ namespace Cod.Platform
                 cache = await repository.Value.GetAsync();
             }
 
+            var result = cache.SingleOrDefault(b => b.GetID() == id);
+            if (result == null)
+            {
+                cache = await repository.Value.GetAsync();
+            }
+
             return cache.SingleOrDefault(b => b.GetID() == id);
         }
     }
