@@ -173,16 +173,7 @@ namespace Cod.Channel
 
         public async Task CleanupAsync()
         {
-            this.Token = null;
-            while (this.claims.Count > 0)
-            {
-                this.claims.TryTake(out _);
-            }
-
-            await this.SaveTokenAsync(string.Empty);
-            this.signatures.Clear();
-            savedToken = null;
-            await this.SaveSignaturesAsync(this.signatures);
+            await CleanupCredentialsAsync();
             foreach (var eventHandler in this.eventHandlers)
             {
                 await eventHandler.InvokeAsync(this);
@@ -205,7 +196,7 @@ namespace Cod.Channel
 
         protected async Task SetTokenAsync(string token)
         {
-            await this.CleanupAsync();
+            await this.CleanupCredentialsAsync();
             try
             {
                 var jwt = new JsonWebToken(token);
@@ -223,6 +214,20 @@ namespace Cod.Channel
             catch (ArgumentException)
             {
             }
+        }
+
+        private async Task CleanupCredentialsAsync()
+        {
+            this.Token = null;
+            while (this.claims.Count > 0)
+            {
+                this.claims.TryTake(out _);
+            }
+
+            await this.SaveTokenAsync(string.Empty);
+            this.signatures.Clear();
+            savedToken = null;
+            await this.SaveSignaturesAsync(this.signatures);
         }
 
         private static string BuildSignatureCacheKey(string token, StorageType type, string resource, string partitionKey, string rowKey)
