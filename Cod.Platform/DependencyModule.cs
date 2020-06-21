@@ -45,6 +45,7 @@ namespace Cod.Platform
             builder.RegisterType<CloudBlobRepository>().AsImplementedInterfaces();
             builder.RegisterType<NotificationService>().AsImplementedInterfaces();
             builder.RegisterType<OpenIDManager>().AsImplementedInterfaces();
+            builder.RegisterType<MemoryCachedBusinessManager>().AsImplementedInterfaces();
             base.Load(builder);
         }
     }
