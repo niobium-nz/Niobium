@@ -12,7 +12,7 @@ namespace Cod.Platform
 
         public Task<StorageControl> GrantAsync(ClaimsPrincipal principal, StorageType type, string resource, string partition, string row)
         {
-            var nameIdentifier = principal.GetClaim<string>(ClaimTypes.NameIdentifier);
+            var nameIdentifier = principal.GetClaim<string>(ClaimTypes.Sid);
             if (partition.ToLowerInvariant().Contains(nameIdentifier.ToLowerInvariant()))
             {
                 return Task.FromResult(new StorageControl((int)SharedAccessTablePermissions.Query, typeof(Impediment).Name)
