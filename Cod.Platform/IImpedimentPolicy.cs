@@ -5,12 +5,12 @@ namespace Cod.Platform
 {
     public interface IImpedimentPolicy
     {
-        Task<bool> SupportAsync<T>(IImpedimentContext<T> context) where T : IImpedable;
+        Task<bool> SupportAsync(IImpedimentContext context);
 
-        Task<bool> ImpedeAsync<T>(IImpedimentContext<T> context) where T : IImpedable;
+        Task<bool> ImpedeAsync(IImpedimentContext context);
 
-        Task<bool> UnimpedeAsync<T>(IImpedimentContext<T> context) where T : IImpedable;
+        Task<bool> UnimpedeAsync(IImpedimentContext context);
 
-        Task<IEnumerable<Impediment>> GetImpedimentsAsync<T>(IImpedimentContext<T> context) where T : IImpedable;
+        Task<IEnumerable<Impediment>> GetImpedimentsAsync(IImpedimentContext context);
     }
 }

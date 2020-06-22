@@ -22,5 +22,11 @@ namespace Cod.Platform
         public ICacheStore CacheStore => this.cache.Value;
 
         public Task<string> GetAccountingPrincipalAsync() => Task.FromResult(this.RowKey);
+
+        public override string GetImpedementID() => User.GetImpedementID(new StorageKey
+        {
+            PartitionKey = this.PartitionKey,
+            RowKey = this.RowKey,
+        });
     }
 }

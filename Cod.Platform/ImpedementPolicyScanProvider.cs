@@ -1,35 +1,33 @@
-﻿using Microsoft.Azure.Cosmos.Table;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Azure.Cosmos.Table;
 
 namespace Cod.Platform
 {
     class ImpedementPolicyScanProvider : IImpedimentPolicy
     {
-        public async Task<IEnumerable<Impediment>> GetImpedimentsAsync<T>(IImpedimentContext<T> context) where T : IImpedable
+        public async Task<IEnumerable<Impediment>> GetImpedimentsAsync(IImpedimentContext context)
         {
             var table = CloudStorage.GetTable<Impediment>();
             var filter = TableQuery.CombineFilters(TableQuery.GenerateFilterCondition(nameof(Impediment.PartitionKey),
-                    QueryComparisons.GreaterThan, Impediment.BuildPartitionKey(context.Entity.GetImpedementID(), "0")),
+                    QueryComparisons.GreaterThan, Impediment.BuildPartitionKey(context.ImpedementID, "0")),
                     TableOperators.And,
                     TableQuery.GenerateFilterCondition(nameof(Impediment.PartitionKey),
-                    QueryComparisons.LessThan, Impediment.BuildPartitionKey(context.Entity.GetImpedementID(), "Z")));
+                    QueryComparisons.LessThan, Impediment.BuildPartitionKey(context.ImpedementID, "Z")));
             return await table.WhereAsync<Impediment>(filter);
         }
 
-        public Task<bool> ImpedeAsync<T>(IImpedimentContext<T> context) where T : IImpedable
+        public Task<bool> ImpedeAsync(IImpedimentContext context)
         {
             return Task.FromResult(false);
         }
 
-        public Task<bool> SupportAsync<T>(IImpedimentContext<T> context) where T : IImpedable
+        public Task<bool> SupportAsync(IImpedimentContext context)
         {
             return Task.FromResult(context != null && string.IsNullOrEmpty(context.Category));
         }
 
-        public Task<bool> UnimpedeAsync<T>(IImpedimentContext<T> context) where T : IImpedable
+        public Task<bool> UnimpedeAsync(IImpedimentContext context)
         {
             return Task.FromResult(false);
         }

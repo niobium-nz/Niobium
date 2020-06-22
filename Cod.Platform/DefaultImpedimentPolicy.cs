@@ -12,13 +12,13 @@ namespace Cod.Platform
 
         public DefaultImpedimentPolicy(Lazy<IRepository<Impediment>> repository) => this.repository = repository;
 
-        public async Task<IEnumerable<Impediment>> GetImpedimentsAsync<T>(IImpedimentContext<T> context) where T : IImpedable
+        public async Task<IEnumerable<Impediment>> GetImpedimentsAsync(IImpedimentContext context)
         {
             if (await this.SupportAsync(context))
             {
                 var table = CloudStorage.GetTable<Impediment>();
                 var filter = TableQuery.GenerateFilterCondition(nameof(Impediment.PartitionKey),
-                    QueryComparisons.Equal, Impediment.BuildPartitionKey(context.Entity.GetImpedementID(), context.Category));
+                    QueryComparisons.Equal, Impediment.BuildPartitionKey(context.ImpedementID, context.Category));
 
                 if (context.Cause != 0)
                 {
@@ -31,11 +31,11 @@ namespace Cod.Platform
             return Enumerable.Empty<Impediment>();
         }
 
-        public async Task<bool> ImpedeAsync<T>(IImpedimentContext<T> context) where T : IImpedable
+        public async Task<bool> ImpedeAsync(IImpedimentContext context)
         {
             if (await this.SupportAsync(context))
             {
-                var pk = Impediment.BuildPartitionKey(context.Entity.GetImpedementID(), context.Category);
+                var pk = Impediment.BuildPartitionKey(context.ImpedementID, context.Category);
                 var rk = Impediment.BuildRowKey(context.Cause);
 
                 var existing = await this.repository.Value.GetAsync(pk, rk);
@@ -59,13 +59,13 @@ namespace Cod.Platform
             return false;
         }
 
-        public abstract Task<bool> SupportAsync<T>(IImpedimentContext<T> context) where T : IImpedable;
+        public abstract Task<bool> SupportAsync(IImpedimentContext context);
 
-        public async Task<bool> UnimpedeAsync<T>(IImpedimentContext<T> context) where T : IImpedable
+        public async Task<bool> UnimpedeAsync(IImpedimentContext context)
         {
             if (await this.SupportAsync(context))
             {
-                var existing = await this.repository.Value.GetAsync(Impediment.BuildPartitionKey(context.Entity.GetImpedementID(), context.Category), Impediment.BuildRowKey(context.Cause));
+                var existing = await this.repository.Value.GetAsync(Impediment.BuildPartitionKey(context.ImpedementID, context.Category), Impediment.BuildRowKey(context.Cause));
                 if (existing != null)
                 {
                     if (existing.Policy == context.PolicyInput)

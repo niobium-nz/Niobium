@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace Cod.Platform
 {
-    public abstract class ImpedableDomain<T> : PlatformDomain<T> where T : IEntity, IImpedable
+    public abstract class ImpedableDomain<T> : PlatformDomain<T>, IImpedable where T : IEntity
     {
         private readonly Lazy<IEnumerable<IImpedimentPolicy>> policies;
         private readonly ILogger logger;
@@ -20,21 +20,17 @@ namespace Cod.Platform
             this.logger = logger;
         }
 
+        public abstract string GetImpedementID();
+
         public async Task ImpedeAsync(string category, int cause, string policyInput = null) => await this.ImpedeAsync(category, new int[] { cause }, policyInput);
 
         public async Task ImpedeAsync(string category, IEnumerable<int> causes, string policyInput = null)
         {
-            var entity = await this.GetEntityAsync();
-            if (entity == null)
-            {
-                return;
-            }
-
             foreach (var cause in causes)
             {
-                var context = new IImpedimentContext<T>
+                var context = new IImpedimentContext
                 {
-                    Entity = entity,
+                    ImpedementID = this.GetImpedementID(),
                     Category = category,
                     Cause = cause,
                     Logger = this.logger,
@@ -52,21 +48,16 @@ namespace Cod.Platform
 
         public async Task UnimpedeAsync(string category, IEnumerable<int> causes, string policyInput = null)
         {
-            var entity = await this.GetEntityAsync();
-            if (entity == null)
-            {
-                return;
-            }
-            await this.UnimpedeAsync(entity, category, causes, policyInput);
+            await this.UnimpedeAsync(this.GetImpedementID(), category, causes, policyInput);
         }
 
-        public async Task UnimpedeAsync(T entity, string category, IEnumerable<int> causes, string policyInput = null)
+        public async Task UnimpedeAsync(string impedementID, string category, IEnumerable<int> causes, string policyInput = null)
         {
             foreach (var cause in causes)
             {
-                var context = new IImpedimentContext<T>
+                var context = new IImpedimentContext
                 {
-                    Entity = entity,
+                    ImpedementID = impedementID,
                     Category = category,
                     Cause = cause,
                     PolicyInput = policyInput,
@@ -104,11 +95,11 @@ namespace Cod.Platform
             var existsLockers = new List<Impediment>();
             foreach (var policy in this.policies.Value)
             {
-                var context = new IImpedimentContext<T>()
+                var context = new IImpedimentContext()
                 {
                     Category = category,
                     Cause = cause,
-                    Entity = await this.GetEntityAsync(),
+                    ImpedementID = this.GetImpedementID(),
                 };
 
                 if (await policy.SupportAsync(context))

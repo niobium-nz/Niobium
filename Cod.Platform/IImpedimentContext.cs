@@ -2,7 +2,7 @@
 
 namespace Cod.Platform
 {
-    public class IImpedimentContext<T> where T : IImpedable
+    public class IImpedimentContext
     {
         public int Cause { get; set; }
 
@@ -10,7 +10,7 @@ namespace Cod.Platform
 
         public string Category { get; set; }
 
-        public T Entity { get; set; }
+        public string ImpedementID { get; set; }
 
         public ILogger Logger { get; set; }
     }
