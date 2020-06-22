@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos.Table;
 
@@ -12,8 +13,8 @@ namespace Cod.Platform
 
         public Task<StorageControl> GrantAsync(ClaimsPrincipal principal, StorageType type, string resource, string partition, string row)
         {
-            var nameIdentifier = principal.GetClaim<string>(ClaimTypes.Sid);
-            if (partition.ToLowerInvariant().Contains(nameIdentifier.ToLowerInvariant()))
+            var sid = principal.GetClaim<Guid>(ClaimTypes.Sid);
+            if (partition.ToUpperInvariant().StartsWith(sid.ToKey()))
             {
                 return Task.FromResult(new StorageControl((int)SharedAccessTablePermissions.Query, typeof(Impediment).Name)
                 {
