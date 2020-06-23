@@ -20,6 +20,7 @@ namespace Cod.Platform
             builder.RegisterType<CloudTableRepository<Model.User>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Model.Business>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Model.MobileLocation>>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<BrandingInfo>>().AsImplementedInterfaces();
 
             builder.RegisterType<UserDomain>();
             builder.RegisterType<GenericDomainRepository<UserDomain, Model.User>>().As<IDomainRepository<UserDomain, Model.User>>();
@@ -37,7 +38,6 @@ namespace Cod.Platform
             builder.RegisterType<CloudSignatureIssuer>().AsImplementedInterfaces();
             builder.RegisterType<ConfigurationProvider>().AsImplementedInterfaces();
             builder.RegisterType<PlatformQueue>().AsImplementedInterfaces();
-            builder.RegisterType<BrandingRepository>().AsImplementedInterfaces();
             builder.RegisterType<TokenValidator>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Impediment>>().AsImplementedInterfaces();
             builder.RegisterType<ImpedimentControl>().AsImplementedInterfaces();
@@ -46,6 +46,7 @@ namespace Cod.Platform
             builder.RegisterType<NotificationService>().AsImplementedInterfaces();
             builder.RegisterType<OpenIDManager>().AsImplementedInterfaces();
             builder.RegisterType<MemoryCachedBusinessManager>().AsImplementedInterfaces();
+            builder.RegisterType<MemoryCachedBrandService>().AsImplementedInterfaces();
             base.Load(builder);
         }
     }

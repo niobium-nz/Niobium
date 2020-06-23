@@ -7,16 +7,16 @@ namespace Cod.Platform
 {
     public abstract class WechatPushNotificationChannel : PushNotificationChannel
     {
-        private readonly Lazy<IRepository<BrandingInfo>> brandingRepository;
+        private readonly Lazy<IBrandService> brandManager;
         private readonly Lazy<WechatIntegration> wechatIntegration;
 
         public WechatPushNotificationChannel(
             Lazy<IOpenIDManager> openIDManager,
-            Lazy<IRepository<BrandingInfo>> brandingRepository,
+            Lazy<IBrandService> brandManager,
             Lazy<WechatIntegration> wechatIntegration)
             : base(openIDManager)
         {
-            this.brandingRepository = brandingRepository;
+            this.brandManager = brandManager;
             this.wechatIntegration = wechatIntegration;
         }
 
@@ -45,7 +45,7 @@ namespace Cod.Platform
             foreach (var target in targets)
             {
                 var cacheKey = $"{target.Kind}|{target.App}";
-                var brandingInfo = await this.brandingRepository.Value.GetByBrandAsync(brand);
+                var brandingInfo = await this.brandManager.Value.GetAsync(brand);
 
                 if (brandingInfo == null)
                 {

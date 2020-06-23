@@ -8,15 +8,15 @@ namespace Cod.Platform
 {
     internal class WechatRepository : IRepository<WechatEntity>
     {
-        private readonly Lazy<IRepository<BrandingInfo>> repository;
+        private readonly Lazy<IBrandService> brandService;
         private readonly Lazy<WechatIntegration> wechatIntegration;
         private readonly ILogger logger;
 
-        public WechatRepository(Lazy<IRepository<BrandingInfo>> repository,
+        public WechatRepository(Lazy<IBrandService> brandService,
             Lazy<WechatIntegration> wechatIntegration,
             ILogger logger)
         {
-            this.repository = repository;
+            this.brandService = brandService;
             this.wechatIntegration = wechatIntegration;
             this.logger = logger;
         }
@@ -33,7 +33,7 @@ namespace Cod.Platform
                 throw new ArgumentNullException(nameof(feature));
             }
 
-            var branding = await this.repository.Value.GetAsync(OpenIDProvider.Wechat, appID);
+            var branding = await this.brandService.Value.GetAsync(OpenIDKind.Wechat, appID);
             if (branding == null)
             {
                 return null;

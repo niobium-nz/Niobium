@@ -1,9 +1,10 @@
-﻿namespace Cod.Platform.Model
-{
-    public class BrandingInfo
-    {
-        public string PartitionKey { get; set; }
+﻿using System;
+using Microsoft.Azure.Cosmos.Table;
 
+namespace Cod.Platform.Model
+{
+    public class BrandingInfo : TableEntity, IEntity
+    {
         public string WechatUri { get; set; }
 
         public string FunctionUri { get; set; }
@@ -31,6 +32,8 @@
         public string SMSIntegrationKey { get; set; }
 
         public string SMSIntegrationSecret { get; set; }
+
+        public DateTimeOffset? Created { get; set; }
 
         public static string BuildPartitionKey(string brand) => brand.Trim().ToUpperInvariant();
     }

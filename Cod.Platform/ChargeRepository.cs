@@ -9,17 +9,17 @@ namespace Cod.Platform
 {
     public class ChargeRepository : IRepository<Charge>
     {
-        private readonly Lazy<IRepository<BrandingInfo>> brandingRepository;
+        private readonly Lazy<IBrandService> brandService;
         private readonly Lazy<IConfigurationProvider> configuration;
         private readonly Lazy<WechatIntegration> wechatIntegration;
         private readonly ILogger logger;
 
-        public ChargeRepository(Lazy<IRepository<BrandingInfo>> brandingRepository,
+        public ChargeRepository(Lazy<IBrandService> brandService,
             Lazy<IConfigurationProvider> configuration,
             Lazy<WechatIntegration> wechatIntegration,
             ILogger logger)
         {
-            this.brandingRepository = brandingRepository;
+            this.brandService = brandService;
             this.configuration = configuration;
             this.wechatIntegration = wechatIntegration;
             this.logger = logger;
@@ -32,8 +32,7 @@ namespace Cod.Platform
                 var charges = new List<Charge>();
                 foreach (var charge in entities)
                 {
-                    var brandings = await this.brandingRepository.Value.GetAsync();
-                    var branding = brandings.SingleOrDefault(b => b.WechatAppID == charge.AppID);
+                    var branding = await this.brandService.Value.GetAsync(OpenIDKind.Wechat, charge.AppID);
                     var key = await this.configuration.Value.GetSettingAsync("CHARGE_SECRET");
                     var toSign = $"{charge.AppID}|{charge.Account}|{charge.Amount}";
                     var internalSignature = SHA.SHA256Hash(toSign, key, 127);
