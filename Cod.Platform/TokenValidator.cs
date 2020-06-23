@@ -87,11 +87,11 @@ namespace Cod.Platform
             };
             if (user.HasValue)
             {
-                claims.Add(new Claim(ClaimTypes.Sid, User.BuildKey(user.Value)));
+                claims.Add(new Claim(ClaimTypes.Sid, user.Value.ToKey()));
             }
             if (group.HasValue)
             {
-                claims.Add(new Claim(ClaimTypes.GroupSid, User.BuildKey(group.Value)));
+                claims.Add(new Claim(ClaimTypes.GroupSid, group.Value.ToKey()));
             }
             if (!String.IsNullOrWhiteSpace(contact))
             {

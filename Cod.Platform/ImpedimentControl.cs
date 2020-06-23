@@ -7,7 +7,6 @@ namespace Cod.Platform
 {
     internal class ImpedimentControl : IStorageControl
     {
-
         public bool Grantable(StorageType type, string resource) =>
             type == StorageType.Table && resource.ToLowerInvariant() == typeof(Impediment).Name.ToLowerInvariant();
 

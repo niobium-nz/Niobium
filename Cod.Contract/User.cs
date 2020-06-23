@@ -24,27 +24,14 @@ namespace Cod
 
         public string Roles { get; set; }
 
-        public bool IsBusinessThePartitionKey { get; set; }
+        public static string BuildPartitionKey(Guid value) => value.ToString("N").ToUpperInvariant().Substring(0, 8);
 
-        public static string BuildKey(Guid value) => value.ToString("N").ToUpperInvariant();
-
-        public Guid GetBusiness()
-            => this.IsBusinessThePartitionKey ? Guid.Parse(this.PartitionKey) : Guid.Parse(this.RowKey);
-
-        public void SetBusiness(Guid value)
-        {
-            if (this.IsBusinessThePartitionKey) this.PartitionKey = BuildKey(value);
-            else this.RowKey = BuildKey(value);
-        }
+        public static string BuildRowKey(Guid value) => value.ToString("N").ToUpperInvariant();
 
         public Guid GetID()
-            => this.IsBusinessThePartitionKey ? Guid.Parse(this.RowKey) : Guid.Parse(this.PartitionKey);
+            => Guid.Parse(this.RowKey);
 
-        public void SetID(Guid value)
-        {
-            if (this.IsBusinessThePartitionKey) this.RowKey = BuildKey(value);
-            else this.PartitionKey = BuildKey(value);
-        }
+        public void SetID(Guid value) => this.RowKey = BuildRowKey(value);
 
         public IEnumerable<string> GetRoles()
             => this.Roles == null ? Enumerable.Empty<string>() : this.Roles.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries);
