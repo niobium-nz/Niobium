@@ -18,6 +18,8 @@ namespace Cod
 
         public string Extra { get; set; }
 
+        public string Brand { get; set; }
+
         public static string BuildKey(Guid value) => value.ToString("N").ToUpperInvariant();
 
         public Guid GetParent() => Guid.Parse(this.PartitionKey);
