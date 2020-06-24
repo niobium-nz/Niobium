@@ -5,6 +5,6 @@ namespace Cod.Platform
 {
     public interface IBusinessManager
     {
-        Task<Business> GetAsync(Guid id);
+        Task<Cod.Platform.Model.Business> GetAsync(Guid id);
     }
 }

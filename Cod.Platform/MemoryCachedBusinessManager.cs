@@ -7,15 +7,15 @@ namespace Cod.Platform
 {
     internal class MemoryCachedBusinessManager : IBusinessManager
     {
-        private static IEnumerable<Business> cache;
-        private readonly Lazy<IRepository<Business>> repository;
+        private static IEnumerable<Model.Business> cache;
+        private readonly Lazy<IRepository<Model.Business>> repository;
 
-        public MemoryCachedBusinessManager(Lazy<IRepository<Business>> repository)
+        public MemoryCachedBusinessManager(Lazy<IRepository<Model.Business>> repository)
         {
             this.repository = repository;
         }
 
-        public async Task<Business> GetAsync(Guid id)
+        public async Task<Model.Business> GetAsync(Guid id)
         {
             if (cache == null)
             {
