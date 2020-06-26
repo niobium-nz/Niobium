@@ -18,6 +18,12 @@ namespace Cod.Platform
             return permissions.IsAccessGrant(scope, entitlement);
         }
 
+        public static IEnumerable<string> QueryScope(this ClaimsPrincipal principal, string entitlement)
+        {
+            var permissions = principal.GetPermissions();
+            return permissions.Where(c => c.Entitlements.Contains(entitlement)).Select(p => p.Scope).Distinct();
+        }
+
         public static IEnumerable<Permission> GetPermissions(this ClaimsPrincipal principal)
             => principal.Claims
             .Select(c => new KeyValuePair<string, string>(c.Type, c.Value))
