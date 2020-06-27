@@ -66,7 +66,7 @@ namespace Cod.Channel
                 await this.SetTokenAsync(token);
                 await this.SaveTokenAsync(token);
             }
-            System.Console.WriteLine($"Validate -> {this.Token.Validate()}");
+            System.Console.WriteLine($"Validate -> {this.Token?.Validate()}");
             var ss = await this.GetSavedSignaturesAsync();
             if (ss != null && ss.Count > 0)
             {
