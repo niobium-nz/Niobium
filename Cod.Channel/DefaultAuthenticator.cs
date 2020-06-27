@@ -20,10 +20,13 @@ namespace Cod.Channel
         private readonly IEnumerable<IEventHandler<IAuthenticator>> eventHandlers;
         private readonly ConcurrentBag<KeyValuePair<string, string>> claims;
 
+        private bool initialized;
+
         public event EventHandler AuthenticationRequired;
 
         public async Task<OperationResult<IEnumerable<KeyValuePair<string, string>>>> GetClaimsAsync()
         {
+            await this.InitializeAsync();
             if (!this.IsAuthenticated())
             {
                 await this.CleanupAsync();
@@ -56,8 +59,13 @@ namespace Cod.Channel
 
         protected virtual Task SaveSignaturesAsync(IDictionary<string, StorageSignature> signatures) => Task.CompletedTask;
 
-        public virtual async Task InitializeAsync()
+        protected virtual async Task InitializeAsync()
         {
+            if (this.initialized)
+            {
+                return;
+            }
+
             var token = await this.GetSavedTokenAsync();
             if (!String.IsNullOrWhiteSpace(token))
             {
@@ -72,6 +80,8 @@ namespace Cod.Channel
                     this.signatures.AddOrUpdate(key, k => ss[key], (k, v) => ss[key]);
                 }
             }
+
+            this.initialized = true;
         }
 
         public virtual async Task<OperationResult<StorageSignature>> AquireSignatureAsync(StorageType type, string resource, string partitionKey, string rowKey)

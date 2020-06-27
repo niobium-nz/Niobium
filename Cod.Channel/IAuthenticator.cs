@@ -7,8 +7,6 @@ namespace Cod.Channel
     {
         AccessToken Token { get; }
 
-        Task InitializeAsync();
-
         Task<OperationResult<IEnumerable<KeyValuePair<string, string>>>> GetClaimsAsync();
 
         Task<OperationResult> AquireTokenAsync(string scheme, string username, string password, bool remember);
