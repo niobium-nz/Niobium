@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -95,38 +94,28 @@ namespace Cod.Channel
             return result;
         }
 
-        protected virtual async Task<OperationResult<string>> SendRequest(string url, HttpMethod method, string message = null, int retry = 0)
+        protected virtual async Task<OperationResult<string>> SendRequest(string url, HttpMethod method, string message = null)
         {
-            if (retry >= 3)
-            {
-                return OperationResult<string>.Create(InternalError.GatewayTimeout, null);
-            }
-
-            var request = new HttpRequestMessage(method, url);
+            var headers = new List<KeyValuePair<string, string>>();
             foreach (var key in StorageRequestHeaders.Keys)
             {
-                request.Headers.Add(key, StorageRequestHeaders[key]);
+                headers.Add(new KeyValuePair<string, string>(key, StorageRequestHeaders[key]));
             }
-            request.Headers.Add("x-ms-date", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString());
+            headers.Add(new KeyValuePair<string, string>("x-ms-date", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString()));
 
-            if (message != null)
+            var result = await httpClient.RequestAsync<string>(
+                method,
+                url,
+                body: MessageTemplate.Replace(MessageTemplatePlaceholder, Base64.Encode(message)),
+                headers: headers,
+                contentType: XMLMediaType);
+
+            if (!result.IsSuccess)
             {
-                request.Content = new StringContent(MessageTemplate.Replace(MessageTemplatePlaceholder, Base64.Encode(message)), Encoding.UTF8, XMLMediaType);
+                return new OperationResult<string>(result);
             }
 
-            var response = await httpClient.SendAsync(request);
-            var statusCode = (int)response.StatusCode;
-            var responseBody = await response.Content.ReadAsStringAsync();
-            if (statusCode >= 200 && statusCode < 400)
-            {
-                return OperationResult<string>.Create(responseBody);
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed making request to {url}: {responseBody}");
-                await Task.Delay(500);
-                return await SendRequest(url, method, message, ++retry);
-            }
+            return OperationResult<string>.Create(result.Result);
         }
     }
 }

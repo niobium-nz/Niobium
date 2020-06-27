@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Cod.Channel
@@ -15,8 +14,6 @@ namespace Cod.Channel
         Task<OperationResult> AquireTokenAsync(string scheme, string username, string password, bool remember);
 
         Task<OperationResult<StorageSignature>> AquireSignatureAsync(StorageType type, string resource, string partitionKey, string rowKey);
-
-        Task<HttpRequestMessage> PrepareAuthenticationAsync(HttpRequestMessage request);
 
         Task CleanupAsync();
     }

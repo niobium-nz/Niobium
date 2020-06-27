@@ -7,7 +7,6 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.IdentityModel.JsonWebTokens;
-using Newtonsoft.Json;
 
 namespace Cod.Channel
 {
@@ -112,26 +111,22 @@ namespace Cod.Channel
                 path.Append(rowKey);
             }
 
-            var request = new HttpRequestMessage(HttpMethod.Get, $"{apiUrl}{path}");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", this.Token.Token);
-            var response = await this.httpClient.SendAsync(request);
-            var statusCode = (int)response.StatusCode;
-            if (statusCode >= 200 && statusCode < 300)
+            var sig = await this.httpClient.RequestAsync<StorageSignature>(HttpMethod.Get, $"{apiUrl}{path}", this.Token.Token);
+            if (sig.IsSuccess)
             {
-                var json = await response.Content.ReadAsStringAsync();
-                var signature = JsonConvert.DeserializeObject<StorageSignature>(json);
+                var signature = sig.Result;
                 this.signatures.AddOrUpdate(key, k => signature, (k, v) => signature);
                 await this.SaveSignaturesAsync(this.signatures);
                 return OperationResult<StorageSignature>.Create(signature);
             }
-            else if (statusCode == 401)
+            else if (sig.Code == InternalError.AuthenticationRequired)
             {
                 await this.CleanupAsync();
                 return OperationResult<StorageSignature>.Create(InternalError.AuthenticationRequired, null);
             }
-            else if (InternalError.Messages.ContainsKey(statusCode))
+            else if (InternalError.Messages.ContainsKey(sig.Code))
             {
-                return OperationResult<StorageSignature>.Create(statusCode, null);
+                return OperationResult<StorageSignature>.Create(sig.Code, null);
             }
             else
             {
@@ -179,20 +174,6 @@ namespace Cod.Channel
             {
                 await eventHandler.InvokeAsync(this);
             }
-        }
-
-        public async Task<HttpRequestMessage> PrepareAuthenticationAsync(HttpRequestMessage request)
-        {
-            if (!this.IsAuthenticated())
-            {
-                await this.CleanupAsync();
-            }
-            else
-            {
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", this.Token.Token);
-            }
-
-            return request;
         }
 
         protected async Task SetTokenAsync(string token)

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
@@ -13,31 +15,52 @@ namespace Cod.Channel
            HttpMethod method,
            string uri,
            string bearerToken = null,
-           object body = null)
+           object body = null,
+           IEnumerable<KeyValuePair<string, string>> headers = null,
+           string contentType = null)
         {
-            var result = await httpClient.RequestAsync(method, uri, bearerToken, body);
-            T obj = default;
-            if (result.IsSuccess)
+            var result = await httpClient.RequestAsync(method, uri, bearerToken, body, headers, contentType);
+            if (!result.IsSuccess)
             {
-                obj = TypeConverter.Convert<T>(result.Message);
+                return new OperationResult<T>(result);
             }
 
-            return new OperationResult<T>(result.Code, obj)
-            {
-                Reference = result.Reference,
-                Message = result.Message,
-            };
+            var response = await result.Result.Content.ReadAsStringAsync();
+            var obj = TypeConverter.Convert<T>(response);
+            return OperationResult<T>.Create(obj);
         }
 
-        public async static Task<OperationResult> RequestAsync(
+        public async static Task<OperationResult<HttpResponseMessage>> RequestAsync(
             this HttpClient httpClient,
             HttpMethod method,
             string uri,
             string bearerToken = null,
-            object body = null)
+            object body = null,
+            IEnumerable<KeyValuePair<string, string>> headers = null,
+            string contentType = null,
+            int retry = 0)
         {
+            if (retry > 0)
+            {
+                // TODO (5he11) 界面友好提示用户网络有点慢
+            }
+
+            if (retry >= 3)
+            {
+                // TODO (5he11) 界面友好提示用户网络异常
+                return OperationResult<HttpResponseMessage>.Create(InternalError.GatewayTimeout, null);
+            }
+
             using (var request = new HttpRequestMessage(method, uri))
             {
+                if (headers != null && headers.Any())
+                {
+                    foreach (var header in headers)
+                    {
+                        request.Headers.Add(header.Key, header.Value);
+                    }
+                }
+
                 if (!string.IsNullOrWhiteSpace(bearerToken))
                 {
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
@@ -48,7 +71,6 @@ namespace Cod.Channel
                     if (body != null)
                     {
                         string content;
-                        string contentType = null;
                         if (body is string stringBody)
                         {
                             content = stringBody;
@@ -67,13 +89,26 @@ namespace Cod.Channel
 
                     var response = await httpClient.SendAsync(request);
                     var status = (int)response.StatusCode;
-                    var responseBody = await response.Content.ReadAsStringAsync();
                     var code = status;
                     if (code >= 200 && code < 400)
                     {
                         code = OperationResult.SuccessCode;
                     }
-                    return OperationResult.Create(code, responseBody);
+
+                    var result = OperationResult<HttpResponseMessage>.Create(response);
+                    result.Code = code;
+                    return result;
+                }
+                catch (Exception)
+                {
+                    return await RequestAsync(httpClient,
+                        method,
+                        uri,
+                        bearerToken: bearerToken,
+                        body: body,
+                        headers: headers,
+                        contentType: contentType,
+                        retry: ++retry);
                 }
                 finally
                 {

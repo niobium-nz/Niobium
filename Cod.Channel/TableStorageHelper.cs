@@ -12,12 +12,12 @@ namespace Cod.Channel
     internal static class TableStorageHelper
     {
         private const string AND_OPERATOR = " and ";
-        private static readonly IDictionary<string, string> TableStorageRequestHeaders = new Dictionary<string, string>
+        private static readonly IEnumerable<KeyValuePair<string, string>> TableStorageRequestHeaders = new List<KeyValuePair<string, string>>
         {
-            { "x-ms-version", "2015-12-11" },
-            { "DataServiceVersion", "3.0;NetFx" },
-            { "MaxDataServiceVersion", "3.0;NetFx" },
-            { "Accept", "application/json;odata=minimalmetadata" },
+            new KeyValuePair<string, string>("x-ms-version", "2015-12-11"),
+            new KeyValuePair<string, string>("DataServiceVersion", "3.0;NetFx"),
+            new KeyValuePair<string, string>("MaxDataServiceVersion", "3.0;NetFx"),
+            new KeyValuePair<string, string>("Accept", "application/json;odata=minimalmetadata"),
         };
 
         public static async Task<OperationResult<TableQueryResult<T>>> GetAsync<T>(HttpClient httpClient,
@@ -120,7 +120,7 @@ namespace Cod.Channel
             {
                 Data = new List<T>(),
             };
-            string upstreamErrorMessage = null;
+
             while (true)
             {
                 var u = new StringBuilder(url.ToString());
@@ -140,57 +140,53 @@ namespace Cod.Channel
                     }
                 }
 
-                var request = new HttpRequestMessage(HttpMethod.Get, u.ToString());
-                foreach (var key in TableStorageRequestHeaders.Keys)
+                var response = await httpClient.RequestAsync(
+                    HttpMethod.Get,
+                    u.ToString(),
+                    headers: TableStorageRequestHeaders);
+
+                if (!response.IsSuccess)
                 {
-                    request.Headers.Add(key, TableStorageRequestHeaders[key]);
+                    return new OperationResult<TableQueryResult<T>>(response);
                 }
 
-                var response = await httpClient.SendAsync(request);
-                var responseBody = await response.Content.ReadAsStringAsync();
-                var statusCode = (int)response.StatusCode;
-                if (statusCode >= 200 && statusCode < 300)
+                string nextPK = null, nextRK = null;
+                if (response.Result.Headers.TryGetValues("x-ms-continuation-NextPartitionKey", out var npk))
                 {
-                    string nextPK = null, nextRK = null;
-                    if (response.Headers.TryGetValues("x-ms-continuation-NextPartitionKey", out var npk))
-                    {
-                        nextPK = npk.Single();
-                    }
-                    if (response.Headers.TryGetValues("x-ms-continuation-NextRowKey", out var nrk))
-                    {
-                        nextRK = nrk.Single();
-                    }
-
-                    if (nextPK != null || nextRK != null)
-                    {
-                        result.ContinuationToken = new ContinuationToken
-                        {
-                            NextPartitionKey = nextPK,
-                            NextRowKey = nextRK,
-                        };
-                    }
-
-                    // REMARK (5he11) 因 TABLE REST API 返回的 ETAG 的名称不是其类型上定义的命名，因此在反序列化前临时替换一下名字
-                    var tmpData = responseBody.Replace("\"odata.etag\":", "\"ETag\":");
-                    var objs = JsonConvert.DeserializeObject<TableStorageResult<T>>(tmpData);
-                    if (objs.Value.Count > 0)
-                    {
-                        result.Data.AddRange(objs.Value);
-                    }
-
-                    if (!result.HasMore)
-                    {
-                        break;
-                    }
-
-                    if (count > 0 && result.Data.Count >= count)
-                    {
-                        break;
-                    }
+                    nextPK = npk.Single();
                 }
-                else
+                if (response.Result.Headers.TryGetValues("x-ms-continuation-NextRowKey", out var nrk))
                 {
-                    return OperationResult<TableQueryResult<T>>.Create(statusCode, upstreamErrorMessage);
+                    nextRK = nrk.Single();
+                }
+
+                if (nextPK != null || nextRK != null)
+                {
+                    result.ContinuationToken = new ContinuationToken
+                    {
+                        NextPartitionKey = nextPK,
+                        NextRowKey = nextRK,
+                    };
+                }
+
+                var responseBody = await response.Result.Content.ReadAsStringAsync();
+
+                // REMARK (5he11) 因 TABLE REST API 返回的 ETAG 的名称不是其类型上定义的命名，因此在反序列化前临时替换一下名字
+                var tmpData = responseBody.Replace("\"odata.etag\":", "\"ETag\":");
+                var objs = JsonConvert.DeserializeObject<TableStorageResult<T>>(tmpData);
+                if (objs.Value.Count > 0)
+                {
+                    result.Data.AddRange(objs.Value);
+                }
+
+                if (!result.HasMore)
+                {
+                    break;
+                }
+
+                if (count > 0 && result.Data.Count >= count)
+                {
+                    break;
                 }
             }
 
