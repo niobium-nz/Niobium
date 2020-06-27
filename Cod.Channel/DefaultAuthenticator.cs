@@ -60,10 +60,13 @@ namespace Cod.Channel
         public virtual async Task InitializeAsync()
         {
             var token = await this.GetSavedTokenAsync();
+            System.Console.WriteLine($"GetSavedTokenAsync -> {token}");
             if (!String.IsNullOrWhiteSpace(token))
             {
                 await this.SetTokenAsync(token);
+                await this.SaveTokenAsync(token);
             }
+            System.Console.WriteLine($"Validate -> {this.Token.Validate()}");
             var ss = await this.GetSavedSignaturesAsync();
             if (ss != null && ss.Count > 0)
             {
@@ -210,9 +213,11 @@ namespace Cod.Channel
                     Token = token,
                     Expiry = new DateTimeOffset(jwt.ValidTo).ToUnixTimeSeconds(),
                 };
+                System.Console.WriteLine($"this.Token -> {this.Token.Token} -> {this.Token.Expiry}");
             }
             catch (ArgumentException)
             {
+                System.Console.WriteLine($"ArgumentException");
             }
         }
 
