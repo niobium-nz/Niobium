@@ -18,15 +18,12 @@ namespace Cod.Channel
         private readonly IConfigurationProvider configuration;
         private readonly HttpClient httpClient;
         private readonly IEnumerable<IEventHandler<IAuthenticator>> eventHandlers;
-        private readonly ConcurrentBag<KeyValuePair<string, string>> claims;
-
-        private bool initialized;
+        private ConcurrentBag<KeyValuePair<string, string>> claims;
 
         public event EventHandler AuthenticationRequired;
 
         public async Task<OperationResult<IEnumerable<KeyValuePair<string, string>>>> GetClaimsAsync()
         {
-            await this.InitializeAsync();
             if (!this.IsAuthenticated())
             {
                 await this.CleanupAsync();
@@ -59,13 +56,8 @@ namespace Cod.Channel
 
         protected virtual Task SaveSignaturesAsync(IDictionary<string, StorageSignature> signatures) => Task.CompletedTask;
 
-        protected virtual async Task InitializeAsync()
+        public virtual async Task InitializeAsync()
         {
-            if (this.initialized)
-            {
-                return;
-            }
-
             var token = await this.GetSavedTokenAsync();
             if (!String.IsNullOrWhiteSpace(token))
             {
@@ -80,8 +72,6 @@ namespace Cod.Channel
                     this.signatures.AddOrUpdate(key, k => ss[key], (k, v) => ss[key]);
                 }
             }
-
-            this.initialized = true;
         }
 
         public virtual async Task<OperationResult<StorageSignature>> AquireSignatureAsync(StorageType type, string resource, string partitionKey, string rowKey)
@@ -211,11 +201,7 @@ namespace Cod.Channel
         private async Task CleanupCredentialsAsync()
         {
             this.Token = null;
-            while (this.claims.Count > 0)
-            {
-                this.claims.TryTake(out _);
-            }
-
+            this.claims = new ConcurrentBag<KeyValuePair<string, string>>();
             await this.SaveTokenAsync(string.Empty);
             this.signatures.Clear();
             savedToken = null;
