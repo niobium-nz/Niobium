@@ -7,6 +7,8 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 
 namespace Cod.Platform
 {
@@ -19,6 +21,75 @@ namespace Cod.Platform
         public BaiduIntegration(Lazy<ICacheStore> cacheStore)
         {
             this.cacheStore = cacheStore;
+        }
+
+        public async Task<OperationResult<BaiduIDScanResponse>> ScanIDAsync(string key, string secret, Stream stream, bool isFrontSide, int retry = 0)
+        {
+            if (retry > 3)
+            {
+                return OperationResult<BaiduIDScanResponse>.Create(InternalError.GatewayTimeout, null);
+            }
+
+            var token = await GetAccessToken(key, secret);
+            if (!token.IsSuccess)
+            {
+                return OperationResult<BaiduIDScanResponse>.Create(token.Code, reference: token);
+            }
+
+            if (stream.CanSeek)
+            {
+                stream.Seek(0, SeekOrigin.Begin);
+            }
+
+            byte[] buff;
+            using (var ms = new MemoryStream())
+            {
+                using (var image = Image.Load(stream))
+                {
+                    var ratio = image.Height / 400d;
+                    image.Mutate(x => x.Resize((int)(image.Width / ratio), (int)(image.Height / ratio)));
+                    image.SaveAsJpeg(ms);
+                    buff = ms.ToByteArray();
+                }
+            }
+
+            var sideParam = isFrontSide ? "front" : "back";
+            var base64 = WebUtility.UrlEncode(Convert.ToBase64String(buff));
+            var str = $"access_token={token.Result}&id_card_side={sideParam}&detect_direction=true&detect_risk=true&detect_rectify=true&image={base64}";
+
+            try
+            {
+                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false) { Timeout = TimeSpan.FromSeconds(3) })
+                {
+                    using (var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded"))
+                    {
+                        var resp = await httpclient.PostAsync($"{Host}/rest/2.0/ocr/v1/idcard", post);
+                        var status = (int)resp.StatusCode;
+                        var json = await resp.Content.ReadAsStringAsync();
+                        if (status >= 200 && status < 400)
+                        {
+                            var result = JsonConvert.DeserializeObject<BaiduIDScanResponse>(json, JsonSetting.UnderstoreCase);
+                            if (!result.ErrorCode.HasValue)
+                            {
+                                return OperationResult<BaiduIDScanResponse>.Create(result);
+                            }
+                            return OperationResult<BaiduIDScanResponse>.Create(InternalError.InternalServerError, json);
+                        }
+                        return OperationResult<BaiduIDScanResponse>.Create(status, json);
+                    }
+                }
+            }
+            catch (TaskCanceledException)
+            {
+            }
+            catch (SocketException)
+            {
+            }
+            catch (IOException)
+            {
+            }
+
+            return await ScanIDAsync(key, secret, stream, isFrontSide, ++retry);
         }
 
         public async Task<OperationResult<BaiduCodeScanResponse>> ScanCodeAsync(string key, string secret, Stream stream, int retry = 0)
@@ -55,7 +126,7 @@ namespace Cod.Platform
                         if (status >= 200 && status < 400)
                         {
                             var result = JsonConvert.DeserializeObject<BaiduCodeScanResponse>(json, JsonSetting.UnderstoreCase);
-                            if (result.CodesResult != null && result.CodesResult.Length > 0)
+                            if (!result.ErrorCode.HasValue)
                             {
                                 return OperationResult<BaiduCodeScanResponse>.Create(result);
                             }
