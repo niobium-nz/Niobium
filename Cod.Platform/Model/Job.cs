@@ -3,7 +3,7 @@ using Microsoft.Azure.Cosmos.Table;
 
 namespace Cod.Platform.Model
 {
-    public class Task : TableEntity, IEntity
+    public class Job : TableEntity, IEntity
     {
         public const string SMS = "SMS";
 

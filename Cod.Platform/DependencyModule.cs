@@ -21,6 +21,8 @@ namespace Cod.Platform
             builder.RegisterType<CloudTableRepository<Model.Business>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Model.MobileLocation>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<BrandingInfo>>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<Model.Interest>>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<Model.Job>>().AsImplementedInterfaces();
 
             builder.RegisterType<UserDomain>();
             builder.RegisterType<GenericDomainRepository<UserDomain, Model.User>>().As<IDomainRepository<UserDomain, Model.User>>();
