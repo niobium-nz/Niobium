@@ -17,7 +17,7 @@ namespace Cod.Platform.Model
 
         public string Message { get; protected set; }
 
-        public string InternalSignature { get; protected set; }
+        public string Attach { get; protected set; }
 
         public DateTimeOffset Paid { get; protected set; }
 
@@ -27,7 +27,16 @@ namespace Cod.Platform.Model
 
         public abstract bool Success();
 
-        public virtual bool Validate(string platformSecret, string merchantSecret)
+        public Guid GetTarget()
+        {
+            return Guid.Parse(this.Attach.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries)[1]);
+        }
+
+        public TopupTargetKind GetKind() {
+            return (TopupTargetKind)int.Parse(this.Attach.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries)[0]);
+        }
+
+        public virtual bool Validate(string merchantSecret)
         {
             if (!this.Success())
             {
@@ -35,13 +44,6 @@ namespace Cod.Platform.Model
                 return false;
             }
 
-            var toSign = $"{this.AppID}|{this.Account}|{this.Amount}";
-            var signature = SHA.SHA256Hash(toSign, platformSecret, 127);
-            if (signature != this.InternalSignature)
-            {
-                this.LogError($"验证内部签名失败. 微信返回内部签名:{this.InternalSignature} 自签:{signature}");
-                return false;
-            }
             return true;
         }
 

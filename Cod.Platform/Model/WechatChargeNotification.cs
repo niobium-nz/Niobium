@@ -36,7 +36,7 @@ namespace Cod.Platform.Model
             this.Amount = Int32.Parse(param["total_fee"]);
             this.Order = param["out_trade_no"];
             this.Account = param["openid"];
-            this.InternalSignature = param["attach"];
+            this.Attach = param["attach"];
             var time = param["time_end"];
             this.Paid = new DateTimeOffset(Int32.Parse(time.Substring(0, 4)),
                 Int32.Parse(time.Substring(4, 2)),
@@ -59,9 +59,9 @@ namespace Cod.Platform.Model
 
         public override bool Success() => this.ResultCode != null && this.ResultCode.ToUpperInvariant() == "SUCCESS";
 
-        public override bool Validate(string platformSecret, string merchantSecret)
+        public override bool Validate(string merchantSecret)
         {
-            var result = base.Validate(platformSecret, merchantSecret);
+            var result = base.Validate(merchantSecret);
             if (!result)
             {
                 return false;
