@@ -1,6 +1,6 @@
 ﻿namespace Cod.Platform.Model
 {
-    public enum TopupTargetKind
+    public enum TopupTargetKind : int
     {
         Invalid = 0,
         User = 1,

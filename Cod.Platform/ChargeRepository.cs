@@ -34,7 +34,7 @@ namespace Cod.Platform
                 {
                     var branding = await this.brandService.Value.GetAsync(OpenIDKind.Wechat, charge.AppID);
                     var key = await this.configuration.Value.GetSettingAsync("CHARGE_SECRET");
-                    var attach = $"{charge.Kind}|{charge.Target}";
+                    var attach = $"{(int)charge.Kind}|{charge.Target}";
                     var prepayid = await this.wechatIntegration.Value.JSAPIPay(charge.Account,
                         charge.Amount,
                         charge.AppID,
