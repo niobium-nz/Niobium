@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
@@ -17,6 +18,7 @@ namespace Cod.Platform
     {
         private const string AuthorizationResponseHeaderKey = "WWW-Authenticate";
         private const string AuthorizationRequestHeaderKey = "Authorization";
+        private const string ClientIDRequestHeaderKey = "ClientID";
         private const string HeaderCORSKey = "Access-Control-Expose-Headers";
 
         public static IEnumerable<string> GetRemoteIP(this HttpRequest request)
@@ -45,6 +47,19 @@ namespace Cod.Platform
 
             request.HttpContext.Response.Headers.Add(AuthorizationResponseHeaderKey, new AuthenticationHeaderValue(scheme, token).ToString());
             request.HttpContext.Response.Headers.Add(HeaderCORSKey, AuthorizationResponseHeaderKey);
+        }
+
+        public static bool TryGetClientID(this HttpRequestMessage request, out string clientID)
+        {
+            clientID = string.Empty;
+
+            if (request.Headers.Contains(ClientIDRequestHeaderKey))
+            {
+                clientID = request.Headers.GetValues(ClientIDRequestHeaderKey).SingleOrDefault();
+                return true;
+            }
+
+            return false;
         }
 
         public static T Parse<T>(string body)

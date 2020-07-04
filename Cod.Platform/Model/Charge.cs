@@ -6,6 +6,10 @@ namespace Cod.Platform.Model
 {
     public class Charge
     {
+        public TopupTargetKind Kind { get; set; }
+
+        public Guid Target { get; set; }
+
         public ChargeType Type { get; set; }
 
         public string AppID { get; set; }

@@ -34,15 +34,14 @@ namespace Cod.Platform
                 {
                     var branding = await this.brandService.Value.GetAsync(OpenIDKind.Wechat, charge.AppID);
                     var key = await this.configuration.Value.GetSettingAsync("CHARGE_SECRET");
-                    var toSign = $"{charge.AppID}|{charge.Account}|{charge.Amount}";
-                    var internalSignature = SHA.SHA256Hash(toSign, key, 127);
+                    var attach = $"{charge.Kind}|{charge.Target}";
                     var prepayid = await this.wechatIntegration.Value.JSAPIPay(charge.Account,
                         charge.Amount,
                         charge.AppID,
                         charge.Device,
                         charge.Order,
                         charge.Product,
-                        internalSignature,
+                        attach,
                         charge.IP,
                         branding.WechatMerchantID,
                         branding.WechatMerchantNotifyUri,
