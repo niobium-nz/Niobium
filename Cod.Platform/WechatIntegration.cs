@@ -23,6 +23,7 @@ namespace Cod.Platform
         private const string AccessTokenCacheKey = "AccessToken";
         private static readonly TimeSpan AccessTokenCacheExpiry = TimeSpan.FromHours(1);
         private static string wechatProxyHost;
+        private static string memoryCachedAccessToken;
         private readonly Lazy<ICacheStore> cacheStore;
 
         public WechatIntegration(Lazy<ICacheStore> cacheStore)
@@ -269,6 +270,11 @@ namespace Cod.Platform
 
         private async Task<OperationResult<string>> GetAccessTokenAsync(string appID, string secret)
         {
+            if (!String.IsNullOrWhiteSpace(memoryCachedAccessToken))
+            {
+                return OperationResult<string>.Create(memoryCachedAccessToken);
+            }
+
             var token = await cacheStore.Value.GetAsync<string>(appID, AccessTokenCacheKey);
             if (!String.IsNullOrWhiteSpace(token))
             {
@@ -302,7 +308,10 @@ namespace Cod.Platform
         }
 
         private async Task RevokeAccessTokenAsync(string appID)
-            => await cacheStore.Value.DeleteAsync(appID, AccessTokenCacheKey);
+        {
+            memoryCachedAccessToken = null;
+            await this.cacheStore.Value.DeleteAsync(appID, AccessTokenCacheKey);
+        }
 
         public async Task<OperationResult<string>> SendNotificationAsync(string appId, string secret, string openId, string templateId, WechatNotificationParameter parameters, string link)
         {
@@ -335,6 +344,12 @@ namespace Cod.Platform
                         var result = JsonConvert.DeserializeObject<WechatTemplateMessageResponse>(json);
                         if (result.ErrCode != 0)
                         {
+                            if (result.ErrCode == 40001)
+                            {
+                                await this.RevokeAccessTokenAsync(appId);
+                                return await this.SendNotificationAsync(appId, secret, openId, templateId, parameters, link);
+                            }
+
                             if (Logger.Instance != null)
                             {
                                 Logger.Instance.LogError($"An error occurred while trying to send Wechat notification to {openId} on {appId} with status code={status}: {json}");
@@ -357,6 +372,7 @@ namespace Cod.Platform
                 }
             }
         }
+
         public async Task<OperationResult<string>> GetOpenIDAsync(string appID, string secret, string code)
         {
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
