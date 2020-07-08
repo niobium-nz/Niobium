@@ -35,6 +35,8 @@ namespace Cod.Platform
                     var branding = await this.brandService.Value.GetAsync(OpenIDKind.Wechat, charge.AppID);
                     var key = await this.configuration.Value.GetSettingAsync("CHARGE_SECRET");
                     var attach = $"{(int)charge.Kind}|{charge.Target}";
+                    this.logger.LogInformation($"微信支付调试: attach={attach} device={charge.Device} order={charge.Order}");
+
                     var prepayid = await this.wechatIntegration.Value.JSAPIPay(charge.Account,
                         charge.Amount,
                         charge.AppID,

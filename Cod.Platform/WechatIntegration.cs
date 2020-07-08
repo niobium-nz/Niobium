@@ -435,6 +435,12 @@ namespace Cod.Platform
 
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
             {
+                var xml = GetXML(param);
+                if (Logger.Instance != null)
+                {
+                    Logger.Instance.LogInformation($"微信支付调试: attach={attach} device={device} order={order} xml={xml}");
+                }
+
                 var resp = await httpclient.PostAsync($"https://{WechatPayHost}/pay/unifiedorder",
                     new StringContent(GetXML(param), Encoding.UTF8, "application/xml"));
                 var status = (int)resp.StatusCode;
