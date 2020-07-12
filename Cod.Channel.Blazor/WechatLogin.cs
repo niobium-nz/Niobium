@@ -112,19 +112,15 @@ namespace Cod.Channel
                 callbackUrl = $"{this.Navigator.BaseUri}{this.PostScanHandler}?id={this.loginID}";
             }
 
-            var param = new List<object>
-                {
-                    this.QRCodeElementID,
-                    baseUrl.Replace("{REDIRECT}", WebUtility.UrlEncode(callbackUrl), StringComparison.InvariantCulture)
-                        .Replace("{STATE}", String.Empty, StringComparison.InvariantCulture),
-                };
-            if (this.QRCodeWidth > 0 && this.QRCodeHeight > 0)
-            {
-                param.Add(this.QRCodeWidth);
-                param.Add(this.QRCodeHeight);
-            }
+            var href = baseUrl.Replace("{REDIRECT}", WebUtility.UrlEncode(callbackUrl), StringComparison.InvariantCulture)
+                        .Replace("{STATE}", String.Empty, StringComparison.InvariantCulture);
+            var param = QrCodeHelper.GetQrCodeParameters(
+                 this.QRCodeElementID,
+                 href,
+                 this.QRCodeWidth == 0 ? 250 : this.QRCodeWidth,
+                 this.QRCodeHeight == 0 ? 250 : this.QRCodeHeight);
 
-            await this.JSRuntime.InvokeVoidAsync("generateQRCode", param.ToArray());
+            await this.JSRuntime.InvokeVoidAsync("generateQRCode", param);
             var code = await this.CheckLoginAsync();
 
             if (code == null)
