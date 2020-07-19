@@ -26,7 +26,7 @@ namespace Cod.Platform
             var cache = await CloudStorage.GetTable<Cache>().RetrieveAsync<Cache>(partitionKey, rowKey);
             if (cache != null)
             {
-                await CloudStorage.GetTable<Cache>().RemoveAsync(new[] { cache }, true);
+                await CloudStorage.GetTable<Cache>().RemoveAsync(new[] { cache }, successIfNotExist: true);
             }
         }
 
