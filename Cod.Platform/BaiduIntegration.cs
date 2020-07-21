@@ -1,4 +1,7 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -6,16 +9,15 @@ using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
 
 namespace Cod.Platform
 {
     public class BaiduIntegration
     {
         private const string Host = "https://aip.baidubce.com";
+
         private const string AccessTokenCacheKey = "AccessToken";
+
         private readonly Lazy<ICacheStore> cacheStore;
 
         public BaiduIntegration(Lazy<ICacheStore> cacheStore)
@@ -219,6 +221,77 @@ namespace Cod.Platform
             }
 
             return await PerformOCRAsync(key, secret, mediaURL, stream, tryHarder, ++retry);
+        }
+
+        public async Task<OperationResult<BaiduCompareFaceResponse>> CompareFaceAsync(string key, string secret, Stream live, Stream frontCNID, int retry = 0)
+        {
+            if (retry > 3)
+            {
+                return OperationResult<BaiduCompareFaceResponse>.Create(InternalError.GatewayTimeout, null);
+            }
+
+            var token = await GetAccessToken(key, secret);
+            if (!token.IsSuccess)
+            {
+                return OperationResult<BaiduCompareFaceResponse>.Create(token.Code, reference: token);
+            }
+
+            try
+            {
+                using (var httpClient = new HttpClient(HttpHandler.GetHandler(), false))
+                {
+                    var url = $"{Host}/rest/2.0/face/v3/match?access_token={token.Result}";
+
+                    if (live.CanSeek)
+                    {
+                        live.Seek(0, SeekOrigin.Begin);
+                    }
+                    var liveBuffer = live.ToByteArray();
+                    if (frontCNID.CanSeek)
+                    {
+                        frontCNID.Seek(0, SeekOrigin.Begin);
+                    }
+                    var frontCNIDBuffer = frontCNID.ToByteArray();
+                    var content = new List<Dictionary<string, string>>()
+                    {
+                        new Dictionary<string, string>()
+                        {
+                            { "image", Convert.ToBase64String(liveBuffer)},
+                            { "image_type", "BASE64"},
+                            { "face_type", "LIVE" },
+                            { "quality_control", "LOW" },
+                        },
+                        new Dictionary<string, string>()
+                        {
+                            { "image",Convert.ToBase64String(frontCNIDBuffer)},
+                            { "image_type", "BASE64"},
+                            { "face_type", "CERT" },
+                            { "quality_control", "LOW" },
+                        }
+                    };
+                    var js = JsonConvert.SerializeObject(content);
+                    using (var post = new StringContent(js, Encoding.UTF8, "application/json"))
+                    {
+                        var response = await httpClient.PostAsync(url, post);
+                        var statusCode = (int)response.StatusCode;
+                        if (statusCode >= 200 && statusCode < 400)
+                        {
+                            js = await response.Content.ReadAsStringAsync();
+                            var result = JsonConvert.DeserializeObject<BaiduCompareFaceResponse>(js, JsonSetting.UnderstoreCase);
+                            return OperationResult<BaiduCompareFaceResponse>.Create(result);
+                        }
+                        else
+                        {
+                            return OperationResult<BaiduCompareFaceResponse>.Create(statusCode, js);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+
+            }
+            return await CompareFaceAsync(key, secret, live, frontCNID, retry++);
         }
 
         private async Task<OperationResult<string>> GetAccessToken(string key, string secret, int retry = 0)
