@@ -1,4 +1,7 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -6,16 +9,15 @@ using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
 
 namespace Cod.Platform
 {
     public class BaiduIntegration
     {
         private const string Host = "https://aip.baidubce.com";
+
         private const string AccessTokenCacheKey = "AccessToken";
+
         private readonly Lazy<ICacheStore> cacheStore;
 
         public BaiduIntegration(Lazy<ICacheStore> cacheStore)
@@ -219,6 +221,74 @@ namespace Cod.Platform
             }
 
             return await PerformOCRAsync(key, secret, mediaURL, stream, tryHarder, ++retry);
+        }
+
+        public async Task<OperationResult<BaiduCompareFaceResponse>> CompareFaceAsync(string key, string secret, string faceUrl, string frontCNIDUrl, int retry = 0)
+        {
+            if (retry > 3)
+            {
+                return OperationResult<BaiduCompareFaceResponse>.Create(InternalError.GatewayTimeout, null);
+            }
+
+            var token = await GetAccessToken(key, secret);
+            if (!token.IsSuccess)
+            {
+                return OperationResult<BaiduCompareFaceResponse>.Create(token.Code, reference: token);
+            }
+
+            try
+            {
+                using (var httpClient = new HttpClient(HttpHandler.GetHandler(), false))
+                {
+                    var url = $"{Host}/rest/2.0/face/v3/match?access_token={token.Result}";
+
+                    var content = new List<Dictionary<string, string>>()
+                    {
+                        new Dictionary<string, string>()
+                        {
+                            { "image", faceUrl},
+                            { "image_type", "URL"},
+                            { "face_type", "LIVE" },
+                            { "quality_control", "NORMAL" },
+                        },
+                        new Dictionary<string, string>()
+                        {
+                            { "image", frontCNIDUrl},
+                            { "image_type", "URL"},
+                            { "face_type", "CERT" },
+                            { "quality_control", "NORMAL" },
+                        }
+                    };
+                    var js = JsonConvert.SerializeObject(content);
+                    using (var post = new StringContent(js, Encoding.UTF8, "application/json"))
+                    {
+                        var response = await httpClient.PostAsync(url, post);
+                        var statusCode = (int)response.StatusCode;
+                        if (statusCode >= 200 && statusCode < 400)
+                        {
+                            js = await response.Content.ReadAsStringAsync();
+                            var result = JsonConvert.DeserializeObject<BaiduCompareFaceResponse>(js, JsonSetting.UnderstoreCase);
+                            if (!result.ErrorCode.HasValue)
+                            {
+                                return OperationResult<BaiduCompareFaceResponse>.Create(result);
+                            }
+                            else
+                            {
+                                return OperationResult<BaiduCompareFaceResponse>.Create(InternalError.InternalServerError, js);
+                            }
+                        }
+                        else
+                        {
+                            return OperationResult<BaiduCompareFaceResponse>.Create(statusCode, js);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+
+            }
+            return await CompareFaceAsync(key, secret, faceUrl, frontCNIDUrl, retry++);
         }
 
         private async Task<OperationResult<string>> GetAccessToken(string key, string secret, int retry = 0)
