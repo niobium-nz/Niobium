@@ -31,6 +31,20 @@ namespace Cod.Platform
             return created;
         }
 
+        public async Task<IEnumerable<T>> CreateOrUpdateAsync(IEnumerable<T> entities)
+        {
+            var changed = await this.tableRepository.CreateOrUpdateAsync(entities);
+            foreach (var item in changed)
+            {
+                var c = item.GetCache();
+                if (c != null)
+                {
+                    await this.cache.SetAsync(item.PartitionKey, item.RowKey, c.ToString(), this.memoryCached);
+                }
+            }
+            return changed;
+        }
+
         public async Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities, bool successIfNotExist = false)
         {
             var deleted = await this.tableRepository.DeleteAsync(entities, successIfNotExist);

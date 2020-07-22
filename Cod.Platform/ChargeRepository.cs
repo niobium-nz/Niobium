@@ -66,12 +66,11 @@ namespace Cod.Platform
             }
         }
 
+        public Task<IEnumerable<Charge>> CreateOrUpdateAsync(IEnumerable<Charge> entities) => throw new NotImplementedException();
         public Task<IEnumerable<Charge>> DeleteAsync(IEnumerable<Charge> entities, bool successIfNotExist = false) => throw new NotImplementedException();
         public Task<TableQueryResult<Charge>> GetAsync(int limit) => throw new NotImplementedException();
         public Task<TableQueryResult<Charge>> GetAsync(string partitionKey, int limit) => throw new NotImplementedException();
         public Task<Charge> GetAsync(string partitionKey, string rowKey) => throw new NotImplementedException();
         public Task<IEnumerable<Charge>> UpdateAsync(IEnumerable<Charge> entities) => throw new NotImplementedException();
-
-
     }
 }

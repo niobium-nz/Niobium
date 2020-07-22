@@ -87,5 +87,7 @@ namespace Cod.Platform
         public Task<IEnumerable<WechatEntity>> UpdateAsync(IEnumerable<WechatEntity> entities) => throw new NotImplementedException();
 
         public Task<IEnumerable<WechatEntity>> DeleteAsync(IEnumerable<WechatEntity> entities, bool successIfNotExist = false) => throw new NotImplementedException();
+
+        public Task<IEnumerable<WechatEntity>> CreateOrUpdateAsync(IEnumerable<WechatEntity> entities) => throw new NotImplementedException();
     }
 }

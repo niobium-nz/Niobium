@@ -27,6 +27,9 @@ namespace Cod.Platform
         public async Task<IEnumerable<T>> UpdateAsync(IEnumerable<T> entities)
             => await CloudStorage.GetTable<T>().ReplaceAsync(entities);
 
+        public async Task<IEnumerable<T>> CreateOrUpdateAsync(IEnumerable<T> entities)
+            => await CloudStorage.GetTable<T>().InsertOrReplaceAsync(entities);
+
         public async Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities, bool successIfNotExist = false)
             => await CloudStorage.GetTable<T>().RemoveAsync(entities, successIfNotExist);
 
