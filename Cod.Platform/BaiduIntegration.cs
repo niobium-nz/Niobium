@@ -223,7 +223,7 @@ namespace Cod.Platform
             return await PerformOCRAsync(key, secret, mediaURL, stream, tryHarder, ++retry);
         }
 
-        public async Task<OperationResult<BaiduCompareFaceResponse>> CompareFaceAsync(string key, string secret, Stream live, Stream frontCNID, int retry = 0)
+        public async Task<OperationResult<BaiduCompareFaceResponse>> CompareFaceAsync(string key, string secret, string faceUrl, string frontCNIDUrl, int retry = 0)
         {
             if (retry > 3)
             {
@@ -242,31 +242,21 @@ namespace Cod.Platform
                 {
                     var url = $"{Host}/rest/2.0/face/v3/match?access_token={token.Result}";
 
-                    if (live.CanSeek)
-                    {
-                        live.Seek(0, SeekOrigin.Begin);
-                    }
-                    var liveBuffer = live.ToByteArray();
-                    if (frontCNID.CanSeek)
-                    {
-                        frontCNID.Seek(0, SeekOrigin.Begin);
-                    }
-                    var frontCNIDBuffer = frontCNID.ToByteArray();
                     var content = new List<Dictionary<string, string>>()
                     {
                         new Dictionary<string, string>()
                         {
-                            { "image", Convert.ToBase64String(liveBuffer)},
-                            { "image_type", "BASE64"},
+                            { "image", faceUrl},
+                            { "image_type", "URL"},
                             { "face_type", "LIVE" },
-                            { "quality_control", "LOW" },
+                            { "quality_control", "NORMAL" },
                         },
                         new Dictionary<string, string>()
                         {
-                            { "image",Convert.ToBase64String(frontCNIDBuffer)},
-                            { "image_type", "BASE64"},
+                            { "image", frontCNIDUrl},
+                            { "image_type", "URL"},
                             { "face_type", "CERT" },
-                            { "quality_control", "LOW" },
+                            { "quality_control", "NORMAL" },
                         }
                     };
                     var js = JsonConvert.SerializeObject(content);
@@ -278,7 +268,14 @@ namespace Cod.Platform
                         {
                             js = await response.Content.ReadAsStringAsync();
                             var result = JsonConvert.DeserializeObject<BaiduCompareFaceResponse>(js, JsonSetting.UnderstoreCase);
-                            return OperationResult<BaiduCompareFaceResponse>.Create(result);
+                            if (!result.ErrorCode.HasValue)
+                            {
+                                return OperationResult<BaiduCompareFaceResponse>.Create(result);
+                            }
+                            else
+                            {
+                                return OperationResult<BaiduCompareFaceResponse>.Create(InternalError.InternalServerError, js);
+                            }
                         }
                         else
                         {
@@ -291,7 +288,7 @@ namespace Cod.Platform
             {
 
             }
-            return await CompareFaceAsync(key, secret, live, frontCNID, retry++);
+            return await CompareFaceAsync(key, secret, faceUrl, frontCNIDUrl, retry++);
         }
 
         private async Task<OperationResult<string>> GetAccessToken(string key, string secret, int retry = 0)
