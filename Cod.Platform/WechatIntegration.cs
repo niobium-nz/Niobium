@@ -44,7 +44,7 @@ namespace Cod.Platform
                 return token;
             }
 
-            return OperationResult<string>.Create($"http://{WechatHost}/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}");
+            return OperationResult<string>.Create($"https://{WechatHost}/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}");
         }
 
         public async Task<OperationResult<Stream>> GetMediaAsync(string appId, string secret, string mediaID, int retry = 0)
