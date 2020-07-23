@@ -62,7 +62,12 @@ namespace Cod.Platform
 
             try
             {
-                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false) { Timeout = TimeSpan.FromSeconds(1) })
+                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false)
+                {
+#if !DEBUG
+                    Timeout = TimeSpan.FromSeconds(1),
+#endif
+                })
                 {
                     var resp = await httpclient.GetAsync(url.Result);
                     var status = (int)resp.StatusCode;
@@ -240,7 +245,7 @@ namespace Cod.Platform
                 var query = HttpUtility.ParseQueryString(String.Empty);
                 query["access_token"] = token.Result;
                 query["type"] = "jsapi";
-                var resp = await httpclient.GetAsync($"https://{WechatHost}/cgi-bin/ticket/getticket?{query.ToString()}");
+                var resp = await httpclient.GetAsync($"https://{WechatHost}/cgi-bin/ticket/getticket?{query}");
                 var status = (int)resp.StatusCode;
                 var json = await resp.Content.ReadAsStringAsync();
                 if (status >= 200 && status < 400)

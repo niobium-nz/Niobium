@@ -6,6 +6,16 @@ namespace Cod
     {
         public static byte[] ToByteArray(this Stream input)
         {
+            if (input.CanSeek)
+            {
+                input.Seek(0, SeekOrigin.Begin);
+            }
+
+            if (input is MemoryStream m)
+            {
+                return m.ToArray();
+            }
+
             byte[] data;
             byte[] buffer = new byte[16 * 1024];
             using (MemoryStream ms = new MemoryStream())
