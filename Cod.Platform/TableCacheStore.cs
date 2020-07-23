@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Cod.Platform.Model;
 
@@ -7,21 +7,14 @@ namespace Cod.Platform
 {
     public class TableCacheStore : ICacheStore
     {
-        private readonly Dictionary<string, object> memoryCache = new Dictionary<string, object>();
-        private readonly Dictionary<string, DateTimeOffset> memoryCacheExpiry = new Dictionary<string, DateTimeOffset>();
+        private readonly ConcurrentDictionary<string, object> memoryCache = new ConcurrentDictionary<string, object>();
+        private readonly ConcurrentDictionary<string, DateTimeOffset> memoryCacheExpiry = new ConcurrentDictionary<string, DateTimeOffset>();
 
         public async Task DeleteAsync(string partitionKey, string rowKey)
         {
             var memkey = $"{partitionKey}@{rowKey}";
-            if (this.memoryCache.ContainsKey(memkey))
-            {
-                this.memoryCache.Remove(memkey);
-            }
-
-            if (this.memoryCacheExpiry.ContainsKey(memkey))
-            {
-                this.memoryCacheExpiry.Remove(memkey);
-            }
+            this.memoryCache.TryRemove(memkey, out _);
+            this.memoryCacheExpiry.TryRemove(memkey, out _);
 
             var cache = await CloudStorage.GetTable<Cache>().RetrieveAsync<Cache>(partitionKey, rowKey);
             if (cache != null)
@@ -41,10 +34,10 @@ namespace Cod.Platform
             var memkey = $"{partitionKey}@{rowKey}";
             if (this.memoryCache.ContainsKey(memkey))
             {
-                if (this.memoryCacheExpiry.ContainsKey(memkey) && this.memoryCacheExpiry[memkey] < DateTimeOffset.UtcNow)
+                if (this.memoryCacheExpiry.TryGetValue(memkey, out var value) && value < DateTimeOffset.UtcNow)
                 {
-                    this.memoryCache.Remove(memkey);
-                    this.memoryCacheExpiry.Remove(memkey);
+                    this.memoryCache.TryRemove(memkey, out _);
+                    this.memoryCacheExpiry.TryRemove(memkey, out _);
                     var expiredcache = await CloudStorage.GetTable<Cache>().RetrieveAsync<Cache>(partitionKey, rowKey);
                     if (expiredcache != null)
                     {
@@ -66,16 +59,8 @@ namespace Cod.Platform
                 {
                     if (cache.InMemory)
                     {
-                        if (this.memoryCache.ContainsKey(memkey))
-                        {
-                            this.memoryCache.Remove(memkey);
-                        }
-                        if (this.memoryCacheExpiry.ContainsKey(memkey))
-                        {
-                            this.memoryCacheExpiry.Remove(memkey);
-                        }
-                        this.memoryCache.Add(memkey, cache.Value);
-                        this.memoryCacheExpiry.Add(memkey, cache.Expiry);
+                        this.memoryCache.AddOrUpdate(memkey, cache.Value, (a, b) => cache.Value);
+                        this.memoryCacheExpiry.AddOrUpdate(memkey, cache.Expiry, (a, b) => cache.Expiry);
                     }
 
                     return (T)Convert.ChangeType(cache.Value, typeof(T));
@@ -96,25 +81,10 @@ namespace Cod.Platform
 
             if (memoryCached)
             {
-                if (this.memoryCache.ContainsKey(memkey))
-                {
-                    this.memoryCache[memkey] = value;
-                }
-                else
-                {
-                    this.memoryCache.Add(memkey, value);
-                }
-
+                this.memoryCache.AddOrUpdate(memkey, value, (a, b) => value);
                 if (expiry.HasValue)
                 {
-                    if (this.memoryCacheExpiry.ContainsKey(memkey))
-                    {
-                        this.memoryCacheExpiry[memkey] = expiry.Value;
-                    }
-                    else
-                    {
-                        this.memoryCacheExpiry.Add(memkey, expiry.Value);
-                    }
+                    this.memoryCacheExpiry.AddOrUpdate(memkey, expiry.Value, (a, b) => expiry.Value);
                 }
             }
 
