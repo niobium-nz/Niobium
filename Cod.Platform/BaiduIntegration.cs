@@ -268,7 +268,7 @@ namespace Cod.Platform
                         {
                             js = await response.Content.ReadAsStringAsync();
                             var result = JsonConvert.DeserializeObject<BaiduCompareFaceResponse>(js, JsonSetting.UnderstoreCase);
-                            if (!result.ErrorCode.HasValue|| result.ErrorCode == 0)
+                            if (!result.ErrorCode.HasValue || result.ErrorCode == 0)
                             {
                                 return OperationResult<BaiduCompareFaceResponse>.Create(result);
                             }
