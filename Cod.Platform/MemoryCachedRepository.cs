@@ -2,17 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Azure.Cosmos.Table;
 
 namespace Cod.Platform
 {
     public class MemoryCachedRepository<T> : IRepository<T>
-        where T : ITableEntity, IEntity, new()
+        where T : IEntity
     {
-        private readonly Lazy<CloudTableRepository<T>> repository;
+        private readonly Lazy<IRepository<T>> repository;
         private DateTimeOffset lastCached = DateTimeOffset.MinValue;
 
-        public MemoryCachedRepository(Lazy<CloudTableRepository<T>> repository)
+        public MemoryCachedRepository(Lazy<IRepository<T>> repository)
         {
             this.repository = repository;
         }
@@ -42,7 +41,7 @@ namespace Cod.Platform
         {
             await this.BuildCache();
 
-            IList<T> result = this.Cache.Where(c => ((IEntity)c).PartitionKey == partitionKey).ToArray();
+            IList<T> result = this.Cache.Where(c => c.PartitionKey == partitionKey).ToArray();
             if (limit > 0)
             {
                 result = result.Take(limit).ToArray();
@@ -54,7 +53,7 @@ namespace Cod.Platform
         public async Task<T> GetAsync(string partitionKey, string rowKey)
         {
             await this.BuildCache();
-            return this.Cache.SingleOrDefault(c => ((IEntity)c).PartitionKey == partitionKey && ((IEntity)c).RowKey == rowKey);
+            return this.Cache.SingleOrDefault(c => c.PartitionKey == partitionKey && c.RowKey == rowKey);
         }
 
         public async Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist)
@@ -73,7 +72,7 @@ namespace Cod.Platform
         {
             if (DateTimeOffset.UtcNow - this.lastCached > this.CacheRefreshInterval)
             {
-                var templates = await ((IRepository<T>)this.repository.Value).GetAsync();
+                var templates = await this.repository.Value.GetAsync();
                 this.Cache.Clear();
                 this.Cache.AddRange(templates);
             }
