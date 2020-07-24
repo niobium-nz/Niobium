@@ -61,7 +61,12 @@ namespace Cod.Platform
 
             try
             {
-                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false) { Timeout = TimeSpan.FromSeconds(3) })
+                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false)
+                {
+#if !DEBUG
+                    Timeout = TimeSpan.FromSeconds(3),
+#endif
+                })
                 {
                     using (var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded"))
                     {
@@ -118,7 +123,12 @@ namespace Cod.Platform
 
             try
             {
-                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false) { Timeout = TimeSpan.FromSeconds(3) })
+                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false)
+                {
+#if !DEBUG
+                    Timeout = TimeSpan.FromSeconds(3),
+#endif
+                })
                 {
                     using (var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded"))
                     {
@@ -189,7 +199,12 @@ namespace Cod.Platform
 
             try
             {
-                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false) { Timeout = TimeSpan.FromSeconds(2) })
+                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false)
+                {
+#if !DEBUG
+                    Timeout = TimeSpan.FromSeconds(2)
+#endif
+                })
                 {
                     using (var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded"))
                     {
@@ -268,7 +283,7 @@ namespace Cod.Platform
                         {
                             js = await response.Content.ReadAsStringAsync();
                             var result = JsonConvert.DeserializeObject<BaiduCompareFaceResponse>(js, JsonSetting.UnderstoreCase);
-                            if (!result.ErrorCode.HasValue)
+                            if (!result.ErrorCode.HasValue || result.ErrorCode == 0)
                             {
                                 return OperationResult<BaiduCompareFaceResponse>.Create(result);
                             }
