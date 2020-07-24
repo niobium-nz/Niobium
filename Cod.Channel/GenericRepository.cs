@@ -72,7 +72,6 @@ namespace Cod.Channel
             {
                 // REMARK (5he11) 这种情况下是查询一个准确命中的数据，并且不要求强制刷新数据，所以应该看一下数据是否有缓存，有则跳过网络请求
                 var cache = this.CachedData.SingleOrDefault(c => c.PartitionKey == partitionKeyStart && c.RowKey == rowKeyStart);
-                Console.WriteLine($"PK2={partitionKeyStart}, RK2={rowKeyStart}");
 
                 if (cache != null)
                 {
