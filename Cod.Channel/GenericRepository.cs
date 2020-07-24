@@ -66,6 +66,20 @@ namespace Cod.Channel
                 RowKeyStart = rowKeyStart,
             };
 
+            if (!force
+                && partitionKeyStart != null && rowKeyStart != null
+                && partitionKeyStart == partitionKeyEnd && rowKeyStart == rowKeyEnd)
+            {
+                // REMARK (5he11) 这种情况下是查询一个准确命中的数据，并且不要求强制刷新数据，所以应该看一下数据是否有缓存，有则跳过网络请求
+                var cache = this.CachedData.SingleOrDefault(c => c.PartitionKey == partitionKeyStart && c.RowKey == rowKeyStart);
+                Console.WriteLine($"PK2={partitionKeyStart}, RK2={rowKeyStart}");
+
+                if (cache != null)
+                {
+                    return OperationResult<IReadOnlyCollection<TDomain>>.Create(new[] { cache });
+                }
+            }
+
             var proceed = false;
             ContinuationToken continuationToken = null;
             if (force || !fetchHistory.ContainsKey(key))
@@ -76,17 +90,6 @@ namespace Cod.Channel
                 }
 
                 proceed = true;
-            }
-            else if (!force
-                && partitionKeyStart != null && rowKeyStart != null
-                && partitionKeyStart == partitionKeyEnd && rowKeyStart == rowKeyEnd)
-            {
-                // REMARK (5he11) 这种情况下是查询一个准确命中的数据，并且不要求强制刷新数据，所以应该看一下数据是否有缓存，有则跳过网络请求
-                var cache = this.CachedData.SingleOrDefault(c => c.PartitionKey == partitionKeyStart && c.RowKey == rowKeyStart);
-                if (cache != null)
-                {
-                    result = new[] { cache };
-                }
             }
             else if (fetchHistory.ContainsKey(key))
             {
