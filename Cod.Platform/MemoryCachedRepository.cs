@@ -8,10 +8,10 @@ namespace Cod.Platform
     public class MemoryCachedRepository<T> : IRepository<T>
         where T : IEntity
     {
-        private readonly Lazy<IRepository<T>> repository;
+        private readonly IRepository<T> repository;
         private DateTimeOffset lastCached = DateTimeOffset.MinValue;
 
-        public MemoryCachedRepository(Lazy<IRepository<T>> repository)
+        public MemoryCachedRepository(IRepository<T> repository)
         {
             this.repository = repository;
         }
@@ -57,22 +57,22 @@ namespace Cod.Platform
         }
 
         public async Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist)
-            => await this.repository.Value.CreateAsync(entities, replaceIfExist);
+            => await this.repository.CreateAsync(entities, replaceIfExist);
 
         public async Task<IEnumerable<T>> CreateOrUpdateAsync(IEnumerable<T> entities)
-            => await this.repository.Value.CreateOrUpdateAsync(entities);
+            => await this.repository.CreateOrUpdateAsync(entities);
 
         public async Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities, bool successIfNotExist = false)
-            => await this.repository.Value.DeleteAsync(entities, successIfNotExist);
+            => await this.repository.DeleteAsync(entities, successIfNotExist);
 
         public async Task<IEnumerable<T>> UpdateAsync(IEnumerable<T> entities)
-            => await this.repository.Value.UpdateAsync(entities);
+            => await this.repository.UpdateAsync(entities);
 
         private async Task BuildCache()
         {
             if (DateTimeOffset.UtcNow - this.lastCached > this.CacheRefreshInterval)
             {
-                var templates = await this.repository.Value.GetAsync();
+                var templates = await this.repository.GetAsync();
                 this.Cache.Clear();
                 this.Cache.AddRange(templates);
             }
