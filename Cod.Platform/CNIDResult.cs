@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Cod.Platform
 {
-    public class CNIDResponse
+    public class CNIDResult
     {
         public string Name { get; set; }
         public string Gender { get; set; }
