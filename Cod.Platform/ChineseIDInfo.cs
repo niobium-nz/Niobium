@@ -27,7 +27,7 @@ namespace Cod.Platform
         public string Number { get; set; }
 
         [Required]
-        public string Issue { get; set; }
+        public string Issuer { get; set; }
 
         [Required]
         public DateTimeOffset Expiry { get; set; }
