@@ -23,7 +23,7 @@ namespace Cod.Platform
         public DateTimeOffset Birthday { get; set; }
 
         [Required]
-        [StringLength(18, MinimumLength = 18, ErrorMessage = "身份证号码错误")]
+        [StringLength(18, MinimumLength = 18)]
         public string Number { get; set; }
 
         [Required]
