@@ -11,7 +11,10 @@ namespace Cod.Platform
         {
             foreach (var entity in entities)
             {
-                entity.Created = DateTimeOffset.UtcNow;
+                if (!entity.Created.HasValue)
+                {
+                    entity.Created = DateTimeOffset.UtcNow;
+                }
             }
 
             if (replaceIfExist)
