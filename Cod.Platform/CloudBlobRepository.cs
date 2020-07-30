@@ -12,6 +12,11 @@ namespace Cod.Platform
 
         public async Task PutAsync(string container, string blob, Stream stream, bool replaceIfExist)
         {
+            if (stream.CanSeek)
+            {
+                stream.Seek(0, SeekOrigin.Begin);
+            }
+
             var b = CloudStorage.GetBlob(container, blob);
             if (!replaceIfExist && await b.ExistsAsync())
             {
