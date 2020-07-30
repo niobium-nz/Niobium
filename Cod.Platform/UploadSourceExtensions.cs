@@ -8,7 +8,7 @@ namespace Cod.Platform
 {
     public static class UploadSourceExtensions
     {
-        public static async Task<OperationResult<string>> GetMediaUrlAsync(this UploadSource uploadSource, IBrandService brandService, WechatIntegration wechatIntegration)
+        public static async Task<OperationResult<Uri>> GetMediaUrlAsync(this UploadSource uploadSource, IBrandService brandService, WechatIntegration wechatIntegration)
         {
             switch (uploadSource.OpenIDKind)
             {
@@ -16,22 +16,22 @@ namespace Cod.Platform
                     var bi = await brandService.GetAsync(OpenIDKind.Wechat, uploadSource.AppID);
                     if (bi == null)
                     {
-                        return OperationResult<string>.Create(InternalError.InternalServerError, null);
+                        return OperationResult<Uri>.Create(InternalError.InternalServerError, null);
                     }
 
                     var secert = bi.WechatSecret;
                     var rs = await wechatIntegration.GenerateMediaDownloadUrl(uploadSource.AppID, secert, uploadSource.FileID);
                     if (!rs.IsSuccess)
                     {
-                        return OperationResult<string>.Create(InternalError.InternalServerError, JsonConvert.SerializeObject(rs));
+                        return OperationResult<Uri>.Create(InternalError.InternalServerError, JsonConvert.SerializeObject(rs));
                     }
                     else
                     {
-                        return OperationResult<string>.Create(rs.Result);
+                        return OperationResult<Uri>.Create(new Uri(rs.Result));
                     }
 
                 default:
-                    return OperationResult<string>.Create(InternalError.InternalServerError, null);
+                    return OperationResult<Uri>.Create(InternalError.InternalServerError, null);
             }
         }
     }
