@@ -29,7 +29,7 @@ namespace Cod
         public static string ToDisplayCSTShort(this DateTimeOffset input)
             => input.ToOffset(chinaTimeOffset).ToString("MM-dd");
 
-        public static DateTimeOffset? ParseCNIDDate(this string dateString)
+        public static DateTimeOffset? ParseDate(this string dateString)
         {
             if (string.IsNullOrWhiteSpace(dateString) || dateString.Length != 8)
             {

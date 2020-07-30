@@ -145,7 +145,7 @@ namespace Cod.Platform
                         info.Race = i.Value.Trim();
                         break;
                     case "出生":
-                        var bd = i.Value.Trim().ParseCNIDDate();
+                        var bd = i.Value.Trim().ParseDate();
                         if (bd.HasValue)
                         {
                             info.Birthday = bd.Value;
@@ -162,7 +162,7 @@ namespace Cod.Platform
                         info.Issuer = i.Value.Trim();
                         break;
                     case "失效日期":
-                        var ed = i.Value.Trim().ParseCNIDDate();
+                        var ed = i.Value.Trim().ParseDate();
                         if (ed.HasValue)
                         {
                             info.Expiry = ed.Value;
