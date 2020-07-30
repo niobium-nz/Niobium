@@ -25,9 +25,9 @@ namespace Cod.Platform
             this.cacheStore = cacheStore;
         }
 
-        public async Task<OperationResult<BaiduIDScanResponse>> ScanIDAsync(string key, string secret, Stream stream, bool isFrontSide, int retry = 0)
+        public async Task<OperationResult<BaiduIDScanResponse>> ScanIDAsync(string key, string secret, Stream stream, bool isFrontSide, int retry = 3)
         {
-            if (retry > 3)
+            if (retry <= 0)
             {
                 return OperationResult<BaiduIDScanResponse>.Create(InternalError.GatewayTimeout, null);
             }
@@ -96,7 +96,92 @@ namespace Cod.Platform
             {
             }
 
-            return await ScanIDAsync(key, secret, stream, isFrontSide, ++retry);
+            return await ScanIDAsync(key, secret, stream, isFrontSide, --retry);
+        }
+
+        public async Task<OperationResult<ChineseIDInfo>> ScanCNIDAsync(string key, string secret, Stream frontCNID, Stream backCNID)
+        {
+            var srs = await this.ScanIDAsync(key, secret, frontCNID, true);
+            var kvs = new Dictionary<string, string>();
+            if (!srs.IsSuccess)
+            {
+                return OperationResult<ChineseIDInfo>.Create(InternalError.InternalServerError, JsonConvert.SerializeObject(srs));
+            }
+            else
+            {
+                foreach (var i in srs.Result.WordsResult)
+                {
+                    kvs.Add(i.Key, i.Value.Words);
+                }
+            }
+
+            srs = await this.ScanIDAsync(key, secret, backCNID, false);
+            if (!srs.IsSuccess)
+            {
+                return OperationResult<ChineseIDInfo>.Create(InternalError.InternalServerError, JsonConvert.SerializeObject(srs));
+            }
+            else
+            {
+                foreach (var i in srs.Result.WordsResult)
+                {
+                    kvs.Add(i.Key, i.Value.Words);
+                }
+            }
+
+            var info = new ChineseIDInfo();
+
+            // REMARK (wangzhiheng) 百度身份证识别返回的 key, 姓名、性别、民族、出生日期、住址、身份证号、签发机关、失效日期
+            foreach (var i in kvs)
+            {
+                switch (i.Key.Trim())
+                {
+                    case "姓名":
+                        info.Name = i.Value.Trim();
+                        break;
+                    case "性别":
+                        info.Gender = i.Value.Trim().Equals("男", StringComparison.OrdinalIgnoreCase) ? Gender.Male : Gender.Female;
+                        break;
+                    case "民族":
+                        info.Race = i.Value.Trim();
+                        break;
+                    case "出生":
+                        var bd = i.Value.Trim().ParseCNIDDate();
+                        if (bd.HasValue)
+                        {
+                            info.Birthday = bd.Value;
+                        }
+
+                        break;
+                    case "住址":
+                        info.Address = i.Value.Trim();
+                        break;
+                    case "公民身份号码":
+                        info.Number = i.Value.Trim();
+                        break;
+                    case "签发机关":
+                        info.Issuer = i.Value.Trim();
+                        break;
+                    case "失效日期":
+                        var ed = i.Value.Trim().ParseCNIDDate();
+                        if (ed.HasValue)
+                        {
+                            info.Expiry = ed.Value;
+                        }
+
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            if (!ValidationHelper.TryValidate(info, out var result))
+            {
+                return OperationResult<ChineseIDInfo>.Create(InternalError.InternalServerError, JsonConvert.SerializeObject(result));
+            }
+            else
+            {
+                return OperationResult<ChineseIDInfo>.Create(info);
+            }
         }
 
         public async Task<OperationResult<BaiduCodeScanResponse>> ScanCodeAsync(string key, string secret, Stream stream, int retry = 0)
@@ -238,9 +323,24 @@ namespace Cod.Platform
             return await PerformOCRAsync(key, secret, mediaURL, stream, tryHarder, ++retry);
         }
 
-        public async Task<OperationResult<BaiduCompareFaceResponse>> CompareFaceAsync(string key, string secret, string faceUrl, string frontCNIDUrl, int retry = 0)
+        private async Task<OperationResult> CompareFaceAsync(string key, string secret, Uri faceMediaUri, Uri frontCNIDMediaUri, float minScore = 80)
         {
-            if (retry > 3)
+            _ = faceMediaUri ?? throw new ArgumentNullException(nameof(faceMediaUri));
+            _ = frontCNIDMediaUri ?? throw new ArgumentNullException(nameof(frontCNIDMediaUri));
+            var rs = await this.CompareFaceAsync(key, secret, faceMediaUri.AbsoluteUri, frontCNIDMediaUri.AbsoluteUri);
+            if (rs.IsSuccess && rs.Result.Result.Score >= minScore)
+            {
+                return OperationResult.Create();
+            }
+            else
+            {
+                return OperationResult.Create(InternalError.InternalServerError, JsonConvert.SerializeObject(rs));
+            }
+        }
+
+        public async Task<OperationResult<BaiduCompareFaceResponse>> CompareFaceAsync(string key, string secret, string faceUrl, string frontCNIDUrl, int retry = 3)
+        {
+            if (retry <= 0)
             {
                 return OperationResult<BaiduCompareFaceResponse>.Create(InternalError.GatewayTimeout, null);
             }
@@ -303,7 +403,7 @@ namespace Cod.Platform
             {
 
             }
-            return await CompareFaceAsync(key, secret, faceUrl, frontCNIDUrl, retry++);
+            return await CompareFaceAsync(key, secret, faceUrl, frontCNIDUrl, --retry);
         }
 
         private async Task<OperationResult<string>> GetAccessToken(string key, string secret, int retry = 0)
