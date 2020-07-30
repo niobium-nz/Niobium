@@ -8,7 +8,7 @@ namespace Cod.Platform
 {
     public static class UriExtensions
     {
-        public static async Task<Stream> FetchStreamAsync(Uri uri, int retry = 3)
+        public static async Task<Stream> FetchStreamAsync(this Uri uri, int retry = 3)
         {
             if (retry <= 0)
             {
