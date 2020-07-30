@@ -323,7 +323,7 @@ namespace Cod.Platform
             return await PerformOCRAsync(key, secret, mediaURL, stream, tryHarder, ++retry);
         }
 
-        private async Task<OperationResult> CompareFaceAsync(string key, string secret, Uri faceMediaUri, Uri frontCNIDMediaUri, float minScore = 80)
+        public async Task<OperationResult> CompareFaceAsync(string key, string secret, Uri faceMediaUri, Uri frontCNIDMediaUri, float minScore = 80)
         {
             _ = faceMediaUri ?? throw new ArgumentNullException(nameof(faceMediaUri));
             _ = frontCNIDMediaUri ?? throw new ArgumentNullException(nameof(frontCNIDMediaUri));
