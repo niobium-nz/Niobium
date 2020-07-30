@@ -13,13 +13,13 @@ namespace Cod.Platform
             switch (uploadSource.OpenIDKind)
             {
                 case OpenIDKind.Wechat:
-                    var x = await brandService.GetAsync(OpenIDKind.Wechat, uploadSource.AppID);
-                    if (x == null)
+                    var bi = await brandService.GetAsync(OpenIDKind.Wechat, uploadSource.AppID);
+                    if (bi == null)
                     {
                         return OperationResult<string>.Create(InternalError.InternalServerError, null);
                     }
 
-                    var secert = x.WechatSecret;
+                    var secert = bi.WechatSecret;
                     var rs = await wechatIntegration.GenerateMediaDownloadUrl(uploadSource.AppID, secert, uploadSource.FileID);
                     if (!rs.IsSuccess)
                     {
