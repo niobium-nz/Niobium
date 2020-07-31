@@ -228,7 +228,7 @@ namespace Cod.Platform
             return OperationResult<User>.Create(result);
         }
 
-        public async Task<OperationResult<User>> ApplyAsync(string role, IReadOnlyDictionary<string, object> data)
+        public async Task<OperationResult<User>> ApplyAsync(string role, object parameter)
         {
             if (string.IsNullOrWhiteSpace(role))
             {
@@ -243,7 +243,7 @@ namespace Cod.Platform
                 return OperationResult<User>.Create(InternalError.NotFound, null);
             }
 
-            var result = await this.OnApplyAsync(role, data, user);
+            var result = await this.OnApplyAsync(user, role, parameter);
             if (!result.IsSuccess)
             {
                 return new OperationResult<User>(result);
@@ -267,7 +267,7 @@ namespace Cod.Platform
             return OperationResult<User>.Create(user);
         }
 
-        protected virtual Task<OperationResult> OnApplyAsync(string role, IReadOnlyDictionary<string, object> data, Model.User user)
+        protected virtual Task<OperationResult> OnApplyAsync(Model.User user, string role, object data)
             => Task.FromResult(OperationResult.Create());
     }
 }
