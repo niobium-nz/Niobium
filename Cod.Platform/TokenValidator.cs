@@ -20,7 +20,7 @@ namespace Cod.Platform
             this.store = store;
         }
 
-        public async Task<string> CreateAsync(Guid? group, Guid? user, string nameIdentifier, string contact, string openIDProvider, string openIDApp,
+        public async Task<string> CreateAsync(Guid user, string nameIdentifier, string contact, string openIDProvider, string openIDApp,
             IEnumerable<string> roles = null, IEnumerable<KeyValuePair<string, string>> entitlements = null)
         {
             var dic = new List<KeyValuePair<string, string>>();
@@ -75,24 +75,18 @@ namespace Cod.Platform
                 }
             }
 
-            return await this.BuildAsync(group, user, nameIdentifier, contact, openIDProvider, openIDApp, dic);
+            return await this.BuildAsync(user, nameIdentifier, contact, openIDProvider, openIDApp, dic);
         }
 
-        private async Task<string> BuildAsync(Guid? group, Guid? user, string nameIdentifier, string contact,
+        private async Task<string> BuildAsync(Guid user, string nameIdentifier, string contact,
             string openIDProvider, string openIDApp, IEnumerable<KeyValuePair<string, string>> entitlements = null)
         {
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, nameIdentifier),
             };
-            if (user.HasValue)
-            {
-                claims.Add(new Claim(ClaimTypes.Sid, user.Value.ToKey()));
-            }
-            if (group.HasValue)
-            {
-                claims.Add(new Claim(ClaimTypes.GroupSid, group.Value.ToKey()));
-            }
+
+            claims.Add(new Claim(ClaimTypes.Sid, user.ToKey()));
             if (!String.IsNullOrWhiteSpace(contact))
             {
                 claims.Add(new Claim(Claims.ACCOUNT_CONTACT, contact.Trim()));

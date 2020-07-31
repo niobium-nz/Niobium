@@ -49,7 +49,6 @@ namespace Cod.Platform
             builder.RegisterType<OpenIDManager>().AsImplementedInterfaces();
             builder.RegisterType<MemoryCachedBusinessManager>().AsImplementedInterfaces();
             builder.RegisterType<MemoryCachedBrandService>().AsImplementedInterfaces();
-            builder.RegisterType<DefaultUserService>().AsImplementedInterfaces();
             base.Load(builder);
         }
     }
