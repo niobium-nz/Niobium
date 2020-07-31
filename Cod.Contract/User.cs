@@ -36,7 +36,7 @@ namespace Cod
         public IEnumerable<string> GetRoles()
             => this.Roles == null ? Enumerable.Empty<string>() : this.Roles.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries);
 
-        public void AddRole(string role)
+        public bool AddRole(string role)
         {
             if (role is null)
             {
@@ -47,6 +47,7 @@ namespace Cod
             if (String.IsNullOrEmpty(this.Roles))
             {
                 this.Roles = role;
+                return true;
             }
             else
             {
@@ -55,8 +56,11 @@ namespace Cod
                 {
                     roles.Add(role);
                     this.Roles = String.Join(",", roles);
+                    return true;
                 }
             }
+
+            return false;
         }
 
         public void RemoveRole(string role)

@@ -49,19 +49,19 @@ namespace Cod.Platform
             RowKey = this.RowKey,
         });
 
-        public async Task<OperationResult<User>> LoginAsync(string username, string password)
+        public async Task<OperationResult<Model.User>> LoginAsync(string username, string password)
         {
             var login = await loginRepository.Value.GetAsync(
                 Login.BuildPartitionKey(OpenIDKind.Username),
                 Login.BuildRowKey(username));
             if (login == null)
             {
-                return OperationResult<User>.Create(InternalError.NotFound, null);
+                return OperationResult<Model.User>.Create(InternalError.NotFound, null);
             }
 
             if (login.Credentials != password)
             {
-                return OperationResult<User>.Create(InternalError.AuthenticationRequired, null);
+                return OperationResult<Model.User>.Create(InternalError.AuthenticationRequired, null);
             }
 
             var userID = login.User;
@@ -70,13 +70,13 @@ namespace Cod.Platform
                 User.BuildRowKey(userID));
             if (user == null)
             {
-                return OperationResult<User>.Create(InternalError.NotFound, null);
+                return OperationResult<Model.User>.Create(InternalError.NotFound, null);
             }
 
-            return OperationResult<User>.Create(user);
+            return OperationResult<Model.User>.Create(user);
         }
 
-        public async Task<OperationResult<User>> LoginAsync(OpenIDKind kind, string appID, string authCode)
+        public async Task<OperationResult<Model.User>> LoginAsync(OpenIDKind kind, string appID, string authCode)
         {
             if (kind != OpenIDKind.Wechat)
             {
@@ -88,7 +88,7 @@ namespace Cod.Platform
                     WechatEntity.BuildOpenIDRowKey(authCode));
             if (wechat == null || String.IsNullOrWhiteSpace(wechat.Value))
             {
-                return OperationResult<User>.Create(InternalError.AuthenticationRequired, null);
+                return OperationResult<Model.User>.Create(InternalError.AuthenticationRequired, null);
             }
 
             var openid = wechat.Value;
@@ -97,7 +97,7 @@ namespace Cod.Platform
                 Login.BuildRowKey(openid));
             if (login == null)
             {
-                return OperationResult<User>.Create(InternalError.NotFound, null);
+                return OperationResult<Model.User>.Create(InternalError.NotFound, openid);
             }
 
             var userID = login.User;
@@ -106,15 +106,15 @@ namespace Cod.Platform
                 User.BuildRowKey(userID));
             if (user == null)
             {
-                return OperationResult<User>.Create(InternalError.NotFound, null);
+                return OperationResult<Model.User>.Create(InternalError.NotFound, openid);
             }
 
             if (user.Disabled)
             {
-                return OperationResult<User>.Create(InternalError.Locked, null);
+                return OperationResult<Model.User>.Create(InternalError.Locked, openid);
             }
 
-            return OperationResult<User>.Create(user);
+            return OperationResult<Model.User>.Create(user);
         }
 
         public async Task<string> IssueTokenAsync()
@@ -167,7 +167,7 @@ namespace Cod.Platform
             return OperationResult<Guid>.Create(newUser.Result.GetID());
         }
 
-        public async Task<OperationResult<User>> RegisterAsync(IEnumerable<OpenIDRegistration> registrations, string ip)
+        public async Task<OperationResult<Model.User>> RegisterAsync(IEnumerable<OpenIDRegistration> registrations, string ip)
         {
             Guid? user = null;
             foreach (var registration in registrations)
@@ -179,7 +179,7 @@ namespace Cod.Platform
                 {
                     if (user.HasValue && login.User != user.Value)
                     {
-                        return OperationResult<User>.Create(InternalError.Conflict, null);
+                        return OperationResult<Model.User>.Create(InternalError.Conflict, null);
                     }
 
                     user = login.User;
@@ -225,10 +225,10 @@ namespace Cod.Platform
             var result = await this.Repository.GetAsync(
                 User.BuildPartitionKey(user.Value),
                 User.BuildRowKey(user.Value));
-            return OperationResult<User>.Create(result);
+            return OperationResult<Model.User>.Create(result);
         }
 
-        public async Task<OperationResult<User>> ApplyAsync(string role, object parameter)
+        public async Task<OperationResult<Model.User>> ApplyAsync(string role, object parameter)
         {
             if (string.IsNullOrWhiteSpace(role))
             {
@@ -240,31 +240,22 @@ namespace Cod.Platform
             var user = await this.GetEntityAsync();
             if (user == null)
             {
-                return OperationResult<User>.Create(InternalError.NotFound, null);
+                return OperationResult<Model.User>.Create(InternalError.NotFound, null);
             }
 
             var result = await this.OnApplyAsync(user, role, parameter);
             if (!result.IsSuccess)
             {
-                return new OperationResult<User>(result);
+                return new OperationResult<Model.User>(result);
             }
 
-            if (String.IsNullOrEmpty(user.Roles))
+            var u = user.AddRole(role);
+            if (u)
             {
-                user.Roles = $"{role}";
                 await this.SaveEntityAsync();
             }
-            else
-            {
-                var roles = user.Roles.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries);
-                if (!roles.Contains(role))
-                {
-                    user.Roles += $",{role}";
-                    await this.SaveEntityAsync();
-                }
-            }
 
-            return OperationResult<User>.Create(user);
+            return OperationResult<Model.User>.Create(user);
         }
 
         protected virtual Task<OperationResult> OnApplyAsync(Model.User user, string role, object data)
