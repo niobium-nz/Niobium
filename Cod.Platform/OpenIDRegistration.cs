@@ -5,7 +5,7 @@ namespace Cod.Platform
 {
     public class OpenIDRegistration
     {
-        public string Account { get; set; }
+        public Guid User { get; set; }
 
         public int Kind { get; set; }
 
@@ -25,13 +25,13 @@ namespace Cod.Platform
             {
                 new OpenIDRegistration
                 {
-                    Account = userID.ToKey(),
+                    User = userID,
                     Identity = mobile,
                     Kind = (int)OpenIDKind.PhoneCall,
                 },
                 new OpenIDRegistration
                 {
-                    Account = userID.ToKey(),
+                    User = userID,
                     Identity = mobile,
                     Kind = (int)OpenIDKind.SMS,
                 },
@@ -46,7 +46,7 @@ namespace Cod.Platform
             {
                 new OpenIDRegistration
                 {
-                    Account = userID.ToKey(),
+                    User = userID,
                     Identity = openID,
                     Kind = (int)kind,
                     App = app,
@@ -62,19 +62,19 @@ namespace Cod.Platform
             {
                 new OpenIDRegistration
                 {
-                    Account = userID.ToKey(),
+                    User = userID,
                     Identity = mobile,
                     Kind = (int)OpenIDKind.PhoneCall,
                 },
                 new OpenIDRegistration
                 {
-                    Account = userID.ToKey(),
+                    User = userID,
                     Identity = mobile,
                     Kind = (int)OpenIDKind.SMS,
                 },
                 new OpenIDRegistration
                 {
-                    Account = userID.ToKey(),
+                    User = userID,
                     Identity = openID,
                     Kind = (int)kind,
                     App = app,

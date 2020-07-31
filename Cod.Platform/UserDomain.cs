@@ -12,8 +12,6 @@ namespace Cod.Platform
         private readonly Lazy<ICacheStore> cache;
         private readonly Lazy<IRepository<WechatEntity>> wechatRepository;
         private readonly Lazy<IRepository<Model.Login>> loginRepository;
-        private readonly Lazy<IRepository<Model.OpenID>> openIDRepository;
-        private readonly Lazy<IRepository<Model.User>> userRepository;
         private readonly Lazy<IRepository<Model.Entitlement>> entitlementRepository;
         private readonly Lazy<IOpenIDManager> openIDManager;
         private readonly Lazy<ITokenManager> tokenManager;
@@ -24,8 +22,6 @@ namespace Cod.Platform
             Lazy<IRepository<Model.User>> repository,
             Lazy<IRepository<WechatEntity>> wechatRepository,
             Lazy<IRepository<Model.Login>> loginRepository,
-            Lazy<IRepository<Model.OpenID>> openIDRepository,
-            Lazy<IRepository<Model.User>> userRepository,
             Lazy<IRepository<Model.Entitlement>> entitlementRepository,
             Lazy<IOpenIDManager> openIDManager,
             Lazy<IEnumerable<IImpedimentPolicy>> policies,
@@ -36,8 +32,6 @@ namespace Cod.Platform
             this.cache = cache;
             this.wechatRepository = wechatRepository;
             this.loginRepository = loginRepository;
-            this.openIDRepository = openIDRepository;
-            this.userRepository = userRepository;
             this.entitlementRepository = entitlementRepository;
             this.openIDManager = openIDManager;
             this.tokenManager = tokenManager;
@@ -70,7 +64,7 @@ namespace Cod.Platform
             }
 
             var userID = login.User;
-            var user = await this.userRepository.Value.GetAsync(
+            var user = await this.Repository.GetAsync(
                 User.BuildPartitionKey(userID),
                 User.BuildRowKey(userID));
             if (user == null)
@@ -106,7 +100,7 @@ namespace Cod.Platform
             }
 
             var userID = login.User;
-            var user = await this.userRepository.Value.GetAsync(
+            var user = await this.Repository.GetAsync(
                 User.BuildPartitionKey(userID),
                 User.BuildRowKey(userID));
             if (user == null)
@@ -129,7 +123,7 @@ namespace Cod.Platform
             var records = await this.entitlementRepository.Value.GetAsync(Entitlement.BuildPartitionKey(userID));
             var entitlements = records.Select(r => new KeyValuePair<string, string>(r.RowKey, r.Value));
 
-            var openIDs = await openIDRepository.Value.GetAsync(OpenID.BuildPartitionKey(userID));
+            var openIDs = await this.openIDManager.Value.GetChannelsAsync(userID);
             var mobile = openIDs.SingleOrDefault(o => o.GetKind() == (int)OpenIDKind.SMS);
             if (mobile == null)
             {
@@ -198,7 +192,7 @@ namespace Cod.Platform
 
             foreach (var registration in registrations)
             {
-                registration.Account = user.Value.ToKey();
+                registration.User = user.Value;
                 registration.OverrideIfExists = true;
             }
 
@@ -226,8 +220,8 @@ namespace Cod.Platform
                 Roles = Role.Customer,
             };
 
-            await this.userRepository.Value.CreateAsync(newuser, true);
-            var result = await this.userRepository.Value.GetAsync(
+            await this.Repository.CreateAsync(newuser, true);
+            var result = await this.Repository.GetAsync(
                 User.BuildPartitionKey(user.Value),
                 User.BuildRowKey(user.Value));
             return OperationResult<User>.Create(result);

@@ -19,9 +19,6 @@ namespace Cod
         public static string BuildPartitionKey(Guid user)
             => user.ToString("N").ToUpperInvariant();
 
-        public static string BuildPartitionKey(string account)
-            => account.Trim();
-
         public static string BuildRowKey(OpenIDKind kind, string identifier = null)
             => BuildRowKey((int)kind, identifier);
 
@@ -70,8 +67,6 @@ namespace Cod
         public static string BuildRowKeyEnd(int kind, string app) => $"{BuildRowKeyStart(kind, app)}~";
 
         public Guid GetUser() => Guid.Parse(this.PartitionKey);
-
-        public string GetAccount() => this.PartitionKey;
 
         public string GetApp()
         {

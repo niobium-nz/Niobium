@@ -37,8 +37,8 @@ namespace Cod.Platform
             else
             {
                 // TODO (5he11) 根据 context 决定 app 下边的查询可以更高效
-                var openid = await openIDManager.Value.GetChannelsAsync(account, level);
-                targets = openid.Select(i => new NotificationContext(level, i.GetApp(), i.GetAccount(), i.Identity));
+                var openid = await this.openIDManager.Value.GetChannelsAsync(Guid.Parse(account), level);
+                targets = openid.Select(i => new NotificationContext(level, i.GetApp(), i.GetUser(), i.Identity));
             }
 
             if (!targets.Any())
