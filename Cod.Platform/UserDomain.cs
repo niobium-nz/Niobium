@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
 {
-    public class UserDomain : ImpedableDomain<Model.User>, IAccountable
+    public class UserDomain : ImpedableDomain<Model.User>, IAccountable, ILoggerSite
     {
         private readonly Lazy<ICacheStore> cache;
         private readonly Lazy<IRepository<WechatEntity>> wechatRepository;
@@ -15,7 +15,6 @@ namespace Cod.Platform
         private readonly Lazy<IRepository<Model.Entitlement>> entitlementRepository;
         private readonly Lazy<IOpenIDManager> openIDManager;
         private readonly Lazy<ITokenManager> tokenManager;
-        private readonly ILogger logger;
 
         public UserDomain(
             Lazy<ICacheStore> cache,
@@ -35,10 +34,12 @@ namespace Cod.Platform
             this.entitlementRepository = entitlementRepository;
             this.openIDManager = openIDManager;
             this.tokenManager = tokenManager;
-            this.logger = logger;
+            this.Logger = logger;
         }
 
         public ICacheStore CacheStore => this.cache.Value;
+
+        public ILogger Logger { get; private set; }
 
         public Task<string> GetAccountingPrincipalAsync() => Task.FromResult(this.RowKey);
 
@@ -127,13 +128,13 @@ namespace Cod.Platform
             var mobile = openIDs.SingleOrDefault(o => o.GetKind() == (int)OpenIDKind.SMS);
             if (mobile == null)
             {
-                this.logger.LogWarning($"User {userID} does not have mobile open ID.");
+                this.Logger.LogWarning($"User {userID} does not have mobile open ID.");
             }
 
             var wechat = openIDs.SingleOrDefault(o => o.GetKind() == (int)OpenIDKind.Wechat);
             if (wechat == null)
             {
-                this.logger.LogWarning($"User {userID} does not have Wechat open ID.");
+                this.Logger.LogWarning($"User {userID} does not have Wechat open ID.");
             }
 
             return await this.tokenManager.Value.CreateAsync(
