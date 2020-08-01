@@ -14,17 +14,17 @@ namespace Cod.Platform
             this.repository = repository;
         }
 
-        public async Task<Model.OpenID> GetChannelAsync(Guid user, int kind, string identifier)
+        public async Task<Model.OpenID> GetChannelAsync(string account, int kind, string identifier)
             => await this.repository.Value.GetAsync(
-                OpenID.BuildPartitionKey(user),
+                account.Trim(),
                 OpenID.BuildRowKey(kind, identifier));
 
-        public async Task<IEnumerable<Model.OpenID>> GetChannelsAsync(Guid user)
-            => await this.repository.Value.GetAsync(OpenID.BuildPartitionKey(user));
+        public async Task<IEnumerable<Model.OpenID>> GetChannelsAsync(string account)
+            => await this.repository.Value.GetAsync(account.Trim());
 
-        public async Task<IEnumerable<Model.OpenID>> GetChannelsAsync(Guid user, int kind)
+        public async Task<IEnumerable<Model.OpenID>> GetChannelsAsync(string account, int kind)
             => await this.repository.Value.GetAsync(
-                OpenID.BuildPartitionKey(user),
+                account.Trim(),
                 OpenID.BuildRowKeyStart(kind),
                 OpenID.BuildRowKeyEnd(kind));
 

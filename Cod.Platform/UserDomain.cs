@@ -124,7 +124,7 @@ namespace Cod.Platform
             var records = await this.entitlementRepository.Value.GetAsync(Entitlement.BuildPartitionKey(userID));
             var entitlements = records.Select(r => new KeyValuePair<string, string>(r.RowKey, r.Value));
 
-            var openIDs = await this.openIDManager.Value.GetChannelsAsync(userID);
+            var openIDs = await this.openIDManager.Value.GetChannelsAsync(userID.ToKey());
             var mobile = openIDs.SingleOrDefault(o => o.GetKind() == (int)OpenIDKind.SMS);
             if (mobile == null)
             {
