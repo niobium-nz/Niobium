@@ -35,7 +35,7 @@ namespace Cod.Platform
             {
                 var entity = new Model.OpenID
                 {
-                    PartitionKey = OpenID.BuildPartitionKey(registration.User),
+                    PartitionKey = OpenID.BuildPartitionKey(Guid.Parse(registration.User)),
                     RowKey = OpenID.BuildRowKey(registration.Kind, registration.App, registration.OffsetPrefix),
                     Identity = registration.Identity,
                 };
