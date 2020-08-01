@@ -7,9 +7,16 @@ namespace Cod.Platform
 {
     public abstract class SMSNotificationChannel : INotificationChannel
     {
+        private readonly Lazy<IOpenIDManager> openIDManager;
+
+        public SMSNotificationChannel(Lazy<IOpenIDManager> openIDManager)
+        {
+            this.openIDManager = openIDManager;
+        }
+
         public async Task<OperationResult> SendAsync(
             string brand,
-            string account,
+            Guid user,
             NotificationContext context,
             int template,
             IReadOnlyDictionary<string, object> parameters,
@@ -20,23 +27,51 @@ namespace Cod.Platform
                 return OperationResult.Create(InternalError.NotAllowed);
             }
 
-            account = account.Replace("-", string.Empty)
-                .Replace(" ", string.Empty);
-            if (string.IsNullOrWhiteSpace(account))
+            string mobile = null;
+            if (parameters.ContainsKey(NotificationParameters.PreferredMobile)
+                && parameters[NotificationParameters.PreferredMobile] is string s)
+            {
+                mobile = s;
+            }
+
+            if (mobile == null)
+            {
+                if (user == Guid.Empty)
+                {
+                    return OperationResult.Create(InternalError.NotAllowed);
+                }
+
+                var channels = await this.openIDManager.Value.GetChannelsAsync(user, (int)OpenIDKind.SMS);
+                if (!channels.Any())
+                {
+                    return OperationResult.Create(InternalError.NotAllowed);
+                }
+
+                // TODO (5he11) 这里取第一个其实是不正确的
+                mobile = channels.First().Identity;
+            }
+
+            if (string.IsNullOrWhiteSpace(mobile))
             {
                 return OperationResult.Create(InternalError.NotAllowed);
             }
 
-            if (account[0] == '+' && !account.Substring(1, account.Length - 1).All(Char.IsDigit))
-            {
-                return OperationResult.Create(InternalError.NotAllowed);
-            }
-            else if (!account.All(Char.IsDigit))
+            mobile = mobile.Replace("-", string.Empty).Replace(" ", string.Empty);
+            if (string.IsNullOrWhiteSpace(mobile))
             {
                 return OperationResult.Create(InternalError.NotAllowed);
             }
 
-            return await this.SendSMSAsync(brand, account, template, parameters);
+            if (mobile[0] == '+' && !mobile.Substring(1, mobile.Length - 1).All(Char.IsDigit))
+            {
+                return OperationResult.Create(InternalError.NotAllowed);
+            }
+            else if (!mobile.All(Char.IsDigit))
+            {
+                return OperationResult.Create(InternalError.NotAllowed);
+            }
+
+            return await this.SendSMSAsync(brand, mobile, template, parameters);
         }
 
         protected abstract Task<OperationResult> SendSMSAsync(

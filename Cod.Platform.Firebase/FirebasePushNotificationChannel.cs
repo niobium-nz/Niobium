@@ -23,7 +23,7 @@ namespace Cod.Platform
         }
 
         public async override Task<OperationResult> SendAsync(string brand,
-            string account,
+            Guid user,
             NotificationContext context,
             int template,
             IReadOnlyDictionary<string, object> parameters,
@@ -34,7 +34,7 @@ namespace Cod.Platform
             {
                 return OperationResult.Create(InternalError.NotAllowed);
             }
-            return await base.SendAsync(brand, account, context, template, parameters, level);
+            return await base.SendAsync(brand, user, context, template, parameters, level);
         }
 
         protected async override Task<OperationResult> SendPushAsync(

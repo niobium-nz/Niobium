@@ -16,7 +16,7 @@ namespace Cod.Platform
 
         public virtual async Task<OperationResult> SendAsync(
             string brand,
-            string account,
+            Guid user,
             NotificationContext context,
             int template,
             IReadOnlyDictionary<string, object> parameters,
@@ -37,7 +37,7 @@ namespace Cod.Platform
             else
             {
                 // TODO (5he11) 根据 context 决定 app 下边的查询可以更高效
-                var openid = await this.openIDManager.Value.GetChannelsAsync(account, level);
+                var openid = await this.openIDManager.Value.GetChannelsAsync(user, level);
                 targets = openid.Select(i => new NotificationContext(level, i.GetApp(), i.GetUser(), i.Identity));
             }
 

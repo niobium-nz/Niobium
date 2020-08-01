@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -11,6 +12,12 @@ namespace Cod.Platform
     public abstract class SendGridEmailNotificationChannel : INotificationChannel
     {
         private static string Key;
+        private readonly Lazy<IOpenIDManager> openIDManager;
+
+        public SendGridEmailNotificationChannel(Lazy<IOpenIDManager> openIDManager)
+        {
+            this.openIDManager = openIDManager;
+        }
 
         public static void Initialize(string key)
         {
@@ -24,7 +31,7 @@ namespace Cod.Platform
 
         public async Task<OperationResult> SendAsync(
             string brand,
-            string account,
+            Guid user,
             NotificationContext context,
             int template,
             IReadOnlyDictionary<string, object> parameters, int level = 0)
@@ -34,27 +41,51 @@ namespace Cod.Platform
                 return OperationResult.Create(InternalError.NotAllowed);
             }
 
-            if (string.IsNullOrWhiteSpace(account))
+            string email = null;
+            if (parameters.ContainsKey(NotificationParameters.PreferredEmail)
+                && parameters[NotificationParameters.PreferredEmail] is string s)
+            {
+                email = s;
+            }
+
+            if (email == null)
+            {
+                if (user == Guid.Empty)
+                {
+                    return OperationResult.Create(InternalError.NotAllowed);
+                }
+
+                var channels = await this.openIDManager.Value.GetChannelsAsync(user, (int)OpenIDKind.Email);
+                if (!channels.Any())
+                {
+                    return OperationResult.Create(InternalError.NotAllowed);
+                }
+
+                // TODO (5he11) 这里取第一个其实是不正确的
+                email = channels.First().Identity;
+            }
+
+            if (string.IsNullOrWhiteSpace(email))
             {
                 return OperationResult.Create(InternalError.NotAllowed);
             }
 
-            if (!RegexUtilities.IsValidEmail(account))
+            if (!RegexUtilities.IsValidEmail(email))
             {
                 return OperationResult.Create(InternalError.BadRequest);
             }
 
-            return await SendEmailAsync(brand, account, context, template, parameters);
+            return await SendEmailAsync(brand, email, context, template, parameters);
         }
 
         protected virtual async Task<OperationResult> SendEmailAsync(
             string brand,
-            string account,
+            string email,
             NotificationContext context,
             int template,
             IReadOnlyDictionary<string, object> parameters)
         {
-            var requestObj = await this.MakeRequestAsync(brand, account, context, template, parameters);
+            var requestObj = await this.MakeRequestAsync(brand, email, context, template, parameters);
             var requestData = JsonConvert.SerializeObject(requestObj, JsonSetting.UnderstoreCase);
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
             {
@@ -76,7 +107,7 @@ namespace Cod.Platform
 
         protected abstract Task<SendGridEmailRequest> MakeRequestAsync(
             string brand,
-            string account,
+            string email,
             NotificationContext context,
             int template,
             IReadOnlyDictionary<string, object> parameters);

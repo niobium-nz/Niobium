@@ -15,7 +15,7 @@ namespace Cod.Platform
 
         public async Task<OperationResult<int>> SendAsync(
             string brand,
-            string account,
+            Guid user,
             NotificationContext context,
             int template,
             IReadOnlyDictionary<string, object> parameters,
@@ -30,7 +30,7 @@ namespace Cod.Platform
 
             foreach (var channel in channels.Value)
             {
-                var result = await channel.SendAsync(brand, account, context, template, parameters, level);
+                var result = await channel.SendAsync(brand, user, context, template, parameters, level);
                 if (result.IsSuccess)
                 {
                     return new OperationResult<int>(result) { Result = level };
@@ -44,7 +44,7 @@ namespace Cod.Platform
                     break;
                 }
             }
-            return await this.SendAsync(brand, account, context, template, parameters, ++level);
+            return await this.SendAsync(brand, user, context, template, parameters, ++level);
         }
     }
 }

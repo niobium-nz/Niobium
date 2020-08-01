@@ -8,10 +8,10 @@ namespace Cod.Platform
     {
         Task RegisterAsync(IEnumerable<OpenIDRegistration> registrations);
 
-        Task<IEnumerable<Model.OpenID>> GetChannelsAsync(string account);
+        Task<IEnumerable<Model.OpenID>> GetChannelsAsync(Guid user);
 
-        Task<IEnumerable<Model.OpenID>> GetChannelsAsync(string account, int kind);
+        Task<IEnumerable<Model.OpenID>> GetChannelsAsync(Guid user, int kind);
 
-        Task<Model.OpenID> GetChannelAsync(string account, int kind, string identifier);
+        Task<Model.OpenID> GetChannelAsync(Guid user, int kind, string identifier);
     }
 }

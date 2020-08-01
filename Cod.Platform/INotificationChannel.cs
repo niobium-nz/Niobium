@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Cod.Platform
@@ -7,7 +8,7 @@ namespace Cod.Platform
     {
         Task<OperationResult> SendAsync(
             string brand,
-            string account,
+            Guid user,
             NotificationContext context,
             int template,
             IReadOnlyDictionary<string, object> parameters,
