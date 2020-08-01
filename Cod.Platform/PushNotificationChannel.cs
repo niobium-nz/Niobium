@@ -34,7 +34,7 @@ namespace Cod.Platform
             {
                 targets = new List<NotificationContext> { context };
             }
-            else
+            else if (user != Guid.Empty)
             {
                 // TODO (5he11) 根据 context 决定 app 下边的查询可以更高效
                 var openid = await this.openIDManager.Value.GetChannelsAsync(user, level);
