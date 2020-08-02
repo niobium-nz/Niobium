@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
 {
-    internal static class CloudTableExtensions
+    public static class CloudTableExtensions
     {
         public static async Task<IEnumerable<T>> InsertAsync<T>(this CloudTable table, IEnumerable<T> entitiesToCreate) where T : ITableEntity, new()
         {

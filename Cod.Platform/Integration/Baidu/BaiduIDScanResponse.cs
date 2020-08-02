@@ -2,7 +2,7 @@
 
 namespace Cod.Platform
 {
-    public class BaiduIDScanResponse : BaiduIntegrationResponse
+    internal class BaiduIDScanResponse : BaiduIntegrationResponse
     {
         public long LogID { get; set; }
 

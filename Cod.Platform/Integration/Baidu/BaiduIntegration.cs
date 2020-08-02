@@ -1,14 +1,15 @@
-﻿using Newtonsoft.Json;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 
 namespace Cod.Platform
 {
@@ -17,91 +18,21 @@ namespace Cod.Platform
         private const string Host = "https://aip.baidubce.com";
 
         private const string AccessTokenCacheKey = "AccessToken";
+        private const string IntegrationKey = "BAIDU_APP_KEY";
+        private const string IntegrationSecret = "BAIDU_APP_SECRET";
 
         private readonly Lazy<ICacheStore> cacheStore;
+        private readonly Lazy<IConfigurationProvider> configuration;
 
-        public BaiduIntegration(Lazy<ICacheStore> cacheStore)
+        public BaiduIntegration(Lazy<ICacheStore> cacheStore, Lazy<IConfigurationProvider> configuration)
         {
             this.cacheStore = cacheStore;
+            this.configuration = configuration;
         }
 
-        public async Task<OperationResult<BaiduIDScanResponse>> ScanIDAsync(string key, string secret, Stream stream, bool isFrontSide, int retry = 3)
+        public async Task<OperationResult<ChineseIDInfo>> AnalyzeChineseIDAsync(Stream frontCNID, Stream backCNID)
         {
-            if (retry <= 0)
-            {
-                return OperationResult<BaiduIDScanResponse>.Create(InternalError.GatewayTimeout, null);
-            }
-
-            var token = await GetAccessToken(key, secret);
-            if (!token.IsSuccess)
-            {
-                return OperationResult<BaiduIDScanResponse>.Create(token.Code, reference: token);
-            }
-
-            if (stream.CanSeek)
-            {
-                stream.Seek(0, SeekOrigin.Begin);
-            }
-
-            byte[] buff;
-            using (var ms = new MemoryStream())
-            {
-                using (var image = Image.Load(stream))
-                {
-                    var ratio = image.Height / 400d;
-                    image.Mutate(x => x.Resize((int)(image.Width / ratio), (int)(image.Height / ratio)));
-                    image.SaveAsJpeg(ms);
-                    buff = ms.ToByteArray();
-                }
-            }
-
-            var sideParam = isFrontSide ? "front" : "back";
-            var base64 = WebUtility.UrlEncode(Convert.ToBase64String(buff));
-            var str = $"access_token={token.Result}&id_card_side={sideParam}&detect_direction=true&detect_risk=true&detect_rectify=true&image={base64}";
-
-            try
-            {
-                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false)
-                {
-#if !DEBUG
-                    Timeout = TimeSpan.FromSeconds(3),
-#endif
-                })
-                {
-                    using (var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded"))
-                    {
-                        var resp = await httpclient.PostAsync($"{Host}/rest/2.0/ocr/v1/idcard", post);
-                        var status = (int)resp.StatusCode;
-                        var json = await resp.Content.ReadAsStringAsync();
-                        if (status >= 200 && status < 400)
-                        {
-                            var result = JsonConvert.DeserializeObject<BaiduIDScanResponse>(json, JsonSetting.UnderstoreCase);
-                            if (!result.ErrorCode.HasValue)
-                            {
-                                return OperationResult<BaiduIDScanResponse>.Create(result);
-                            }
-                            return OperationResult<BaiduIDScanResponse>.Create(InternalError.InternalServerError, json);
-                        }
-                        return OperationResult<BaiduIDScanResponse>.Create(status, json);
-                    }
-                }
-            }
-            catch (TaskCanceledException)
-            {
-            }
-            catch (SocketException)
-            {
-            }
-            catch (IOException)
-            {
-            }
-
-            return await ScanIDAsync(key, secret, stream, isFrontSide, --retry);
-        }
-
-        public async Task<OperationResult<ChineseIDInfo>> ScanCNIDAsync(string key, string secret, Stream frontCNID, Stream backCNID)
-        {
-            var srs = await this.ScanIDAsync(key, secret, frontCNID, true);
+            var srs = await this.AnalyzeChineseIDAsync(frontCNID, true);
             var kvs = new Dictionary<string, string>();
             if (!srs.IsSuccess)
             {
@@ -115,7 +46,7 @@ namespace Cod.Platform
                 }
             }
 
-            srs = await this.ScanIDAsync(key, secret, backCNID, false);
+            srs = await this.AnalyzeChineseIDAsync(backCNID, false);
             if (!srs.IsSuccess)
             {
                 return OperationResult<ChineseIDInfo>.Create(InternalError.InternalServerError, JsonConvert.SerializeObject(srs));
@@ -184,17 +115,17 @@ namespace Cod.Platform
             }
         }
 
-        public async Task<OperationResult<BaiduCodeScanResponse>> ScanCodeAsync(string key, string secret, Stream stream, int retry = 0)
+        public async Task<OperationResult<IEnumerable<CodeScanResult>>> ScanCodeAsync(Stream stream, int retry = 0)
         {
             if (retry > 3)
             {
-                return OperationResult<BaiduCodeScanResponse>.Create(InternalError.GatewayTimeout, null);
+                return OperationResult<IEnumerable<CodeScanResult>>.Create(InternalError.GatewayTimeout, null);
             }
 
-            var token = await GetAccessToken(key, secret);
+            var token = await GetAccessToken();
             if (!token.IsSuccess)
             {
-                return OperationResult<BaiduCodeScanResponse>.Create(token.Code, reference: token);
+                return new OperationResult<IEnumerable<CodeScanResult>>(token);
             }
 
             if (stream.CanSeek)
@@ -225,11 +156,16 @@ namespace Cod.Platform
                             var result = JsonConvert.DeserializeObject<BaiduCodeScanResponse>(json, JsonSetting.UnderstoreCase);
                             if (!result.ErrorCode.HasValue)
                             {
-                                return OperationResult<BaiduCodeScanResponse>.Create(result);
+                                return OperationResult<IEnumerable<CodeScanResult>>.Create(result.CodesResult.SelectMany(r =>
+                                    r.Text.Select(t => new CodeScanResult
+                                    {
+                                        Code = t,
+                                        Kind = r.Type == "CODE_128" ? CodeKind.CODE_128 : r.Type == "QR_CODE" ? CodeKind.QR_CODE : CodeKind.Unknown,
+                                    })));
                             }
-                            return OperationResult<BaiduCodeScanResponse>.Create(InternalError.InternalServerError, json);
+                            return OperationResult<IEnumerable<CodeScanResult>>.Create(InternalError.InternalServerError, json);
                         }
-                        return OperationResult<BaiduCodeScanResponse>.Create(status, json);
+                        return OperationResult<IEnumerable<CodeScanResult>>.Create(status, json);
                     }
                 }
             }
@@ -243,12 +179,10 @@ namespace Cod.Platform
             {
             }
 
-            return await ScanCodeAsync(key, secret, stream, ++retry);
+            return await ScanCodeAsync(stream, ++retry);
         }
 
-        public async Task<OperationResult<BaiduOCRResponse>> PerformOCRAsync(
-            string key,
-            string secret,
+        public async Task<OperationResult<IEnumerable<OCRScanResult>>> PerformOCRAsync(
             string mediaURL,
             Stream stream,
             bool tryHarder,
@@ -256,13 +190,13 @@ namespace Cod.Platform
         {
             if (retry > 3)
             {
-                return OperationResult<BaiduOCRResponse>.Create(InternalError.GatewayTimeout, null);
+                return OperationResult<IEnumerable<OCRScanResult>>.Create(InternalError.GatewayTimeout, null);
             }
 
-            var token = await GetAccessToken(key, secret);
+            var token = await this.GetAccessToken();
             if (!token.IsSuccess)
             {
-                return OperationResult<BaiduOCRResponse>.Create(token.Code, reference: token);
+                return new OperationResult<IEnumerable<OCRScanResult>>(token);
             }
 
             var str = $"access_token={token.Result}&detect_direction=true&probability=true";
@@ -302,11 +236,17 @@ namespace Cod.Platform
                             var result = JsonConvert.DeserializeObject<BaiduOCRResponse>(json, JsonSetting.UnderstoreCase);
                             if (result.WordsResult != null && result.WordsResult.Length > 0)
                             {
-                                return OperationResult<BaiduOCRResponse>.Create(result);
+                                return OperationResult<IEnumerable<OCRScanResult>>.Create(
+                                result.WordsResult.Select(r => new OCRScanResult
+                                {
+                                    Text = r.Words,
+                                    IsConfident = r.Probability.Variance < 0.019d // REMARK (5he11) 方差不能太大，否则识别不准确
+                                     && r.Probability.Min > 0.6d // REMARK (5he11) 最小信心不能太小，否则识别不准确
+                                }));
                             }
-                            return OperationResult<BaiduOCRResponse>.Create(InternalError.InternalServerError, json);
+                            return OperationResult<IEnumerable<OCRScanResult>>.Create(InternalError.InternalServerError, json);
                         }
-                        return OperationResult<BaiduOCRResponse>.Create(status, json);
+                        return OperationResult<IEnumerable<OCRScanResult>>.Create(status, json);
                     }
                 }
             }
@@ -320,14 +260,14 @@ namespace Cod.Platform
             {
             }
 
-            return await PerformOCRAsync(key, secret, mediaURL, stream, tryHarder, ++retry);
+            return await PerformOCRAsync(mediaURL, stream, tryHarder, ++retry);
         }
 
-        public async Task<OperationResult> CompareFaceAsync(string key, string secret, Uri faceMediaUri, Uri frontCNIDMediaUri, float minScore = 80)
+        public async Task<OperationResult> CompareFaceAsync(Uri faceMediaUri, Uri frontCNIDMediaUri, float minScore = 80)
         {
             _ = faceMediaUri ?? throw new ArgumentNullException(nameof(faceMediaUri));
             _ = frontCNIDMediaUri ?? throw new ArgumentNullException(nameof(frontCNIDMediaUri));
-            var rs = await this.CompareFaceAsync(key, secret, faceMediaUri.AbsoluteUri, frontCNIDMediaUri.AbsoluteUri);
+            var rs = await this.CompareFaceAsync(faceMediaUri.AbsoluteUri, frontCNIDMediaUri.AbsoluteUri);
             if (rs.IsSuccess && rs.Result.Result.Score >= minScore)
             {
                 return OperationResult.Create();
@@ -338,14 +278,14 @@ namespace Cod.Platform
             }
         }
 
-        public async Task<OperationResult<BaiduCompareFaceResponse>> CompareFaceAsync(string key, string secret, string faceUrl, string frontCNIDUrl, int retry = 3)
+        public async Task<OperationResult<BaiduCompareFaceResponse>> CompareFaceAsync(string faceUrl, string frontCNIDUrl, int retry = 3)
         {
             if (retry <= 0)
             {
                 return OperationResult<BaiduCompareFaceResponse>.Create(InternalError.GatewayTimeout, null);
             }
 
-            var token = await GetAccessToken(key, secret);
+            var token = await this.GetAccessToken();
             if (!token.IsSuccess)
             {
                 return OperationResult<BaiduCompareFaceResponse>.Create(token.Code, reference: token);
@@ -403,27 +343,29 @@ namespace Cod.Platform
             {
 
             }
-            return await CompareFaceAsync(key, secret, faceUrl, frontCNIDUrl, --retry);
+            return await CompareFaceAsync(faceUrl, frontCNIDUrl, --retry);
         }
 
-        private async Task<OperationResult<string>> GetAccessToken(string key, string secret, int retry = 0)
+        private async Task<OperationResult<string>> GetAccessToken(int retry = 0)
         {
+            var key = await this.configuration.Value.GetSettingAsync(IntegrationKey);
             var token = await cacheStore.Value.GetAsync<string>(key, AccessTokenCacheKey);
             if (!String.IsNullOrWhiteSpace(token))
             {
                 return OperationResult<string>.Create(token);
             }
 
+            var secret = await this.configuration.Value.GetSettingAsync(IntegrationSecret);
             try
             {
                 using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
                 {
                     using (var post = new FormUrlEncodedContent(new Dictionary<string, string>
-                {
-                    { "grant_type", "client_credentials" },
-                    { "client_id", key },
-                    { "client_secret", secret },
-                }))
+                    {
+                        { "grant_type", "client_credentials" },
+                        { "client_id", key },
+                        { "client_secret", secret },
+                    }))
                     {
                         var resp = await httpclient.PostAsync($"{Host}/oauth/2.0/token", post);
                         var status = (int)resp.StatusCode;
@@ -452,8 +394,82 @@ namespace Cod.Platform
                     return OperationResult<string>.Create(InternalError.GatewayTimeout, null);
                 }
 
-                return await GetAccessToken(key, secret, ++retry);
+                return await GetAccessToken(++retry);
             }
+        }
+
+        private async Task<OperationResult<BaiduIDScanResponse>> AnalyzeChineseIDAsync(Stream stream, bool isFrontSide, int retry = 3)
+        {
+            if (retry <= 0)
+            {
+                return OperationResult<BaiduIDScanResponse>.Create(InternalError.GatewayTimeout, null);
+            }
+
+            var token = await this.GetAccessToken();
+            if (!token.IsSuccess)
+            {
+                return OperationResult<BaiduIDScanResponse>.Create(token.Code, reference: token);
+            }
+
+            if (stream.CanSeek)
+            {
+                stream.Seek(0, SeekOrigin.Begin);
+            }
+
+            byte[] buff;
+            using (var ms = new MemoryStream())
+            {
+                using (var image = Image.Load(stream))
+                {
+                    var ratio = image.Height / 400d;
+                    image.Mutate(x => x.Resize((int)(image.Width / ratio), (int)(image.Height / ratio)));
+                    image.SaveAsJpeg(ms);
+                    buff = ms.ToByteArray();
+                }
+            }
+
+            var sideParam = isFrontSide ? "front" : "back";
+            var base64 = WebUtility.UrlEncode(Convert.ToBase64String(buff));
+            var str = $"access_token={token.Result}&id_card_side={sideParam}&detect_direction=true&detect_risk=true&detect_rectify=true&image={base64}";
+
+            try
+            {
+                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false)
+                {
+#if !DEBUG
+                    Timeout = TimeSpan.FromSeconds(3),
+#endif
+                })
+                {
+                    using (var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded"))
+                    {
+                        var resp = await httpclient.PostAsync($"{Host}/rest/2.0/ocr/v1/idcard", post);
+                        var status = (int)resp.StatusCode;
+                        var json = await resp.Content.ReadAsStringAsync();
+                        if (status >= 200 && status < 400)
+                        {
+                            var result = JsonConvert.DeserializeObject<BaiduIDScanResponse>(json, JsonSetting.UnderstoreCase);
+                            if (!result.ErrorCode.HasValue)
+                            {
+                                return OperationResult<BaiduIDScanResponse>.Create(result);
+                            }
+                            return OperationResult<BaiduIDScanResponse>.Create(InternalError.InternalServerError, json);
+                        }
+                        return OperationResult<BaiduIDScanResponse>.Create(status, json);
+                    }
+                }
+            }
+            catch (TaskCanceledException)
+            {
+            }
+            catch (SocketException)
+            {
+            }
+            catch (IOException)
+            {
+            }
+
+            return await AnalyzeChineseIDAsync(stream, isFrontSide, --retry);
         }
     }
 }
