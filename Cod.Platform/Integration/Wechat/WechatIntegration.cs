@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -36,84 +35,57 @@ namespace Cod.Platform
             wechatProxyHost = wechatReverseProxy ?? throw new ArgumentNullException(nameof(wechatReverseProxy));
         }
 
-        public async Task<OperationResult<string>> GenerateMediaDownloadUrl(string appId, string secret, string mediaID)
+        public async Task<OperationResult<Uri>> GenerateMediaUri(string appId, string secret, string mediaID)
         {
             var token = await GetAccessTokenAsync(appId, secret);
             if (!token.IsSuccess)
             {
-                return token;
+                return new OperationResult<Uri>(token);
             }
 
-            return OperationResult<string>.Create($"https://{WechatHost}/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}");
+            return OperationResult<Uri>.Create(new Uri($"https://{WechatHost}/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}"));
         }
 
         public async Task<OperationResult<Stream>> GetMediaAsync(string appId, string secret, string mediaID, int retry = 0)
         {
-            if (retry > 3)
+            if (retry >= 3)
             {
                 return OperationResult<Stream>.Create((int)HttpStatusCode.InternalServerError, null);
             }
 
-            var url = await this.GenerateMediaDownloadUrl(appId, secret, mediaID);
+            var url = await this.GenerateMediaUri(appId, secret, mediaID);
             if (!url.IsSuccess)
             {
-                return OperationResult<Stream>.Create(url.Code, reference: url.Reference);
+                return new OperationResult<Stream>(url);
             }
 
-            try
+            var result = await url.Result.FetchStreamAsync(null, 1);
+            if (result == null)
             {
-                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false)
-                {
-#if !DEBUG
-                    Timeout = TimeSpan.FromSeconds(1),
-#endif
-                })
-                {
-                    var resp = await httpclient.GetAsync(url.Result);
-                    var status = (int)resp.StatusCode;
-                    if (status >= 200 && status < 400)
-                    {
-                        using (var s = await resp.Content.ReadAsStreamAsync())
-                        {
-                            var ms = new MemoryStream();
-                            await s.CopyToAsync(ms);
+                return OperationResult<Stream>.Create((int)HttpStatusCode.GatewayTimeout, null);
+            }
 
-                            if (ms.Length > 1024)
-                            {
-                                return OperationResult<Stream>.Create(ms);
-                            }
-                            else
-                            {
-                                ms.Seek(0, SeekOrigin.Begin);
-                                using (var sr = new StreamReader(ms))
-                                {
-                                    var err = await sr.ReadToEndAsync();
-                                    if (err.Contains("\"errcode\":40001,"))
-                                    {
-                                        await RevokeAccessTokenAsync(appId);
-                                    }
+            if (result.Length > 128)
+            {
+                return OperationResult<Stream>.Create(result);
+            }
 
-                                    if (Logger.Instance != null)
-                                    {
-                                        Logger.Instance.LogError($"An error occurred while trying to download media {mediaID} from Wechat with status code={status}: {err}");
-                                    }
-                                }
-                            }
-                        }
-                    }
+            using (var sr = new StreamReader(result))
+            {
+                var err = await sr.ReadToEndAsync();
+                if (err.Contains("\"errcode\":40001,"))
+                {
+                    await RevokeAccessTokenAsync(appId);
+                    return await GetMediaAsync(appId, secret, mediaID, ++retry);
+                }
+
+                if (Logger.Instance != null)
+                {
+                    Logger.Instance.LogError($"An error occurred while trying to download media {mediaID} from Wechat: {err}");
                 }
             }
-            catch (TaskCanceledException)
-            {
-            }
-            catch (SocketException)
-            {
-            }
-            catch (IOException)
-            {
-            }
 
-            return await GetMediaAsync(appId, secret, mediaID, ++retry);
+            return OperationResult<Stream>.Create((int)HttpStatusCode.BadGateway, null);
         }
 
         public async Task<OperationResult<string>> PerformOCRAsync(string appId, string secret, WechatUploadKind kind, string mediaID)

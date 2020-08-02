@@ -1,8 +1,6 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace Cod.Platform
 {
@@ -20,14 +18,14 @@ namespace Cod.Platform
                     }
 
                     var secert = bi.WechatSecret;
-                    var rs = await wechatIntegration.GenerateMediaDownloadUrl(uploadSource.AppID, secert, uploadSource.FileID);
+                    var rs = await wechatIntegration.GenerateMediaUri(uploadSource.AppID, secert, uploadSource.FileID);
                     if (!rs.IsSuccess)
                     {
                         return OperationResult<Uri>.Create(InternalError.InternalServerError, JsonConvert.SerializeObject(rs));
                     }
                     else
                     {
-                        return OperationResult<Uri>.Create(new Uri(rs.Result));
+                        return OperationResult<Uri>.Create(rs.Result);
                     }
 
                 default:
