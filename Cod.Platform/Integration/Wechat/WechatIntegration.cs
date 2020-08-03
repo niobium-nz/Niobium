@@ -46,28 +46,32 @@ namespace Cod.Platform
             return OperationResult<Uri>.Create(new Uri($"https://{WechatHost}/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}"));
         }
 
-        public async Task<OperationResult<Stream>> GetMediaAsync(string appId, string secret, string mediaID, int retry = 0)
+        public async Task<OperationResult<WechatMediaSource>> GetMediaAsync(string appId, string secret, string mediaID, int retry = 0)
         {
             if (retry >= 3)
             {
-                return OperationResult<Stream>.Create((int)HttpStatusCode.InternalServerError, null);
+                return OperationResult<WechatMediaSource>.Create((int)HttpStatusCode.InternalServerError, null);
             }
 
             var url = await this.GenerateMediaUri(appId, secret, mediaID);
             if (!url.IsSuccess)
             {
-                return new OperationResult<Stream>(url);
+                return new OperationResult<WechatMediaSource>(url);
             }
 
             var result = await url.Result.FetchStreamAsync(null, 1);
             if (result == null)
             {
-                return OperationResult<Stream>.Create((int)HttpStatusCode.GatewayTimeout, null);
+                return OperationResult<WechatMediaSource>.Create((int)HttpStatusCode.GatewayTimeout, null);
             }
 
             if (result.Length > 128)
             {
-                return OperationResult<Stream>.Create(result);
+                return OperationResult<WechatMediaSource>.Create(new WechatMediaSource
+                {
+                    MediaStream = result,
+                    MediaUri = url.Result,
+                });
             }
 
             using (var sr = new StreamReader(result))
@@ -85,7 +89,7 @@ namespace Cod.Platform
                 }
             }
 
-            return OperationResult<Stream>.Create((int)HttpStatusCode.BadGateway, null);
+            return OperationResult<WechatMediaSource>.Create((int)HttpStatusCode.BadGateway, null);
         }
 
         public async Task<OperationResult<string>> PerformOCRAsync(string appId, string secret, WechatUploadKind kind, string mediaID)
