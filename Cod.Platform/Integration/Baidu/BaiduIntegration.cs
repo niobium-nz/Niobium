@@ -183,7 +183,7 @@ namespace Cod.Platform
         }
 
         public async Task<OperationResult<IEnumerable<OCRScanResult>>> PerformOCRAsync(
-            string mediaURL,
+            Uri mediaUri,
             Stream stream,
             bool tryHarder,
             int retry = 0)
@@ -213,7 +213,7 @@ namespace Cod.Platform
             }
             else
             {
-                str += $"&url={WebUtility.UrlEncode(mediaURL)}";
+                str += $"&url={WebUtility.UrlEncode(mediaUri.AbsolutePath)}";
             }
 
             try
@@ -260,7 +260,7 @@ namespace Cod.Platform
             {
             }
 
-            return await PerformOCRAsync(mediaURL, stream, tryHarder, ++retry);
+            return await PerformOCRAsync(mediaUri, stream, tryHarder, ++retry);
         }
 
         public async Task<OperationResult> CompareFaceAsync(Uri faceMediaUri, Uri frontCNIDMediaUri, float minScore = 80)

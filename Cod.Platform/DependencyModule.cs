@@ -9,6 +9,7 @@ namespace Cod.Platform
         protected override void Load(ContainerBuilder builder)
         {
             builder.Register(_ => Logger.Instance).As<ILogger>();
+            builder.RegisterType<AzureOCRScaner>();
             builder.RegisterType<WechatIntegration>();
             builder.RegisterType<BaiduIntegration>();
             builder.RegisterType<CloudTableRepository<Model.Account>>().As<IRepository<Model.Account>>();
