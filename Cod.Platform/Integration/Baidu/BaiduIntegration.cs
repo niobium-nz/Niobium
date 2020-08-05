@@ -213,7 +213,7 @@ namespace Cod.Platform
             }
             else
             {
-                str += $"&url={WebUtility.UrlEncode(mediaUri.AbsolutePath)}";
+                str += $"&url={WebUtility.UrlEncode(mediaUri.AbsoluteUri)}";
             }
 
             try

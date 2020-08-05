@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 using System.Xml;
+using Cod.Platform.Integration.Wechat;
 using Cod.Platform.Model.Wechat;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -92,7 +93,52 @@ namespace Cod.Platform
             return OperationResult<WechatMediaSource>.Create((int)HttpStatusCode.BadGateway, null);
         }
 
-        public async Task<OperationResult<string>> PerformOCRAsync(string appId, string secret, WechatUploadKind kind, string mediaID)
+        public async Task<OperationResult<IEnumerable<CodeScanResult>>> ScanCodeAsync(string appId, string secret, string mediaID)
+        {
+            var token = await GetAccessTokenAsync(appId, secret);
+            if (!token.IsSuccess)
+            {
+                return new OperationResult<IEnumerable<CodeScanResult>>(token);
+            }
+
+            var path = GetOCRPath(WechatUploadKind.Code);
+            var query = HttpUtility.ParseQueryString(String.Empty);
+            query["access_token"] = token.Result;
+            query["img_url"] = $"https://{WechatHost}/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}";
+            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+            {
+                var resp = await httpclient.PostAsync($"https://{WechatHost}/{path}?{query.ToString()}", null);
+                var status = (int)resp.StatusCode;
+                var json = await resp.Content.ReadAsStringAsync();
+                if (status >= 200 && status < 400)
+                {
+                    if (json.Contains("\"errcode\":0,"))
+                    {
+                        var result = JsonConvert.DeserializeObject<WechatCodeScanResultList>(json, JsonSetting.UnderstoreCase);
+                        return OperationResult<IEnumerable<CodeScanResult>>.Create(result.CodeResults.Select(r => new CodeScanResult
+                        {
+                            Code = r.Data,
+                            Kind = r.TypeName == "CODE_128" ? CodeKind.CODE_128 : r.TypeName == "QR_CODE" ? CodeKind.QR_CODE : CodeKind.Unknown,
+                        }));
+                    }
+
+                    if (json.Contains("\"errcode\":40001,"))
+                    {
+                        await RevokeAccessTokenAsync(appId);
+                        return await ScanCodeAsync(appId, secret, mediaID);
+                    }
+
+                    if (Logger.Instance != null)
+                    {
+                        Logger.Instance.LogError($"An error occurred while trying to scan of code over media {mediaID} from Wechat with status code={status}: {json}");
+                    }
+                    return OperationResult<IEnumerable<CodeScanResult>>.Create(InternalError.InternalServerError, json);
+                }
+                return OperationResult<IEnumerable<CodeScanResult>>.Create(status, json);
+            }
+        }
+
+        public async Task<OperationResult<string>> PerformOCRAsync(string appId, string secret, string mediaID)
         {
             var token = await GetAccessTokenAsync(appId, secret);
             if (!token.IsSuccess)
@@ -100,13 +146,13 @@ namespace Cod.Platform
                 return token;
             }
 
-            var path = GetOCRPath(kind);
+            var path = GetOCRPath(WechatUploadKind.OCR);
             var query = HttpUtility.ParseQueryString(String.Empty);
             query["access_token"] = token.Result;
             query["img_url"] = $"https://{WechatHost}/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}";
             using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
             {
-                var resp = await httpclient.GetAsync($"https://{WechatHost}/{path}?{query.ToString()}");
+                var resp = await httpclient.PostAsync($"https://{WechatHost}/{path}?{query.ToString()}", null);
                 var status = (int)resp.StatusCode;
                 var json = await resp.Content.ReadAsStringAsync();
                 if (status >= 200 && status < 400)
@@ -119,7 +165,7 @@ namespace Cod.Platform
                     if (json.Contains("\"errcode\":40001,"))
                     {
                         await RevokeAccessTokenAsync(appId);
-                        return await PerformOCRAsync(appId, secret, kind, mediaID);
+                        return await PerformOCRAsync(appId, secret, mediaID);
                     }
 
                     if (Logger.Instance != null)

@@ -12,8 +12,8 @@ namespace Cod.Platform
 {
     public class AzureOCRScaner
     {
-        private const string CognitiveKey = "CognitiveKey";
-        private const string CognitiveEndpoint = "CognitiveEndpoint";
+        private const string CognitiveKey = "COGNITIVE_KEY";
+        private const string CognitiveEndpoint = "COGNITIVE_ENDPOINT";
         private const string CognitiveRequestBody = "{\"url\":\"$$$MEDIA_URL$$$\"}";
         private readonly Lazy<IConfigurationProvider> configuration;
 
