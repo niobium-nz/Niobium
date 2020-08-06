@@ -169,6 +169,7 @@ namespace Cod.Platform
 
         public async Task<OperationResult<Model.User>> RegisterAsync(IEnumerable<OpenIDRegistration> registrations, string ip)
         {
+            var newUser = false;
             Guid? user = null;
             foreach (var registration in registrations)
             {
@@ -189,6 +190,7 @@ namespace Cod.Platform
             if (!user.HasValue)
             {
                 user = Guid.NewGuid();
+                newUser = true;
             }
 
             foreach (var registration in registrations)
@@ -211,17 +213,21 @@ namespace Cod.Platform
             }
             await this.loginRepository.Value.CreateAsync(logins, true);
 
-            var newuser = new Model.User
+            if (newUser)
             {
-                PartitionKey = User.BuildPartitionKey(user.Value),
-                RowKey = User.BuildRowKey(user.Value),
-                Disabled = false,
-                FirstIP = ip,
-                LastIP = ip,
-                Roles = Role.Customer,
-            };
+                var newuser = new Model.User
+                {
+                    PartitionKey = User.BuildPartitionKey(user.Value),
+                    RowKey = User.BuildRowKey(user.Value),
+                    Disabled = false,
+                    FirstIP = ip,
+                    LastIP = ip,
+                    Roles = Role.Customer,
+                };
 
-            await this.Repository.CreateAsync(newuser, true);
+                await this.Repository.CreateAsync(newuser, true);
+            }
+
             var result = await this.Repository.GetAsync(
                 User.BuildPartitionKey(user.Value),
                 User.BuildRowKey(user.Value));
