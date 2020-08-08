@@ -29,6 +29,8 @@ namespace Cod.Platform.Model
 
         public string WechatAbnormalStatusNotificationTemplateID { get; set; }
 
+        public string WechatDeviceFaultNotificationTemplateID { get; set; }
+
         public string WechatMerchantSignature { get; set; }
 
         public string WechatMerchantNotifyUri { get; set; }
