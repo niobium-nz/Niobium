@@ -125,7 +125,7 @@ namespace Cod.Platform
             var entitlements = records.Select(r => new KeyValuePair<string, string>(r.RowKey, r.Value));
 
             var openIDs = await this.openIDManager.Value.GetChannelsAsync(userID);
-            var mobile = openIDs.SingleOrDefault(o => o.GetKind() == (int)OpenIDKind.SMS);
+            var mobile = openIDs.FirstOrDefault(o => o.GetKind() == (int)OpenIDKind.SMS);
             if (mobile == null)
             {
                 this.Logger.LogWarning($"User {userID} does not have mobile open ID.");
