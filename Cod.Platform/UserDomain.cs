@@ -196,17 +196,6 @@ namespace Cod.Platform
             foreach (var registration in registrations)
             {
                 registration.User = user.Value;
-
-                if (registration.Kind == (int)OpenIDKind.SMS || registration.Kind == (int)OpenIDKind.PhoneCall)
-                {
-                    // REMARK (5he11) 这里其实应该多查询一下，看看是否有现有记录和要插入的记录重复，如果重复则覆盖，否则变offset插入
-                    registration.OverrideIfExists = false;
-                }
-                else
-                {
-                    // REMARK (5he11) 其余Kind应该直接覆盖，理论上同一个平台不应该绑定多个号
-                    registration.OverrideIfExists = true;
-                }
             }
 
             await this.openIDManager.Value.RegisterAsync(registrations);
