@@ -75,7 +75,7 @@ namespace Cod.Platform
             }
             catch (StorageException e)
             {
-                if (e.RequestInformation.HttpStatusCode == 419)
+                if (e.RequestInformation.HttpStatusCode == 409)
                 {
                     await this.RetryRegistration(entity, app, ++retryCount, overrideIfExists, offsetPrefix);
                 }
