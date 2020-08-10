@@ -196,7 +196,7 @@ namespace Cod.Platform
             foreach (var registration in registrations)
             {
                 registration.User = user.Value;
-                registration.OverrideIfExists = true;
+                registration.OverrideIfExists = false;
             }
 
             await this.openIDManager.Value.RegisterAsync(registrations);
