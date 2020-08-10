@@ -117,7 +117,7 @@ namespace Cod.Platform
             return OperationResult<Model.User>.Create(user);
         }
 
-        public async Task<string> IssueTokenAsync()
+        public async Task<string> IssueTokenAsync(OpenIDKind kind, string appID)
         {
             var entity = await this.GetEntityAsync();
             var userID = entity.GetID();
@@ -131,17 +131,17 @@ namespace Cod.Platform
                 this.Logger.LogWarning($"User {userID} does not have mobile open ID.");
             }
 
-            var wechat = openIDs.SingleOrDefault(o => o.GetKind() == (int)OpenIDKind.Wechat);
+            var wechat = openIDs.SingleOrDefault(o => o.GetKind() == (int)kind && o.GetApp() == appID);
             if (wechat == null)
             {
-                this.Logger.LogWarning($"User {userID} does not have Wechat open ID.");
+                this.Logger.LogWarning($"User {userID} does not have {kind} open ID.");
             }
 
             return await this.tokenManager.Value.CreateAsync(
                 userID,
                 wechat?.Identity,
                 mobile?.Identity,
-                ((int)OpenIDProvider.Wechat).ToString(),
+                ((int)kind).ToString(),
                 wechat?.GetApp(),
                 entity.Roles.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries),
                 entitlements);
