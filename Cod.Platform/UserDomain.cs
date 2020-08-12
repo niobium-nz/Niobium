@@ -220,6 +220,12 @@ namespace Cod.Platform
             return OperationResult<Model.User>.Create(result);
         }
 
+        public async Task<IEnumerable<OpenID>> GetChannelsAsync(OpenIDKind kind, string app)
+            => (await this.GetChannelsAsync(kind)).Where(c => c.GetApp() == app);
+
+        public async Task<IEnumerable<OpenID>> GetChannelsAsync(OpenIDKind kind)
+            => await this.openIDManager.Value.GetChannelsAsync(Guid.Parse(this.RowKey), (int)kind);
+
         public async Task<OperationResult<Model.User>> ApplyAsync(string role, object parameter)
         {
             if (string.IsNullOrWhiteSpace(role))
