@@ -138,7 +138,7 @@ namespace Cod.Channel
         {
             var apiUrl = await this.configuration.GetSettingAsync(Constants.KEY_API_URL);
             var creds = Encoding.ASCII.GetBytes($"{username.Trim()}:{password.Trim()}");
-            var request = new HttpRequestMessage(HttpMethod.Get, $"{apiUrl}/v1/token");
+            var request = new HttpRequestMessage(HttpMethod.Get, $"{apiUrl}/v2/token");
             request.Headers.Authorization = new AuthenticationHeaderValue(scheme, Convert.ToBase64String(creds));
             var response = await this.httpClient.SendAsync(request);
             var statusCode = (int)response.StatusCode;
