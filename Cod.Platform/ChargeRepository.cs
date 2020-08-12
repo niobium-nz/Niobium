@@ -27,14 +27,14 @@ namespace Cod.Platform
 
         public async Task<IEnumerable<Charge>> CreateAsync(IEnumerable<Charge> entities, bool replaceIfExist)
         {
-            if (entities.All(e => e.Provider == OpenIDProvider.Wechat && e.Type == ChargeType.WeChatJSAPI))
+            if (entities.All(e => e.OpenIDKind == OpenIDKind.Wechat && e.Type == ChargeType.WeChatJSAPI))
             {
                 var charges = new List<Charge>();
                 foreach (var charge in entities)
                 {
                     var branding = await this.brandService.Value.GetAsync(OpenIDKind.Wechat, charge.AppID);
                     var key = await this.configuration.Value.GetSettingAsync("CHARGE_SECRET");
-                    var attach = $"{(int)charge.Kind}|{charge.Target}";
+                    var attach = $"{(int)charge.TopupKind}|{charge.Target}";
                     this.logger.LogInformation($"微信支付调试: attach={attach} device={charge.Device} order={charge.Order}");
 
                     var prepayid = await this.wechatIntegration.Value.JSAPIPay(charge.Account,

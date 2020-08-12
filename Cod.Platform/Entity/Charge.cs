@@ -6,7 +6,7 @@ namespace Cod.Platform.Model
 {
     public class Charge
     {
-        public TopupTargetKind Kind { get; set; }
+        public TopupTargetKind TopupKind { get; set; }
 
         public Guid Target { get; set; }
 
@@ -14,7 +14,7 @@ namespace Cod.Platform.Model
 
         public string AppID { get; set; }
 
-        public OpenIDProvider Provider { get; set; }
+        public OpenIDKind OpenIDKind { get; set; }
 
         public string Device { get; set; }
 
