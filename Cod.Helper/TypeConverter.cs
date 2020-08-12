@@ -16,7 +16,7 @@ namespace Cod
         public static object Convert(string input, Type targetType)
         {
             object obj;
-            if (typeof(IEnumerable).IsAssignableFrom(targetType))
+            if (targetType != typeof(string) && typeof(IEnumerable).IsAssignableFrom(targetType))
             {
                 var genericArgs = targetType.GetGenericArguments();
                 if (genericArgs.Length != 1)
