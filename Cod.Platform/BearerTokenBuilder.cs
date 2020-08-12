@@ -9,19 +9,18 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Cod.Platform
 {
-    internal class TokenValidator : ITokenManager
+    internal class BearerTokenBuilder : ITokenBuilder
     {
         private readonly Lazy<IConfigurationProvider> configuration;
         private readonly Lazy<IEntitlementStore> store;
 
-        public TokenValidator(Lazy<IConfigurationProvider> configuration, Lazy<IEntitlementStore> store)
+        public BearerTokenBuilder(Lazy<IConfigurationProvider> configuration, Lazy<IEntitlementStore> store)
         {
             this.configuration = configuration;
             this.store = store;
         }
 
-        public async Task<string> CreateAsync(Guid user, string nameIdentifier, string contact, string openIDProvider, string openIDApp,
-            IEnumerable<string> roles = null, IEnumerable<KeyValuePair<string, string>> entitlements = null)
+        public async Task<string> BuildAsync(string mainIdentity, IEnumerable<string> roles = null, IEnumerable<KeyValuePair<string, string>> entitlements = null)
         {
             var dic = new List<KeyValuePair<string, string>>();
             if (entitlements != null)
@@ -75,29 +74,15 @@ namespace Cod.Platform
                 }
             }
 
-            return await this.BuildAsync(user, nameIdentifier, contact, openIDProvider, openIDApp, dic);
+            return await this.BuildAsync(mainIdentity, dic);
         }
 
-        private async Task<string> BuildAsync(Guid user, string nameIdentifier, string contact,
-            string openIDProvider, string openIDApp, IEnumerable<KeyValuePair<string, string>> entitlements = null)
+        private async Task<string> BuildAsync(string mainIdentity, IEnumerable<KeyValuePair<string, string>> entitlements = null)
         {
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, nameIdentifier),
+                new Claim(ClaimTypes.Sid, mainIdentity.Trim())
             };
-
-            claims.Add(new Claim(ClaimTypes.Sid, user.ToKey()));
-            if (!String.IsNullOrWhiteSpace(contact))
-            {
-                claims.Add(new Claim(Claims.ACCOUNT_CONTACT, contact.Trim()));
-                claims.Add(new Claim(ClaimTypes.MobilePhone, contact.Trim()));
-            }
-
-            if (!String.IsNullOrWhiteSpace(openIDProvider) && !String.IsNullOrWhiteSpace(openIDApp))
-            {
-                claims.Add(new Claim(Claims.OPENID_PROVIDER, openIDProvider.Trim()));
-                claims.Add(new Claim(Claims.OPENID_APP, openIDApp.Trim()));
-            }
 
             if (entitlements != null)
             {

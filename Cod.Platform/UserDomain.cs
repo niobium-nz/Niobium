@@ -14,7 +14,7 @@ namespace Cod.Platform
         private readonly Lazy<IRepository<Model.Login>> loginRepository;
         private readonly Lazy<IRepository<Model.Entitlement>> entitlementRepository;
         private readonly Lazy<IOpenIDManager> openIDManager;
-        private readonly Lazy<ITokenManager> tokenManager;
+        private readonly Lazy<ITokenBuilder> tokenBuilder;
 
         public UserDomain(
             Lazy<ICacheStore> cache,
@@ -24,7 +24,7 @@ namespace Cod.Platform
             Lazy<IRepository<Model.Entitlement>> entitlementRepository,
             Lazy<IOpenIDManager> openIDManager,
             Lazy<IEnumerable<IImpedimentPolicy>> policies,
-            Lazy<ITokenManager> tokenManager,
+            Lazy<ITokenBuilder> tokenBuilder,
             ILogger logger)
             : base(repository, policies, logger)
         {
@@ -33,7 +33,7 @@ namespace Cod.Platform
             this.loginRepository = loginRepository;
             this.entitlementRepository = entitlementRepository;
             this.openIDManager = openIDManager;
-            this.tokenManager = tokenManager;
+            this.tokenBuilder = tokenBuilder;
             this.Logger = logger;
         }
 
@@ -76,7 +76,7 @@ namespace Cod.Platform
             return OperationResult<Model.User>.Create(user);
         }
 
-        public async Task<OperationResult<Model.User>> LoginAsync(OpenIDKind kind, string appID, string authCode)
+        public async Task<OperationResult<LoginResult>> LoginAsync(OpenIDKind kind, string appID, string authCode)
         {
             if (kind != OpenIDKind.Wechat)
             {
@@ -88,7 +88,7 @@ namespace Cod.Platform
                     WechatEntity.BuildOpenIDRowKey(authCode));
             if (wechat == null || String.IsNullOrWhiteSpace(wechat.Value))
             {
-                return OperationResult<Model.User>.Create(InternalError.AuthenticationRequired, null);
+                return OperationResult<LoginResult>.Create(InternalError.AuthenticationRequired, null);
             }
 
             var openid = wechat.Value;
@@ -97,7 +97,7 @@ namespace Cod.Platform
                 Login.BuildRowKey(openid));
             if (login == null)
             {
-                return OperationResult<Model.User>.Create(InternalError.NotFound, openid);
+                return OperationResult<LoginResult>.Create(InternalError.NotFound, openid);
             }
 
             var userID = login.User;
@@ -106,45 +106,32 @@ namespace Cod.Platform
                 User.BuildRowKey(userID));
             if (user == null)
             {
-                return OperationResult<Model.User>.Create(InternalError.NotFound, openid);
+                return OperationResult<LoginResult>.Create(InternalError.NotFound, openid);
             }
 
             if (user.Disabled)
             {
-                return OperationResult<Model.User>.Create(InternalError.Locked, openid);
+                return OperationResult<LoginResult>.Create(InternalError.Locked, openid);
             }
 
-            return OperationResult<Model.User>.Create(user);
+            return OperationResult<LoginResult>.Create(new LoginResult
+            {
+                User = user,
+                OpenID = openid,
+            });
         }
 
-        public async Task<string> IssueTokenAsync(OpenIDKind kind, string appID)
+        public async Task<string> IssueTokenAsync(IEnumerable<KeyValuePair<string, string>> entitlements)
         {
             var entity = await this.GetEntityAsync();
             var userID = entity.GetID();
             var records = await this.entitlementRepository.Value.GetAsync(Entitlement.BuildPartitionKey(userID));
-            var entitlements = records.Select(r => new KeyValuePair<string, string>(r.RowKey, r.Value));
-
-            var openIDs = await this.openIDManager.Value.GetChannelsAsync(userID);
-            var mobile = openIDs.FirstOrDefault(o => o.GetKind() == (int)OpenIDKind.SMS);
-            if (mobile == null)
-            {
-                this.Logger.LogWarning($"User {userID} does not have mobile open ID.");
-            }
-
-            var wechat = openIDs.SingleOrDefault(o => o.GetKind() == (int)kind && o.GetApp() == appID);
-            if (wechat == null)
-            {
-                this.Logger.LogWarning($"User {userID} does not have {kind} open ID.");
-            }
-
-            return await this.tokenManager.Value.CreateAsync(
-                userID,
-                wechat?.Identity,
-                mobile?.Identity,
-                ((int)kind).ToString(),
-                wechat?.GetApp(),
+            var es = records.Select(r => new KeyValuePair<string, string>(r.RowKey, r.Value)).ToList();
+            es.AddRange(entitlements);
+            return await this.tokenBuilder.Value.BuildAsync(
+                userID.ToKey(),
                 entity.Roles.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries),
-                entitlements);
+                es);
         }
 
         public async Task<OperationResult<Guid>> GetOrRegisterAsync(string mobile, string ip = null)

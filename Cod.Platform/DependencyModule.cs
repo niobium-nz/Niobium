@@ -41,7 +41,7 @@ namespace Cod.Platform
             builder.RegisterType<CloudSignatureIssuer>().AsImplementedInterfaces();
             builder.RegisterType<ConfigurationProvider>().AsImplementedInterfaces();
             builder.RegisterType<PlatformQueue>().AsImplementedInterfaces();
-            builder.RegisterType<TokenValidator>().AsImplementedInterfaces();
+            builder.RegisterType<BearerTokenBuilder>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Impediment>>().AsImplementedInterfaces();
             builder.RegisterType<ImpedimentControl>().AsImplementedInterfaces();
             builder.RegisterType<ImpedementPolicyScanProvider>().AsImplementedInterfaces();
