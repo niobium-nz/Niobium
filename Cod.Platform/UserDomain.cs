@@ -171,6 +171,11 @@ namespace Cod.Platform
                     }
 
                     user = login.User;
+                    registration.OverrideIfExists = true;
+                }
+                else
+                {
+                    registration.OverrideIfExists = false;
                 }
             }
 
