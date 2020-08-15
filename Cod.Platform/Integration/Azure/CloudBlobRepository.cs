@@ -17,7 +17,10 @@ namespace Cod.Platform
                 stream.Seek(0, SeekOrigin.Begin);
             }
 
-            var b = CloudStorage.GetBlob(container, blob);
+            var c = CloudStorage.GetBlobContainer(container);
+            await c.CreateIfNotExistsAsync();
+
+            var b = c.GetBlockBlobReference(blob);
             if (!replaceIfExist && await b.ExistsAsync())
             {
                 return;
