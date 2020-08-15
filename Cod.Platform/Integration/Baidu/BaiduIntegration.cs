@@ -142,7 +142,7 @@ namespace Cod.Platform
                 using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false)
                 {
 #if !DEBUG
-                    Timeout = TimeSpan.FromSeconds(3),
+                    Timeout = TimeSpan.FromSeconds(5),
 #endif
                 })
                 {
@@ -221,7 +221,7 @@ namespace Cod.Platform
                 using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false)
                 {
 #if !DEBUG
-                    Timeout = TimeSpan.FromSeconds(2)
+                    Timeout = TimeSpan.FromSeconds(5)
 #endif
                 })
                 {
