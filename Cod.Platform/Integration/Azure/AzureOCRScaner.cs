@@ -59,15 +59,21 @@ namespace Cod.Platform
                                 return OperationResult<IEnumerable<OCRScanResult>>.Create(InternalError.GatewayTimeout, operationLocation);
                             }
 
-                            var result = JsonConvert.DeserializeObject<CognitiveServiceResult>(ocrResultJson);
-                            return OperationResult<IEnumerable<OCRScanResult>>.Create(
-                                result.AnalyzeResult.ReadResults.SelectMany(r =>
+                            var ocr = JsonConvert.DeserializeObject<CognitiveServiceResult>(ocrResultJson);
+                            var result = new List<OCRScanResult>(ocr.AnalyzeResult.ReadResults.SelectMany(r =>
                                     r.Lines.SelectMany(l =>
                                         l.Words.Select(w => new OCRScanResult
                                         {
                                             Text = w.Text,
                                             IsConfident = w.Confidence > 0.9d,
                                         }))));
+                            result.AddRange(ocr.AnalyzeResult.ReadResults.SelectMany(r =>
+                                    r.Lines.Select(l => new OCRScanResult
+                                        {
+                                            Text = l.Text,
+                                            IsConfident = true,
+                                        })));
+                            return OperationResult<IEnumerable<OCRScanResult>>.Create(result);
                         }
 
                         var status = (int)resp.StatusCode;
