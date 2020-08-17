@@ -158,6 +158,7 @@ namespace Cod.Platform
         {
             var newUser = false;
             Guid? user = null;
+            
             foreach (var registration in registrations)
             {
                 var login = await loginRepository.Value.GetAsync(
@@ -167,11 +168,24 @@ namespace Cod.Platform
                 {
                     if (user.HasValue && login.User != user.Value)
                     {
-                        return OperationResult<Model.User>.Create(InternalError.Conflict, null);
+                        var channels = await this.openIDManager.Value.GetChannelsAsync(login.User);
+                        var count = channels.Count(c => c.GetKind() != (int)OpenIDKind.PhoneCall);
+                        if (count > 0)
+                        {
+                            // REMARK (5he11) 因SMS和PhoneCall其实等同，所以过滤掉其中1个之后如果还有通道，则表示这是一个既有用户
+                            return OperationResult<Model.User>.Create(InternalError.Conflict, null);
+                        }
+                        else
+                        {
+                            // REMARK (5he11) 否则可能是因为用户被动注册，如仅被注册了手机号码通道，无实际载体通道，此时应该合并当前注册与被动注册的用户
+                            registration.OverrideIfExists = true;
+                        }
                     }
-
-                    user = login.User;
-                    registration.OverrideIfExists = true;
+                    else
+                    {
+                        user = login.User;
+                        registration.OverrideIfExists = true;
+                    }
                 }
                 else
                 {
