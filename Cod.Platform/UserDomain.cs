@@ -145,7 +145,7 @@ namespace Cod.Platform
             }
 
             var registations = OpenIDRegistration.Build(mobile);
-            var newUser = await this.RegisterAsync(registations, ip);
+            var newUser = await this.RegisterAsync(null, registations, ip);
             if (!newUser.IsSuccess)
             {
                 return new OperationResult<Guid>(newUser);
@@ -154,11 +154,11 @@ namespace Cod.Platform
             return OperationResult<Guid>.Create(newUser.Result.GetID());
         }
 
-        public async Task<OperationResult<Model.User>> RegisterAsync(IEnumerable<OpenIDRegistration> registrations, string ip)
+        public async Task<OperationResult<Model.User>> RegisterAsync(Guid? userID, IEnumerable<OpenIDRegistration> registrations, string ip)
         {
             var newUser = false;
-            Guid? user = null;
-            
+            var channels = new Dictionary<Guid, IEnumerable<OpenID>>();
+
             foreach (var registration in registrations)
             {
                 var login = await loginRepository.Value.GetAsync(
@@ -166,24 +166,34 @@ namespace Cod.Platform
                     Login.BuildRowKey(registration.Identity));
                 if (login != null)
                 {
-                    if (user.HasValue && login.User != user.Value)
+                    if (!channels.ContainsKey(login.User))
                     {
-                        var channels = await this.openIDManager.Value.GetChannelsAsync(login.User);
-                        var count = channels.Count(c => c.GetKind() != (int)OpenIDKind.PhoneCall);
-                        if (count > 0)
-                        {
-                            // REMARK (5he11) 因SMS和PhoneCall其实等同，所以过滤掉其中1个之后如果还有通道，则表示这是一个既有用户
-                            return OperationResult<Model.User>.Create(InternalError.Conflict, null);
-                        }
-                        else
-                        {
-                            // REMARK (5he11) 否则可能是因为用户被动注册，如仅被注册了手机号码通道，无实际载体通道，此时应该合并当前注册与被动注册的用户
-                            registration.OverrideIfExists = true;
-                        }
+                        var c = await this.openIDManager.Value.GetChannelsAsync(login.User);
+                        channels.Add(login.User, c);
+                    }
+
+                    int count;
+                    switch (registration.Kind)
+                    {
+                        case (int)OpenIDKind.PhoneCall:
+                            count = channels[login.User].Count(c => c.GetKind() != (int)OpenIDKind.PhoneCall);
+                            break;
+                        case (int)OpenIDKind.SMS:
+                            count = channels[login.User].Count(c => c.GetKind() != (int)OpenIDKind.SMS);
+                            break;
+                        default:
+                            count = channels[login.User].Count(c => c.GetKind() != (int)OpenIDKind.SMS && c.GetKind() != (int)registration.Kind);
+                            break;
+                    }
+
+                    if (count > 1)
+                    {
+                        // REMARK (5he11) 因SMS和PhoneCall其实等同，所以过滤掉其中1个之后如果还有其他通道，则表示这是一个既有用户
+                        return OperationResult<Model.User>.Create(InternalError.Conflict, null);
                     }
                     else
                     {
-                        user = login.User;
+                        // REMARK (5he11) 否则可能是因为用户被动注册，如仅被注册了手机号码通道，无实际载体通道，此时应该合并当前注册与被动注册的用户
                         registration.OverrideIfExists = true;
                     }
                 }
@@ -193,15 +203,15 @@ namespace Cod.Platform
                 }
             }
 
-            if (!user.HasValue)
+            if (!userID.HasValue)
             {
-                user = Guid.NewGuid();
+                userID = Guid.NewGuid();
                 newUser = true;
             }
 
             foreach (var registration in registrations)
             {
-                registration.User = user.Value;
+                registration.User = userID.Value;
             }
 
             await this.openIDManager.Value.RegisterAsync(registrations);
@@ -213,7 +223,7 @@ namespace Cod.Platform
                 {
                     PartitionKey = Login.BuildPartitionKey(registration.Kind, registration.App),
                     RowKey = Login.BuildRowKey(registration.Identity),
-                    User = user.Value,
+                    User = userID.Value,
                 });
             }
             await this.loginRepository.Value.CreateAsync(logins, true);
@@ -222,8 +232,8 @@ namespace Cod.Platform
             {
                 var newuser = new Model.User
                 {
-                    PartitionKey = User.BuildPartitionKey(user.Value),
-                    RowKey = User.BuildRowKey(user.Value),
+                    PartitionKey = User.BuildPartitionKey(userID.Value),
+                    RowKey = User.BuildRowKey(userID.Value),
                     Disabled = false,
                     FirstIP = ip,
                     LastIP = ip,
@@ -234,8 +244,8 @@ namespace Cod.Platform
             }
 
             var result = await this.Repository.GetAsync(
-                User.BuildPartitionKey(user.Value),
-                User.BuildRowKey(user.Value));
+                User.BuildPartitionKey(userID.Value),
+                User.BuildRowKey(userID.Value));
             return OperationResult<Model.User>.Create(result);
         }
 

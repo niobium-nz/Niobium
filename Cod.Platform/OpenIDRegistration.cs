@@ -17,36 +17,29 @@ namespace Cod.Platform
 
         public string OffsetPrefix { get; set; }
 
-        public static IEnumerable<OpenIDRegistration> Build(string mobile) => Build(mobile, Guid.NewGuid());
-
-        public static IEnumerable<OpenIDRegistration> Build(string mobile, Guid userID)
+        public static IEnumerable<OpenIDRegistration> Build(string mobile)
         {
             return new[]
             {
                 new OpenIDRegistration
                 {
-                    User = userID,
                     Identity = mobile,
                     Kind = (int)OpenIDKind.PhoneCall,
                 },
                 new OpenIDRegistration
                 {
-                    User = userID,
                     Identity = mobile,
                     Kind = (int)OpenIDKind.SMS,
                 },
             };
         }
 
-        public static IEnumerable<OpenIDRegistration> Build(OpenIDKind kind, string app, string openID) => Build(kind, app, openID, Guid.NewGuid());
-
-        public static IEnumerable<OpenIDRegistration> Build(OpenIDKind kind, string app, string openID, Guid userID)
+        public static IEnumerable<OpenIDRegistration> Build(OpenIDKind kind, string app, string openID)
         {
             return new[]
             {
                 new OpenIDRegistration
                 {
-                    User = userID,
                     Identity = openID,
                     Kind = (int)kind,
                     App = app,
@@ -54,27 +47,22 @@ namespace Cod.Platform
             };
         }
 
-        public static IEnumerable<OpenIDRegistration> Build(string mobile, OpenIDKind kind, string app, string openID) => Build(mobile, kind, app, openID, Guid.NewGuid());
-
-        public static IEnumerable<OpenIDRegistration> Build(string mobile, OpenIDKind kind, string app, string openID, Guid userID)
+        public static IEnumerable<OpenIDRegistration> Build(string mobile, OpenIDKind kind, string app, string openID)
         {
             return new[]
             {
                 new OpenIDRegistration
                 {
-                    User = userID,
                     Identity = mobile,
                     Kind = (int)OpenIDKind.PhoneCall,
                 },
                 new OpenIDRegistration
                 {
-                    User = userID,
                     Identity = mobile,
                     Kind = (int)OpenIDKind.SMS,
                 },
                 new OpenIDRegistration
                 {
-                    User = userID,
                     Identity = openID,
                     Kind = (int)kind,
                     App = app,
