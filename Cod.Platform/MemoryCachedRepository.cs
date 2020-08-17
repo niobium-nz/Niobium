@@ -27,7 +27,7 @@ namespace Cod.Platform
             IList<T> result;
             if (limit > 0)
             {
-                result = this.Cache.Take(limit).ToArray();
+                result = this.Cache.ToArray().Take(limit).ToArray();
             }
             else
             {
@@ -41,7 +41,7 @@ namespace Cod.Platform
         {
             await this.BuildCache();
 
-            IList<T> result = this.Cache.Where(c => c.PartitionKey == partitionKey).ToArray();
+            IList<T> result = this.Cache.ToArray().Where(c => c.PartitionKey == partitionKey).ToArray();
             if (limit > 0)
             {
                 result = result.Take(limit).ToArray();
@@ -53,7 +53,7 @@ namespace Cod.Platform
         public async Task<T> GetAsync(string partitionKey, string rowKey)
         {
             await this.BuildCache();
-            return this.Cache.SingleOrDefault(c => c.PartitionKey == partitionKey && c.RowKey == rowKey);
+            return this.Cache.ToArray().SingleOrDefault(c => c.PartitionKey == partitionKey && c.RowKey == rowKey);
         }
 
         public async Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist)
