@@ -8,63 +8,65 @@ namespace Cod.Platform
 {
     public class ConfigurationProvider : IConfigurationProvider
     {
-        private static bool isSecureVaultEnabled = false;
-        private static Func<IConfigurationBuilder, IConfigurationBuilder> customConfig;
-        private static readonly Dictionary<string, string> caches = new Dictionary<string, string>();
+        private static string KeyVaultUrl;
+        private static Func<IConfigurationBuilder, IConfigurationBuilder> CustomConfig;
+        private static readonly Dictionary<string, string> Caches = new Dictionary<string, string>();
 
         private static readonly Lazy<IConfiguration> config = new Lazy<IConfiguration>(
             () =>
             {
                 IConfigurationBuilder builder = new ConfigurationBuilder();
-                if (customConfig != null)
+                if (CustomConfig != null)
                 {
-                    builder = customConfig(builder);
+                    builder = CustomConfig(builder);
                 }
                 return builder.AddEnvironmentVariables().Build();
             }, LazyThreadSafetyMode.ExecutionAndPublication);
 
-        public static void Configure(Func<IConfigurationBuilder, IConfigurationBuilder> func, bool secureVaultEnabled)
+        public static void Configure(Func<IConfigurationBuilder, IConfigurationBuilder> func, string keyVaultUrl)
         {
-            customConfig = func;
-            isSecureVaultEnabled = secureVaultEnabled;
+            CustomConfig = func;
+            KeyVaultUrl = keyVaultUrl;
         }
 
-        public async Task<string> GetSettingAsync(string key, bool cache = true)
+        public async Task<string> GetSettingAsStringAsync(string key, bool cache = true)
         {
-            if (cache)
-            {
-                if (caches.ContainsKey(key))
-                {
-                    return caches[key];
-                }
-            }
-
             var v = GetSetting(key);
-            if (isSecureVaultEnabled && v == null)
+            if (!String.IsNullOrWhiteSpace(KeyVaultUrl) && v == null && Uri.TryCreate(KeyVaultUrl, UriKind.Absolute, out var uri))
             {
-                v = await SecureVault.GetSecretAsync(key);
-            }
-
-            if (cache)
-            {
-                if (caches.ContainsKey(key))
-                {
-                    caches[key] = v;
-                }
-                else
-                {
-                    caches.Add(key, v);
-                }
+                v = await SecureVault.GetSecretAsync(uri, key);
             }
             return v;
         }
 
-        public static string GetSetting(string key)
+        public string GetSettingAsString(string key, bool cache = true) => GetSetting(key, cache);
+
+        public static string GetSetting(string key, bool cache = true)
         {
+            if (cache)
+            {
+                if (Caches.ContainsKey(key))
+                {
+                    return Caches[key];
+                }
+            }
+
             var v = config.Value[key];
             if (v == null)
             {
                 v = config.Value[$"Values:{key}"];
+            }
+
+            if (cache)
+            {
+                if (Caches.ContainsKey(key))
+                {
+                    Caches[key] = v;
+                }
+                else
+                {
+                    Caches.Add(key, v);
+                }
             }
             return v;
         }

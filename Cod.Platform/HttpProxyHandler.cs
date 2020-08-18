@@ -63,9 +63,9 @@ namespace Cod.Platform
                 else
                 {
                     var cfg = new ConfigurationProvider();
-                    var proxyHost = await cfg.GetSettingAsync(Constant.HTTP_PROXY_HOST);
-                    var proxyUsername = await cfg.GetSettingAsync(Constant.HTTP_PROXY_USERNAME);
-                    var proxyPassword = await cfg.GetSettingAsync(Constant.HTTP_PROXY_PASSWORD);
+                    var proxyHost = await cfg.GetSettingAsStringAsync(Constant.HTTP_PROXY_HOST);
+                    var proxyUsername = await cfg.GetSettingAsStringAsync(Constant.HTTP_PROXY_USERNAME);
+                    var proxyPassword = await cfg.GetSettingAsStringAsync(Constant.HTTP_PROXY_PASSWORD);
                     proxy = new WebProxy
                     {
                         Address = new Uri(proxyHost),

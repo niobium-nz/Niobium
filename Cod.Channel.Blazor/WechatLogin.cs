@@ -140,7 +140,7 @@ namespace Cod.Channel
             {
                 var resp = await this.HttpClient.RequestAsync<string>(
                     HttpMethod.Get,
-                    $"{await this.Configuration.GetSettingAsync(Constants.KEY_API_URL)}/v1/wechat/login/{this.loginID}");
+                    $"{await this.Configuration.GetSettingAsStringAsync(Constants.KEY_API_URL)}/v1/wechat/login/{this.loginID}");
 
                 if (resp.IsSuccess && !String.IsNullOrWhiteSpace(resp.Result))
                 {

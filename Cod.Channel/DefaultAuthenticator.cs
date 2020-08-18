@@ -97,7 +97,7 @@ namespace Cod.Channel
                 }
             }
 
-            var apiUrl = await this.configuration.GetSettingAsync(Constants.KEY_API_URL);
+            var apiUrl = await this.configuration.GetSettingAsStringAsync(Constants.KEY_API_URL);
             var path = new StringBuilder($"/v1/signature/{(int)type}/{resource}");
             if (!String.IsNullOrWhiteSpace(partitionKey))
             {
@@ -136,7 +136,7 @@ namespace Cod.Channel
 
         public virtual async Task<OperationResult> AquireTokenAsync(string scheme, string username, string password, bool remember)
         {
-            var apiUrl = await this.configuration.GetSettingAsync(Constants.KEY_API_URL);
+            var apiUrl = await this.configuration.GetSettingAsStringAsync(Constants.KEY_API_URL);
             var creds = Encoding.ASCII.GetBytes($"{username.Trim()}:{password.Trim()}");
             var request = new HttpRequestMessage(HttpMethod.Get, $"{apiUrl}/v2/token");
             request.Headers.Authorization = new AuthenticationHeaderValue(scheme, Convert.ToBase64String(creds));

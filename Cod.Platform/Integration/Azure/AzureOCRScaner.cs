@@ -33,8 +33,8 @@ namespace Cod.Platform
 #endif
                 })
                 {
-                    var key = await this.configuration.Value.GetSettingAsync(CognitiveKey);
-                    var endpoint = await this.configuration.Value.GetSettingAsync(CognitiveEndpoint);
+                    var key = await this.configuration.Value.GetSettingAsStringAsync(CognitiveKey);
+                    var endpoint = await this.configuration.Value.GetSettingAsStringAsync(CognitiveEndpoint);
                     httpclient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", key);
                     using (var post = new StringContent(CognitiveRequestBody
                         .Replace("$$$MEDIA_URL$$$", mediaURL), Encoding.UTF8, "application/json"))

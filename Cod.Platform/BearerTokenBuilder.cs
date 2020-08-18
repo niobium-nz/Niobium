@@ -89,7 +89,7 @@ namespace Cod.Platform
                 claims.AddRange(entitlements.Select(kv => new Claim(kv.Key, kv.Value)));
             }
 
-            var secret = await this.configuration.Value.GetSettingAsync(Constant.AUTH_SECRET_NAME);
+            var secret = await this.configuration.Value.GetSettingAsStringAsync(Constant.AUTH_SECRET_NAME);
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             var token = new JwtSecurityToken(

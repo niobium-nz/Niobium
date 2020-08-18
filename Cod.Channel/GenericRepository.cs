@@ -192,7 +192,7 @@ namespace Cod.Channel
                 };
             }
 
-            var baseUrl = await this.configuration.GetSettingAsync(Constants.KEY_TABLE_URL);
+            var baseUrl = await this.configuration.GetSettingAsStringAsync(Constants.KEY_TABLE_URL);
             return await TableStorageHelper.GetAsync<TEntity>(this.httpClient, baseUrl, signature.Result.Signature, partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, continuationToken, count);
         }
 

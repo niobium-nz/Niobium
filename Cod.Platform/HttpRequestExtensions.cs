@@ -155,9 +155,9 @@ namespace Cod.Platform
             }
         }
 
-        private static async Task<ClaimsPrincipal> ValidateAndDecodeAsync(string token)
+        private static Task<ClaimsPrincipal> ValidateAndDecodeAsync(string token)
         {
-            var secret = await new ConfigurationProvider().GetSettingAsync(Constant.AUTH_SECRET_NAME);
+            var secret = ConfigurationProvider.GetSetting(Constant.AUTH_SECRET_NAME);
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
             var validationParameters = new TokenValidationParameters
             {
@@ -177,7 +177,7 @@ namespace Cod.Platform
                 var claimsPrincipal = new JwtSecurityTokenHandler()
                     .ValidateToken(token, validationParameters, out var rawValidatedToken);
 
-                return claimsPrincipal;
+                return Task.FromResult(claimsPrincipal);
             }
             catch (SecurityTokenValidationException stvex)
             {

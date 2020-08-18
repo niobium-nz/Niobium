@@ -348,14 +348,14 @@ namespace Cod.Platform
 
         private async Task<OperationResult<string>> GetAccessToken(int retry = 0)
         {
-            var key = await this.configuration.Value.GetSettingAsync(IntegrationKey);
+            var key = await this.configuration.Value.GetSettingAsStringAsync(IntegrationKey);
             var token = await cacheStore.Value.GetAsync<string>(key, AccessTokenCacheKey);
             if (!String.IsNullOrWhiteSpace(token))
             {
                 return OperationResult<string>.Create(token);
             }
 
-            var secret = await this.configuration.Value.GetSettingAsync(IntegrationSecret);
+            var secret = await this.configuration.Value.GetSettingAsStringAsync(IntegrationSecret);
             try
             {
                 using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))

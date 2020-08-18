@@ -32,7 +32,7 @@ namespace Cod.Channel
             var loginID = queries.Get("id");
             if (!String.IsNullOrWhiteSpace(loginID))
             {
-                var apiUrl = await this.Configuration.GetSettingAsync(Constants.KEY_API_URL);
+                var apiUrl = await this.Configuration.GetSettingAsStringAsync(Constants.KEY_API_URL);
                 var apiLoginUrl = $"{apiUrl}/v1/wechat/login?id={loginID}&code={code}";
                 this.Navigator.NavigateTo(apiLoginUrl);
                 return;

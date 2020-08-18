@@ -31,7 +31,7 @@ namespace Cod.Channel
 
         public async Task<OperationResult> EnqueueAsync(IEnumerable<QueueMessage> entities)
         {
-            var endpoint = await this.configuration.GetSettingAsync(Constants.KEY_QUEUE_URL);
+            var endpoint = await this.configuration.GetSettingAsStringAsync(Constants.KEY_QUEUE_URL);
             var groups = entities.GroupBy(q => q.PartitionKey);
             foreach (var group in groups)
             {
@@ -69,7 +69,7 @@ namespace Cod.Channel
             {
                 return Enumerable.Empty<QueueMessage>();
             }
-            var endpoint = await this.configuration.GetSettingAsync(Constants.KEY_QUEUE_URL);
+            var endpoint = await this.configuration.GetSettingAsStringAsync(Constants.KEY_QUEUE_URL);
             var url = $"{endpoint}/{queueName}/messages{sig.Result.Signature}&peekonly=true";
             var resp = await this.SendRequest(url, HttpMethod.Get);
             if (!resp.IsSuccess)
