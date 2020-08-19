@@ -20,7 +20,8 @@ namespace Cod.Platform
                 {
                     builder = CustomConfig(builder);
                 }
-                return builder.AddEnvironmentVariables().Build();
+                var root = builder.AddEnvironmentVariables().Build();
+                return root;
             }, LazyThreadSafetyMode.ExecutionAndPublication);
 
         public static void Configure(Func<IConfigurationBuilder, IConfigurationBuilder> func, string keyVaultUrl)
@@ -57,7 +58,7 @@ namespace Cod.Platform
                 v = config.Value[$"Values:{key}"];
             }
 
-            if (cache)
+            if (cache && v != null)
             {
                 if (Caches.ContainsKey(key))
                 {
