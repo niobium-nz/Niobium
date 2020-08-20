@@ -65,7 +65,7 @@ namespace Cod.Platform
                                         l.Words.Select(w => new OCRScanResult
                                         {
                                             Text = w.Text,
-                                            IsConfident = w.Confidence > 0.9d,
+                                            IsConfident = w.Confidence > 0.8d,
                                         }))));
                             result.AddRange(ocr.AnalyzeResult.ReadResults.SelectMany(r =>
                                     r.Lines.Select(l => new OCRScanResult
