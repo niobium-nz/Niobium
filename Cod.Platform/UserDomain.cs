@@ -158,6 +158,7 @@ namespace Cod.Platform
         {
             var newUser = false;
             var channels = new Dictionary<Guid, IEnumerable<OpenID>>();
+            var passiveUserID = new List<Guid>();
 
             foreach (var registration in registrations)
             {
@@ -195,6 +196,10 @@ namespace Cod.Platform
                     {
                         // REMARK (5he11) 否则可能是因为用户被动注册，如仅被注册了手机号码通道，无实际载体通道，此时应该合并当前注册与被动注册的用户
                         registration.OverrideIfExists = true;
+                        if (!passiveUserID.Contains(login.User))
+                        {
+                            passiveUserID.Add(login.User);
+                        }
                     }
                 }
                 else
@@ -205,7 +210,7 @@ namespace Cod.Platform
 
             if (!userID.HasValue)
             {
-                userID = Guid.NewGuid();
+                userID = passiveUserID.Count == 1 ? passiveUserID[0] : Guid.NewGuid();
                 newUser = true;
             }
 
