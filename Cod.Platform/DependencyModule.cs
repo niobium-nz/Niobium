@@ -50,6 +50,8 @@ namespace Cod.Platform
             builder.RegisterType<OpenIDManager>().AsImplementedInterfaces();
             builder.RegisterType<MemoryCachedBusinessManager>().AsImplementedInterfaces();
             builder.RegisterType<MemoryCachedBrandService>().AsImplementedInterfaces();
+            builder.RegisterType<LetsEncryptClient>().AsImplementedInterfaces();
+            builder.RegisterType<AliyunDNSHelper>().AsImplementedInterfaces();
             base.Load(builder);
         }
     }
