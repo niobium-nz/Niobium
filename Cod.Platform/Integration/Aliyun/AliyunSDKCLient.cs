@@ -17,7 +17,6 @@ namespace Cod.Platform
             new KeyValuePair<string, string>("Timestamp", DateTimeOffset.UtcNow.ToString("o").Replace("+00:00", "Z")),
             new KeyValuePair<string, string>("SignatureMethod", "HMAC-SHA1"),
             new KeyValuePair<string, string>("SignatureVersion", "1.0"),
-            new KeyValuePair<string, string>("SignatureNonce", Guid.NewGuid().ToString()),
             new KeyValuePair<string, string>("RegionId", "cn-hangzhou"),
         };
 
@@ -25,6 +24,7 @@ namespace Cod.Platform
         {
             var dic = new List<KeyValuePair<string, string>>(defaultParam);
             dic.AddRange(param);
+            dic.Add(new KeyValuePair<string, string>("SignatureNonce", Guid.NewGuid().ToString()));
             dic.Add(new KeyValuePair<string, string>("AccessKeyId", apiKey));
             var signature = IssueSignature(dic, apiSecret);
             dic.Add(new KeyValuePair<string, string>("Signature", signature));

@@ -138,13 +138,10 @@ namespace Cod.Platform
                 return query;
             }
 
-            var record = query.Result.SingleOrDefault(r => r.Record == recordName && r.Type == type);
-            if (record == null)
+            var records = query.Result.Where(r => r.Record == recordName && r.Type == type);
+            foreach (var record in records)
             {
-                return OperationResult.Create(InternalError.NotFound);
-            }
-
-            var response = await AliyunSDKCLient.MakeRequestAsync(
+                var response = await AliyunSDKCLient.MakeRequestAsync(
                 AliyunDNSHost,
                 new[]
                 {
@@ -155,18 +152,17 @@ namespace Cod.Platform
                 key,
                 secret);
 
-            var body = await response.Content.ReadAsStringAsync();
-            if (response.IsSuccessStatusCode && body.Contains("\"RecordId\":\""))
-            {
-                return OperationResult.Create();
+                var body = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode || !body.Contains("\"RecordId\":\""))
+                {
+                    this.logger.LogError($"Failed to remove DNS record {recordName}.{domain}@{type} at Aliyun and return error: {body}");
+                    return OperationResult.Create(InternalError.InternalServerError);
+                }
             }
-            else
-            {
-                this.logger.LogError($"Failed to remove DNS record {recordName}.{domain}@{type} at Aliyun and return error: {body}");
-                return OperationResult.Create(InternalError.InternalServerError);
-            }
+
+            return OperationResult.Create();
         }
 
-        public bool Support(string domain, string serviceProvider) => serviceProvider != null && serviceProvider.ToUpperInvariant() == "ALIYUN";
+        public bool Support(string domain, DNSServiceProvider serviceProvider) => serviceProvider == DNSServiceProvider.Aliyun;
     }
 }

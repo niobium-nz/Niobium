@@ -5,7 +5,7 @@ namespace Cod.Platform
 {
     public interface IDNSManager
     {
-        bool Support(string domain, string serviceProvider);
+        bool Support(string domain, DNSServiceProvider serviceProvider);
 
         Task<OperationResult<IEnumerable<DNSRecord>>> QueryRecordsAsync(string domain);
 

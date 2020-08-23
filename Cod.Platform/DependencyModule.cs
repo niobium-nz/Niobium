@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using Cod.Platform.Entity;
 using Cod.Platform.Model;
 using Microsoft.Extensions.Logging;
 
@@ -24,9 +25,13 @@ namespace Cod.Platform
             builder.RegisterType<CloudTableRepository<BrandingInfo>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Model.Interest>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Model.Job>>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<Hostname>>().AsImplementedInterfaces();
 
             builder.RegisterType<UserDomain>();
             builder.RegisterType<GenericDomainRepository<UserDomain, Model.User>>().As<IDomainRepository<UserDomain, Model.User>>();
+
+            builder.RegisterType<HostnameDomain>();
+            builder.RegisterType<GenericDomainRepository<HostnameDomain, Hostname>>().As<IDomainRepository<HostnameDomain, Hostname>>();
 
             builder.RegisterType<BusinessDomain>();
             builder.RegisterType<GenericDomainRepository<BusinessDomain, Model.Business>>().As<IDomainRepository<BusinessDomain, Model.Business>>();

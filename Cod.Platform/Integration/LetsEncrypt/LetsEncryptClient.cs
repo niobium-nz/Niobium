@@ -18,7 +18,7 @@ namespace Cod.Platform
             string organization = null,
             string unit = null)
         {
-            var acme = new AcmeContext(WellKnownServers.LetsEncryptStagingV2);
+            var acme = new AcmeContext(WellKnownServers.LetsEncryptV2);
             var account = await acme.NewAccount(email, true);
 
             // Save the account key for later use
@@ -54,45 +54,17 @@ namespace Cod.Platform
                 Requirements = requirements,
                 Result = async () =>
                 {
-                    var r = new SSLCertificateApplicationResult
-                    {
-
-                    };
+                    var r = new SSLCertificateApplicationResult();
                     var success = false;
-                    for (var i = 0; i < 50; i++)
+                    for (var i = 0; i < 500; i++)
                     {
                         await Task.Delay(1000);
-                        var authrizationValid = true;
-                        foreach (var authrization in authrizations)
-                        {
-                            var auth = await authrization.Resource();
-                            if (auth.Status != AuthorizationStatus.Valid)
-                            {
-                                authrizationValid = false;
-                            }
-                        }
 
-                        var challengeValid = true;
-                        if (authrizationValid)
+                        var or = await order.Resource();
+                        if (or.Status == OrderStatus.Ready)
                         {
-                            foreach (var challenge in challenges)
-                            {
-                                var result = await challenge.Validate();
-                                if (!result.Status.HasValue || result.Status.Value != ChallengeStatus.Valid)
-                                {
-                                    challengeValid = false;
-                                }
-                            }
-                        }
-
-                        if (authrizationValid && challengeValid)
-                        {
-                            var or = await order.Resource();
-                            if (or.Status == OrderStatus.Valid || or.Status == OrderStatus.Ready)
-                            {
-                                success = true;
-                                break;
-                            }
+                            success = true;
+                            break;
                         }
                     }
 
