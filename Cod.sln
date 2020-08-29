@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.29424.173
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cod.Autofac", "Cod.Autofac\Cod.Autofac.csproj", "{D73FAC77-3145-4783-A7B7-A482DB63A198}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cod.Abstractions", "Cod.Contract\Cod.Abstractions.csproj", "{6D43C27D-58BB-42BD-9181-3B8C33D6F26D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cod.Abstractions", "Cod.Abstractions\Cod.Abstractions.csproj", "{6D43C27D-58BB-42BD-9181-3B8C33D6F26D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cod.Platform", "Cod.Platform\Cod.Platform.csproj", "{E19C95B6-1DAC-42EF-AF4A-410CCE6B32A3}"
 EndProject

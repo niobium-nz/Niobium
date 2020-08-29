@@ -31,8 +31,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Cod.Abstractions\Cod.Abstractions.csproj" />
     <ProjectReference Include="..\Cod.Autofac\Cod.Autofac.csproj" />
-    <ProjectReference Include="..\Cod.Contract\Cod.Abstractions.csproj" />
     <ProjectReference Include="..\Cod.Helper\Cod.Helper.csproj" />
   </ItemGroup>
 

@@ -41,8 +41,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Cod.Abstractions\Cod.Abstractions.csproj" />
     <ProjectReference Include="..\Cod.Channel\Cod.Channel.csproj" />
-    <ProjectReference Include="..\Cod.Contract\Cod.Abstractions.csproj" />
     <ProjectReference Include="..\Cod.Helper\Cod.Helper.csproj" />
   </ItemGroup>
 

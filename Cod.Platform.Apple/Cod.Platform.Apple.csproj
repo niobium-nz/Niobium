@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Cod.Contract\Cod.Abstractions.csproj" />
+    <ProjectReference Include="..\Cod.Abstractions\Cod.Abstractions.csproj" />
     <ProjectReference Include="..\Cod.Helper\Cod.Helper.csproj" />
     <ProjectReference Include="..\Cod.Platform\Cod.Platform.csproj" />
   </ItemGroup>
