@@ -42,23 +42,19 @@ namespace Cod.Platform
                 return new StatusCodeResult(code ?? 200);
             }
 
-            IActionResult result;
+            var result = new ContentResult
+            {
+                StatusCode = code,
+            };
             if (payload is string str)
             {
-                result = new ContentResult
-                {
-                    Content = str,
-                    ContentType = contentType,
-                    StatusCode = code,
-                };
+                result.Content = str;
+                result.ContentType = contentType;
             }
             else
             {
-                result = new JsonResult(payload, serializerSettings)
-                {
-                    StatusCode = code,
-                    ContentType = JsonMediaType
-                };
+                result.Content = JsonConvert.SerializeObject(payload, serializerSettings);
+                result.ContentType = JsonMediaType;
             }
 
             return result;
