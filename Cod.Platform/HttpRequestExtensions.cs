@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 
@@ -16,10 +18,51 @@ namespace Cod.Platform
 {
     public static class HttpRequestExtensions
     {
+        private const string JsonMediaType = "application/json";
         private const string AuthorizationResponseHeaderKey = "WWW-Authenticate";
         private const string AuthorizationRequestHeaderKey = "Authorization";
         private const string ClientIDRequestHeaderKey = "ClientID";
         private const string HeaderCORSKey = "Access-Control-Expose-Headers";
+
+        public static IActionResult MakeResponse(
+            this HttpRequest request,
+            HttpStatusCode? statusCode = null,
+            object payload = null,
+            string contentType = null,
+            JsonSerializerSettings serializerSettings = null)
+        {
+            int? code = null;
+            if (statusCode.HasValue)
+            {
+                code = (int)statusCode.Value;
+            }
+
+            if (payload == null)
+            {
+                return new StatusCodeResult(code ?? 200);
+            }
+
+            IActionResult result;
+            if (payload is string str)
+            {
+                result = new ContentResult
+                {
+                    Content = str,
+                    ContentType = contentType,
+                    StatusCode = code,
+                };
+            }
+            else
+            {
+                result = new JsonResult(payload, serializerSettings)
+                {
+                    StatusCode = code,
+                    ContentType = JsonMediaType
+                };
+            }
+
+            return result;
+        }
 
         public static IEnumerable<string> GetRemoteIP(this HttpRequest request)
         {
@@ -51,7 +94,7 @@ namespace Cod.Platform
 
         public static bool TryGetClientID(this HttpRequestMessage request, out string clientID)
         {
-            clientID = string.Empty;
+            clientID = String.Empty;
 
             if (request.Headers.Contains(ClientIDRequestHeaderKey))
             {
@@ -61,9 +104,6 @@ namespace Cod.Platform
 
             return false;
         }
-
-        public static T Parse<T>(string body)
-               => JsonConvert.DeserializeObject<T>(body);
 
         public static async Task<T> ParseAsync<T>(this HttpRequest request)
             => Parse<T>(await new StreamReader(request.Body).ReadToEndAsync());
@@ -188,5 +228,6 @@ namespace Cod.Platform
                 throw new Exception($"Token was invalid: {argex.Message}");
             }
         }
+        private static T Parse<T>(string body) => JsonConvert.DeserializeObject<T>(body);
     }
 }
