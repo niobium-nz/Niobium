@@ -294,6 +294,6 @@ namespace Cod.Platform
         protected virtual Task<OperationResult> OnApplyAsync(Model.User user, string role, object data)
             => Task.FromResult(OperationResult.Create());
 
-        protected virtual Task<ushort> GetTokenValidHoursAsync() => Task.FromResult<ushort>(168);
+        protected virtual Task<ushort> GetTokenValidHoursAsync() => Task.FromResult<ushort>(8);
     }
 }
