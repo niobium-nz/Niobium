@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-namespace Cod.Channel.Blazor
+﻿namespace Cod.Channel.Blazor
 {
     public sealed class Program
     {

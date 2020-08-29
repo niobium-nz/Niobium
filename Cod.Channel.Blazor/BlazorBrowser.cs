@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.JSInterop;
 
-namespace Cod.Channel
+namespace Cod.Channel.Blazor
 {
     internal class BlazorBrowser : IBrowser
     {

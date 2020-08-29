@@ -3,7 +3,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 
-namespace Cod.Channel
+namespace Cod.Channel.Blazor
 {
     public class WechatLoginHandler : ComponentBase
     {

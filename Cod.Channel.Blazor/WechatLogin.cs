@@ -1,16 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
-namespace Cod.Channel
+namespace Cod.Channel.Blazor
 {
     public class WechatLogin : ComponentBase
     {
-        private const string WechatAuthorizeUrl = "https://open.weixin.qq.com/connect/oauth2/authorize?appid={APPID}&redirect_uri={REDIRECT}&response_type=code&scope=snsapi_userinfo&state={STATE}";
+        public const string AppIDPlaceholder = "{APPID}";
+        private const string WechatAuthorizeUrl = "https://open.weixin.qq.com/connect/oauth2/authorize?appid=" + AppIDPlaceholder + "&redirect_uri={REDIRECT}&response_type=code&scope=snsapi_userinfo&state={STATE}";
         private const int QRCodeCheckMaxRetry = 100;
         private static readonly TimeSpan QRCodeCheckInterval = TimeSpan.FromSeconds(3);
         private string loginID;
@@ -52,7 +52,8 @@ namespace Cod.Channel
         protected IConfigurationProvider Configuration { get; set; }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2208:Instantiate argument exceptions correctly", Justification = "BlazorComponentParameter")]
-        protected async override Task OnInitializedAsync()
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "Exception")]
+        protected override async Task OnInitializedAsync()
         {
             if (String.IsNullOrWhiteSpace(this.AppID))
             {
@@ -72,12 +73,12 @@ namespace Cod.Channel
             this.AppID = this.AppID.Trim();
             var queries = this.Navigator.GetQueryStrings();
             var returnUrl = queries.Get("returnUrl");
-            if (string.IsNullOrWhiteSpace(returnUrl))
+            if (String.IsNullOrWhiteSpace(returnUrl))
             {
                 returnUrl = String.Empty;
             }
 
-            var baseUrl = WechatAuthorizeUrl.Replace("{APPID}", this.AppID);
+            var baseUrl = WechatAuthorizeUrl.Replace(AppIDPlaceholder, this.AppID, StringComparison.InvariantCulture);
             var type = await this.Browser.GetBrowserTypeAsync();
             if (type == BrowserType.Wechat)
             {
