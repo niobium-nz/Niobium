@@ -130,8 +130,9 @@ namespace Cod.Platform
             es.AddRange(entitlements);
             return await this.tokenBuilder.Value.BuildAsync(
                 userID.ToKey(),
-                entity.Roles.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries),
-                es);
+                roles: entity.Roles.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries),
+                entitlements: es,
+                validHours: await this.GetTokenValidHoursAsync());
         }
 
         public async Task<OperationResult<Guid>> GetOrRegisterAsync(string mobile, string ip = null)
@@ -292,5 +293,7 @@ namespace Cod.Platform
 
         protected virtual Task<OperationResult> OnApplyAsync(Model.User user, string role, object data)
             => Task.FromResult(OperationResult.Create());
+
+        protected virtual Task<ushort> GetTokenValidHoursAsync() => Task.FromResult<ushort>(168);
     }
 }

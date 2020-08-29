@@ -20,7 +20,11 @@ namespace Cod.Platform
             this.store = store;
         }
 
-        public async Task<string> BuildAsync(string mainIdentity, IEnumerable<string> roles = null, IEnumerable<KeyValuePair<string, string>> entitlements = null)
+        public async Task<string> BuildAsync(
+            string mainIdentity,
+            IEnumerable<string> roles = null,
+            IEnumerable<KeyValuePair<string, string>> entitlements = null,
+            ushort validHours = 8)
         {
             var dic = new List<KeyValuePair<string, string>>();
             if (entitlements != null)
@@ -77,7 +81,7 @@ namespace Cod.Platform
             return await this.BuildAsync(mainIdentity, dic);
         }
 
-        private async Task<string> BuildAsync(string mainIdentity, IEnumerable<KeyValuePair<string, string>> entitlements = null)
+        private async Task<string> BuildAsync(string mainIdentity, IEnumerable<KeyValuePair<string, string>> entitlements = null, ushort validHours = 8)
         {
             var claims = new List<Claim>
             {
@@ -96,7 +100,7 @@ namespace Cod.Platform
                 issuer: "cod.platform",
                 audience: "cod.client",
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(8),
+                expires: DateTime.UtcNow.AddHours(validHours < 1 ? 8 : validHours),
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
