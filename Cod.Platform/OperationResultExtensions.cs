@@ -12,6 +12,7 @@ namespace Cod.Platform
             {
                 throw new ArgumentNullException(nameof(operationResult));
             }
+
             object payload = operationResult;
             HttpStatusCode? code;
             if (operationResult.IsSuccess)
