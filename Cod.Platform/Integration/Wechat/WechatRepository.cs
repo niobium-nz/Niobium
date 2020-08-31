@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
 {
-    internal class WechatRepository : IRepository<WechatEntity>
+    public class WechatRepository : IRepository<WechatEntity>
     {
         private readonly Lazy<IBrandService> brandService;
         private readonly Lazy<WechatIntegration> wechatIntegration;
