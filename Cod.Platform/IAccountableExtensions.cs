@@ -101,7 +101,7 @@ namespace Cod.Platform
             var pk = $"{DELTA_KEY}-{input.ToSixDigitsDate()}";
             var rk = await accountable.GetAccountingPrincipalAsync();
             var result = await accountable.CacheStore.GetAsync<double>(pk, rk);
-            return result;
+            return result.ChineseRound();
         }
 
         public static async Task ClearDeltaAsync(this IAccountable accountable, DateTimeOffset input)
@@ -169,7 +169,7 @@ namespace Cod.Platform
                 var pk = $"{DELTA_KEY}-{now}";
                 var rk = transaction.GetOwner();
                 var currentValue = await cacheStore.GetAsync<double>(pk, rk);
-                var result = currentValue + transaction.Delta;
+                var result = (currentValue + transaction.Delta).ChineseRound();
                 await cacheStore.SetAsync(pk, rk, result, false);
             }
             return transactions;
@@ -187,6 +187,7 @@ namespace Cod.Platform
             //REMARK (5he11) 将输入限制为仅取其日期的当日的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
             input = new DateTimeOffset(input.UtcDateTime.Date.ToUniversalTime()).AddDays(1).AddMilliseconds(-1);
             var frozen = await accountable.GetFrozenAsync();
+            frozen = frozen.ChineseRound();
             bool queryCache;
             var lastAccountDate = input;
             if (input.UtcDateTime.Date.ToUniversalTime() != DateTimeOffset.UtcNow.UtcDateTime.Date.ToUniversalTime())
@@ -225,6 +226,9 @@ namespace Cod.Platform
                     pos = pos.AddDays(1);
                 }
             }
+
+            balance = balance.ChineseRound();
+
             return new AccountBalance
             {
                 Total = balance,
