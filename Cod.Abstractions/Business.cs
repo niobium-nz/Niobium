@@ -20,6 +20,8 @@ namespace Cod
 
         public string Brand { get; set; }
 
+        public Guid Settler { get; set; }
+
         public static string BuildKey(Guid value) => value.ToString("N").ToUpperInvariant();
 
         public Guid GetParent() => Guid.Parse(this.PartitionKey);
