@@ -19,6 +19,8 @@ namespace Cod
         public bool Percentage { get; set; }
 
         public int Value { get; set; }
+        
+        public int Agreement { get; set; }
 
         public int Condition { get; set; }
 
