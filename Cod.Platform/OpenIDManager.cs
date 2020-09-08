@@ -7,22 +7,19 @@ namespace Cod.Platform
 {
     internal class OpenIDManager : IOpenIDManager
     {
-        private readonly Lazy<IQueryableRepository<Model.OpenID>> repository;
+        private readonly Lazy<IQueryableRepository<OpenID>> repository;
 
-        public OpenIDManager(Lazy<IQueryableRepository<Model.OpenID>> repository)
-        {
-            this.repository = repository;
-        }
+        public OpenIDManager(Lazy<IQueryableRepository<OpenID>> repository) => this.repository = repository;
 
-        public async Task<Model.OpenID> GetChannelAsync(Guid user, int kind, string identifier)
+        public async Task<OpenID> GetChannelAsync(Guid user, int kind, string identifier)
             => await this.repository.Value.GetAsync(
                 OpenID.BuildPartitionKey(user),
                 OpenID.BuildRowKey(kind, identifier));
 
-        public async Task<IEnumerable<Model.OpenID>> GetChannelsAsync(Guid user)
+        public async Task<IEnumerable<OpenID>> GetChannelsAsync(Guid user)
             => await this.repository.Value.GetAsync(OpenID.BuildPartitionKey(user));
 
-        public async Task<IEnumerable<Model.OpenID>> GetChannelsAsync(Guid user, int kind)
+        public async Task<IEnumerable<OpenID>> GetChannelsAsync(Guid user, int kind)
             => await this.repository.Value.GetAsync(
                 OpenID.BuildPartitionKey(user),
                 OpenID.BuildRowKeyStart(kind),
@@ -33,7 +30,7 @@ namespace Cod.Platform
             // TODO (5he11) poor performance, better to use batch operation
             foreach (var registration in registrations)
             {
-                var entity = new Model.OpenID
+                var entity = new OpenID
                 {
                     PartitionKey = OpenID.BuildPartitionKey(registration.User),
                     RowKey = OpenID.BuildRowKey(registration.Kind, registration.App, registration.OffsetPrefix),
@@ -43,7 +40,7 @@ namespace Cod.Platform
             }
         }
 
-        private async Task RetryRegistration(Model.OpenID entity, string app, int retryCount, bool overrideIfExists, string offsetPrefix)
+        private async Task RetryRegistration(OpenID entity, string app, int retryCount, bool overrideIfExists, string offsetPrefix)
         {
             var kind = entity.GetKind();
             if (String.IsNullOrWhiteSpace(app))

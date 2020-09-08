@@ -6,9 +6,9 @@ namespace Cod
     {
         public async Task HandleAsync(TDomain sender, object e)
         {
-            if (e is TEventArgs)
+            if (e is TEventArgs args)
             {
-                await this.CoreHandleAsync(sender, (TEventArgs)e);
+                await this.CoreHandleAsync(sender, args);
             }
         }
 

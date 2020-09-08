@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Cod
+namespace Cod.Model
 {
     public class Interest : IEntity
     {

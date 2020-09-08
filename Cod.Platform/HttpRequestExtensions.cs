@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
@@ -11,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 
@@ -23,6 +25,16 @@ namespace Cod.Platform
         private const string AuthorizationRequestHeaderKey = "Authorization";
         private const string ClientIDRequestHeaderKey = "ClientID";
         private const string HeaderCORSKey = "Access-Control-Expose-Headers";
+
+        public static void Register(this HttpRequest request, ILogger logger)
+        {
+            Logger.Register(logger);
+
+            if (request != null && request.Headers.TryGetValue("Accept-Language", out var value))
+            {
+                UICulture.Register(new CultureInfo(value.ToString()));
+            }
+        }
 
         public static IActionResult MakeResponse(
             this HttpRequest request,
@@ -88,13 +100,13 @@ namespace Cod.Platform
             request.HttpContext.Response.Headers.Add(HeaderCORSKey, AuthorizationResponseHeaderKey);
         }
 
-        public static bool TryGetClientID(this HttpRequestMessage request, out string clientID)
+        public static bool TryGetClientID(this HttpRequest request, out string clientID)
         {
             clientID = String.Empty;
 
-            if (request.Headers.Contains(ClientIDRequestHeaderKey))
+            if (request.Headers.TryGetValue(ClientIDRequestHeaderKey, out var val))
             {
-                clientID = request.Headers.GetValues(ClientIDRequestHeaderKey).SingleOrDefault();
+                clientID = val.ToString();
                 return true;
             }
 

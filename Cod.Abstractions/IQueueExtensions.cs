@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using Cod.Model;
 
 namespace Cod
 {

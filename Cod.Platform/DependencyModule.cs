@@ -1,6 +1,4 @@
 ﻿using Autofac;
-using Cod.Platform.Entity;
-using Cod.Platform.Model;
 using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
@@ -9,32 +7,33 @@ namespace Cod.Platform
     {
         protected override void Load(ContainerBuilder builder)
         {
+            InternalError.Register(new InternalErrorRetriever());
             builder.Register(_ => Logger.Instance).As<ILogger>();
             builder.RegisterType<AzureOCRScaner>();
             builder.RegisterType<WechatIntegration>();
             builder.RegisterType<BaiduIntegration>();
-            builder.RegisterType<CloudTableRepository<Model.Account>>().As<IRepository<Model.Account>>();
-            builder.RegisterType<CloudTableRepository<Model.Accounting>>().As<IRepository<Model.Accounting>>();
-            builder.RegisterType<CloudTableRepository<Model.Entitlement>>().As<IRepository<Model.Entitlement>>();
-            builder.RegisterType<CloudTableRepository<Model.Transaction>>().As<IRepository<Model.Transaction>>();
-            builder.RegisterType<CloudTableRepository<Model.OpenID>>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<Model.Login>>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<Model.User>>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<Model.Business>>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<Model.MobileLocation>>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<Account>>().As<IRepository<Account>>();
+            builder.RegisterType<CloudTableRepository<Accounting>>().As<IRepository<Accounting>>();
+            builder.RegisterType<CloudTableRepository<Entitlement>>().As<IRepository<Entitlement>>();
+            builder.RegisterType<CloudTableRepository<Transaction>>().As<IRepository<Transaction>>();
+            builder.RegisterType<CloudTableRepository<OpenID>>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<Login>>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<User>>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<Business>>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<MobileLocation>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<BrandingInfo>>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<Model.Interest>>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<Model.Job>>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<Interest>>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<Job>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Hostname>>().AsImplementedInterfaces();
 
             builder.RegisterType<UserDomain>();
-            builder.RegisterType<GenericDomainRepository<UserDomain, Model.User>>().As<IDomainRepository<UserDomain, Model.User>>();
+            builder.RegisterType<GenericDomainRepository<UserDomain, User>>().As<IDomainRepository<UserDomain, User>>();
 
             builder.RegisterType<HostnameDomain>();
             builder.RegisterType<GenericDomainRepository<HostnameDomain, Hostname>>().As<IDomainRepository<HostnameDomain, Hostname>>();
 
             builder.RegisterType<BusinessDomain>();
-            builder.RegisterType<GenericDomainRepository<BusinessDomain, Model.Business>>().As<IDomainRepository<BusinessDomain, Model.Business>>();
+            builder.RegisterType<GenericDomainRepository<BusinessDomain, Business>>().As<IDomainRepository<BusinessDomain, Business>>();
 
             builder.RegisterType<ChargeRepository>().As<IRepository<Charge>>();
             builder.RegisterType<WechatRepository>().AsSelf();

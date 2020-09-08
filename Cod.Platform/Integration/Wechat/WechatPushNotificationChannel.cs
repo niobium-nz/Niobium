@@ -20,7 +20,7 @@ namespace Cod.Platform
             this.wechatIntegration = wechatIntegration;
         }
 
-        public async override Task<OperationResult> SendAsync(
+        public override async Task<OperationResult> SendAsync(
             string brand,
             Guid user,
             NotificationContext context,
@@ -30,12 +30,12 @@ namespace Cod.Platform
         {
             if (level != (int)OpenIDKind.Wechat)
             {
-                return OperationResult.Create(InternalError.NotAllowed);
+                return OperationResult.NotAllowed;
             }
             return await base.SendAsync(brand, user, context, template, parameters, level);
         }
 
-        protected async override Task<OperationResult> SendPushAsync(
+        protected override async Task<OperationResult> SendPushAsync(
             string brand,
             IEnumerable<NotificationContext> targets,
             int template,
@@ -49,7 +49,7 @@ namespace Cod.Platform
 
                 if (brandingInfo == null)
                 {
-                    return OperationResult.Create(InternalError.InternalServerError);
+                    return OperationResult.InternalServerError;
                 }
 
                 if (brandingInfo.WechatAppID != target.App)
@@ -78,11 +78,11 @@ namespace Cod.Platform
 
             if (result)
             {
-                return OperationResult.Create();
+                return OperationResult.Success;
             }
             else
             {
-                return OperationResult.Create(InternalError.InternalServerError);
+                return OperationResult.InternalServerError;
             }
         }
 

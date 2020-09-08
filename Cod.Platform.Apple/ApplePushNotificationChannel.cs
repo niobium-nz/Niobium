@@ -19,17 +19,11 @@ namespace Cod.Platform
         private const string AccessTokenCacheKey = "ApplePushAccessToken";
 
         public ApplePushNotificationChannel(Lazy<IOpenIDManager> openIDManager, Lazy<ICacheStore> cacheStore)
-            : base(openIDManager)
-        {
-            this.cacheStore = cacheStore;
-        }
+            : base(openIDManager) => this.cacheStore = cacheStore;
 
-        protected virtual string ApplePushNotificationHost
-        {
-            get => "api.sandbox.push.apple.com";
-        }
+        protected virtual string ApplePushNotificationHost => "api.sandbox.push.apple.com";
 
-        public async override Task<OperationResult> SendAsync(string brand,
+        public override async Task<OperationResult> SendAsync(string brand,
             Guid user,
             NotificationContext context,
             int template,
@@ -39,12 +33,12 @@ namespace Cod.Platform
             if (level != (int)OpenIDKind.iOS
                 || (context != null && context.Kind != (int)OpenIDKind.iOS))
             {
-                return OperationResult.Create(InternalError.NotAllowed);
+                return new OperationResult(InternalError.NotAcceptable);
             }
             return await base.SendAsync(brand, user, context, template, parameters, level);
         }
 
-        protected async override Task<OperationResult> SendPushAsync(
+        protected override async Task<OperationResult> SendPushAsync(
             string brand,
             IEnumerable<NotificationContext> targets,
             int template,
@@ -59,18 +53,18 @@ namespace Cod.Platform
                     continue;
                 }
 
-                var token = await cacheStore.Value.GetAsync<string>(target.App, AccessTokenCacheKey);
+                var token = await this.cacheStore.Value.GetAsync<string>(target.App, AccessTokenCacheKey);
                 if (String.IsNullOrWhiteSpace(token))
                 {
                     token = await this.IssueTokenAsync(target);
-                    await cacheStore.Value.SetAsync(target.App, AccessTokenCacheKey, token, false, DateTimeOffset.UtcNow.AddMinutes(30));
+                    await this.cacheStore.Value.SetAsync(target.App, AccessTokenCacheKey, token, false, DateTimeOffset.UtcNow.AddMinutes(30));
                 }
 
                 using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
                 {
                     foreach (var message in messages)
                     {
-                        using (var request = new HttpRequestMessage(HttpMethod.Post, $"https://{ApplePushNotificationHost}/3/device/{target.Identity}"))
+                        using (var request = new HttpRequestMessage(HttpMethod.Post, $"https://{this.ApplePushNotificationHost}/3/device/{target.Identity}"))
                         {
                             request.Version = new Version(2, 0);
                             request.Headers.Add("apns-push-type", message.Background ? "background" : "alert");
@@ -117,11 +111,11 @@ namespace Cod.Platform
 
             if (success)
             {
-                return OperationResult.Create();
+                return OperationResult.Success;
             }
             else
             {
-                return OperationResult.Create((int)HttpStatusCode.InternalServerError);
+                return OperationResult.InternalServerError;
             }
         }
 
@@ -150,7 +144,7 @@ namespace Cod.Platform
                     { "typ", "JWT" },
                     { "kid", cred.KeyID },
                 };
-            CngKey privateKey = CngKey.Import(Convert.FromBase64String(cred.Key), CngKeyBlobFormat.Pkcs8PrivateBlob);
+            var privateKey = CngKey.Import(Convert.FromBase64String(cred.Key), CngKeyBlobFormat.Pkcs8PrivateBlob);
             return JWT.Encode(payload, privateKey, JwsAlgorithm.ES256, extraHeader);
         }
     }

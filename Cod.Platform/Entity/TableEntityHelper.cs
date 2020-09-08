@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.Azure.Cosmos.Table;
 
-namespace Cod.Platform.Model
+namespace Cod.Platform
 {
     public static class TableEntityHelper
     {

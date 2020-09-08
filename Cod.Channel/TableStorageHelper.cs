@@ -190,7 +190,7 @@ namespace Cod.Channel
                 }
             }
 
-            return OperationResult<TableQueryResult<T>>.Create(result);
+            return new OperationResult<TableQueryResult<T>>(result);
         }
     }
 }

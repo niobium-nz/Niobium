@@ -1,13 +1,14 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
 {
     public static class Logger
     {
-        private const string KEY = "logger";
+        private static readonly AsyncLocal<ILogger> logger = new AsyncLocal<ILogger>();
 
-        public static void Register(ILogger logger) => CallContext<ILogger>.SetData(KEY, logger);
+        internal static void Register(ILogger value) => logger.Value = value;
 
-        public static ILogger Instance => CallContext<ILogger>.GetData(KEY);
+        public static ILogger Instance => logger.Value;
     }
 }

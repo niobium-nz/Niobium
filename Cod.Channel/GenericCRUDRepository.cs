@@ -83,7 +83,7 @@ namespace Cod.Channel
                 }
                 return result;
             }
-            return OperationResult.Create();
+            return OperationResult.Success;
         }
 
         public async Task<OperationResult<TDomain>> UpdateAsync(TUpdateParams parameters)

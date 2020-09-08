@@ -36,7 +36,7 @@ namespace Cod.Platform
             var kvs = new Dictionary<string, string>();
             if (!srs.IsSuccess)
             {
-                return OperationResult<ChineseIDInfo>.Create(InternalError.InternalServerError, JsonConvert.SerializeObject(srs));
+                return new OperationResult<ChineseIDInfo>(srs);
             }
             else
             {
@@ -49,7 +49,7 @@ namespace Cod.Platform
             srs = await this.AnalyzeChineseIDAsync(backCNID, false);
             if (!srs.IsSuccess)
             {
-                return OperationResult<ChineseIDInfo>.Create(InternalError.InternalServerError, JsonConvert.SerializeObject(srs));
+                return new OperationResult<ChineseIDInfo>(srs);
             }
             else
             {
@@ -107,11 +107,11 @@ namespace Cod.Platform
 
             if (!ValidationHelper.TryValidate(info, out var result))
             {
-                return OperationResult<ChineseIDInfo>.Create(InternalError.InternalServerError, JsonConvert.SerializeObject(result));
+                return new OperationResult<ChineseIDInfo>(InternalError.BadRequest) { Reference = result };
             }
             else
             {
-                return OperationResult<ChineseIDInfo>.Create(info);
+                return new OperationResult<ChineseIDInfo>(info);
             }
         }
 
@@ -119,10 +119,10 @@ namespace Cod.Platform
         {
             if (retry > 3)
             {
-                return OperationResult<IEnumerable<CodeScanResult>>.Create(InternalError.GatewayTimeout, null);
+                return new OperationResult<IEnumerable<CodeScanResult>>(InternalError.GatewayTimeout);
             }
 
-            var token = await GetAccessToken();
+            var token = await this.GetAccessToken();
             if (!token.IsSuccess)
             {
                 return new OperationResult<IEnumerable<CodeScanResult>>(token);
@@ -156,16 +156,16 @@ namespace Cod.Platform
                             var result = JsonConvert.DeserializeObject<BaiduCodeScanResponse>(json, JsonSetting.UnderstoreCase);
                             if (!result.ErrorCode.HasValue)
                             {
-                                return OperationResult<IEnumerable<CodeScanResult>>.Create(result.CodesResult.SelectMany(r =>
+                                return new OperationResult<IEnumerable<CodeScanResult>>(result.CodesResult.SelectMany(r =>
                                     r.Text.Select(t => new CodeScanResult
                                     {
                                         Code = t,
                                         Kind = r.Type == "CODE_128" ? CodeKind.CODE_128 : r.Type == "QR_CODE" ? CodeKind.QR_CODE : CodeKind.Unknown,
                                     })));
                             }
-                            return OperationResult<IEnumerable<CodeScanResult>>.Create(InternalError.InternalServerError, json);
+                            return new OperationResult<IEnumerable<CodeScanResult>>(InternalError.InternalServerError) { Reference = json };
                         }
-                        return OperationResult<IEnumerable<CodeScanResult>>.Create(status, json);
+                        return new OperationResult<IEnumerable<CodeScanResult>>(status) { Reference = json };
                     }
                 }
             }
@@ -179,7 +179,7 @@ namespace Cod.Platform
             {
             }
 
-            return await ScanCodeAsync(stream, ++retry);
+            return await this.ScanCodeAsync(stream, ++retry);
         }
 
         public async Task<OperationResult<IEnumerable<OCRScanResult>>> PerformOCRAsync(
@@ -190,7 +190,7 @@ namespace Cod.Platform
         {
             if (retry > 3)
             {
-                return OperationResult<IEnumerable<OCRScanResult>>.Create(InternalError.GatewayTimeout, null);
+                return new OperationResult<IEnumerable<OCRScanResult>>(InternalError.GatewayTimeout);
             }
 
             var token = await this.GetAccessToken();
@@ -236,17 +236,17 @@ namespace Cod.Platform
                             var result = JsonConvert.DeserializeObject<BaiduOCRResponse>(json, JsonSetting.UnderstoreCase);
                             if (result.WordsResult != null && result.WordsResult.Length > 0)
                             {
-                                return OperationResult<IEnumerable<OCRScanResult>>.Create(
-                                result.WordsResult.Select(r => new OCRScanResult
-                                {
-                                    Text = r.Words,
-                                    IsConfident = r.Probability.Variance < 0.019d // REMARK (5he11) 方差不能太大，否则识别不准确
-                                     && r.Probability.Min > 0.6d // REMARK (5he11) 最小信心不能太小，否则识别不准确
-                                }));
+                                return new OperationResult<IEnumerable<OCRScanResult>>(
+                                    result.WordsResult.Select(r => new OCRScanResult
+                                    {
+                                        Text = r.Words,
+                                        IsConfident = r.Probability.Variance < 0.019d // REMARK (5he11) 方差不能太大，否则识别不准确
+                                         && r.Probability.Min > 0.6d // REMARK (5he11) 最小信心不能太小，否则识别不准确
+                                    }));
                             }
-                            return OperationResult<IEnumerable<OCRScanResult>>.Create(InternalError.InternalServerError, json);
+                            return new OperationResult<IEnumerable<OCRScanResult>>(InternalError.InternalServerError) { Reference = json };
                         }
-                        return OperationResult<IEnumerable<OCRScanResult>>.Create(status, json);
+                        return new OperationResult<IEnumerable<OCRScanResult>>(status) { Reference = json };
                     }
                 }
             }
@@ -260,7 +260,7 @@ namespace Cod.Platform
             {
             }
 
-            return await PerformOCRAsync(mediaUri, stream, tryHarder, ++retry);
+            return await this.PerformOCRAsync(mediaUri, stream, tryHarder, ++retry);
         }
 
         public async Task<OperationResult> CompareFaceAsync(Uri faceMediaUri, Uri frontCNIDMediaUri, float minScore = 80)
@@ -270,11 +270,11 @@ namespace Cod.Platform
             var rs = await this.CompareFaceAsync(faceMediaUri.AbsoluteUri, frontCNIDMediaUri.AbsoluteUri);
             if (rs.IsSuccess && rs.Result.Result.Score >= minScore)
             {
-                return OperationResult.Create();
+                return OperationResult.Success;
             }
             else
             {
-                return OperationResult.Create(InternalError.InternalServerError, JsonConvert.SerializeObject(rs));
+                return new OperationResult(InternalError.InternalServerError) { Reference = rs };
             }
         }
 
@@ -282,13 +282,13 @@ namespace Cod.Platform
         {
             if (retry <= 0)
             {
-                return OperationResult<BaiduCompareFaceResponse>.Create(InternalError.GatewayTimeout, null);
+                return new OperationResult<BaiduCompareFaceResponse>(InternalError.GatewayTimeout);
             }
 
             var token = await this.GetAccessToken();
             if (!token.IsSuccess)
             {
-                return OperationResult<BaiduCompareFaceResponse>.Create(token.Code, reference: token);
+                return new OperationResult<BaiduCompareFaceResponse>(token);
             }
 
             try
@@ -325,16 +325,16 @@ namespace Cod.Platform
                             var result = JsonConvert.DeserializeObject<BaiduCompareFaceResponse>(js, JsonSetting.UnderstoreCase);
                             if (!result.ErrorCode.HasValue || result.ErrorCode == 0)
                             {
-                                return OperationResult<BaiduCompareFaceResponse>.Create(result);
+                                return new OperationResult<BaiduCompareFaceResponse>(result);
                             }
                             else
                             {
-                                return OperationResult<BaiduCompareFaceResponse>.Create(InternalError.InternalServerError, js);
+                                return new OperationResult<BaiduCompareFaceResponse>(InternalError.InternalServerError) { Reference = js };
                             }
                         }
                         else
                         {
-                            return OperationResult<BaiduCompareFaceResponse>.Create(statusCode, js);
+                            return new OperationResult<BaiduCompareFaceResponse>(statusCode) { Reference = js };
                         }
                     }
                 }
@@ -343,16 +343,16 @@ namespace Cod.Platform
             {
 
             }
-            return await CompareFaceAsync(faceUrl, frontCNIDUrl, --retry);
+            return await this.CompareFaceAsync(faceUrl, frontCNIDUrl, --retry);
         }
 
         private async Task<OperationResult<string>> GetAccessToken(int retry = 0)
         {
             var key = await this.configuration.Value.GetSettingAsStringAsync(IntegrationKey);
-            var token = await cacheStore.Value.GetAsync<string>(key, AccessTokenCacheKey);
+            var token = await this.cacheStore.Value.GetAsync<string>(key, AccessTokenCacheKey);
             if (!String.IsNullOrWhiteSpace(token))
             {
-                return OperationResult<string>.Create(token);
+                return new OperationResult<string>(token);
             }
 
             var secret = await this.configuration.Value.GetSettingAsStringAsync(IntegrationSecret);
@@ -375,15 +375,15 @@ namespace Cod.Platform
                             var result = JsonConvert.DeserializeObject<BaiduAccessTokenResponse>(json, JsonSetting.UnderstoreCase);
                             if (!String.IsNullOrWhiteSpace(result.AccessToken))
                             {
-                                await cacheStore.Value.SetAsync(key, AccessTokenCacheKey, result.AccessToken, true, DateTimeOffset.UtcNow.Add(result.GetExpiry()));
-                                return OperationResult<string>.Create(result.AccessToken);
+                                await this.cacheStore.Value.SetAsync(key, AccessTokenCacheKey, result.AccessToken, true, DateTimeOffset.UtcNow.Add(result.GetExpiry()));
+                                return new OperationResult<string>(result.AccessToken);
                             }
                             else
                             {
-                                return OperationResult<string>.Create(InternalError.InternalServerError, result, result.ErrorDescription);
+                                return new OperationResult<string>(InternalError.BadGateway) { Reference = result };
                             }
                         }
-                        return OperationResult<string>.Create(status, json);
+                        return new OperationResult<string>(status) { Reference = json };
                     }
                 }
             }
@@ -391,10 +391,10 @@ namespace Cod.Platform
             {
                 if (retry > 3)
                 {
-                    return OperationResult<string>.Create(InternalError.GatewayTimeout, null);
+                    return new OperationResult<string>(InternalError.GatewayTimeout);
                 }
 
-                return await GetAccessToken(++retry);
+                return await this.GetAccessToken(++retry);
             }
         }
 
@@ -402,13 +402,13 @@ namespace Cod.Platform
         {
             if (retry <= 0)
             {
-                return OperationResult<BaiduIDScanResponse>.Create(InternalError.GatewayTimeout, null);
+                return new OperationResult<BaiduIDScanResponse>(InternalError.GatewayTimeout);
             }
 
             var token = await this.GetAccessToken();
             if (!token.IsSuccess)
             {
-                return OperationResult<BaiduIDScanResponse>.Create(token.Code, reference: token);
+                return new OperationResult<BaiduIDScanResponse>(token);
             }
 
             if (stream.CanSeek)
@@ -451,11 +451,11 @@ namespace Cod.Platform
                             var result = JsonConvert.DeserializeObject<BaiduIDScanResponse>(json, JsonSetting.UnderstoreCase);
                             if (!result.ErrorCode.HasValue)
                             {
-                                return OperationResult<BaiduIDScanResponse>.Create(result);
+                                return new OperationResult<BaiduIDScanResponse>(result);
                             }
-                            return OperationResult<BaiduIDScanResponse>.Create(InternalError.InternalServerError, json);
+                            return new OperationResult<BaiduIDScanResponse>(InternalError.InternalServerError) { Reference = json };
                         }
-                        return OperationResult<BaiduIDScanResponse>.Create(status, json);
+                        return new OperationResult<BaiduIDScanResponse>(status) { Reference = json };
                     }
                 }
             }
@@ -469,7 +469,7 @@ namespace Cod.Platform
             {
             }
 
-            return await AnalyzeChineseIDAsync(stream, isFrontSide, --retry);
+            return await this.AnalyzeChineseIDAsync(stream, isFrontSide, --retry);
         }
     }
 }

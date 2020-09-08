@@ -4,11 +4,6 @@ namespace Cod
 {
     public static class StorageKeyExtensions
     {
-        /// <summary>
-        /// Login
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
         public static string BuildFullID(this StorageKey key)
         {
             return $"{key.PartitionKey}$$${key.RowKey}";

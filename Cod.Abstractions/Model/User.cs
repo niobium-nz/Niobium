@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Cod
+namespace Cod.Model
 {
     public class User : IEntity
     {

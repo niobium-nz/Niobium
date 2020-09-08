@@ -17,10 +17,7 @@ namespace Cod.Platform
         private const string CognitiveRequestBody = "{\"url\":\"$$$MEDIA_URL$$$\"}";
         private readonly Lazy<IConfigurationProvider> configuration;
 
-        public AzureOCRScaner(Lazy<IConfigurationProvider> configuration)
-        {
-            this.configuration = configuration;
-        }
+        public AzureOCRScaner(Lazy<IConfigurationProvider> configuration) => this.configuration = configuration;
 
         public async Task<OperationResult<IEnumerable<OCRScanResult>>> PerformOCRAsync(string mediaURL, int retry = 0)
         {
@@ -44,7 +41,7 @@ namespace Cod.Platform
                         {
                             var operationLocation = resp.Headers.GetValues("Operation-Location").Single();
                             string ocrResultJson;
-                            int i = 0;
+                            var i = 0;
                             do
                             {
                                 await Task.Delay(1000);
@@ -56,7 +53,7 @@ namespace Cod.Platform
 
                             if (i == 60 && ocrResultJson.IndexOf("\"status\":\"succeeded\"") == -1)
                             {
-                                return OperationResult<IEnumerable<OCRScanResult>>.Create(InternalError.GatewayTimeout, operationLocation);
+                                return new OperationResult<IEnumerable<OCRScanResult>>(InternalError.BadGateway) { Reference = operationLocation };
                             }
 
                             var ocr = JsonConvert.DeserializeObject<CognitiveServiceResult>(ocrResultJson);
@@ -69,16 +66,16 @@ namespace Cod.Platform
                                         }))));
                             result.AddRange(ocr.AnalyzeResult.ReadResults.SelectMany(r =>
                                     r.Lines.Select(l => new OCRScanResult
-                                        {
-                                            Text = l.Text.EndsWith("7A") ? l.Text.Substring(0, l.Text.Length - 2) : l.Text,
-                                            IsConfident = true,
-                                        })));
-                            return OperationResult<IEnumerable<OCRScanResult>>.Create(result);
+                                    {
+                                        Text = l.Text.EndsWith("7A") ? l.Text.Substring(0, l.Text.Length - 2) : l.Text,
+                                        IsConfident = true,
+                                    })));
+                            return new OperationResult<IEnumerable<OCRScanResult>>(result);
                         }
 
                         var status = (int)resp.StatusCode;
                         var errormsg = await resp.Content.ReadAsStringAsync();
-                        return OperationResult<IEnumerable<OCRScanResult>>.Create(status, errormsg);
+                        return new OperationResult<IEnumerable<OCRScanResult>>(status) { Reference = errormsg };
                     }
                 }
             }
@@ -92,7 +89,7 @@ namespace Cod.Platform
             {
             }
 
-            return await PerformOCRAsync(mediaURL, ++retry);
+            return await this.PerformOCRAsync(mediaURL, ++retry);
         }
     }
 }

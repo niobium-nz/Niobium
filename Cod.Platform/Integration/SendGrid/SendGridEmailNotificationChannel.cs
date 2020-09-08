@@ -14,10 +14,7 @@ namespace Cod.Platform
         private static string Key;
         private readonly Lazy<IOpenIDManager> openIDManager;
 
-        public SendGridEmailNotificationChannel(Lazy<IOpenIDManager> openIDManager)
-        {
-            this.openIDManager = openIDManager;
-        }
+        public SendGridEmailNotificationChannel(Lazy<IOpenIDManager> openIDManager) => this.openIDManager = openIDManager;
 
         public static void Initialize(string key)
         {
@@ -38,7 +35,7 @@ namespace Cod.Platform
         {
             if (level != (int)OpenIDKind.Email)
             {
-                return OperationResult.Create(InternalError.NotAllowed);
+                return OperationResult.NotAllowed;
             }
 
             string email = null;
@@ -52,30 +49,30 @@ namespace Cod.Platform
             {
                 if (user == Guid.Empty)
                 {
-                    return OperationResult.Create(InternalError.NotAllowed);
+                    return OperationResult.NotAllowed;
                 }
 
                 var channels = await this.openIDManager.Value.GetChannelsAsync(user, (int)OpenIDKind.Email);
                 if (!channels.Any())
                 {
-                    return OperationResult.Create(InternalError.NotAllowed);
+                    return OperationResult.NotAllowed;
                 }
 
                 // TODO (5he11) 这里取第一个其实是不正确的
                 email = channels.First().Identity;
             }
 
-            if (string.IsNullOrWhiteSpace(email))
+            if (String.IsNullOrWhiteSpace(email))
             {
-                return OperationResult.Create(InternalError.NotAllowed);
+                return OperationResult.NotAllowed;
             }
 
             if (!RegexUtilities.IsValidEmail(email))
             {
-                return OperationResult.Create(InternalError.BadRequest);
+                return OperationResult.BadRequest;
             }
 
-            return await SendEmailAsync(brand, email, context, template, parameters);
+            return await this.SendEmailAsync(brand, email, context, template, parameters);
         }
 
         protected virtual async Task<OperationResult> SendEmailAsync(
@@ -96,11 +93,11 @@ namespace Cod.Platform
                     var status = (int)resp.StatusCode;
                     if (status >= 200 && status < 400)
                     {
-                        return OperationResult.Create();
+                        return OperationResult.Success;
                     }
 
                     var json = await resp.Content.ReadAsStringAsync();
-                    return OperationResult.Create(status, json);
+                    return new OperationResult(status) { Reference = json };
                 }
             }
         }

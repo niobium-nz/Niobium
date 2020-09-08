@@ -10,7 +10,7 @@ namespace Cod.Channel
 {
     public static class HttpClientExtensions
     {
-        public async static Task<OperationResult<T>> RequestAsync<T>(
+        public static async Task<OperationResult<T>> RequestAsync<T>(
            this HttpClient httpClient,
            HttpMethod method,
            string uri,
@@ -27,10 +27,10 @@ namespace Cod.Channel
 
             var response = await result.Result.Content.ReadAsStringAsync();
             var obj = TypeConverter.Convert<T>(response);
-            return OperationResult<T>.Create(obj);
+            return new OperationResult<T>(obj);
         }
 
-        public async static Task<OperationResult<HttpResponseMessage>> RequestAsync(
+        public static async Task<OperationResult<HttpResponseMessage>> RequestAsync(
             this HttpClient httpClient,
             HttpMethod method,
             string uri,
@@ -48,7 +48,7 @@ namespace Cod.Channel
             if (retry >= 3)
             {
                 // TODO (5he11) 界面友好提示用户网络异常
-                return OperationResult<HttpResponseMessage>.Create(InternalError.GatewayTimeout, null);
+                return new OperationResult<HttpResponseMessage>(InternalError.GatewayTimeout);
             }
 
             using (var request = new HttpRequestMessage(method, uri))
@@ -61,7 +61,7 @@ namespace Cod.Channel
                     }
                 }
 
-                if (!string.IsNullOrWhiteSpace(bearerToken))
+                if (!String.IsNullOrWhiteSpace(bearerToken))
                 {
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
                 }
@@ -95,8 +95,10 @@ namespace Cod.Channel
                         code = OperationResult.SuccessCode;
                     }
 
-                    var result = OperationResult<HttpResponseMessage>.Create(response);
-                    result.Code = code;
+                    var result = new OperationResult<HttpResponseMessage>(response)
+                    {
+                        Code = code
+                    };
                     return result;
                 }
                 catch (Exception)

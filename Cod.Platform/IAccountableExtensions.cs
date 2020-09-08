@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Cod.Platform.Model;
 using Microsoft.Azure.Cosmos.Table;
 using Microsoft.Extensions.Logging;
 
@@ -43,7 +42,7 @@ namespace Cod.Platform
         }
 
         public static async Task<IEnumerable<Transaction>> GetTransactionsAsync(this IAccountable accountable, DateTimeOffset fromInclusive, DateTimeOffset toInclusive)
-          => await CloudStorage.GetTable<Model.Transaction>().WhereAsync<Model.Transaction>(TableQuery.CombineFilters(
+          => await CloudStorage.GetTable<Transaction>().WhereAsync<Transaction>(TableQuery.CombineFilters(
                 TableQuery.GenerateFilterCondition(nameof(Transaction.PartitionKey), QueryComparisons.Equal, Transaction.BuildPartitionKey(await accountable.GetAccountingPrincipalAsync())),
                 TableOperators.And,
                 TableQuery.CombineFilters(TableQuery.GenerateFilterCondition(nameof(Transaction.RowKey), QueryComparisons.LessThanOrEqual, Transaction.BuildRowKey(fromInclusive)),
@@ -122,17 +121,17 @@ namespace Cod.Platform
                 Corelation = corelation,
             };
 
-        public static async Task<IEnumerable<Model.Transaction>> MakeTransactionAsync(this IAccountable accountable,
+        public static async Task<IEnumerable<Transaction>> MakeTransactionAsync(this IAccountable accountable,
             double delta, int reason, string remark, string reference, string id = null, string corelation = null)
             => await MakeTransactionAsync(new[] { await accountable.BuildTransactionAsync(delta, reason, remark, reference, id, corelation) }, accountable.CacheStore);
 
-        public static async Task<IEnumerable<Model.Transaction>> MakeTransactionAsync(TransactionRequest request, ICacheStore cacheStore)
+        public static async Task<IEnumerable<Transaction>> MakeTransactionAsync(TransactionRequest request, ICacheStore cacheStore)
           => await MakeTransactionAsync(new[] { request }, cacheStore);
 
         //TODO (5he11) 此方法要加锁并且实现事务
-        public static async Task<IEnumerable<Model.Transaction>> MakeTransactionAsync(IEnumerable<TransactionRequest> requests, ICacheStore cacheStore)
+        public static async Task<IEnumerable<Transaction>> MakeTransactionAsync(IEnumerable<TransactionRequest> requests, ICacheStore cacheStore)
         {
-            var transactions = new List<Model.Transaction>();
+            var transactions = new List<Transaction>();
             var count = 0;
             foreach (var request in requests)
             {
@@ -148,7 +147,7 @@ namespace Cod.Platform
                 request.Delta = request.Delta.ChineseRound();
                 request.Target = request.Target.Trim();
 
-                var transaction = new Model.Transaction
+                var transaction = new Transaction
                 {
                     Delta = request.Delta,
                     Remark = request.Remark,
@@ -162,7 +161,7 @@ namespace Cod.Platform
                 count++;
             }
 
-            await CloudStorage.GetTable<Model.Transaction>().InsertAsync(transactions);
+            await CloudStorage.GetTable<Transaction>().InsertAsync(transactions);
             var now = DateTimeOffset.UtcNow.ToSixDigitsDate();
             foreach (var transaction in transactions)
             {
@@ -175,10 +174,10 @@ namespace Cod.Platform
             return transactions;
         }
 
-        public static async Task<Model.Transaction> GetTransactionAsync(this IAccountable accountable, DateTimeOffset id)
+        public static async Task<Transaction> GetTransactionAsync(this IAccountable accountable, DateTimeOffset id)
         {
             var target = await accountable.GetAccountingPrincipalAsync();
-            var transaction = await CloudStorage.GetTable<Model.Transaction>().RetrieveAsync<Model.Transaction>(target, Model.Transaction.BuildRowKey(id));
+            var transaction = await CloudStorage.GetTable<Transaction>().RetrieveAsync<Transaction>(target, Transaction.BuildRowKey(id));
             return transaction;
         }
 
@@ -204,7 +203,7 @@ namespace Cod.Platform
 
             double balance;
             var principal = await accountable.GetAccountingPrincipalAsync();
-            var accounting = await CloudStorage.GetTable<Model.Accounting>().RetrieveAsync<Model.Accounting>(
+            var accounting = await CloudStorage.GetTable<Accounting>().RetrieveAsync<Accounting>(
                 Accounting.BuildPartitionKey(principal), Accounting.BuildRowKey(lastAccountDate));
             if (accounting == null)
             {
@@ -237,7 +236,7 @@ namespace Cod.Platform
             };
         }
 
-        private static async Task<Model.Accounting> MakeAccountingAsync(this IAccountable accountable, DateTimeOffset input, double previousBalance,
+        private static async Task<Accounting> MakeAccountingAsync(this IAccountable accountable, DateTimeOffset input, double previousBalance,
             IEnumerable<IAccountingAuditor> auditors)
         {
             //REMARK (5he11) 将输入限制为仅取其日期的当日的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
@@ -268,7 +267,7 @@ namespace Cod.Platform
             //    return null;
             //}
 
-            var accounting = new Model.Accounting
+            var accounting = new Accounting
             {
                 Balance = (previousBalance + credits + debits).ChineseRound(),
                 Credits = credits.ChineseRound(),
@@ -286,18 +285,18 @@ namespace Cod.Platform
                 }
             }
 
-            await CloudStorage.GetTable<Model.Accounting>().InsertAsync(new[] { accounting });
+            await CloudStorage.GetTable<Accounting>().InsertAsync(new[] { accounting });
             await accountable.ClearDeltaAsync(input);
             return accounting;
         }
 
-        private static async Task<Model.Accounting> GetLatestAccountingAsync(this IAccountable accountable, DateTimeOffset input)
+        private static async Task<Accounting> GetLatestAccountingAsync(this IAccountable accountable, DateTimeOffset input)
         {
             //REMARK (5he11) 将输入限制为仅取其日期的当日的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
             input = new DateTimeOffset(input.UtcDateTime.Date.ToUniversalTime()).AddDays(1).AddMilliseconds(-1);
             var principal = await accountable.GetAccountingPrincipalAsync();
             var searchFrom = input.AddDays(-30);
-            var accountings = await CloudStorage.GetTable<Model.Accounting>().WhereAsync<Model.Accounting>(TableQuery.CombineFilters(
+            var accountings = await CloudStorage.GetTable<Accounting>().WhereAsync<Accounting>(TableQuery.CombineFilters(
                 TableQuery.GenerateFilterCondition(nameof(Accounting.PartitionKey), QueryComparisons.Equal, Accounting.BuildPartitionKey(principal)),
                 TableOperators.And,
                 TableQuery.CombineFilters(
@@ -309,7 +308,7 @@ namespace Cod.Platform
             {
                 return latest;
             }
-            var empty = new Model.Accounting
+            var empty = new Accounting
             {
                 Balance = 0,
                 Credits = 0,

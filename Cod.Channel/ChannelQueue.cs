@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Cod.Model;
 using Newtonsoft.Json;
 
 namespace Cod.Channel
@@ -51,7 +52,7 @@ namespace Cod.Channel
                     }
                     var url = $"{endpoint}/{queueName}/messages{sig.Result.Signature}&messagettl=-1&visibilitytimeout={timeout}";
                     var msg = message.Body is string str ? str : JsonConvert.SerializeObject(message.Body);
-                    var result = await SendRequest(url, HttpMethod.Post, msg);
+                    var result = await this.SendRequest(url, HttpMethod.Post, msg);
                     if (!result.IsSuccess)
                     {
                         return result;
@@ -59,7 +60,7 @@ namespace Cod.Channel
                 }
             }
 
-            return OperationResult.Create();
+            return OperationResult.Success;
         }
 
         public async Task<IEnumerable<QueueMessage>> PeekAsync(string queueName, int limit)
@@ -103,7 +104,7 @@ namespace Cod.Channel
             }
             headers.Add(new KeyValuePair<string, string>("x-ms-date", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString()));
 
-            var result = await httpClient.RequestAsync<string>(
+            var result = await this.httpClient.RequestAsync<string>(
                 method,
                 url,
                 body: MessageTemplate.Replace(MessageTemplatePlaceholder, Base64.Encode(message)),
@@ -115,7 +116,7 @@ namespace Cod.Channel
                 return new OperationResult<string>(result);
             }
 
-            return OperationResult<string>.Create(result.Result);
+            return new OperationResult<string>(result.Result);
         }
     }
 }

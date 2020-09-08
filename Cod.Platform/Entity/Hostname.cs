@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.Azure.Cosmos.Table;
 
-namespace Cod.Platform.Entity
+namespace Cod.Platform
 {
     public class Hostname : TableEntity, IEntity
     {

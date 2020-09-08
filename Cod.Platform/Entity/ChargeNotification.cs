@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.Extensions.Logging;
 
-namespace Cod.Platform.Model
+namespace Cod.Platform
 {
     public abstract class ChargeNotification
     {

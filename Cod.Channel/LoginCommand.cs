@@ -65,7 +65,7 @@ namespace Cod.Channel
                         this.navigator.NavigateTo(returnUrl);
                     }
 
-                    return OperationResult<bool>.Create(true);
+                    return new OperationResult<bool>(true);
                 }
 
                 return new OperationResult<bool>(result);

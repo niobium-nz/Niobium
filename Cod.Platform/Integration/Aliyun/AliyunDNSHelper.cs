@@ -47,7 +47,7 @@ namespace Cod.Platform
             if (result.IsSuccessStatusCode && body.Contains("\"PageSize\":500"))
             {
                 var response = JsonConvert.DeserializeObject<AliyunDNSQueryResponse>(body);
-                return OperationResult<IEnumerable<DNSRecord>>.Create(
+                return new OperationResult<IEnumerable<DNSRecord>>(
                     response.DomainRecords.Record.Select(r => new DNSRecord
                     {
                         Domain = r.DomainName,
@@ -60,7 +60,7 @@ namespace Cod.Platform
             else
             {
                 this.logger.LogError($"Failed to query DNS records for {domain} at Aliyun and return error: {body}");
-                return OperationResult<IEnumerable<DNSRecord>>.Create(InternalError.InternalServerError, null);
+                return new OperationResult<IEnumerable<DNSRecord>>(InternalError.InternalServerError);
             }
         }
 
@@ -105,12 +105,12 @@ namespace Cod.Platform
             var body = await response.Content.ReadAsStringAsync();
             if (response.IsSuccessStatusCode && body.Contains("\"RecordId\":\""))
             {
-                return OperationResult.Create();
+                return OperationResult.Success;
             }
             else
             {
                 this.logger.LogError($"Failed to create DNS record {recordName}.{domain}@{type} => {recordValue} at Aliyun and return error: {body}");
-                return OperationResult.Create(InternalError.InternalServerError);
+                return OperationResult.InternalServerError;
             }
         }
 
@@ -156,11 +156,11 @@ namespace Cod.Platform
                 if (!response.IsSuccessStatusCode || !body.Contains("\"RecordId\":\""))
                 {
                     this.logger.LogError($"Failed to remove DNS record {recordName}.{domain}@{type} at Aliyun and return error: {body}");
-                    return OperationResult.Create(InternalError.InternalServerError);
+                    return OperationResult.InternalServerError;
                 }
             }
 
-            return OperationResult.Create();
+            return OperationResult.Success;
         }
 
         public bool Support(string domain, DNSServiceProvider serviceProvider) => serviceProvider == DNSServiceProvider.Aliyun;

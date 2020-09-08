@@ -1,4 +1,4 @@
-﻿namespace Cod.Platform.Model
+﻿namespace Cod.Platform
 {
     public enum ChargeType
     {

@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using Microsoft.Azure.Cosmos.Table;
 
-namespace Cod.Platform.Model
+namespace Cod.Platform
 {
-    public class OpenID : Cod.OpenID, ITableEntity
+    public class OpenID : Cod.Model.OpenID, ITableEntity
     {
         public void ReadEntity(IDictionary<string, EntityProperty> properties, OperationContext operationContext) => TableEntityHelper.ReflectionRead(this, properties, operationContext);
 

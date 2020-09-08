@@ -2,26 +2,25 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Cod.Platform.Model;
 using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
 {
-    public class UserDomain : ImpedableDomain<Model.User>, IAccountable, ILoggerSite
+    public class UserDomain : ImpedableDomain<User>, IAccountable, ILoggerSite
     {
         private readonly Lazy<ICacheStore> cache;
         private readonly Lazy<IRepository<WechatEntity>> wechatRepository;
-        private readonly Lazy<IRepository<Model.Login>> loginRepository;
-        private readonly Lazy<IRepository<Model.Entitlement>> entitlementRepository;
+        private readonly Lazy<IRepository<Login>> loginRepository;
+        private readonly Lazy<IRepository<Entitlement>> entitlementRepository;
         private readonly Lazy<IOpenIDManager> openIDManager;
         private readonly Lazy<ITokenBuilder> tokenBuilder;
 
         public UserDomain(
             Lazy<ICacheStore> cache,
-            Lazy<IRepository<Model.User>> repository,
+            Lazy<IRepository<User>> repository,
             Lazy<IRepository<WechatEntity>> wechatRepository,
-            Lazy<IRepository<Model.Login>> loginRepository,
-            Lazy<IRepository<Model.Entitlement>> entitlementRepository,
+            Lazy<IRepository<Login>> loginRepository,
+            Lazy<IRepository<Entitlement>> entitlementRepository,
             Lazy<IOpenIDManager> openIDManager,
             Lazy<IEnumerable<IImpedimentPolicy>> policies,
             Lazy<ITokenBuilder> tokenBuilder,
@@ -49,19 +48,19 @@ namespace Cod.Platform
             RowKey = this.RowKey,
         });
 
-        public async Task<OperationResult<Model.User>> LoginAsync(string username, string password)
+        public async Task<OperationResult<User>> LoginAsync(string username, string password)
         {
-            var login = await loginRepository.Value.GetAsync(
+            var login = await this.loginRepository.Value.GetAsync(
                 Login.BuildPartitionKey(OpenIDKind.Username),
                 Login.BuildRowKey(username));
             if (login == null)
             {
-                return OperationResult<Model.User>.Create(InternalError.NotFound, null);
+                return new OperationResult<User>(InternalError.NotFound);
             }
 
             if (login.Credentials != password)
             {
-                return OperationResult<Model.User>.Create(InternalError.AuthenticationRequired, null);
+                return new OperationResult<User>(InternalError.AuthenticationRequired);
             }
 
             var userID = login.User;
@@ -70,10 +69,10 @@ namespace Cod.Platform
                 User.BuildRowKey(userID));
             if (user == null)
             {
-                return OperationResult<Model.User>.Create(InternalError.NotFound, null);
+                return new OperationResult<User>(InternalError.NotFound);
             }
 
-            return OperationResult<Model.User>.Create(user);
+            return new OperationResult<User>(user);
         }
 
         public async Task<OperationResult<LoginResult>> LoginAsync(OpenIDKind kind, string appID, string authCode)
@@ -88,16 +87,16 @@ namespace Cod.Platform
                     WechatEntity.BuildOpenIDRowKey(authCode));
             if (wechat == null || String.IsNullOrWhiteSpace(wechat.Value))
             {
-                return OperationResult<LoginResult>.Create(InternalError.AuthenticationRequired, null);
+                return new OperationResult<LoginResult>(InternalError.AuthenticationRequired);
             }
 
             var openid = wechat.Value;
-            var login = await loginRepository.Value.GetAsync(
+            var login = await this.loginRepository.Value.GetAsync(
                 Login.BuildPartitionKey(kind, appID),
                 Login.BuildRowKey(openid));
             if (login == null)
             {
-                return OperationResult<LoginResult>.Create(InternalError.NotFound, openid);
+                return new OperationResult<LoginResult>(InternalError.NotFound) { Reference = openid };
             }
 
             var userID = login.User;
@@ -106,19 +105,20 @@ namespace Cod.Platform
                 User.BuildRowKey(userID));
             if (user == null)
             {
-                return OperationResult<LoginResult>.Create(InternalError.NotFound, openid);
+                return new OperationResult<LoginResult>(InternalError.NotFound) { Reference = openid };
             }
 
             if (user.Disabled)
             {
-                return OperationResult<LoginResult>.Create(InternalError.Locked, openid);
+                return new OperationResult<LoginResult>(InternalError.Locked) { Reference = openid };
             }
 
-            return OperationResult<LoginResult>.Create(new LoginResult
-            {
-                User = user,
-                OpenID = openid,
-            });
+            return new OperationResult<LoginResult>(
+                new LoginResult
+                {
+                    User = user,
+                    OpenID = openid,
+                });
         }
 
         public async Task<string> IssueTokenAsync(IEnumerable<KeyValuePair<string, string>> entitlements)
@@ -137,12 +137,12 @@ namespace Cod.Platform
 
         public async Task<OperationResult<Guid>> GetOrRegisterAsync(string mobile, string ip = null)
         {
-            var login = await loginRepository.Value.GetAsync(
+            var login = await this.loginRepository.Value.GetAsync(
                     Login.BuildPartitionKey(OpenIDKind.SMS),
                     Login.BuildRowKey(mobile));
             if (login != null)
             {
-                return OperationResult<Guid>.Create(login.User);
+                return new OperationResult<Guid>(login.User);
             }
 
             var registations = OpenIDRegistration.Build(mobile);
@@ -152,10 +152,10 @@ namespace Cod.Platform
                 return new OperationResult<Guid>(newUser);
             }
 
-            return OperationResult<Guid>.Create(newUser.Result.GetID());
+            return new OperationResult<Guid>(newUser.Result.GetID());
         }
 
-        public async Task<OperationResult<Model.User>> RegisterAsync(Guid? userID, IEnumerable<OpenIDRegistration> registrations, string ip)
+        public async Task<OperationResult<User>> RegisterAsync(Guid? userID, IEnumerable<OpenIDRegistration> registrations, string ip)
         {
             var newUser = false;
             var channels = new Dictionary<Guid, IEnumerable<OpenID>>();
@@ -163,7 +163,7 @@ namespace Cod.Platform
 
             foreach (var registration in registrations)
             {
-                var login = await loginRepository.Value.GetAsync(
+                var login = await this.loginRepository.Value.GetAsync(
                     Login.BuildPartitionKey(registration.Kind, registration.App),
                     Login.BuildRowKey(registration.Identity));
                 if (login != null)
@@ -184,14 +184,14 @@ namespace Cod.Platform
                             count = channels[login.User].Count(c => c.GetKind() != (int)OpenIDKind.SMS);
                             break;
                         default:
-                            count = channels[login.User].Count(c => c.GetKind() != (int)OpenIDKind.SMS && c.GetKind() != (int)registration.Kind);
+                            count = channels[login.User].Count(c => c.GetKind() != (int)OpenIDKind.SMS && c.GetKind() != registration.Kind);
                             break;
                     }
 
                     if (count > 1)
                     {
                         // REMARK (5he11) 因SMS和PhoneCall其实等同，所以过滤掉其中1个之后如果还有其他通道，则表示这是一个既有用户
-                        return OperationResult<Model.User>.Create(InternalError.Conflict, null);
+                        return new OperationResult<User>(InternalError.Conflict);
                     }
                     else
                     {
@@ -222,10 +222,10 @@ namespace Cod.Platform
 
             await this.openIDManager.Value.RegisterAsync(registrations);
 
-            var logins = new List<Model.Login>();
+            var logins = new List<Login>();
             foreach (var registration in registrations)
             {
-                logins.Add(new Model.Login
+                logins.Add(new Login
                 {
                     PartitionKey = Login.BuildPartitionKey(registration.Kind, registration.App),
                     RowKey = Login.BuildRowKey(registration.Identity),
@@ -236,7 +236,7 @@ namespace Cod.Platform
 
             if (newUser)
             {
-                var newuser = new Model.User
+                var newuser = new User
                 {
                     PartitionKey = User.BuildPartitionKey(userID.Value),
                     RowKey = User.BuildRowKey(userID.Value),
@@ -252,7 +252,7 @@ namespace Cod.Platform
             var result = await this.Repository.GetAsync(
                 User.BuildPartitionKey(userID.Value),
                 User.BuildRowKey(userID.Value));
-            return OperationResult<Model.User>.Create(result);
+            return new OperationResult<User>(result);
         }
 
         public async Task<IEnumerable<OpenID>> GetChannelsAsync(OpenIDKind kind, string app)
@@ -261,9 +261,9 @@ namespace Cod.Platform
         public async Task<IEnumerable<OpenID>> GetChannelsAsync(OpenIDKind kind)
             => await this.openIDManager.Value.GetChannelsAsync(Guid.Parse(this.RowKey), (int)kind);
 
-        public async Task<OperationResult<Model.User>> ApplyAsync(string role, object parameter)
+        public async Task<OperationResult<User>> ApplyAsync(string role, object parameter)
         {
-            if (string.IsNullOrWhiteSpace(role))
+            if (String.IsNullOrWhiteSpace(role))
             {
                 throw new ArgumentNullException(nameof(role));
             }
@@ -273,13 +273,13 @@ namespace Cod.Platform
             var user = await this.GetEntityAsync();
             if (user == null)
             {
-                return OperationResult<Model.User>.Create(InternalError.NotFound, null);
+                return new OperationResult<User>(InternalError.NotFound);
             }
 
             var result = await this.OnApplyAsync(user, role, parameter);
             if (!result.IsSuccess)
             {
-                return new OperationResult<Model.User>(result);
+                return new OperationResult<User>(result);
             }
 
             var u = user.AddRole(role);
@@ -288,11 +288,11 @@ namespace Cod.Platform
                 await this.SaveEntityAsync();
             }
 
-            return OperationResult<Model.User>.Create(user);
+            return new OperationResult<User>(user);
         }
 
-        protected virtual Task<OperationResult> OnApplyAsync(Model.User user, string role, object data)
-            => Task.FromResult(OperationResult.Create());
+        protected virtual Task<OperationResult> OnApplyAsync(User user, string role, object data)
+            => Task.FromResult(OperationResult.Success);
 
         protected virtual Task<ushort> GetTokenValidHoursAsync() => Task.FromResult<ushort>(8);
     }

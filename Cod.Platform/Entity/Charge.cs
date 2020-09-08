@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace Cod.Platform.Model
+namespace Cod.Platform
 {
     public class Charge
     {

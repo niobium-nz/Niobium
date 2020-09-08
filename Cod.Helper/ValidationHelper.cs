@@ -75,6 +75,11 @@ namespace Cod
                 }
             }
 
+            if (isValid && model is IFormatable formatable)
+            {
+                formatable.Format();
+            }
+
             return isValid;
         }
     }

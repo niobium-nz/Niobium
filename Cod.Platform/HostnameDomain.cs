@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
-using Cod.Platform.Entity;
 
 namespace Cod.Platform
 {
@@ -35,7 +34,7 @@ namespace Cod.Platform
             var entity = await this.GetEntityAsync();
             if (entity.SSLExpiry - DateTimeOffset.UtcNow > SSLCertificateLifetime)
             {
-                return OperationResult.Create();
+                return OperationResult.Success;
             }
 
             var pfxPassword = entity.Email;
@@ -104,7 +103,7 @@ namespace Cod.Platform
 
             entity.SSLExpiry = DateTimeOffset.Parse(expiry);
             await this.SaveEntityAsync();
-            return OperationResult.Create();
+            return OperationResult.Success;
         }
     }
 }

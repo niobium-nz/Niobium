@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.Azure.Cosmos.Table;
 
-namespace Cod.Platform.Model
+namespace Cod.Platform
 {
     public class Cache : TableEntity
     {

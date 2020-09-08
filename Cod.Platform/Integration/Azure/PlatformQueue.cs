@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Cod.Model;
 using Microsoft.Azure.Storage.Queue;
 using Newtonsoft.Json;
 
@@ -25,7 +26,7 @@ namespace Cod.Platform
                 }
             }
 
-            return OperationResult.Create();
+            return OperationResult.Success;
         }
 
         public async Task<IEnumerable<QueueMessage>> PeekAsync(string queueName, int limit)

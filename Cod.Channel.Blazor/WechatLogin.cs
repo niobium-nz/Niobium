@@ -78,14 +78,14 @@ namespace Cod.Channel.Blazor
                 returnUrl = String.Empty;
             }
 
-            var baseUrl = WechatAuthorizeUrl.Replace(AppIDPlaceholder, this.AppID, StringComparison.InvariantCulture);
+            var baseUrl = WechatAuthorizeUrl.Replace(AppIDPlaceholder, this.AppID);
             var type = await this.Browser.GetBrowserTypeAsync();
             if (type == BrowserType.Wechat)
             {
                 var callbackUrl = $"{this.Navigator.BaseUri}?go={this.Handler}";
                 this.Navigator.NavigateTo(baseUrl
-                    .Replace("{REDIRECT}", WebUtility.UrlEncode(callbackUrl), StringComparison.InvariantCulture)
-                    .Replace("{STATE}", WebUtility.UrlEncode(returnUrl), StringComparison.InvariantCulture));
+                    .Replace("{REDIRECT}", WebUtility.UrlEncode(callbackUrl))
+                    .Replace("{STATE}", WebUtility.UrlEncode(returnUrl)));
             }
             else
             {
@@ -113,8 +113,8 @@ namespace Cod.Channel.Blazor
                 callbackUrl = $"{this.Navigator.BaseUri}{this.PostScanHandler}?id={this.loginID}";
             }
 
-            var href = baseUrl.Replace("{REDIRECT}", WebUtility.UrlEncode(callbackUrl), StringComparison.InvariantCulture)
-                        .Replace("{STATE}", String.Empty, StringComparison.InvariantCulture);
+            var href = baseUrl.Replace("{REDIRECT}", WebUtility.UrlEncode(callbackUrl))
+                        .Replace("{STATE}", String.Empty);
             var param = QrCodeHelper.GetQrCodeParameters(
                  this.QRCodeElementID,
                  href,

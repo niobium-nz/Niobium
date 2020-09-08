@@ -27,9 +27,9 @@ namespace Cod.Channel
             if (!this.IsAuthenticated())
             {
                 await this.CleanupAsync();
-                return OperationResult<IEnumerable<KeyValuePair<string, string>>>.Create(InternalError.AuthenticationRequired, null);
+                return new OperationResult<IEnumerable<KeyValuePair<string, string>>>(InternalError.AuthenticationRequired);
             }
-            return OperationResult<IEnumerable<KeyValuePair<string, string>>>.Create(this.claims);
+            return new OperationResult<IEnumerable<KeyValuePair<string, string>>>(this.claims);
         }
 
         public AccessToken Token { get; private set; }
@@ -79,7 +79,7 @@ namespace Cod.Channel
             if (!this.IsAuthenticated())
             {
                 await this.CleanupAsync();
-                return OperationResult<StorageSignature>.Create(InternalError.AuthenticationRequired, null);
+                return new OperationResult<StorageSignature>(InternalError.AuthenticationRequired);
             }
 
             var key = BuildSignatureCacheKey(this.Token.Token, type, resource, partitionKey, rowKey);
@@ -93,7 +93,7 @@ namespace Cod.Channel
                 else
                 {
                     AuthenticationRequired?.Invoke(this, EventArgs.Empty);
-                    return OperationResult<StorageSignature>.Create(this.signatures[key]);
+                    return new OperationResult<StorageSignature>(this.signatures[key]);
                 }
             }
 
@@ -117,21 +117,15 @@ namespace Cod.Channel
                 var signature = sig.Result;
                 this.signatures.AddOrUpdate(key, k => signature, (k, v) => signature);
                 await this.SaveSignaturesAsync(this.signatures);
-                return OperationResult<StorageSignature>.Create(signature);
+                return new OperationResult<StorageSignature>(signature);
             }
             else if (sig.Code == InternalError.AuthenticationRequired)
             {
                 await this.CleanupAsync();
-                return OperationResult<StorageSignature>.Create(InternalError.AuthenticationRequired, null);
+                return new OperationResult<StorageSignature>(InternalError.AuthenticationRequired);
             }
-            else if (InternalError.Messages.ContainsKey(sig.Code))
-            {
-                return OperationResult<StorageSignature>.Create(sig.Code, null);
-            }
-            else
-            {
-                return OperationResult<StorageSignature>.Create(InternalError.Unknown, null);
-            }
+
+            return new OperationResult<StorageSignature>(sig);
         }
 
         public virtual async Task<OperationResult> AquireTokenAsync(string scheme, string username, string password, bool remember)
@@ -152,24 +146,20 @@ namespace Cod.Channel
                     {
                         await this.SaveTokenAsync(header.Parameter);
                     }
-                    return OperationResult.Create();
+                    return OperationResult.Success;
                 }
 
-                return OperationResult.Create(InternalError.AuthenticationRequired);
-            }
-            else if (InternalError.Messages.ContainsKey(statusCode))
-            {
-                return OperationResult.Create(statusCode);
+                return OperationResult.AuthenticationRequired;
             }
             else
             {
-                return OperationResult.Create(InternalError.Unknown);
+                return new OperationResult(statusCode);
             }
         }
 
         public async Task CleanupAsync()
         {
-            await CleanupCredentialsAsync();
+            await this.CleanupCredentialsAsync();
             foreach (var eventHandler in this.eventHandlers)
             {
                 await eventHandler.InvokeAsync(this);
@@ -202,7 +192,7 @@ namespace Cod.Channel
         {
             this.Token = null;
             this.claims = new ConcurrentBag<KeyValuePair<string, string>>();
-            await this.SaveTokenAsync(string.Empty);
+            await this.SaveTokenAsync(String.Empty);
             this.signatures.Clear();
             savedToken = null;
             await this.SaveSignaturesAsync(this.signatures);

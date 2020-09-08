@@ -5,15 +5,15 @@ using System.Threading.Tasks;
 
 namespace Cod.Platform
 {
-    public class BusinessDomain : PlatformDomain<Model.Business>, IAccountable
+    public class BusinessDomain : PlatformDomain<Business>, IAccountable
     {
         public const int CompensationTransactionReason = 11;
-        private readonly Lazy<IRepository<Model.Interest>> interestRepository;
+        private readonly Lazy<IRepository<Interest>> interestRepository;
         private readonly Lazy<ICacheStore> cache;
 
         public BusinessDomain(
-            Lazy<IRepository<Model.Business>> repository,
-            Lazy<IRepository<Model.Interest>> interestRepository,
+            Lazy<IRepository<Business>> repository,
+            Lazy<IRepository<Interest>> interestRepository,
             Lazy<ICacheStore> cache)
             : base(repository)
         {
@@ -46,6 +46,12 @@ namespace Cod.Platform
                 if (income < interest.Agreement)
                 {
                     var compensation = interest.Agreement - income;
+
+                    if (!interest.Percentage)
+                    {
+                        throw new NotImplementedException();
+                    }
+
                     var costOnCompensation = (int)Math.Floor(compensation * (1 - (interest.Value / 10000m)));
                     if (costOnCompensation < 0)
                     {

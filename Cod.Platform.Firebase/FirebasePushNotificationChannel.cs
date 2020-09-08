@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -17,12 +16,9 @@ namespace Cod.Platform
         private const string AccessTokenCacheKey = "GooglePushAccessToken";
 
         public FirebasePushNotificationChannel(Lazy<IOpenIDManager> openIDManager, Lazy<ICacheStore> cacheStore)
-            : base(openIDManager)
-        {
-            this.cacheStore = cacheStore;
-        }
+            : base(openIDManager) => this.cacheStore = cacheStore;
 
-        public async override Task<OperationResult> SendAsync(string brand,
+        public override async Task<OperationResult> SendAsync(string brand,
             Guid user,
             NotificationContext context,
             int template,
@@ -32,12 +28,12 @@ namespace Cod.Platform
             if (level != (int)OpenIDKind.GoogleAndroid
                 || (context != null && context.Kind != (int)OpenIDKind.GoogleAndroid))
             {
-                return OperationResult.Create(InternalError.NotAllowed);
+                return OperationResult.NotAcceptable;
             }
             return await base.SendAsync(brand, user, context, template, parameters, level);
         }
 
-        protected async override Task<OperationResult> SendPushAsync(
+        protected override async Task<OperationResult> SendPushAsync(
             string brand,
             IEnumerable<NotificationContext> targets,
             int template,
@@ -52,7 +48,7 @@ namespace Cod.Platform
                     continue;
                 }
 
-                var token = await cacheStore.Value.GetAsync<string>(target.App, AccessTokenCacheKey);
+                var token = await this.cacheStore.Value.GetAsync<string>(target.App, AccessTokenCacheKey);
                 if (String.IsNullOrWhiteSpace(token))
                 {
                     var cred = await this.GetCredentialAsync(target);
@@ -62,7 +58,7 @@ namespace Cod.Platform
                     if (t.ExpiresInSeconds.HasValue)
                     {
                         var expiry = DateTimeOffset.UtcNow.AddSeconds(t.ExpiresInSeconds.Value - 1000);
-                        await cacheStore.Value.SetAsync(target.App, AccessTokenCacheKey, t.AccessToken, true, expiry);
+                        await this.cacheStore.Value.SetAsync(target.App, AccessTokenCacheKey, t.AccessToken, true, expiry);
                     }
                     token = t.AccessToken;
                 }
@@ -91,11 +87,11 @@ namespace Cod.Platform
 
             if (success)
             {
-                return OperationResult.Create();
+                return OperationResult.Success;
             }
             else
             {
-                return OperationResult.Create((int)HttpStatusCode.InternalServerError);
+                return OperationResult.InternalServerError;
             }
         }
 

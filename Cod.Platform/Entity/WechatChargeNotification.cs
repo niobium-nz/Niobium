@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Cod.Platform.Model
+namespace Cod.Platform
 {
     public class WechatChargeNotification : ChargeNotification
     {

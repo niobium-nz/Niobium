@@ -8,10 +8,7 @@ namespace Cod.Platform
     {
         private readonly Lazy<IEnumerable<INotificationChannel>> channels;
 
-        public NotificationService(Lazy<IEnumerable<INotificationChannel>> channels)
-        {
-            this.channels = channels;
-        }
+        public NotificationService(Lazy<IEnumerable<INotificationChannel>> channels) => this.channels = channels;
 
         public async Task<OperationResult<int>> SendAsync(
             string brand,
@@ -25,10 +22,10 @@ namespace Cod.Platform
             var level = startLevel;
             if (level > maxLevel)
             {
-                return OperationResult<int>.Create(InternalError.InternalServerError, null);
+                return new OperationResult<int>(InternalError.InternalServerError);
             }
 
-            foreach (var channel in channels.Value)
+            foreach (var channel in this.channels.Value)
             {
                 var result = await channel.SendAsync(brand, user, context, template, parameters, level);
                 if (result.IsSuccess)

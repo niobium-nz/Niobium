@@ -12,6 +12,8 @@ namespace Cod.Channel.Blazor
             this.runtime = runtime;
         }
 
+        public async Task<string> GetLocateAsync() => await this.runtime.InvokeAsync<string>("getLocate", null);
+
         public async Task<string> GetUserAgentAsync() => await this.runtime.InvokeAsync<string>("getUserAgent", null);
     }
 }

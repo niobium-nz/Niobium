@@ -5,6 +5,28 @@ namespace Cod
     public class OperationResult
     {
         public const int SuccessCode = 0;
+        public static readonly OperationResult Success = new OperationResult();
+        public static readonly OperationResult BadRequest = new OperationResult(InternalError.BadRequest);
+        public static readonly OperationResult AuthenticationRequired = new OperationResult(InternalError.AuthenticationRequired);
+        public static readonly OperationResult PaymentRequired = new OperationResult(InternalError.PaymentRequired);
+        public static readonly OperationResult Forbidden = new OperationResult(InternalError.Forbidden);
+        public static readonly OperationResult NotFound = new OperationResult(InternalError.NotFound);
+        public static readonly OperationResult NotAllowed = new OperationResult(InternalError.NotAllowed);
+        public static readonly OperationResult NotAcceptable = new OperationResult(InternalError.NotAcceptable);
+        public static readonly OperationResult RequestTimeout = new OperationResult(InternalError.RequestTimeout);
+        public static readonly OperationResult Conflict = new OperationResult(InternalError.Conflict);
+        public static readonly OperationResult PreconditionFailed = new OperationResult(InternalError.PreconditionFailed);
+        public static readonly OperationResult Locked = new OperationResult(InternalError.Locked);
+        public static readonly OperationResult UpgradeRequired = new OperationResult(InternalError.UpgradeRequired);
+        public static readonly OperationResult TooManyRequests = new OperationResult(InternalError.TooManyRequests);
+
+        public static readonly OperationResult InternalServerError = new OperationResult(InternalError.InternalServerError);
+        public static readonly OperationResult ServiceUnavailable = new OperationResult(InternalError.ServiceUnavailable);
+        public static readonly OperationResult GatewayTimeout = new OperationResult(InternalError.GatewayTimeout);
+
+        public static readonly OperationResult NetworkFailure = new OperationResult(InternalError.NetworkFailure);
+
+        public static readonly OperationResult Unknown = new OperationResult(InternalError.Unknown);
 
         public int Code { get; set; }
 
@@ -14,27 +36,24 @@ namespace Cod
 
         public bool IsSuccess => this.Code == SuccessCode;
 
-        protected OperationResult(int code) => this.Code = code;
-
-        public OperationResult(OperationResult result) : this(result.Code)
+        public OperationResult() : this(SuccessCode)
         {
-            this.Message = result.Message;
-            this.Reference = result.Reference;
         }
 
-        public static OperationResult Create() => new OperationResult(SuccessCode);
-
-        public static OperationResult Create(int code, string description = null)
+        public OperationResult(int code, string description = null)
         {
+            this.Code = code;
+
             var msg = new StringBuilder();
-            if (InternalError.Messages.ContainsKey(code))
+            if (InternalError.TryGet(code, out var val))
             {
-                msg.Append(InternalError.Messages[code]);
+                msg.Append(val);
             }
             else
             {
-                msg.Append("Unknown Error");
+                msg.Append(InternalError.Unknown);
             }
+
             if (description != null)
             {
                 if (msg.Length > 0)
@@ -50,53 +69,35 @@ namespace Cod
                 msg.Append(code.ToString());
                 msg.Append("]");
             }
-            return new OperationResult(code)
-            {
-                Message = msg.ToString()
-            };
+
+            this.Message = msg.ToString();
+        }
+
+        public OperationResult(OperationResult result) : this(result.Code)
+        {
+            this.Message = result.Message;
+            this.Reference = result.Reference;
         }
     }
 
     public class OperationResult<T> : OperationResult
     {
-        protected OperationResult(int code) : base(code)
+        public OperationResult() : base()
         {
         }
+
+        public OperationResult(T result) : this() => this.Result = result;
+
+        public OperationResult(int code, string description = null) : base(code, description)
+        {
+        }
+
+        public OperationResult(int code, T result, string description = null) : this(code, description) => this.Result = result;
 
         public OperationResult(OperationResult result) : base(result)
         {
         }
 
-        public OperationResult(int code, T result) : this(code) => this.Result = result;
-
         public T Result { get; set; }
-
-        public static OperationResult<T> Create(T result) => new OperationResult<T>(SuccessCode, result);
-
-        public static OperationResult<T> Create(int code, object reference, string description = null)
-        {
-            var msg = new StringBuilder();
-            if (InternalError.Messages.ContainsKey(code))
-            {
-                msg.Append(InternalError.Messages[code]);
-            }
-            else
-            {
-                msg.Append("Unknown Error");
-            }
-            if (description != null)
-            {
-                msg.Append(":");
-                msg.Append(description);
-            }
-            msg.Append(" [0x");
-            msg.Append(code.ToString());
-            msg.Append("]");
-            return new OperationResult<T>(code)
-            {
-                Message = msg.ToString(),
-                Reference = reference,
-            };
-        }
     }
 }

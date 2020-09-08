@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 
 namespace Cod.Platform
 {
@@ -14,22 +13,22 @@ namespace Cod.Platform
                     var bi = await brandService.GetAsync(OpenIDKind.Wechat, uploadSource.AppID);
                     if (bi == null)
                     {
-                        return OperationResult<Uri>.Create(InternalError.InternalServerError, null);
+                        return new OperationResult<Uri>(InternalError.InternalServerError);
                     }
 
                     var secert = bi.WechatSecret;
                     var rs = await wechatIntegration.GenerateMediaUri(uploadSource.AppID, secert, uploadSource.FileID);
                     if (!rs.IsSuccess)
                     {
-                        return OperationResult<Uri>.Create(InternalError.InternalServerError, JsonConvert.SerializeObject(rs));
+                        return new OperationResult<Uri>(rs);
                     }
                     else
                     {
-                        return OperationResult<Uri>.Create(rs.Result);
+                        return new OperationResult<Uri>(rs.Result);
                     }
 
                 default:
-                    return OperationResult<Uri>.Create(InternalError.InternalServerError, null);
+                    throw new NotImplementedException();
             }
         }
     }

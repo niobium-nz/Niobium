@@ -34,15 +34,12 @@ namespace Cod.Channel
         public async Task<OperationResult<TDomain>> LoadAsync(string partitionKey, string rowKey, bool force = false)
         {
             var result = await this.LoadAsync(partitionKey, partitionKey, rowKey, rowKey, 1, force);
-            if (result.IsSuccess)
+            if (!result.IsSuccess)
             {
-                return OperationResult<TDomain>.Create(this.Data.SingleOrDefault(c => c.PartitionKey == partitionKey && c.RowKey == rowKey));
+                return new OperationResult<TDomain>(result);
             }
-            return new OperationResult<TDomain>(result.Code, default)
-            {
-                Message = result.Message,
-                Reference = result.Reference
-            };
+
+            return new OperationResult<TDomain>(this.Data.SingleOrDefault(c => c.PartitionKey == partitionKey && c.RowKey == rowKey));
         }
 
         public async Task<OperationResult<IReadOnlyCollection<TDomain>>> LoadAsync(string partitionKey, int count = -1, bool force = false, bool continueToLoadMore = false)
@@ -75,13 +72,13 @@ namespace Cod.Channel
 
                 if (cache != null)
                 {
-                    return OperationResult<IReadOnlyCollection<TDomain>>.Create(new[] { cache });
+                    return new OperationResult<IReadOnlyCollection<TDomain>>(new[] { cache });
                 }
             }
 
             var proceed = false;
             ContinuationToken continuationToken = null;
-            if (force || !fetchHistory.ContainsKey(key))
+            if (force || !this.fetchHistory.ContainsKey(key))
             {
                 if (force && continueToLoadMore)
                 {
@@ -90,11 +87,11 @@ namespace Cod.Channel
 
                 proceed = true;
             }
-            else if (fetchHistory.ContainsKey(key))
+            else if (this.fetchHistory.ContainsKey(key))
             {
                 if (continueToLoadMore)
                 {
-                    continuationToken = fetchHistory[key];
+                    continuationToken = this.fetchHistory[key];
                     proceed = true;
                 }
             }
@@ -129,7 +126,7 @@ namespace Cod.Channel
                 }
             }
 
-            return OperationResult<IReadOnlyCollection<TDomain>>.Create(result);
+            return new OperationResult<IReadOnlyCollection<TDomain>>(result);
         }
 
         public async Task<OperationResult<IReadOnlyCollection<TDomain>>> LoadAsync(int count = -1, bool force = false, bool continueToLoadMore = false)
@@ -224,12 +221,12 @@ namespace Cod.Channel
             return result;
         }
 
-        protected virtual void Uncache(TDomain domainObject) => Uncache(new[] { domainObject });
+        protected virtual void Uncache(TDomain domainObject) => this.Uncache(new[] { domainObject });
 
         protected virtual void Uncache(IEnumerable<TDomain> domainObjects)
             => this.CachedData.RemoveAll(c => domainObjects.Any(dobj => dobj.PartitionKey == c.PartitionKey && dobj.RowKey == c.RowKey));
 
-        protected virtual void Uncache(TEntity entity) => Uncache(new[] { entity });
+        protected virtual void Uncache(TEntity entity) => this.Uncache(new[] { entity });
 
         protected virtual void Uncache(IEnumerable<TEntity> entities)
             => this.CachedData.RemoveAll(c => entities.Any(en => en.PartitionKey == c.PartitionKey && en.RowKey == c.RowKey));

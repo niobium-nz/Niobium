@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using Microsoft.Azure.Cosmos.Table;
 
-namespace Cod.Platform.Model
+namespace Cod.Platform
 {
-    public class Transaction : Cod.Transaction, ITableEntity
+    public class Transaction : Cod.Model.Transaction, ITableEntity
     {
         public void ReadEntity(IDictionary<string, EntityProperty> properties, OperationContext operationContext) => TableEntityHelper.ReflectionRead(this, properties, operationContext);
 

@@ -9,10 +9,7 @@ namespace Cod.Platform
     {
         private readonly Lazy<IOpenIDManager> openIDManager;
 
-        public PushNotificationChannel(Lazy<IOpenIDManager> openIDManager)
-        {
-            this.openIDManager = openIDManager;
-        }
+        public PushNotificationChannel(Lazy<IOpenIDManager> openIDManager) => this.openIDManager = openIDManager;
 
         public virtual async Task<OperationResult> SendAsync(
             string brand,
@@ -26,7 +23,7 @@ namespace Cod.Platform
                 || level == (int)OpenIDKind.PhoneCall
                 || level == (int)OpenIDKind.SMS)
             {
-                return OperationResult.Create(InternalError.NotAllowed);
+                return OperationResult.NotAllowed;
             }
 
             var targets = Enumerable.Empty<NotificationContext>();
@@ -43,7 +40,7 @@ namespace Cod.Platform
 
             if (!targets.Any())
             {
-                return OperationResult.Create(InternalError.NotAllowed);
+                return OperationResult.NotAllowed;
             }
 
             return await this.SendPushAsync(brand, targets, template, parameters);
