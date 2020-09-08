@@ -32,7 +32,11 @@ namespace Cod.Platform
 
             if (request != null && request.Headers.TryGetValue("Accept-Language", out var value))
             {
-                UICulture.Register(new CultureInfo(value.ToString()));
+                var parts = value.ToString().Split(',');
+                if (parts.Length > 0)
+                {
+                    UICulture.Register(new CultureInfo(parts[0]));
+                }
             }
         }
 
