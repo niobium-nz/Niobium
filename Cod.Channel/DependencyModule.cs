@@ -15,6 +15,7 @@ namespace Cod.Channel
             services.AddSingleton<IAuthenticator, DefaultAuthenticator>();
             services.AddSingleton<ICommander, DefaultCommander>();
             services.AddSingleton<INotificationService, NotificationService>();
+            services.AddSingleton<IHttpClient, HttpClientAdapter>();
         }
     }
 }

@@ -11,7 +11,7 @@ namespace Cod.Channel
         where TEntity : class, IEntity
         where TDomain : IChannelDomain<TEntity>
     {
-        public GenericCRUDRepository(IConfigurationProvider configuration, HttpClient httpClient, IAuthenticator authenticator, Func<TDomain> createDomain)
+        public GenericCRUDRepository(IConfigurationProvider configuration, IHttpClient httpClient, IAuthenticator authenticator, Func<TDomain> createDomain)
             : base(configuration, httpClient, authenticator, createDomain)
         {
         }
@@ -24,7 +24,7 @@ namespace Cod.Channel
         where TDomain : IChannelDomain<TEntity>
         where TCreateParams : class
     {
-        public GenericCRUDRepository(IConfigurationProvider configuration, HttpClient httpClient, IAuthenticator authenticator, Func<TDomain> createDomain)
+        public GenericCRUDRepository(IConfigurationProvider configuration, IHttpClient httpClient, IAuthenticator authenticator, Func<TDomain> createDomain)
             : base(configuration, httpClient, authenticator, createDomain)
         {
         }
@@ -42,7 +42,7 @@ namespace Cod.Channel
     {
         public GenericCRUDRepository(
             IConfigurationProvider configuration,
-            HttpClient httpClient,
+            IHttpClient httpClient,
             IAuthenticator authenticator,
             Func<TDomain> createDomain)
             : base(configuration, httpClient, authenticator, createDomain)

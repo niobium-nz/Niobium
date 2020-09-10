@@ -16,7 +16,7 @@ namespace Cod.Channel
 
         private readonly ConcurrentDictionary<string, StorageSignature> signatures = new ConcurrentDictionary<string, StorageSignature>();
         private readonly IConfigurationProvider configuration;
-        private readonly HttpClient httpClient;
+        private readonly IHttpClient httpClient;
         private readonly IEnumerable<IEventHandler<IAuthenticator>> eventHandlers;
         private ConcurrentBag<KeyValuePair<string, string>> claims;
 
@@ -35,7 +35,7 @@ namespace Cod.Channel
         public AccessToken Token { get; private set; }
 
         public DefaultAuthenticator(IConfigurationProvider configuration,
-            HttpClient httpClient,
+            IHttpClient httpClient,
             IEnumerable<IEventHandler<IAuthenticator>> eventHandlers)
         {
             this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
@@ -62,7 +62,6 @@ namespace Cod.Channel
             if (!String.IsNullOrWhiteSpace(token))
             {
                 await this.SetTokenAsync(token);
-                await this.SaveTokenAsync(token);
             }
             var ss = await this.GetSavedSignaturesAsync();
             if (ss != null && ss.Count > 0)
@@ -132,29 +131,13 @@ namespace Cod.Channel
         {
             var apiUrl = await this.configuration.GetSettingAsStringAsync(Constants.KEY_API_URL);
             var creds = Encoding.ASCII.GetBytes($"{username.Trim()}:{password.Trim()}");
-            var request = new HttpRequestMessage(HttpMethod.Get, $"{apiUrl}/v2/token");
-            request.Headers.Authorization = new AuthenticationHeaderValue(scheme, Convert.ToBase64String(creds));
-            var response = await this.httpClient.SendAsync(request);
-            var statusCode = (int)response.StatusCode;
-            if (statusCode >= 200 && statusCode < 300)
-            {
-                var header = response.Headers.WwwAuthenticate.SingleOrDefault();
-                if (header != null && header.Scheme == "Bearer")
+            return await this.httpClient.RequestAsync(
+                HttpMethod.Get,
+                $"{apiUrl}/v2/token",
+                headers: new[]
                 {
-                    await this.SetTokenAsync(header.Parameter);
-                    if (remember)
-                    {
-                        await this.SaveTokenAsync(header.Parameter);
-                    }
-                    return OperationResult.Success;
-                }
-
-                return OperationResult.AuthenticationRequired;
-            }
-            else
-            {
-                return new OperationResult(statusCode);
-            }
+                    new KeyValuePair<string, string>("Authorization", new AuthenticationHeaderValue(scheme, Convert.ToBase64String(creds)).ToString())
+                });
         }
 
         public async Task CleanupAsync()
@@ -166,7 +149,7 @@ namespace Cod.Channel
             }
         }
 
-        protected async Task SetTokenAsync(string token)
+        public async Task SetTokenAsync(string token)
         {
             await this.CleanupCredentialsAsync();
             try
@@ -182,6 +165,9 @@ namespace Cod.Channel
                     Token = token,
                     Expiry = new DateTimeOffset(jwt.ValidTo).ToUnixTimeSeconds(),
                 };
+
+                // if (remember) 此处应该判断是否保存
+                await this.SaveTokenAsync(token);
             }
             catch (ArgumentException)
             {

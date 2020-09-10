@@ -7,10 +7,18 @@ using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
-    public static class HttpClientExtensions
+    internal class HttpClientAdapter : IHttpClient
     {
-        public static async Task<OperationResult<T>> RequestAsync<T>(
-           this HttpClient httpClient,
+        private readonly HttpClient httpClient;
+        private readonly IAuthenticator authenticator;
+
+        public HttpClientAdapter(HttpClient httpClient, IAuthenticator authenticator)
+        {
+            this.httpClient = httpClient;
+            this.authenticator = authenticator;
+        }
+
+        public async Task<OperationResult<T>> RequestAsync<T>(
            HttpMethod method,
            string uri,
            string bearerToken = null,
@@ -18,7 +26,7 @@ namespace Cod.Channel
            IEnumerable<KeyValuePair<string, string>> headers = null,
            string contentType = null)
         {
-            var result = await httpClient.RequestAsync(method, uri, bearerToken, body, headers, contentType);
+            var result = await this.RequestAsync(method, uri, bearerToken, body, headers, contentType);
             if (!result.IsSuccess)
             {
                 return new OperationResult<T>(result);
@@ -29,8 +37,16 @@ namespace Cod.Channel
             return new OperationResult<T>(obj);
         }
 
-        public static async Task<OperationResult<HttpResponseMessage>> RequestAsync(
-            this HttpClient httpClient,
+        public async Task<OperationResult<HttpResponseMessage>> RequestAsync(
+            HttpMethod method,
+            string uri,
+            string bearerToken = null,
+            object body = null,
+            IEnumerable<KeyValuePair<string, string>> headers = null,
+            string contentType = null)
+            => await RequestAsync(method, uri, bearerToken, body, headers, contentType, 0);
+
+        private async Task<OperationResult<HttpResponseMessage>> RequestAsync(
             HttpMethod method,
             string uri,
             string bearerToken = null,
@@ -85,11 +101,16 @@ namespace Cod.Channel
                     }
                 }
 
-                var response = await httpClient.SendAsync(request);
+                var response = await this.httpClient.SendAsync(request);
                 var status = (int)response.StatusCode;
                 var code = status;
                 if (code >= 200 && code < 400)
                 {
+                    var header = response.Headers.WwwAuthenticate.SingleOrDefault();
+                    if (header != null && header.Scheme == "Bearer" && !String.IsNullOrWhiteSpace(header.Parameter))
+                    {
+                        await this.authenticator.SetTokenAsync(header.Parameter);
+                    }
                     code = OperationResult.SuccessCode;
                 }
 
@@ -101,7 +122,7 @@ namespace Cod.Channel
             }
             catch (Exception)
             {
-                return await RequestAsync(httpClient,
+                return await RequestAsync(
                     method,
                     uri,
                     bearerToken: bearerToken,

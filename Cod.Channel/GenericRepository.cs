@@ -11,12 +11,12 @@ namespace Cod.Channel
         where TDomain : IChannelDomain<TEntity>
     {
         private readonly IConfigurationProvider configuration;
-        private readonly HttpClient httpClient;
+        private readonly IHttpClient httpClient;
         private readonly IAuthenticator authenticator;
         private readonly Func<TDomain> createDomain;
         private readonly Dictionary<TableStorageFetchKey, ContinuationToken> fetchHistory;
 
-        public GenericRepository(IConfigurationProvider configuration, HttpClient httpClient,
+        public GenericRepository(IConfigurationProvider configuration, IHttpClient httpClient,
             IAuthenticator authenticator, Func<TDomain> createDomain)
         {
             this.fetchHistory = new Dictionary<TableStorageFetchKey, ContinuationToken>();

@@ -19,7 +19,7 @@ namespace Cod.Channel
             new KeyValuePair<string, string>("Accept", "application/json;odata=minimalmetadata"),
         };
 
-        public static async Task<OperationResult<TableQueryResult<T>>> GetAsync<T>(HttpClient httpClient,
+        public static async Task<OperationResult<TableQueryResult<T>>> GetAsync<T>(IHttpClient httpClient,
             string baseUrl, string connectionString,
             string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd,
             ContinuationToken continuationToken = null, int count = -1)

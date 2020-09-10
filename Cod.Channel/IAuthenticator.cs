@@ -13,6 +13,8 @@ namespace Cod.Channel
 
         Task<OperationResult> AquireTokenAsync(string scheme, string username, string password, bool remember);
 
+        Task SetTokenAsync(string token);
+
         Task<OperationResult<StorageSignature>> AquireSignatureAsync(StorageType type, string resource, string partitionKey, string rowKey);
 
         Task CleanupAsync();

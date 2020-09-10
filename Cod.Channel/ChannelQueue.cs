@@ -20,9 +20,9 @@ namespace Cod.Channel
         };
         private readonly IAuthenticator authenticator;
         private readonly IConfigurationProvider configuration;
-        private readonly HttpClient httpClient;
+        private readonly IHttpClient httpClient;
 
-        public ChannelQueue(IAuthenticator authenticator, IConfigurationProvider configuration, HttpClient httpClient)
+        public ChannelQueue(IAuthenticator authenticator, IConfigurationProvider configuration, IHttpClient httpClient)
         {
             this.authenticator = authenticator;
             this.configuration = configuration;

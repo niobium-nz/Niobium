@@ -46,7 +46,7 @@ namespace Cod.Channel.Blazor
         protected IJSRuntime JSRuntime { get; set; }
 
         [Inject]
-        protected HttpClient HttpClient { get; set; }
+        protected IHttpClient HttpClient { get; set; }
 
         [Inject]
         protected IConfigurationProvider Configuration { get; set; }
