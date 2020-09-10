@@ -17,7 +17,7 @@ namespace Cod.Channel
             services.AddSingleton<ICommander, DefaultCommander>();
             services.AddSingleton<INotificationService, NotificationService>();
             services.AddSingleton<IHttpClient, HttpClientAdapter>();
-            services.AddSingleton(sp => new Lazy<IHttpClient>(() => sp.GetService<HttpClientAdapter>(), true));
+            services.AddSingleton(sp => new Lazy<IHttpClient>(() => sp.GetService<IHttpClient>(), true));
         }
     }
 }
