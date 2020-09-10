@@ -16,7 +16,7 @@ namespace Cod.Channel
 
         private readonly ConcurrentDictionary<string, StorageSignature> signatures = new ConcurrentDictionary<string, StorageSignature>();
         private readonly IConfigurationProvider configuration;
-        private readonly IHttpClient httpClient;
+        private readonly Lazy<IHttpClient> httpClient;
         private readonly IEnumerable<IEventHandler<IAuthenticator>> eventHandlers;
         private ConcurrentBag<KeyValuePair<string, string>> claims;
 
@@ -35,7 +35,7 @@ namespace Cod.Channel
         public AccessToken Token { get; private set; }
 
         public DefaultAuthenticator(IConfigurationProvider configuration,
-            IHttpClient httpClient,
+            Lazy<IHttpClient> httpClient,
             IEnumerable<IEventHandler<IAuthenticator>> eventHandlers)
         {
             this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
@@ -110,7 +110,7 @@ namespace Cod.Channel
                 path.Append(rowKey);
             }
 
-            var sig = await this.httpClient.RequestAsync<StorageSignature>(HttpMethod.Get, $"{apiUrl}{path}", this.Token.Token);
+            var sig = await this.httpClient.Value.RequestAsync<StorageSignature>(HttpMethod.Get, $"{apiUrl}{path}", this.Token.Token);
             if (sig.IsSuccess)
             {
                 var signature = sig.Result;
@@ -131,7 +131,7 @@ namespace Cod.Channel
         {
             var apiUrl = await this.configuration.GetSettingAsStringAsync(Constants.KEY_API_URL);
             var creds = Encoding.ASCII.GetBytes($"{username.Trim()}:{password.Trim()}");
-            return await this.httpClient.RequestAsync(
+            return await this.httpClient.Value.RequestAsync(
                 HttpMethod.Get,
                 $"{apiUrl}/v2/token",
                 headers: new[]

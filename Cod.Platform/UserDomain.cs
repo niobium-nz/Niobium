@@ -8,12 +8,15 @@ namespace Cod.Platform
 {
     public class UserDomain : ImpedableDomain<User>, IAccountable, ILoggerSite
     {
+        private const string ClientIDSplitString = "###";
+
         private readonly Lazy<ICacheStore> cache;
         private readonly Lazy<IRepository<WechatEntity>> wechatRepository;
         private readonly Lazy<IRepository<Login>> loginRepository;
         private readonly Lazy<IRepository<Entitlement>> entitlementRepository;
         private readonly Lazy<IOpenIDManager> openIDManager;
         private readonly Lazy<ITokenBuilder> tokenBuilder;
+        private readonly Lazy<IConfigurationProvider> configuration;
 
         public UserDomain(
             Lazy<ICacheStore> cache,
@@ -24,6 +27,7 @@ namespace Cod.Platform
             Lazy<IOpenIDManager> openIDManager,
             Lazy<IEnumerable<IImpedimentPolicy>> policies,
             Lazy<ITokenBuilder> tokenBuilder,
+            Lazy<IConfigurationProvider> configuration,
             ILogger logger)
             : base(repository, policies, logger)
         {
@@ -33,6 +37,7 @@ namespace Cod.Platform
             this.entitlementRepository = entitlementRepository;
             this.openIDManager = openIDManager;
             this.tokenBuilder = tokenBuilder;
+            this.configuration = configuration;
             this.Logger = logger;
         }
 
@@ -90,13 +95,16 @@ namespace Cod.Platform
                 return new OperationResult<LoginResult>(InternalError.AuthenticationRequired);
             }
 
+            var result = new LoginResult();
             var openid = wechat.Value;
             var login = await this.loginRepository.Value.GetAsync(
                 Login.BuildPartitionKey(kind, appID),
                 Login.BuildRowKey(openid));
             if (login == null)
             {
-                return new OperationResult<LoginResult>(InternalError.NotFound) { Reference = openid };
+                var key = await this.configuration.Value.GetSettingAsync<string>(Constant.AUTH_SECRET_NAME);
+                result.OpenID = GenerateClientID(kind, appID, openid, key);
+                return new OperationResult<LoginResult>(InternalError.NotFound, result) { Reference = openid };
             }
 
             var userID = login.User;
@@ -105,7 +113,9 @@ namespace Cod.Platform
                 User.BuildRowKey(userID));
             if (user == null)
             {
-                return new OperationResult<LoginResult>(InternalError.NotFound) { Reference = openid };
+                var key = await this.configuration.Value.GetSettingAsync<string>(Constant.AUTH_SECRET_NAME);
+                result.OpenID = GenerateClientID(kind, appID, openid, key);
+                return new OperationResult<LoginResult>(InternalError.NotFound, result) { Reference = openid };
             }
 
             if (user.Disabled)
@@ -113,12 +123,9 @@ namespace Cod.Platform
                 return new OperationResult<LoginResult>(InternalError.Locked) { Reference = openid };
             }
 
-            return new OperationResult<LoginResult>(
-                new LoginResult
-                {
-                    User = user,
-                    OpenID = openid,
-                });
+            result.User = user;
+            result.OpenID = openid;
+            return new OperationResult<LoginResult>(result);
         }
 
         public async Task<string> IssueTokenAsync(IEnumerable<KeyValuePair<string, string>> entitlements)
@@ -295,5 +302,15 @@ namespace Cod.Platform
             => Task.FromResult(OperationResult.Success);
 
         protected virtual Task<ushort> GetTokenValidHoursAsync() => Task.FromResult<ushort>(8);
+
+        private static string GenerateClientID(OpenIDKind kind, string appID, string openID, string key)
+        {
+            if (String.IsNullOrWhiteSpace(openID))
+            {
+                return null;
+            }
+
+            return AES.Encrypt($"{(int)kind}{ClientIDSplitString}{appID}{ClientIDSplitString}{openID}", key);
+        }
     }
 }

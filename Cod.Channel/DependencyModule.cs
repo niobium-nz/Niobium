@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Cod.Channel
 {
@@ -16,6 +17,7 @@ namespace Cod.Channel
             services.AddSingleton<ICommander, DefaultCommander>();
             services.AddSingleton<INotificationService, NotificationService>();
             services.AddSingleton<IHttpClient, HttpClientAdapter>();
+            services.AddSingleton(sp => new Lazy<IHttpClient>(() => sp.GetService<HttpClientAdapter>(), true));
         }
     }
 }
