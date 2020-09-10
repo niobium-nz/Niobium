@@ -7,7 +7,6 @@ using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 
@@ -139,35 +138,31 @@ namespace Cod.Platform
 
             try
             {
-                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false)
+                using var httpclient = new HttpClient(HttpHandler.GetHandler(), false)
                 {
 #if !DEBUG
                     Timeout = TimeSpan.FromSeconds(5),
 #endif
-                })
+                };
+                using var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded");
+                var resp = await httpclient.PostAsync($"{Host}/rest/2.0/ocr/v1/qrcode", post);
+                var status = (int)resp.StatusCode;
+                var json = await resp.Content.ReadAsStringAsync();
+                if (status >= 200 && status < 400)
                 {
-                    using (var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded"))
+                    var result = JsonSerializer.DeserializeObject<BaiduCodeScanResponse>(json, JsonSerializationFormat.UnderstoreCase);
+                    if (!result.ErrorCode.HasValue)
                     {
-                        var resp = await httpclient.PostAsync($"{Host}/rest/2.0/ocr/v1/qrcode", post);
-                        var status = (int)resp.StatusCode;
-                        var json = await resp.Content.ReadAsStringAsync();
-                        if (status >= 200 && status < 400)
-                        {
-                            var result = JsonConvert.DeserializeObject<BaiduCodeScanResponse>(json, JsonSetting.UnderstoreCase);
-                            if (!result.ErrorCode.HasValue)
+                        return new OperationResult<IEnumerable<CodeScanResult>>(result.CodesResult.SelectMany(r =>
+                            r.Text.Select(t => new CodeScanResult
                             {
-                                return new OperationResult<IEnumerable<CodeScanResult>>(result.CodesResult.SelectMany(r =>
-                                    r.Text.Select(t => new CodeScanResult
-                                    {
-                                        Code = t,
-                                        Kind = r.Type == "CODE_128" ? CodeKind.CODE_128 : r.Type == "QR_CODE" ? CodeKind.QR_CODE : CodeKind.Unknown,
-                                    })));
-                            }
-                            return new OperationResult<IEnumerable<CodeScanResult>>(InternalError.InternalServerError) { Reference = json };
-                        }
-                        return new OperationResult<IEnumerable<CodeScanResult>>(status) { Reference = json };
+                                Code = t,
+                                Kind = r.Type == "CODE_128" ? CodeKind.CODE_128 : r.Type == "QR_CODE" ? CodeKind.QR_CODE : CodeKind.Unknown,
+                            })));
                     }
+                    return new OperationResult<IEnumerable<CodeScanResult>>(InternalError.InternalServerError) { Reference = json };
                 }
+                return new OperationResult<IEnumerable<CodeScanResult>>(status) { Reference = json };
             }
             catch (TaskCanceledException)
             {
@@ -218,37 +213,33 @@ namespace Cod.Platform
 
             try
             {
-                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false)
+                using var httpclient = new HttpClient(HttpHandler.GetHandler(), false)
                 {
 #if !DEBUG
                     Timeout = TimeSpan.FromSeconds(5)
 #endif
-                })
+                };
+                using var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded");
+                var path = tryHarder ? "rest/2.0/ocr/v1/accurate_basic" : "rest/2.0/ocr/v1/general_basic";
+                var resp = await httpclient.PostAsync($"{Host}/{path}", post);
+                var status = (int)resp.StatusCode;
+                var json = await resp.Content.ReadAsStringAsync();
+                if (status >= 200 && status < 400)
                 {
-                    using (var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded"))
+                    var result = JsonSerializer.DeserializeObject<BaiduOCRResponse>(json, JsonSerializationFormat.UnderstoreCase);
+                    if (result.WordsResult != null && result.WordsResult.Length > 0)
                     {
-                        var path = tryHarder ? "rest/2.0/ocr/v1/accurate_basic" : "rest/2.0/ocr/v1/general_basic";
-                        var resp = await httpclient.PostAsync($"{Host}/{path}", post);
-                        var status = (int)resp.StatusCode;
-                        var json = await resp.Content.ReadAsStringAsync();
-                        if (status >= 200 && status < 400)
-                        {
-                            var result = JsonConvert.DeserializeObject<BaiduOCRResponse>(json, JsonSetting.UnderstoreCase);
-                            if (result.WordsResult != null && result.WordsResult.Length > 0)
+                        return new OperationResult<IEnumerable<OCRScanResult>>(
+                            result.WordsResult.Select(r => new OCRScanResult
                             {
-                                return new OperationResult<IEnumerable<OCRScanResult>>(
-                                    result.WordsResult.Select(r => new OCRScanResult
-                                    {
-                                        Text = r.Words,
-                                        IsConfident = r.Probability.Variance < 0.019d // REMARK (5he11) 方差不能太大，否则识别不准确
-                                         && r.Probability.Min > 0.6d // REMARK (5he11) 最小信心不能太小，否则识别不准确
-                                    }));
-                            }
-                            return new OperationResult<IEnumerable<OCRScanResult>>(InternalError.InternalServerError) { Reference = json };
-                        }
-                        return new OperationResult<IEnumerable<OCRScanResult>>(status) { Reference = json };
+                                Text = r.Words,
+                                IsConfident = r.Probability.Variance < 0.019d // REMARK (5he11) 方差不能太大，否则识别不准确
+                                 && r.Probability.Min > 0.6d // REMARK (5he11) 最小信心不能太小，否则识别不准确
+                            }));
                     }
+                    return new OperationResult<IEnumerable<OCRScanResult>>(InternalError.InternalServerError) { Reference = json };
                 }
+                return new OperationResult<IEnumerable<OCRScanResult>>(status) { Reference = json };
             }
             catch (TaskCanceledException)
             {
@@ -293,11 +284,10 @@ namespace Cod.Platform
 
             try
             {
-                using (var httpClient = new HttpClient(HttpHandler.GetHandler(), false))
-                {
-                    var url = $"{Host}/rest/2.0/face/v3/match?access_token={token.Result}";
+                using var httpClient = new HttpClient(HttpHandler.GetHandler(), false);
+                var url = $"{Host}/rest/2.0/face/v3/match?access_token={token.Result}";
 
-                    var content = new List<Dictionary<string, string>>()
+                var content = new List<Dictionary<string, string>>()
                     {
                         new Dictionary<string, string>()
                         {
@@ -314,29 +304,26 @@ namespace Cod.Platform
                             { "quality_control", "NORMAL" },
                         }
                     };
-                    var js = JsonConvert.SerializeObject(content);
-                    using (var post = new StringContent(js, Encoding.UTF8, "application/json"))
+                var js = JsonSerializer.SerializeObject(content);
+                using var post = new StringContent(js, Encoding.UTF8, "application/json");
+                var response = await httpClient.PostAsync(url, post);
+                var statusCode = (int)response.StatusCode;
+                if (statusCode >= 200 && statusCode < 400)
+                {
+                    js = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.DeserializeObject<BaiduCompareFaceResponse>(js, JsonSerializationFormat.UnderstoreCase);
+                    if (!result.ErrorCode.HasValue || result.ErrorCode == 0)
                     {
-                        var response = await httpClient.PostAsync(url, post);
-                        var statusCode = (int)response.StatusCode;
-                        if (statusCode >= 200 && statusCode < 400)
-                        {
-                            js = await response.Content.ReadAsStringAsync();
-                            var result = JsonConvert.DeserializeObject<BaiduCompareFaceResponse>(js, JsonSetting.UnderstoreCase);
-                            if (!result.ErrorCode.HasValue || result.ErrorCode == 0)
-                            {
-                                return new OperationResult<BaiduCompareFaceResponse>(result);
-                            }
-                            else
-                            {
-                                return new OperationResult<BaiduCompareFaceResponse>(InternalError.InternalServerError) { Reference = js };
-                            }
-                        }
-                        else
-                        {
-                            return new OperationResult<BaiduCompareFaceResponse>(statusCode) { Reference = js };
-                        }
+                        return new OperationResult<BaiduCompareFaceResponse>(result);
                     }
+                    else
+                    {
+                        return new OperationResult<BaiduCompareFaceResponse>(InternalError.InternalServerError) { Reference = js };
+                    }
+                }
+                else
+                {
+                    return new OperationResult<BaiduCompareFaceResponse>(statusCode) { Reference = js };
                 }
             }
             catch
@@ -358,34 +345,30 @@ namespace Cod.Platform
             var secret = await this.configuration.Value.GetSettingAsStringAsync(IntegrationSecret);
             try
             {
-                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+                using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
+                using var post = new FormUrlEncodedContent(new Dictionary<string, string>
                 {
-                    using (var post = new FormUrlEncodedContent(new Dictionary<string, string>
+                    { "grant_type", "client_credentials" },
+                    { "client_id", key },
+                    { "client_secret", secret },
+                });
+                var resp = await httpclient.PostAsync($"{Host}/oauth/2.0/token", post);
+                var status = (int)resp.StatusCode;
+                var json = await resp.Content.ReadAsStringAsync();
+                if (status >= 200 && status < 400)
+                {
+                    var result = JsonSerializer.DeserializeObject<BaiduAccessTokenResponse>(json, JsonSerializationFormat.UnderstoreCase);
+                    if (!String.IsNullOrWhiteSpace(result.AccessToken))
                     {
-                        { "grant_type", "client_credentials" },
-                        { "client_id", key },
-                        { "client_secret", secret },
-                    }))
+                        await this.cacheStore.Value.SetAsync(key, AccessTokenCacheKey, result.AccessToken, true, DateTimeOffset.UtcNow.Add(result.GetExpiry()));
+                        return new OperationResult<string>(result.AccessToken);
+                    }
+                    else
                     {
-                        var resp = await httpclient.PostAsync($"{Host}/oauth/2.0/token", post);
-                        var status = (int)resp.StatusCode;
-                        var json = await resp.Content.ReadAsStringAsync();
-                        if (status >= 200 && status < 400)
-                        {
-                            var result = JsonConvert.DeserializeObject<BaiduAccessTokenResponse>(json, JsonSetting.UnderstoreCase);
-                            if (!String.IsNullOrWhiteSpace(result.AccessToken))
-                            {
-                                await this.cacheStore.Value.SetAsync(key, AccessTokenCacheKey, result.AccessToken, true, DateTimeOffset.UtcNow.Add(result.GetExpiry()));
-                                return new OperationResult<string>(result.AccessToken);
-                            }
-                            else
-                            {
-                                return new OperationResult<string>(InternalError.BadGateway) { Reference = result };
-                            }
-                        }
-                        return new OperationResult<string>(status) { Reference = json };
+                        return new OperationResult<string>(InternalError.BadGateway) { Reference = result };
                     }
                 }
+                return new OperationResult<string>(status) { Reference = json };
             }
             catch (TaskCanceledException)
             {
@@ -419,13 +402,11 @@ namespace Cod.Platform
             byte[] buff;
             using (var ms = new MemoryStream())
             {
-                using (var image = Image.Load(stream))
-                {
-                    var ratio = image.Height / 400d;
-                    image.Mutate(x => x.Resize((int)(image.Width / ratio), (int)(image.Height / ratio)));
-                    image.SaveAsJpeg(ms);
-                    buff = ms.ToByteArray();
-                }
+                using var image = Image.Load(stream);
+                var ratio = image.Height / 400d;
+                image.Mutate(x => x.Resize((int)(image.Width / ratio), (int)(image.Height / ratio)));
+                image.SaveAsJpeg(ms);
+                buff = ms.ToByteArray();
             }
 
             var sideParam = isFrontSide ? "front" : "back";
@@ -434,30 +415,26 @@ namespace Cod.Platform
 
             try
             {
-                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false)
+                using var httpclient = new HttpClient(HttpHandler.GetHandler(), false)
                 {
 #if !DEBUG
                     Timeout = TimeSpan.FromSeconds(3),
 #endif
-                })
+                };
+                using var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded");
+                var resp = await httpclient.PostAsync($"{Host}/rest/2.0/ocr/v1/idcard", post);
+                var status = (int)resp.StatusCode;
+                var json = await resp.Content.ReadAsStringAsync();
+                if (status >= 200 && status < 400)
                 {
-                    using (var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded"))
+                    var result = JsonSerializer.DeserializeObject<BaiduIDScanResponse>(json, JsonSerializationFormat.UnderstoreCase);
+                    if (!result.ErrorCode.HasValue)
                     {
-                        var resp = await httpclient.PostAsync($"{Host}/rest/2.0/ocr/v1/idcard", post);
-                        var status = (int)resp.StatusCode;
-                        var json = await resp.Content.ReadAsStringAsync();
-                        if (status >= 200 && status < 400)
-                        {
-                            var result = JsonConvert.DeserializeObject<BaiduIDScanResponse>(json, JsonSetting.UnderstoreCase);
-                            if (!result.ErrorCode.HasValue)
-                            {
-                                return new OperationResult<BaiduIDScanResponse>(result);
-                            }
-                            return new OperationResult<BaiduIDScanResponse>(InternalError.InternalServerError) { Reference = json };
-                        }
-                        return new OperationResult<BaiduIDScanResponse>(status) { Reference = json };
+                        return new OperationResult<BaiduIDScanResponse>(result);
                     }
+                    return new OperationResult<BaiduIDScanResponse>(InternalError.InternalServerError) { Reference = json };
                 }
+                return new OperationResult<BaiduIDScanResponse>(status) { Reference = json };
             }
             catch (TaskCanceledException)
             {

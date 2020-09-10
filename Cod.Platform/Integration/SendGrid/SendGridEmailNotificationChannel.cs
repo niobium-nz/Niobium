@@ -5,7 +5,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 
 namespace Cod.Platform
 {
@@ -83,23 +82,19 @@ namespace Cod.Platform
             IReadOnlyDictionary<string, object> parameters)
         {
             var requestObj = await this.MakeRequestAsync(brand, email, context, template, parameters);
-            var requestData = JsonConvert.SerializeObject(requestObj, JsonSetting.UnderstoreCase);
-            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+            var requestData = JsonSerializer.SerializeObject(requestObj, JsonSerializationFormat.UnderstoreCase);
+            using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
+            httpclient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Key);
+            using var content = new StringContent(requestData, Encoding.UTF8, "application/json");
+            var resp = await httpclient.PostAsync("https://api.sendgrid.com/v3/mail/send", content);
+            var status = (int)resp.StatusCode;
+            if (status >= 200 && status < 400)
             {
-                httpclient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Key);
-                using (var content = new StringContent(requestData, Encoding.UTF8, "application/json"))
-                {
-                    var resp = await httpclient.PostAsync("https://api.sendgrid.com/v3/mail/send", content);
-                    var status = (int)resp.StatusCode;
-                    if (status >= 200 && status < 400)
-                    {
-                        return OperationResult.Success;
-                    }
-
-                    var json = await resp.Content.ReadAsStringAsync();
-                    return new OperationResult(status) { Reference = json };
-                }
+                return OperationResult.Success;
             }
+
+            var json = await resp.Content.ReadAsStringAsync();
+            return new OperationResult(status) { Reference = json };
         }
 
         protected abstract Task<SendGridEmailRequest> MakeRequestAsync(

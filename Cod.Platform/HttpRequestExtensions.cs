@@ -5,7 +5,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
@@ -14,7 +13,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
 
 namespace Cod.Platform
 {
@@ -45,7 +43,7 @@ namespace Cod.Platform
             HttpStatusCode? statusCode = null,
             object payload = null,
             string contentType = null,
-            JsonSerializerSettings serializerSettings = null)
+            JsonSerializationFormat? serializationFormat = null)
         {
             int? code = null;
             if (statusCode.HasValue)
@@ -69,7 +67,7 @@ namespace Cod.Platform
             }
             else
             {
-                result.Content = JsonConvert.SerializeObject(payload, serializerSettings);
+                result.Content = JsonSerializer.SerializeObject(payload, serializationFormat);
                 result.ContentType = JsonMediaType;
             }
 
@@ -240,6 +238,6 @@ namespace Cod.Platform
                 throw new Exception($"Token was invalid: {argex.Message}");
             }
         }
-        private static T Parse<T>(string body) => JsonConvert.DeserializeObject<T>(body);
+        private static T Parse<T>(string body) => JsonSerializer.DeserializeObject<T>(body);
     }
 }

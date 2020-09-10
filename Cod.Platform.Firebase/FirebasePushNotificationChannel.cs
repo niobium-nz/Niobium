@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace Cod.Platform
 {
@@ -64,23 +63,19 @@ namespace Cod.Platform
                 }
 
                 var request = new FirebaseMessageRequest { Message = message.Message };
-                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+                using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
+                httpclient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                var json = JsonSerializer.SerializeObject(request, JsonSerializationFormat.CamelCase);
+                using var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var resp = await httpclient.PostAsync($"https://fcm.googleapis.com/v1/projects/{message.ProjectID}/messages:send", content);
+                var status = (int)resp.StatusCode;
+                if (status < 200 || status >= 400)
                 {
-                    httpclient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                    var json = JsonConvert.SerializeObject(request, JsonSetting.CamelCase);
-                    using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
+                    success = false;
+                    var error = await resp.Content.ReadAsStringAsync();
+                    if (Logger.Instance != null)
                     {
-                        var resp = await httpclient.PostAsync($"https://fcm.googleapis.com/v1/projects/{message.ProjectID}/messages:send", content);
-                        var status = (int)resp.StatusCode;
-                        if (status < 200 || status >= 400)
-                        {
-                            success = false;
-                            var error = await resp.Content.ReadAsStringAsync();
-                            if (Logger.Instance != null)
-                            {
-                                Logger.Instance.LogError($"An error occurred while making request to Firebase with status code {status}: {error}");
-                            }
-                        }
+                        Logger.Instance.LogError($"An error occurred while making request to Firebase with status code {status}: {error}");
                     }
                 }
             }

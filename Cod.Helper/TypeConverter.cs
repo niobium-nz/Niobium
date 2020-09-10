@@ -10,7 +10,7 @@ namespace Cod
     public static class TypeConverter
     {
         private static readonly Type[] ConvertibleTypes = new[] { typeof(Guid), typeof(DateTime), typeof(DateTimeOffset), typeof(TimeSpan), };
-        
+
         public static T Convert<T>(string input) => (T)Convert(input, typeof(T));
 
         public static object Convert(string input, Type targetType)

@@ -6,7 +6,7 @@ namespace Cod.Platform
 {
     public static class OperationResultExtensions
     {
-        public static IActionResult MakeResponse<T>(this OperationResult<T> operationResult)
+        public static IActionResult MakeResponse<T>(this OperationResult<T> operationResult, JsonSerializationFormat? serializationFormat = null)
         {
             if (operationResult is null)
             {
@@ -29,10 +29,10 @@ namespace Cod.Platform
                 code = HttpStatusCode.InternalServerError;
             }
 
-            return HttpRequestExtensions.MakeResponse(null, statusCode: code, payload: payload);
+            return HttpRequestExtensions.MakeResponse(null, statusCode: code, payload: payload, serializationFormat: serializationFormat);
         }
 
-        public static IActionResult MakeResponse(this OperationResult operationResult, object successPayload = null)
+        public static IActionResult MakeResponse(this OperationResult operationResult, object successPayload = null, JsonSerializationFormat? serializationFormat = null)
         {
             if (operationResult is null)
             {
@@ -55,7 +55,7 @@ namespace Cod.Platform
                 code = HttpStatusCode.InternalServerError;
             }
 
-            return HttpRequestExtensions.MakeResponse(null, statusCode: code, payload: payload);
+            return HttpRequestExtensions.MakeResponse(null, statusCode: code, payload: payload, serializationFormat: serializationFormat);
         }
     }
 }

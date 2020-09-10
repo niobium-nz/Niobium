@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace Cod.Platform
 {
@@ -46,7 +45,7 @@ namespace Cod.Platform
             var body = await result.Content.ReadAsStringAsync();
             if (result.IsSuccessStatusCode && body.Contains("\"PageSize\":500"))
             {
-                var response = JsonConvert.DeserializeObject<AliyunDNSQueryResponse>(body);
+                var response = JsonSerializer.DeserializeObject<AliyunDNSQueryResponse>(body);
                 return new OperationResult<IEnumerable<DNSRecord>>(
                     response.DomainRecords.Record.Select(r => new DNSRecord
                     {

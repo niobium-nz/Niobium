@@ -5,7 +5,6 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 
 namespace Cod.Channel
 {
@@ -173,7 +172,7 @@ namespace Cod.Channel
 
                 // REMARK (5he11) 因 TABLE REST API 返回的 ETAG 的名称不是其类型上定义的命名，因此在反序列化前临时替换一下名字
                 var tmpData = responseBody.Replace("\"odata.etag\":", "\"ETag\":");
-                var objs = JsonConvert.DeserializeObject<TableStorageResult<T>>(tmpData);
+                var objs = JsonSerializer.DeserializeObject<TableStorageResult<T>>(tmpData);
                 if (objs.Value.Count > 0)
                 {
                     result.Data.AddRange(objs.Value);

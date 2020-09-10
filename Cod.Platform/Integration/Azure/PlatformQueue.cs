@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Cod.Model;
 using Microsoft.Azure.Storage.Queue;
-using Newtonsoft.Json;
 
 namespace Cod.Platform
 {
@@ -15,7 +14,7 @@ namespace Cod.Platform
             {
                 var queue = CloudStorage.GetQueue(item.PartitionKey);
                 await queue.CreateIfNotExistsAsync();
-                var msg = item.Body is string str ? str : JsonConvert.SerializeObject(item.Body);
+                var msg = item.Body is string str ? str : JsonSerializer.SerializeObject(item.Body);
                 if (item.Delay.HasValue)
                 {
                     await queue.AddMessageAsync(new CloudQueueMessage(msg), null, item.Delay.Value, null, null);

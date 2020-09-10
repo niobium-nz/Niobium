@@ -3,7 +3,6 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 
 namespace Cod.Platform
 {
@@ -19,7 +18,7 @@ namespace Cod.Platform
             }
 
             var result = new HttpResponseMessage(HttpStatusCode.BadRequest);
-            var json = JsonConvert.SerializeObject(validationState.ToDictionary());
+            var json = JsonSerializer.SerializeObject(validationState.ToDictionary());
             result.Content = new StringContent(json, Encoding.UTF8, JsonMediaType);
             return Task.FromResult(result);
         }

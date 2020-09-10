@@ -12,7 +12,6 @@ using System.Xml;
 using Cod.Platform.Integration.Wechat;
 using Cod.Platform.Model.Wechat;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace Cod.Platform
 {
@@ -99,37 +98,35 @@ namespace Cod.Platform
             var query = HttpUtility.ParseQueryString(String.Empty);
             query["access_token"] = token.Result;
             query["img_url"] = $"https://{WechatHost}/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}";
-            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+            using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
+            var resp = await httpclient.PostAsync($"https://{WechatHost}/{path}?{query}", null);
+            var status = (int)resp.StatusCode;
+            var json = await resp.Content.ReadAsStringAsync();
+            if (status >= 200 && status < 400)
             {
-                var resp = await httpclient.PostAsync($"https://{WechatHost}/{path}?{query.ToString()}", null);
-                var status = (int)resp.StatusCode;
-                var json = await resp.Content.ReadAsStringAsync();
-                if (status >= 200 && status < 400)
+                if (json.Contains("\"errcode\":0,"))
                 {
-                    if (json.Contains("\"errcode\":0,"))
+                    var result = JsonSerializer.DeserializeObject<WechatCodeScanResultList>(json, JsonSerializationFormat.UnderstoreCase);
+                    return new OperationResult<IEnumerable<CodeScanResult>>(result.CodeResults.Select(r => new CodeScanResult
                     {
-                        var result = JsonConvert.DeserializeObject<WechatCodeScanResultList>(json, JsonSetting.UnderstoreCase);
-                        return new OperationResult<IEnumerable<CodeScanResult>>(result.CodeResults.Select(r => new CodeScanResult
-                        {
-                            Code = r.Data,
-                            Kind = r.TypeName == "CODE_128" ? CodeKind.CODE_128 : r.TypeName == "QR_CODE" ? CodeKind.QR_CODE : CodeKind.Unknown,
-                        }));
-                    }
-
-                    if (json.Contains("\"errcode\":40001,"))
-                    {
-                        await this.RevokeAccessTokenAsync(appId);
-                        return await this.ScanCodeAsync(appId, secret, mediaID);
-                    }
-
-                    if (Logger.Instance != null)
-                    {
-                        Logger.Instance.LogError($"An error occurred while trying to scan of code over media {mediaID} from Wechat with status code={status}: {json}");
-                    }
-                    return new OperationResult<IEnumerable<CodeScanResult>>(InternalError.BadGateway) { Reference = json };
+                        Code = r.Data,
+                        Kind = r.TypeName == "CODE_128" ? CodeKind.CODE_128 : r.TypeName == "QR_CODE" ? CodeKind.QR_CODE : CodeKind.Unknown,
+                    }));
                 }
-                return new OperationResult<IEnumerable<CodeScanResult>>(status) { Reference = json };
+
+                if (json.Contains("\"errcode\":40001,"))
+                {
+                    await this.RevokeAccessTokenAsync(appId);
+                    return await this.ScanCodeAsync(appId, secret, mediaID);
+                }
+
+                if (Logger.Instance != null)
+                {
+                    Logger.Instance.LogError($"An error occurred while trying to scan of code over media {mediaID} from Wechat with status code={status}: {json}");
+                }
+                return new OperationResult<IEnumerable<CodeScanResult>>(InternalError.BadGateway) { Reference = json };
             }
+            return new OperationResult<IEnumerable<CodeScanResult>>(status) { Reference = json };
         }
 
         public async Task<OperationResult<string>> PerformOCRAsync(string appId, string secret, string mediaID)
@@ -144,32 +141,30 @@ namespace Cod.Platform
             var query = HttpUtility.ParseQueryString(String.Empty);
             query["access_token"] = token.Result;
             query["img_url"] = $"https://{WechatHost}/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}";
-            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+            using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
+            var resp = await httpclient.PostAsync($"https://{WechatHost}/{path}?{query}", null);
+            var status = (int)resp.StatusCode;
+            var json = await resp.Content.ReadAsStringAsync();
+            if (status >= 200 && status < 400)
             {
-                var resp = await httpclient.PostAsync($"https://{WechatHost}/{path}?{query.ToString()}", null);
-                var status = (int)resp.StatusCode;
-                var json = await resp.Content.ReadAsStringAsync();
-                if (status >= 200 && status < 400)
+                if (json.Contains("\"errcode\":0,"))
                 {
-                    if (json.Contains("\"errcode\":0,"))
-                    {
-                        return new OperationResult<string>(json);
-                    }
-
-                    if (json.Contains("\"errcode\":40001,"))
-                    {
-                        await this.RevokeAccessTokenAsync(appId);
-                        return await this.PerformOCRAsync(appId, secret, mediaID);
-                    }
-
-                    if (Logger.Instance != null)
-                    {
-                        Logger.Instance.LogError($"An error occurred while trying to Perform OCR over media {mediaID} from Wechat with status code={status}: {json}");
-                    }
-                    return new OperationResult<string>(InternalError.BadGateway) { Reference = json };
+                    return new OperationResult<string>(json);
                 }
-                return new OperationResult<string>(status) { Reference = json };
+
+                if (json.Contains("\"errcode\":40001,"))
+                {
+                    await this.RevokeAccessTokenAsync(appId);
+                    return await this.PerformOCRAsync(appId, secret, mediaID);
+                }
+
+                if (Logger.Instance != null)
+                {
+                    Logger.Instance.LogError($"An error occurred while trying to Perform OCR over media {mediaID} from Wechat with status code={status}: {json}");
+                }
+                return new OperationResult<string>(InternalError.BadGateway) { Reference = json };
             }
+            return new OperationResult<string>(status) { Reference = json };
         }
 
         public async Task<OperationResult<string>> PerformOCRAsync(string appId, string secret, WechatUploadKind kind, Stream input)
@@ -223,29 +218,25 @@ namespace Cod.Platform
             }
 
             var response = (HttpWebResponse)request.GetResponse();
-            using (var responseStream = response.GetResponseStream())
+            using var responseStream = response.GetResponseStream();
+            using var sr = new StreamReader(responseStream);
+            var s = await sr.ReadToEndAsync();
+            if (s.Contains("\"errcode\":0,"))
             {
-                using (var sr = new StreamReader(responseStream))
-                {
-                    var s = await sr.ReadToEndAsync();
-                    if (s.Contains("\"errcode\":0,"))
-                    {
-                        return new OperationResult<string>(s);
-                    }
-
-                    if (s.Contains("\"errcode\":40001,"))
-                    {
-                        await this.RevokeAccessTokenAsync(appId);
-                        return await this.PerformOCRAsync(appId, secret, kind, input);
-                    }
-
-                    if (Logger.Instance != null)
-                    {
-                        Logger.Instance.LogError($"An error occurred while trying to Perform OCR over stream media with status code={(int)response.StatusCode}: {s}");
-                    }
-                    return new OperationResult<string>(InternalError.BadGateway) { Reference = s };
-                }
+                return new OperationResult<string>(s);
             }
+
+            if (s.Contains("\"errcode\":40001,"))
+            {
+                await this.RevokeAccessTokenAsync(appId);
+                return await this.PerformOCRAsync(appId, secret, kind, input);
+            }
+
+            if (Logger.Instance != null)
+            {
+                Logger.Instance.LogError($"An error occurred while trying to Perform OCR over stream media with status code={(int)response.StatusCode}: {s}");
+            }
+            return new OperationResult<string>(InternalError.BadGateway) { Reference = s };
         }
 
         public async Task<OperationResult<string>> GetJSApiTicket(string appID, string secret)
@@ -256,37 +247,35 @@ namespace Cod.Platform
                 return token;
             }
 
-            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+            using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
+            var query = HttpUtility.ParseQueryString(String.Empty);
+            query["access_token"] = token.Result;
+            query["type"] = "jsapi";
+            var resp = await httpclient.GetAsync($"https://{WechatHost}/cgi-bin/ticket/getticket?{query}");
+            var status = (int)resp.StatusCode;
+            var json = await resp.Content.ReadAsStringAsync();
+            if (status >= 200 && status < 400)
             {
-                var query = HttpUtility.ParseQueryString(String.Empty);
-                query["access_token"] = token.Result;
-                query["type"] = "jsapi";
-                var resp = await httpclient.GetAsync($"https://{WechatHost}/cgi-bin/ticket/getticket?{query}");
-                var status = (int)resp.StatusCode;
-                var json = await resp.Content.ReadAsStringAsync();
-                if (status >= 200 && status < 400)
+                var result = JsonSerializer.DeserializeObject<JsTicketResult>(json, JsonSerializationFormat.UnderstoreCase);
+                if (!String.IsNullOrWhiteSpace(result.Ticket))
                 {
-                    var result = JsonConvert.DeserializeObject<JsTicketResult>(json, JsonSetting.UnderstoreCase);
-                    if (!String.IsNullOrWhiteSpace(result.Ticket))
-                    {
-                        return new OperationResult<string>(result.Ticket);
-                    }
-
-                    if (json.Contains("\"errcode\":40001,"))
-                    {
-                        await this.RevokeAccessTokenAsync(appID);
-                        return await this.GetJSApiTicket(appID, secret);
-                    }
-
-                    if (Logger.Instance != null)
-                    {
-                        Logger.Instance.LogError($"An error occurred while trying to get JSAPI ticket for {appID} with status code={status}: {json}");
-                    }
-
-                    return new OperationResult<string>(InternalError.BadGateway) { Reference = json };
+                    return new OperationResult<string>(result.Ticket);
                 }
-                return new OperationResult<string>(status) { Reference = json };
+
+                if (json.Contains("\"errcode\":40001,"))
+                {
+                    await this.RevokeAccessTokenAsync(appID);
+                    return await this.GetJSApiTicket(appID, secret);
+                }
+
+                if (Logger.Instance != null)
+                {
+                    Logger.Instance.LogError($"An error occurred while trying to get JSAPI ticket for {appID} with status code={status}: {json}");
+                }
+
+                return new OperationResult<string>(InternalError.BadGateway) { Reference = json };
             }
+            return new OperationResult<string>(status) { Reference = json };
         }
 
         private async Task<OperationResult<string>> GetAccessTokenAsync(string appID, string secret)
@@ -302,30 +291,28 @@ namespace Cod.Platform
                 return new OperationResult<string>(token);
             }
 
-            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+            using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
+            var query = HttpUtility.ParseQueryString(String.Empty);
+            query["grant_type"] = "client_credential";
+            query["appid"] = appID;
+            query["secret"] = secret;
+            var resp = await httpclient.GetAsync($"{wechatProxyHost}/cgi-bin/token?{query}");
+            var status = (int)resp.StatusCode;
+            var json = await resp.Content.ReadAsStringAsync();
+            if (status >= 200 && status < 400)
             {
-                var query = HttpUtility.ParseQueryString(String.Empty);
-                query["grant_type"] = "client_credential";
-                query["appid"] = appID;
-                query["secret"] = secret;
-                var resp = await httpclient.GetAsync($"{wechatProxyHost}/cgi-bin/token?{query.ToString()}");
-                var status = (int)resp.StatusCode;
-                var json = await resp.Content.ReadAsStringAsync();
-                if (status >= 200 && status < 400)
+                var result = JsonSerializer.DeserializeObject<TokenResult>(json, JsonSerializationFormat.UnderstoreCase);
+                if (!String.IsNullOrWhiteSpace(result.AccessToken))
                 {
-                    var result = JsonConvert.DeserializeObject<TokenResult>(json, JsonSetting.UnderstoreCase);
-                    if (!String.IsNullOrWhiteSpace(result.AccessToken))
-                    {
-                        await this.cacheStore.Value.SetAsync(appID, AccessTokenCacheKey, result.AccessToken, true, DateTimeOffset.UtcNow.Add(AccessTokenCacheExpiry));
-                        return new OperationResult<string>(result.AccessToken);
-                    }
-                    else
-                    {
-                        return new OperationResult<string>(InternalError.BadGateway) { Reference = json };
-                    }
+                    await this.cacheStore.Value.SetAsync(appID, AccessTokenCacheKey, result.AccessToken, true, DateTimeOffset.UtcNow.Add(AccessTokenCacheExpiry));
+                    return new OperationResult<string>(result.AccessToken);
                 }
-                return new OperationResult<string>(status) { Reference = json };
+                else
+                {
+                    return new OperationResult<string>(InternalError.BadGateway) { Reference = json };
+                }
             }
+            return new OperationResult<string>(status) { Reference = json };
         }
 
         private async Task RevokeAccessTokenAsync(string appID)
@@ -342,46 +329,31 @@ namespace Cod.Platform
                 return token;
             }
 
-            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+            using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
+            var query = HttpUtility.ParseQueryString(String.Empty);
+            query["access_token"] = token.Result;
+            var request = new WechatTemplateMessageRequest
             {
-                var query = HttpUtility.ParseQueryString(String.Empty);
-                query["access_token"] = token.Result;
-                var request = new WechatTemplateMessageRequest
+                Data = "JSON_DATA",
+                TemplateId = templateId,
+                Touser = openId,
+                Url = link
+            };
+            var data = JsonSerializer.SerializeObject(request, JsonSerializationFormat.UnderstoreCase);
+            data = data.Replace("\"JSON_DATA\"", parameters.ToJson());
+            using var content = new StringContent(data);
+            var resp = await httpclient.PostAsync($"https://{WechatHost}/cgi-bin/message/template/send?{query}", content);
+            var status = (int)resp.StatusCode;
+            var json = await resp.Content.ReadAsStringAsync();
+            if (status >= 200 && status < 400)
+            {
+                var result = JsonSerializer.DeserializeObject<WechatTemplateMessageResponse>(json, JsonSerializationFormat.UnderstoreCase);
+                if (result.ErrCode != 0)
                 {
-                    Data = "JSON_DATA",
-                    TemplateId = templateId,
-                    Touser = openId,
-                    Url = link
-                };
-                var data = JsonConvert.SerializeObject(request, JsonSetting.UnderstoreCase);
-                data = data.Replace("\"JSON_DATA\"", parameters.ToJson());
-                using (var content = new StringContent(data))
-                {
-                    var resp = await httpclient.PostAsync($"https://{WechatHost}/cgi-bin/message/template/send?{query.ToString()}", content);
-                    var status = (int)resp.StatusCode;
-                    var json = await resp.Content.ReadAsStringAsync();
-                    if (status >= 200 && status < 400)
+                    if (result.ErrCode == 40001)
                     {
-                        var result = JsonConvert.DeserializeObject<WechatTemplateMessageResponse>(json);
-                        if (result.ErrCode != 0)
-                        {
-                            if (result.ErrCode == 40001)
-                            {
-                                await this.RevokeAccessTokenAsync(appId);
-                                return await this.SendNotificationAsync(appId, secret, openId, templateId, parameters, link);
-                            }
-
-                            if (Logger.Instance != null)
-                            {
-                                Logger.Instance.LogError($"An error occurred while trying to send Wechat notification to {openId} on {appId} with status code={status}: {json}");
-                            }
-
-                            return new OperationResult<string>(InternalError.BadGateway) { Reference = json };
-                        }
-                        else
-                        {
-                            return new OperationResult<string>(json);
-                        }
+                        await this.RevokeAccessTokenAsync(appId);
+                        return await this.SendNotificationAsync(appId, secret, openId, templateId, parameters, link);
                     }
 
                     if (Logger.Instance != null)
@@ -389,46 +361,55 @@ namespace Cod.Platform
                         Logger.Instance.LogError($"An error occurred while trying to send Wechat notification to {openId} on {appId} with status code={status}: {json}");
                     }
 
-                    return new OperationResult<string>(status) { Reference = json };
+                    return new OperationResult<string>(InternalError.BadGateway) { Reference = json };
+                }
+                else
+                {
+                    return new OperationResult<string>(json);
                 }
             }
+
+            if (Logger.Instance != null)
+            {
+                Logger.Instance.LogError($"An error occurred while trying to send Wechat notification to {openId} on {appId} with status code={status}: {json}");
+            }
+
+            return new OperationResult<string>(status) { Reference = json };
         }
 
         public async Task<OperationResult<string>> GetOpenIDAsync(string appID, string secret, string code)
         {
-            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+            using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
+            var query = HttpUtility.ParseQueryString(String.Empty);
+            query["appid"] = appID;
+            query["secret"] = secret;
+            query["code"] = code;
+            query["grant_type"] = "authorization_code";
+            var resp = await httpclient.GetAsync($"https://{WechatHost}/sns/oauth2/access_token?{query}");
+            var status = (int)resp.StatusCode;
+            var json = await resp.Content.ReadAsStringAsync();
+            if (status >= 200 && status < 400)
             {
-                var query = HttpUtility.ParseQueryString(String.Empty);
-                query["appid"] = appID;
-                query["secret"] = secret;
-                query["code"] = code;
-                query["grant_type"] = "authorization_code";
-                var resp = await httpclient.GetAsync($"https://{WechatHost}/sns/oauth2/access_token?{query.ToString()}");
-                var status = (int)resp.StatusCode;
-                var json = await resp.Content.ReadAsStringAsync();
-                if (status >= 200 && status < 400)
+                var result = JsonSerializer.DeserializeObject<OpenIdResult>(json);
+                if (!String.IsNullOrWhiteSpace(result.Openid))
                 {
-                    var result = JsonConvert.DeserializeObject<OpenIdResult>(json);
-                    if (!String.IsNullOrWhiteSpace(result.Openid))
-                    {
-                        return new OperationResult<string>(result.Openid);
-                    }
-
-                    if (json.Contains("\"errcode\":40001,"))
-                    {
-                        await this.RevokeAccessTokenAsync(appID);
-                        return await this.GetOpenIDAsync(appID, secret, code);
-                    }
-
-                    if (Logger.Instance != null)
-                    {
-                        Logger.Instance.LogError($"An error occurred while trying to get Wechat open ID for {appID} with status code={status}: {json}");
-                    }
-
-                    return new OperationResult<string>(InternalError.BadGateway) { Reference = json };
+                    return new OperationResult<string>(result.Openid);
                 }
-                return new OperationResult<string>(status) { Reference = json };
+
+                if (json.Contains("\"errcode\":40001,"))
+                {
+                    await this.RevokeAccessTokenAsync(appID);
+                    return await this.GetOpenIDAsync(appID, secret, code);
+                }
+
+                if (Logger.Instance != null)
+                {
+                    Logger.Instance.LogError($"An error occurred while trying to get Wechat open ID for {appID} with status code={status}: {json}");
+                }
+
+                return new OperationResult<string>(InternalError.BadGateway) { Reference = json };
             }
+            return new OperationResult<string>(status) { Reference = json };
         }
 
         public async Task<OperationResult<string>> JSAPIPay(string account, int amount, string appID, string device, string order, string product, string attach, string ip,
@@ -454,30 +435,28 @@ namespace Cod.Platform
             var sign = MD5Sign(param, wechatMerchantSignature);
             param.Add("sign", sign);
 
-            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+            using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
+            var xml = GetXML(param);
+            if (Logger.Instance != null)
             {
-                var xml = GetXML(param);
-                if (Logger.Instance != null)
-                {
-                    Logger.Instance.LogInformation($"微信支付调试: attach={attach} device={device} order={order} xml={xml}");
-                }
-
-                var resp = await httpclient.PostAsync($"https://{WechatPayHost}/pay/unifiedorder",
-                    new StringContent(GetXML(param), Encoding.UTF8, "application/xml"));
-                var status = (int)resp.StatusCode;
-                var body = await resp.Content.ReadAsStringAsync();
-                if (status < 200 || status >= 400)
-                {
-                    return new OperationResult<string>(status) { Reference = body };
-                }
-
-                var result = FromXML(body);
-                if (result["return_code"].ToUpperInvariant() != "SUCCESS")
-                {
-                    return new OperationResult<string>(InternalError.BadGateway) { Reference = body };
-                }
-                return new OperationResult<string>(result["prepay_id"]);
+                Logger.Instance.LogInformation($"微信支付调试: attach={attach} device={device} order={order} xml={xml}");
             }
+
+            var resp = await httpclient.PostAsync($"https://{WechatPayHost}/pay/unifiedorder",
+                new StringContent(GetXML(param), Encoding.UTF8, "application/xml"));
+            var status = (int)resp.StatusCode;
+            var body = await resp.Content.ReadAsStringAsync();
+            if (status < 200 || status >= 400)
+            {
+                return new OperationResult<string>(status) { Reference = body };
+            }
+
+            var result = FromXML(body);
+            if (result["return_code"].ToUpperInvariant() != "SUCCESS")
+            {
+                return new OperationResult<string>(InternalError.BadGateway) { Reference = body };
+            }
+            return new OperationResult<string>(result["prepay_id"]);
         }
 
         public async Task<OperationResult<WechatUserInfo>> GetUserInfoAsync(string appId, string secret, string openID, string lang = "zh_CN")
@@ -489,30 +468,28 @@ namespace Cod.Platform
             }
 
             var url = $"https://{WechatHost}/cgi-bin/user/info?access_token={token.Result}&openid={openID}&lang={lang}";
-            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+            using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
+            var resp = await httpclient.GetAsync(url);
+            var json = await resp.Content.ReadAsStringAsync();
+            var status = (int)resp.StatusCode;
+            if (status >= 200 && status < 400)
             {
-                var resp = await httpclient.GetAsync(url);
-                var json = await resp.Content.ReadAsStringAsync();
-                var status = (int)resp.StatusCode;
-                if (status >= 200 && status < 400)
+
+                if (json.Contains("\"errcode\":40001,"))
                 {
-
-                    if (json.Contains("\"errcode\":40001,"))
-                    {
-                        await this.RevokeAccessTokenAsync(appId);
-                        return await this.GetUserInfoAsync(appId, secret, openID, lang);
-                    }
-
-                    if (Logger.Instance != null)
-                    {
-                        Logger.Instance.LogError($"An error occurred while trying to get user info for {openID} with status code={status}: {json}");
-                    }
-
-                    var result = JsonConvert.DeserializeObject<WechatUserInfo>(json);
-                    return new OperationResult<WechatUserInfo>(result);
+                    await this.RevokeAccessTokenAsync(appId);
+                    return await this.GetUserInfoAsync(appId, secret, openID, lang);
                 }
-                return new OperationResult<WechatUserInfo>(status) { Reference = json };
+
+                if (Logger.Instance != null)
+                {
+                    Logger.Instance.LogError($"An error occurred while trying to get user info for {openID} with status code={status}: {json}");
+                }
+
+                var result = JsonSerializer.DeserializeObject<WechatUserInfo>(json);
+                return new OperationResult<WechatUserInfo>(result);
             }
+            return new OperationResult<WechatUserInfo>(status) { Reference = json };
         }
 
         public Dictionary<string, object> GetJSAPIPaySignature(string prepayID, string appID, string wechatMerchantSignature)
@@ -565,17 +542,15 @@ namespace Cod.Platform
                 tosign += "&";
             }
             tosign = $"{tosign}key={signKey}";
-            using (var md5 = MD5.Create())
+            using var md5 = MD5.Create();
+            var bs = md5.ComputeHash(Encoding.UTF8.GetBytes(tosign));
+            var sb = new StringBuilder();
+            foreach (var b in bs)
             {
-                var bs = md5.ComputeHash(Encoding.UTF8.GetBytes(tosign));
-                var sb = new StringBuilder();
-                foreach (var b in bs)
-                {
-                    sb.Append(b.ToString("x2"));
-                }
-                var sign = sb.ToString().ToUpper();
-                return sign;
+                sb.Append(b.ToString("x2"));
             }
+            var sign = sb.ToString().ToUpper();
+            return sign;
         }
 
         private static string GetXML(Dictionary<string, object> source)
@@ -598,17 +573,11 @@ namespace Cod.Platform
             return xml.ToString();
         }
 
-        private static string GetOCRPath(WechatUploadKind kind)
+        private static string GetOCRPath(WechatUploadKind kind) => kind switch
         {
-            switch (kind)
-            {
-                case WechatUploadKind.Code:
-                    return "cv/img/qrcode";
-                case WechatUploadKind.OCR:
-                    return "cv/ocr/comm";
-                default:
-                    throw new NotImplementedException();
-            }
-        }
+            WechatUploadKind.Code => "cv/img/qrcode",
+            WechatUploadKind.OCR => "cv/ocr/comm",
+            _ => throw new NotImplementedException(),
+        };
     }
 }

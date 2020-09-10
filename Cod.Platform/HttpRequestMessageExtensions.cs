@@ -8,7 +8,6 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
 
 namespace Cod.Platform
 {
@@ -37,7 +36,7 @@ namespace Cod.Platform
         }
 
         public static T Parse<T>(string body)
-               => JsonConvert.DeserializeObject<T>(body);
+               => JsonSerializer.DeserializeObject<T>(body);
 
         public static async Task<T> ParseAsync<T>(this HttpRequestMessage request)
             => Parse<T>(await request.Content.ReadAsStringAsync());
@@ -49,7 +48,7 @@ namespace Cod.Platform
             scheme = null;
 
             var auth = request.Headers.Authorization;
-            if (auth == null || string.IsNullOrWhiteSpace(auth.Scheme) || String.IsNullOrWhiteSpace(auth.Parameter))
+            if (auth == null || String.IsNullOrWhiteSpace(auth.Scheme) || String.IsNullOrWhiteSpace(auth.Parameter))
             {
                 return false;
             }

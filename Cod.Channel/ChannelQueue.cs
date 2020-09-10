@@ -5,7 +5,6 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Cod.Model;
-using Newtonsoft.Json;
 
 namespace Cod.Channel
 {
@@ -51,7 +50,7 @@ namespace Cod.Channel
                         timeout = (int)message.Delay.Value.TotalSeconds;
                     }
                     var url = $"{endpoint}/{queueName}/messages{sig.Result.Signature}&messagettl=-1&visibilitytimeout={timeout}";
-                    var msg = message.Body is string str ? str : JsonConvert.SerializeObject(message.Body);
+                    var msg = message.Body is string str ? str : JsonSerializer.SerializeObject(message.Body);
                     var result = await this.SendRequest(url, HttpMethod.Post, msg);
                     if (!result.IsSuccess)
                     {

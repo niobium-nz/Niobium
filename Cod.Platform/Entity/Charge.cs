@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
 
 namespace Cod.Platform
 {
@@ -40,7 +39,7 @@ namespace Cod.Platform
             && this.Params.ContainsKey("paySign");
 
         public string Export()
-            => this.Type == ChargeType.WeChatJSAPI ? JsonConvert.SerializeObject(
+            => this.Type == ChargeType.WeChatJSAPI ? JsonSerializer.SerializeObject(
                 new
                 {
                     appId = this.Params["appId"],

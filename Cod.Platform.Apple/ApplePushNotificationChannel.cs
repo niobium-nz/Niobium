@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
@@ -9,7 +8,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Jose;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace Cod.Platform
 {
@@ -60,50 +58,44 @@ namespace Cod.Platform
                     await this.cacheStore.Value.SetAsync(target.App, AccessTokenCacheKey, token, false, DateTimeOffset.UtcNow.AddMinutes(30));
                 }
 
-                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
+                using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
+                foreach (var message in messages)
                 {
-                    foreach (var message in messages)
+                    using var request = new HttpRequestMessage(HttpMethod.Post, $"https://{this.ApplePushNotificationHost}/3/device/{target.Identity}")
                     {
-                        using (var request = new HttpRequestMessage(HttpMethod.Post, $"https://{this.ApplePushNotificationHost}/3/device/{target.Identity}"))
+                        Version = new Version(2, 0)
+                    };
+                    request.Headers.Add("apns-push-type", message.Background ? "background" : "alert");
+                    request.Headers.Add("apns-id", message.ID.ToString());
+                    request.Headers.Add("apns-expiration", message.Expires.ToUnixTimeSeconds().ToString());
+                    request.Headers.Add("apns-topic", message.Topic);
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                    var sb = new StringBuilder();
+                    if (message.Background)
+                    {
+                        sb.Append("{\"aps\":{\"content-available\":1},");
+                        var json = JsonSerializer.SerializeObject(message.Message, JsonSerializationFormat.CamelCase);
+                        sb.Append(json.Substring(1));
+                    }
+                    else
+                    {
+                        sb.Append("{\"aps\":{\"alert\":\"");
+                        sb.Append((string)message.Message);
+                        sb.Append("\"}}");
+                    }
+
+                    using var content = new StringContent(sb.ToString(), Encoding.UTF8, "application/json");
+                    request.Content = content;
+                    using var resp = await httpclient.SendAsync(request);
+                    var status = (int)resp.StatusCode;
+                    if (status < 200 || status >= 400)
+                    {
+                        success = false;
+                        var error = await resp.Content.ReadAsStringAsync();
+                        if (Logger.Instance != null)
                         {
-                            request.Version = new Version(2, 0);
-                            request.Headers.Add("apns-push-type", message.Background ? "background" : "alert");
-                            request.Headers.Add("apns-id", message.ID.ToString());
-                            request.Headers.Add("apns-expiration", message.Expires.ToUnixTimeSeconds().ToString());
-                            request.Headers.Add("apns-topic", message.Topic);
-                            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-                            var sb = new StringBuilder();
-                            if (message.Background)
-                            {
-                                sb.Append("{\"aps\":{\"content-available\":1},");
-                                var json = JsonConvert.SerializeObject(message.Message);
-                                sb.Append(json.Substring(1));
-                            }
-                            else
-                            {
-                                sb.Append("{\"aps\":{\"alert\":\"");
-                                sb.Append((string)message.Message);
-                                sb.Append("\"}}");
-                            }
-
-                            using (var content = new StringContent(sb.ToString(), Encoding.UTF8, "application/json"))
-                            {
-                                request.Content = content;
-                                using (var resp = await httpclient.SendAsync(request))
-                                {
-                                    var status = (int)resp.StatusCode;
-                                    if (status < 200 || status >= 400)
-                                    {
-                                        success = false;
-                                        var error = await resp.Content.ReadAsStringAsync();
-                                        if (Logger.Instance != null)
-                                        {
-                                            Logger.Instance.LogError($"An error occurred while making request to APN with status code {status}: {error}");
-                                        }
-                                    }
-                                }
-                            }
+                            Logger.Instance.LogError($"An error occurred while making request to APN with status code {status}: {error}");
                         }
                     }
                 }

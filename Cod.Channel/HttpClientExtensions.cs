@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 
 namespace Cod.Channel
 {
@@ -51,73 +50,71 @@ namespace Cod.Channel
                 return new OperationResult<HttpResponseMessage>(InternalError.GatewayTimeout);
             }
 
-            using (var request = new HttpRequestMessage(method, uri))
+            using var request = new HttpRequestMessage(method, uri);
+            if (headers != null && headers.Any())
             {
-                if (headers != null && headers.Any())
+                foreach (var header in headers)
                 {
-                    foreach (var header in headers)
+                    request.Headers.Add(header.Key, header.Value);
+                }
+            }
+
+            if (!String.IsNullOrWhiteSpace(bearerToken))
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+            }
+
+            try
+            {
+                if (body != null)
+                {
+                    string content;
+                    if (body is string stringBody)
                     {
-                        request.Headers.Add(header.Key, header.Value);
+                        content = stringBody;
+                    }
+                    else
+                    {
+                        content = JsonSerializer.SerializeObject(body);
+                        contentType = "application/json";
+                    }
+                    request.Content = new StringContent(content);
+                    if (contentType != null)
+                    {
+                        request.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
                     }
                 }
 
-                if (!String.IsNullOrWhiteSpace(bearerToken))
+                var response = await httpClient.SendAsync(request);
+                var status = (int)response.StatusCode;
+                var code = status;
+                if (code >= 200 && code < 400)
                 {
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+                    code = OperationResult.SuccessCode;
                 }
 
-                try
+                var result = new OperationResult<HttpResponseMessage>(response)
                 {
-                    if (body != null)
-                    {
-                        string content;
-                        if (body is string stringBody)
-                        {
-                            content = stringBody;
-                        }
-                        else
-                        {
-                            content = JsonConvert.SerializeObject(body);
-                            contentType = "application/json";
-                        }
-                        request.Content = new StringContent(content);
-                        if (contentType != null)
-                        {
-                            request.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
-                        }
-                    }
-
-                    var response = await httpClient.SendAsync(request);
-                    var status = (int)response.StatusCode;
-                    var code = status;
-                    if (code >= 200 && code < 400)
-                    {
-                        code = OperationResult.SuccessCode;
-                    }
-
-                    var result = new OperationResult<HttpResponseMessage>(response)
-                    {
-                        Code = code
-                    };
-                    return result;
-                }
-                catch (Exception)
+                    Code = code
+                };
+                return result;
+            }
+            catch (Exception)
+            {
+                return await RequestAsync(httpClient,
+                    method,
+                    uri,
+                    bearerToken: bearerToken,
+                    body: body,
+                    headers: headers,
+                    contentType: contentType,
+                    retry: ++retry);
+            }
+            finally
+            {
+                if (request.Content != null && request.Content is IDisposable disposable)
                 {
-                    return await RequestAsync(httpClient,
-                        method,
-                        uri,
-                        bearerToken: bearerToken,
-                        body: body,
-                        headers: headers,
-                        contentType: contentType,
-                        retry: ++retry);
-                }
-                finally
-                {
-                    if (request.Content != null && request.Content is IDisposable disposable)
-                    {
-                        disposable.Dispose();
-                    }
+                    disposable.Dispose();
                 }
             }
         }

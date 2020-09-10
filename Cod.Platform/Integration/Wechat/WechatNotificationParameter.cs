@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text;
 
 namespace Cod.Platform
@@ -29,10 +28,7 @@ namespace Cod.Platform
 
     public class WechatNotificationKeyword
     {
-        public WechatNotificationKeyword()
-        {
-            this.Color = "#000000";
-        }
+        public WechatNotificationKeyword() => this.Color = "#000000";
 
         public string Value { get; set; }
 
