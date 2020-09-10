@@ -347,7 +347,7 @@ namespace Cod.Platform
             var json = await resp.Content.ReadAsStringAsync();
             if (status >= 200 && status < 400)
             {
-                var result = JsonSerializer.DeserializeObject<WechatTemplateMessageResponse>(json, JsonSerializationFormat.UnderstoreCase);
+                var result = JsonSerializer.DeserializeObject<WechatTemplateMessageResponse>(json);
                 if (result.ErrCode != 0)
                 {
                     if (result.ErrCode == 40001)
