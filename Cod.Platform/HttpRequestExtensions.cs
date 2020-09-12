@@ -205,7 +205,7 @@ namespace Cod.Platform
             }
         }
 
-        public static async Task<OperationResult<T>> ValidateSignatureAndParseAsync<T>(this HttpRequest req, string secret, Guid? tenant = null)
+        public static async Task<OperationResult<T>> ValidateSignatureAndParseAsync<T>(this HttpRequest req, string secret, byte[] tenant = null)
         {
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             if (String.IsNullOrWhiteSpace(requestBody))
@@ -232,23 +232,19 @@ namespace Cod.Platform
                 return new OperationResult<T>(validation.ToOperationResult());
             }
 
-            Guid tenantID;
             if (model is ITenantOwned tenantOwned)
             {
-                tenantID = tenantOwned.GetTenant();
+                tenant = tenantOwned.GetTenant().ToByteArray();
             }
-            else if (tenant.HasValue)
-            {
-                tenantID = tenant.Value;
-            }
-            else
+
+            if (tenant == null)
             {
                 throw new NotSupportedException();
             }
 
             var stringToSign = $"{req.Path.Value}?{requestBody}";
-            var tenantSecret = tenantID.GetTenantSecret(secret);
-            var signature = SignatureHelper.GetSignature(stringToSign, tenantSecret);
+            var tenantSecret = Cod.Platform.SignatureHelper.GetTenantSecret(tenant, secret);
+            var signature = Cod.SignatureHelper.GetSignature(stringToSign, tenantSecret);
             if (signature.ToUpper() != requestSignature.ToUpper())
             {
                 return new OperationResult<T>(InternalError.AuthenticationRequired);
