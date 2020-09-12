@@ -59,5 +59,14 @@ namespace Cod.Platform {
                 resourceCulture = value;
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The value of &apos;ETag&apos; signature cannot be empty..
+        /// </summary>
+        internal static string SignatureMissing {
+            get {
+                return ResourceManager.GetString("SignatureMissing", resourceCulture);
+            }
+        }
     }
 }

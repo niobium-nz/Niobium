@@ -18,5 +18,8 @@ namespace Cod.Platform
                 statusCode: HttpStatusCode.BadRequest,
                 payload: validationState.ToDictionary());
         }
+
+        public static OperationResult ToOperationResult(this ValidationState validationState)
+            => new OperationResult(InternalError.BadRequest) { Reference = validationState.ToDictionary() };
     }
 }

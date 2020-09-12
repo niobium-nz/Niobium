@@ -46,6 +46,11 @@ namespace Cod.Platform
                 code = HttpStatusCode.OK;
                 payload = successPayload;
             }
+            else if (operationResult.Code == 400)
+            {
+                code = HttpStatusCode.BadRequest;
+                payload = operationResult.Reference;
+            }
             else if (operationResult.Code < 600)
             {
                 code = (HttpStatusCode)operationResult.Code;

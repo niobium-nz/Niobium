@@ -205,6 +205,58 @@ namespace Cod.Platform
             }
         }
 
+        public static async Task<OperationResult<T>> ValidateSignatureAndParseAsync<T>(this HttpRequest req, string secret, Guid? tenant = null)
+        {
+            var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            if (String.IsNullOrWhiteSpace(requestBody))
+            {
+                return new OperationResult<T>(InternalError.BadRequest);
+            }
+
+            var model = JsonSerializer.DeserializeObject<T>(requestBody);
+            ValidationHelper.TryValidate(model, out var validation);
+
+            string requestSignature = null;
+            if (req.Headers.TryGetValue("ETag", out var etag))
+            {
+                requestSignature = etag.SingleOrDefault();
+            }
+
+            if (String.IsNullOrWhiteSpace(requestSignature))
+            {
+                validation.AddError("ETag", R.Get("SignatureMissing"));
+            }
+
+            if (!validation.IsValid)
+            {
+                return new OperationResult<T>(validation.ToOperationResult());
+            }
+
+            Guid tenantID;
+            if (model is ITenantOwned tenantOwned)
+            {
+                tenantID = tenantOwned.GetTenant();
+            }
+            else if (tenant.HasValue)
+            {
+                tenantID = tenant.Value;
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+
+            var stringToSign = $"{req.Path.Value}?{requestBody}";
+            var tenantSecret = tenantID.GetTenantSecret(secret);
+            var signature = SignatureHelper.GetSignature(stringToSign, tenantSecret);
+            if (signature.ToUpper() != requestSignature.ToUpper())
+            {
+                return new OperationResult<T>(InternalError.AuthenticationRequired);
+            }
+
+            return new OperationResult<T>(model);
+        }
+
         private static Task<ClaimsPrincipal> ValidateAndDecodeAsync(string token)
         {
             var secret = ConfigurationProvider.GetSetting(Constant.AUTH_SECRET_NAME);
@@ -238,6 +290,7 @@ namespace Cod.Platform
                 throw new Exception($"Token was invalid: {argex.Message}");
             }
         }
+
         private static T Parse<T>(string body) => JsonSerializer.DeserializeObject<T>(body);
     }
 }
