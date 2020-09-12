@@ -234,7 +234,7 @@ namespace Cod.Platform
 
             if (model is ITenantOwned tenantOwned)
             {
-                tenant = tenantOwned.GetTenant().ToByteArray();
+                tenant = tenantOwned.GetTenantAuthenticationIdentifier();
             }
 
             if (tenant == null)

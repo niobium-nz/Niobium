@@ -1,9 +1,7 @@
-﻿using System;
-
-namespace Cod.Platform
+﻿namespace Cod.Platform
 {
     public interface ITenantOwned
     {
-        Guid GetTenant();
+        byte[] GetTenantAuthenticationIdentifier();
     }
 }
