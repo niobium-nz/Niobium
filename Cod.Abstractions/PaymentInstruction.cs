@@ -9,6 +9,8 @@
 
         public string Reference { get; set; }
 
+        public string Extra { get; set; }
+
         public string Instruction { get; set; }
 
         public PaymentMethod Method { get; set; }
