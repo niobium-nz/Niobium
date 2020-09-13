@@ -7,6 +7,8 @@ namespace Cod.Channel.Blazor
         public void Load(IServiceCollection services)
         {
             services.AddSingleton<IBrowser, BlazorBrowser>();
+            services.AddSingleton<IAuthenticator, LocalStorageAuthenticator>();
+            services.AddSingleton<INavigator, NavigatorAdaptor>();
         }
     }
 }
