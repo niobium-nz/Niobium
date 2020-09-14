@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Cod.Channel
@@ -103,7 +102,11 @@ namespace Cod.Channel
             if (proceed)
             {
                 var response = await this.FetchAsync(partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, count, continuationToken);
-                if (response.IsSuccess)
+                if (!response.IsSuccess)
+                {
+                    return new OperationResult<IReadOnlyCollection<TDomain>>(response);
+                }
+                else
                 {
                     if (this.fetchHistory.ContainsKey(key))
                     {
@@ -115,14 +118,6 @@ namespace Cod.Channel
                     {
                         result = this.Cache(response.Result.Data);
                     }
-                }
-                else
-                {
-                    return new OperationResult<IReadOnlyCollection<TDomain>>(response.Code, null)
-                    {
-                        Message = response.Message,
-                        Reference = response.Reference,
-                    };
                 }
             }
 
@@ -177,16 +172,12 @@ namespace Cod.Channel
             {
                 throw new NotSupportedException();
             }
-
+            
 
             var signature = await this.authenticator.AquireSignatureAsync(StorageType.Table, typeof(TEntity).Name, pk, rk);
             if (!signature.IsSuccess)
             {
-                return new OperationResult<TableQueryResult<TEntity>>(signature.Code, null)
-                {
-                    Message = signature.Message,
-                    Reference = signature.Reference,
-                };
+                return new OperationResult<TableQueryResult<TEntity>>(signature);
             }
 
             var baseUrl = await this.configuration.GetSettingAsStringAsync(Constants.KEY_TABLE_URL);

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Cod.Channel
@@ -51,24 +50,14 @@ namespace Cod.Channel
 
         public virtual async Task<OperationResult<TDomain>> CreateAsync(TCreateParams parameters)
         {
-            TDomain newEntity = default;
             var result = await this.CreateCoreAsync(parameters);
-            if (result.IsSuccess)
+            if (!result.IsSuccess)
             {
-                var keys = result.Result;
-                var loadResult = await this.LoadAsync(keys.PartitionKey, keys.RowKey, true);
-                if (!loadResult.IsSuccess)
-                {
-                    return loadResult;
-                }
-
-                newEntity = loadResult.Result;
+                return new OperationResult<TDomain>(result);
             }
-            return new OperationResult<TDomain>(result.Code, newEntity)
-            {
-                Reference = result.Reference,
-                Message = result.Message,
-            };
+
+            var keys = result.Result;
+            return await this.LoadAsync(keys.PartitionKey, keys.RowKey, true);
         }
 
         public async Task<OperationResult> DeleteAsync(StorageKey key)
@@ -88,24 +77,14 @@ namespace Cod.Channel
 
         public async Task<OperationResult<TDomain>> UpdateAsync(TUpdateParams parameters)
         {
-            TDomain newEntity = default;
             var result = await this.UpdateCoreAsync(parameters);
-            if (result.IsSuccess)
+            if (!result.IsSuccess)
             {
-                var keys = result.Result;
-                var loadResult = await this.LoadAsync(keys.PartitionKey, keys.RowKey, true);
-                if (!loadResult.IsSuccess)
-                {
-                    return loadResult;
-                }
-
-                newEntity = loadResult.Result;
+                return new OperationResult<TDomain>(result);
             }
-            return new OperationResult<TDomain>(result.Code, newEntity)
-            {
-                Reference = result.Reference,
-                Message = result.Message,
-            };
+
+            var keys = result.Result;
+            return await this.LoadAsync(keys.PartitionKey, keys.RowKey, true);
         }
 
         protected virtual Task<OperationResult<StorageKey>> UpdateCoreAsync(TUpdateParams parameters) => throw new NotImplementedException();

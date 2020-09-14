@@ -228,7 +228,7 @@ namespace Cod.Platform
 
             if (String.IsNullOrWhiteSpace(requestSignature))
             {
-                validation.AddError("ETag", R.Get("SignatureMissing"));
+                validation.AddError("ETag", Localization.SignatureMissing);
             }
 
             if (!validation.IsValid)
