@@ -7,7 +7,7 @@ namespace Cod.Channel.Blazor
     {
         public void Load(IServiceCollection services)
         {
-            services.AddScoped(sp =>
+            services.AddTransient(sp =>
             {
                 var client = new HttpClient();
                 if (HttpClientSettings.BaseAddress != null)
