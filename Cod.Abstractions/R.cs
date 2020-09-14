@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System.Globalization;
 
 namespace Cod
 {
@@ -6,8 +6,7 @@ namespace Cod
     {
         public static bool TryGet(string key, out string value)
         {
-            var culture = UICulture.Current;
-            var str = Localization.ResourceManager.GetString(key, culture);
+            var str = Localization.ResourceManager.GetString(key, CultureInfo.CurrentUICulture);
             if (str != null)
             {
                 value = str;
@@ -20,12 +19,8 @@ namespace Cod
 
         public static string Get(string key)
         {
-            if (!TryGet(key, out var val))
-            {
-                throw new KeyNotFoundException();
-            }
-
-            return val;
+            var str = Localization.ResourceManager.GetString(key, CultureInfo.CurrentUICulture);
+            return str ?? key;
         }
     }
 }

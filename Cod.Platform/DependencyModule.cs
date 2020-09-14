@@ -5,9 +5,11 @@ namespace Cod.Platform
 {
     public class DependencyModule : Module
     {
+        private static readonly IErrorRetriever ErrorRetriever = new InternalErrorRetriever();
+
         protected override void Load(ContainerBuilder builder)
         {
-            InternalError.Register(new InternalErrorRetriever());
+            InternalError.Register(ErrorRetriever);
             builder.Register(_ => Logger.Instance).As<ILogger>();
             builder.RegisterType<AzureOCRScaner>();
             builder.RegisterType<AzureStorageSignatureService>().AsImplementedInterfaces();

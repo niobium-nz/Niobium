@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 
 namespace Cod
 {
@@ -28,9 +29,11 @@ namespace Cod
 
         public static readonly OperationResult Unknown = new OperationResult(InternalError.Unknown);
 
+        private readonly Func<string> getMessage;
+
         public int Code { get; set; }
 
-        public string Message { get; set; }
+        public string Message => this.getMessage();
 
         public object Reference { get; set; }
 
@@ -43,39 +46,41 @@ namespace Cod
         public OperationResult(int code, string description = null)
         {
             this.Code = code;
-
-            var msg = new StringBuilder();
-            if (InternalError.TryGet(code, out var val))
+            this.getMessage = () =>
             {
-                msg.Append(val);
-            }
-            else
-            {
-                msg.Append(InternalError.Unknown);
-            }
-
-            if (description != null)
-            {
-                if (msg.Length > 0)
+                var msg = new StringBuilder();
+                if (InternalError.TryGet(code, out var val))
                 {
-                    msg.Append(":");
+                    msg.Append(val);
                 }
-                msg.Append(description);
-            }
+                else
+                {
+                    msg.Append(InternalError.Unknown);
+                }
 
-            if (code != SuccessCode)
-            {
-                msg.Append(" [0x");
-                msg.Append(code.ToString());
-                msg.Append("]");
-            }
+                if (description != null)
+                {
+                    if (msg.Length > 0)
+                    {
+                        msg.Append(":");
+                    }
+                    msg.Append(description);
+                }
 
-            this.Message = msg.ToString();
+                if (code != SuccessCode)
+                {
+                    msg.Append(" [0x");
+                    msg.Append(code.ToString());
+                    msg.Append("]");
+                }
+
+                return msg.ToString();
+            }; 
         }
 
         public OperationResult(OperationResult result) : this(result.Code)
         {
-            this.Message = result.Message;
+            this.getMessage = () => result.Message;
             this.Reference = result.Reference;
         }
     }

@@ -51,7 +51,13 @@ namespace Cod
             }
         }
 
-        public static void Register(IErrorRetriever retriever) => errorRetrievers.Add(retriever);
+        public static void Register(IErrorRetriever retriever)
+        {
+            if (!errorRetrievers.Contains(retriever))
+            {
+                errorRetrievers.Add(retriever);
+            }
+        }
 
         public static bool TryGet(int code, out string value)
         {

@@ -23,6 +23,7 @@ namespace Cod.Platform
         private const string AuthorizationRequestHeaderKey = "Authorization";
         private const string ClientIDRequestHeaderKey = "ClientID";
         private const string HeaderCORSKey = "Access-Control-Expose-Headers";
+        private static readonly CultureInfo DefaultUICulture = new CultureInfo("en-US");
 
         public static void Register(this HttpRequest request, ILogger logger)
         {
@@ -33,9 +34,12 @@ namespace Cod.Platform
                 var parts = value.ToString().Split(',');
                 if (parts.Length > 0)
                 {
-                    UICulture.Register(new CultureInfo(parts[0]));
+                    CultureInfo.CurrentUICulture = new CultureInfo(parts[0]);
+                    return;
                 }
             }
+
+            CultureInfo.CurrentUICulture = DefaultUICulture;
         }
 
         public static IActionResult MakeResponse(
