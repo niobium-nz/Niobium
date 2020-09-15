@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace Cod.Platform
 {
-    internal class ConfigurationProvider : IConfigurationProvider
+    public class ConfigurationProvider : IConfigurationProvider
     {
         private static string KeyVaultUrl;
         private static Func<IConfigurationBuilder, IConfigurationBuilder> CustomConfig;
