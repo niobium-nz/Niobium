@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace Cod.Platform
 {
-    public class ConfigurationProvider : IConfigurationProvider
+    internal class ConfigurationProvider : IPlatformConfigurationProvider
     {
         private static string KeyVaultUrl;
         private static Func<IConfigurationBuilder, IConfigurationBuilder> CustomConfig;
@@ -23,6 +23,8 @@ namespace Cod.Platform
                 var root = builder.AddEnvironmentVariables().Build();
                 return root;
             }, LazyThreadSafetyMode.ExecutionAndPublication);
+
+        public IConfiguration Configuration => config.Value;
 
         public static void Configure(Func<IConfigurationBuilder, IConfigurationBuilder> func, string keyVaultUrl)
         {
