@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
@@ -12,7 +13,13 @@ namespace Cod.Channel
         {
             if (!sender.IsAuthenticated())
             {
-                this.navigator.NavigateTo($"/login?returnUrl={this.navigator.CurrentUri}");
+                var queries = this.navigator.GetQueryStrings();
+                var returnUrl = queries.Get("returnUrl");
+                if (String.IsNullOrWhiteSpace(returnUrl))
+                {
+                    returnUrl = this.navigator.CurrentUri;
+                }
+                this.navigator.NavigateTo($"/login?returnUrl={returnUrl}");
             }
             return Task.CompletedTask;
         }
