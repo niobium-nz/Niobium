@@ -53,17 +53,22 @@ namespace Cod.Platform
             RowKey = this.RowKey,
         });
 
-        public async Task<OperationResult<User>> LoginAsync(string username, string password)
+        public async Task<OperationResult<User>> LoginAsync(string username, string password, OpenIDKind? kind = null)
         {
+            if (!kind.HasValue)
+            {
+                kind = OpenIDKind.Username;
+            }
+
             var login = await this.loginRepository.Value.GetAsync(
-                Login.BuildPartitionKey(OpenIDKind.Username),
+                Login.BuildPartitionKey(kind.Value),
                 Login.BuildRowKey(username));
             if (login == null)
             {
                 return new OperationResult<User>(InternalError.NotFound);
             }
 
-            if (login.Credentials != password)
+            if (login.Credentials.ToUpper() != SHA.SHA256Hash(password).ToUpper())
             {
                 return new OperationResult<User>(InternalError.AuthenticationRequired);
             }
@@ -181,20 +186,12 @@ namespace Cod.Platform
                         channels.Add(login.User, c);
                     }
 
-                    int count;
-                    switch (registration.Kind)
+                    var count = registration.Kind switch
                     {
-                        case (int)OpenIDKind.PhoneCall:
-                            count = channels[login.User].Count(c => c.GetKind() != (int)OpenIDKind.PhoneCall);
-                            break;
-                        case (int)OpenIDKind.SMS:
-                            count = channels[login.User].Count(c => c.GetKind() != (int)OpenIDKind.SMS);
-                            break;
-                        default:
-                            count = channels[login.User].Count(c => c.GetKind() != (int)OpenIDKind.SMS && c.GetKind() != registration.Kind);
-                            break;
-                    }
-
+                        (int)OpenIDKind.PhoneCall => channels[login.User].Count(c => c.GetKind() != (int)OpenIDKind.PhoneCall),
+                        (int)OpenIDKind.SMS => channels[login.User].Count(c => c.GetKind() != (int)OpenIDKind.SMS),
+                        _ => channels[login.User].Count(c => c.GetKind() != (int)OpenIDKind.SMS && c.GetKind() != registration.Kind),
+                    };
                     if (count > 1)
                     {
                         // REMARK (5he11) 因SMS和PhoneCall其实等同，所以过滤掉其中1个之后如果还有其他通道，则表示这是一个既有用户
@@ -237,6 +234,7 @@ namespace Cod.Platform
                     PartitionKey = Login.BuildPartitionKey(registration.Kind, registration.App),
                     RowKey = Login.BuildRowKey(registration.Identity),
                     User = userID.Value,
+                    Credentials = registration.Credentials,
                 });
             }
             await this.loginRepository.Value.CreateAsync(logins, true);

@@ -13,6 +13,8 @@ namespace Cod.Platform
 
         public string Identity { get; set; }
 
+        public string Credentials { get; set; }
+
         public bool OverrideIfExists { get; set; }
 
         public string OffsetPrefix { get; set; }
@@ -34,7 +36,7 @@ namespace Cod.Platform
             };
         }
 
-        public static IEnumerable<OpenIDRegistration> Build(OpenIDKind kind, string app, string openID)
+        public static IEnumerable<OpenIDRegistration> Build(OpenIDKind kind, string app, string openID, string credentials)
         {
             return new[]
             {
@@ -43,6 +45,7 @@ namespace Cod.Platform
                     Identity = openID,
                     Kind = (int)kind,
                     App = app,
+                    Credentials = credentials,
                 },
             };
         }
