@@ -412,7 +412,40 @@ namespace Cod.Platform
             return new OperationResult<string>(status) { Reference = json };
         }
 
-        public async Task<OperationResult<string>> JSAPIPay(string account, int amount, string appID, string device, string order, string product, string attach, string ip,
+        public async Task<OperationResult<WechatUserInfo>> GetUserInfoAsync(string appId, string secret, string openID, string lang = "zh_CN")
+        {
+            var token = await this.GetAccessTokenAsync(appId, secret);
+            if (!token.IsSuccess)
+            {
+                return new OperationResult<WechatUserInfo>(token);
+            }
+
+            var url = $"https://{WechatHost}/cgi-bin/user/info?access_token={token.Result}&openid={openID}&lang={lang}";
+            using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
+            var resp = await httpclient.GetAsync(url);
+            var json = await resp.Content.ReadAsStringAsync();
+            var status = (int)resp.StatusCode;
+            if (status >= 200 && status < 400)
+            {
+
+                if (json.Contains("\"errcode\":40001,"))
+                {
+                    await this.RevokeAccessTokenAsync(appId);
+                    return await this.GetUserInfoAsync(appId, secret, openID, lang);
+                }
+
+                if (Logger.Instance != null)
+                {
+                    Logger.Instance.LogError($"An error occurred while trying to get user info for {openID} with status code={status}: {json}");
+                }
+
+                var result = JsonSerializer.DeserializeObject<WechatUserInfo>(json);
+                return new OperationResult<WechatUserInfo>(result);
+            }
+            return new OperationResult<WechatUserInfo>(status) { Reference = json };
+        }
+
+        internal async Task<OperationResult<string>> JSAPIPay(string account, int amount, string appID, string device, string order, string product, string attach, string ip,
                     string wechatMerchantID, string wechatMerchantNotifyUri, string wechatMerchantSignature)
         {
             var nonceStr = Guid.NewGuid().ToString("N").ToUpperInvariant();
@@ -459,40 +492,7 @@ namespace Cod.Platform
             return new OperationResult<string>(result["prepay_id"]);
         }
 
-        public async Task<OperationResult<WechatUserInfo>> GetUserInfoAsync(string appId, string secret, string openID, string lang = "zh_CN")
-        {
-            var token = await this.GetAccessTokenAsync(appId, secret);
-            if (!token.IsSuccess)
-            {
-                return new OperationResult<WechatUserInfo>(token);
-            }
-
-            var url = $"https://{WechatHost}/cgi-bin/user/info?access_token={token.Result}&openid={openID}&lang={lang}";
-            using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
-            var resp = await httpclient.GetAsync(url);
-            var json = await resp.Content.ReadAsStringAsync();
-            var status = (int)resp.StatusCode;
-            if (status >= 200 && status < 400)
-            {
-
-                if (json.Contains("\"errcode\":40001,"))
-                {
-                    await this.RevokeAccessTokenAsync(appId);
-                    return await this.GetUserInfoAsync(appId, secret, openID, lang);
-                }
-
-                if (Logger.Instance != null)
-                {
-                    Logger.Instance.LogError($"An error occurred while trying to get user info for {openID} with status code={status}: {json}");
-                }
-
-                var result = JsonSerializer.DeserializeObject<WechatUserInfo>(json);
-                return new OperationResult<WechatUserInfo>(result);
-            }
-            return new OperationResult<WechatUserInfo>(status) { Reference = json };
-        }
-
-        public Dictionary<string, object> GetJSAPIPaySignature(string prepayID, string appID, string wechatMerchantSignature)
+        internal Dictionary<string, object> GetJSAPIPaySignature(string prepayID, string appID, string wechatMerchantSignature)
         {
             var nonceStr = Guid.NewGuid().ToString("N").ToUpperInvariant();
             var timeStamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();

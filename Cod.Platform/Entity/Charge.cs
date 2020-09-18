@@ -9,7 +9,7 @@ namespace Cod.Platform
 
         public Guid Target { get; set; }
 
-        public ChargeType Type { get; set; }
+        public PaymentKinds PaymentKind { get; set; }
 
         public string AppID { get; set; }
 
@@ -38,8 +38,8 @@ namespace Cod.Platform
             && this.Params.ContainsKey("signType")
             && this.Params.ContainsKey("paySign");
 
-        public string Export()
-            => this.Type == ChargeType.WeChatJSAPI ? JsonSerializer.SerializeObject(
+        public string ToClientInstructions()
+            => this.PaymentKind == PaymentKinds.Wechat ? JsonSerializer.SerializeObject(
                 new
                 {
                     appId = this.Params["appId"],

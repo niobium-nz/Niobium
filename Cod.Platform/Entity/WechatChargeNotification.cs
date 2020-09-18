@@ -48,7 +48,7 @@ namespace Cod.Platform
 
             if (param["trade_type"].ToUpperInvariant() == "JSAPI")
             {
-                this.ChargeType = ChargeType.WeChatJSAPI;
+                this.PaymentKind = PaymentKinds.Wechat;
             }
             else
             {

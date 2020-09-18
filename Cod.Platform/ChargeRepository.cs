@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Cod.Platform.Model;
 using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
@@ -10,33 +9,27 @@ namespace Cod.Platform
     public class ChargeRepository : IRepository<Charge>
     {
         private readonly Lazy<IBrandService> brandService;
-        private readonly Lazy<IConfigurationProvider> configuration;
         private readonly Lazy<WechatIntegration> wechatIntegration;
         private readonly ILogger logger;
 
         public ChargeRepository(Lazy<IBrandService> brandService,
-            Lazy<IConfigurationProvider> configuration,
             Lazy<WechatIntegration> wechatIntegration,
             ILogger logger)
         {
             this.brandService = brandService;
-            this.configuration = configuration;
             this.wechatIntegration = wechatIntegration;
             this.logger = logger;
         }
 
         public async Task<IEnumerable<Charge>> CreateAsync(IEnumerable<Charge> entities, bool replaceIfExist)
         {
-            if (entities.All(e => e.OpenIDKind == OpenIDKind.Wechat && e.Type == ChargeType.WeChatJSAPI))
+            if (entities.All(e => e.OpenIDKind == OpenIDKind.Wechat && e.PaymentKind == PaymentKinds.Wechat))
             {
                 var charges = new List<Charge>();
                 foreach (var charge in entities)
                 {
                     var branding = await this.brandService.Value.GetAsync(OpenIDKind.Wechat, charge.AppID);
-                    var key = await this.configuration.Value.GetSettingAsStringAsync("CHARGE_SECRET");
                     var attach = $"{(int)charge.TopupKind}|{charge.Target}";
-                    this.logger.LogInformation($"微信支付调试: attach={attach} device={charge.Device} order={charge.Order}");
-
                     var prepayid = await this.wechatIntegration.Value.JSAPIPay(charge.Account,
                         charge.Amount,
                         charge.AppID,

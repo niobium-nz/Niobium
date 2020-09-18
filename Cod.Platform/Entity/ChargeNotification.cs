@@ -7,7 +7,7 @@ namespace Cod.Platform
     {
         public string AppID { get; protected set; }
 
-        public ChargeType ChargeType { get; protected set; }
+        public PaymentKinds PaymentKind { get; protected set; }
 
         public int Amount { get; protected set; }
 
