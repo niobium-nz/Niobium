@@ -5,5 +5,6 @@
         public const string BasicLoginScheme = "Basic";
         public const string DeviceLoginScheme = "Device";
         public const string WechatLoginScheme = "OAuth";
+        public const string BearerLoginScheme = "Bearer";
     }
 }

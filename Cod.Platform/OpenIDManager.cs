@@ -30,6 +30,11 @@ namespace Cod.Platform
             // TODO (5he11) poor performance, better to use batch operation
             foreach (var registration in registrations)
             {
+                if (registration.Kind == (int)OpenIDKind.Username)
+                {
+                    continue;
+                }
+
                 var entity = new OpenID
                 {
                     PartitionKey = OpenID.BuildPartitionKey(registration.User),

@@ -68,7 +68,8 @@ namespace Cod.Platform
                 return new OperationResult<User>(InternalError.NotFound);
             }
 
-            if (login.Credentials.ToUpper() != SHA.SHA256Hash(password).ToUpper())
+            var secret = await this.configuration.Value.GetSettingAsync<string>(Constant.AUTH_SECRET_NAME);
+            if (login.Credentials.ToUpper() != SHA.SHA256Hash(password, secret).ToUpper())
             {
                 return new OperationResult<User>(InternalError.AuthenticationRequired);
             }
@@ -139,7 +140,10 @@ namespace Cod.Platform
             var userID = entity.GetID();
             var records = await this.entitlementRepository.Value.GetAsync(Entitlement.BuildPartitionKey(userID));
             var es = records.Select(r => new KeyValuePair<string, string>(r.RowKey, r.Value)).ToList();
-            es.AddRange(entitlements);
+            if (entitlements != null && entitlements.Any())
+            {
+                es.AddRange(entitlements);
+            }
             return await this.tokenBuilder.Value.BuildAsync(
                 userID.ToKey(),
                 roles: entity.Roles.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries),
@@ -226,9 +230,15 @@ namespace Cod.Platform
 
             await this.openIDManager.Value.RegisterAsync(registrations);
 
+            var secret = await this.configuration.Value.GetSettingAsync<string>(Constant.AUTH_SECRET_NAME);
             var logins = new List<Login>();
             foreach (var registration in registrations)
             {
+                if (registration.Kind == (int)OpenIDKind.Username)
+                {
+                    registration.Credentials = SHA.SHA256Hash(registration.Credentials, secret);
+                }
+
                 logins.Add(new Login
                 {
                     PartitionKey = Login.BuildPartitionKey(registration.Kind, registration.App),

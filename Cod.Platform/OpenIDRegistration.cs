@@ -38,16 +38,27 @@ namespace Cod.Platform
 
         public static IEnumerable<OpenIDRegistration> Build(OpenIDKind kind, string app, string openID, string credentials)
         {
-            return new[]
+            var result = new List<OpenIDRegistration>
             {
                 new OpenIDRegistration
                 {
-                    Identity = openID,
                     Kind = (int)kind,
+                    Identity = openID,
                     App = app,
-                    Credentials = credentials,
                 },
             };
+
+            if (credentials != null)
+            {
+                result.Add(new OpenIDRegistration
+                {
+                    Kind = (int)OpenIDKind.Username,
+                    Identity = openID,
+                    Credentials = credentials,
+                });
+            }
+
+            return result;
         }
 
         public static IEnumerable<OpenIDRegistration> Build(string mobile, OpenIDKind kind, string app, string openID)
