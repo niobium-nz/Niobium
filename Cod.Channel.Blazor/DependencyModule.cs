@@ -15,9 +15,9 @@ namespace Cod.Channel.Blazor
                     client.BaseAddress = HttpClientSettings.BaseAddress;
                 }
 
-                if (HttpClientSettings.Timeout != null)
+                if (HttpClientSettings.Timeout.HasValue)
                 {
-                    client.Timeout = HttpClientSettings.Timeout;
+                    client.Timeout = HttpClientSettings.Timeout.Value;
                 }
 
                 if (HttpClientSettings.MaxResponseContentBufferSize.HasValue)
