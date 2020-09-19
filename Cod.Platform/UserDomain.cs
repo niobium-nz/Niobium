@@ -289,11 +289,6 @@ namespace Cod.Platform
                 return new OperationResult<User>(InternalError.NotFound);
             }
 
-            if (user.GetRoles().Contains(role))
-            {
-                return new OperationResult<User>(user);
-            }
-
             var result = await this.OnApplyAsync(user, role, parameter);
             if (result.IsSuccess || result.Code == InternalError.Locked)
             {
@@ -301,6 +296,10 @@ namespace Cod.Platform
                 if (result.Code == InternalError.Locked)
                 {
                     user.Disabled = true;
+                }
+                else
+                {
+                    user.Disabled = false;
                 }
 
                 await this.SaveEntityAsync();
