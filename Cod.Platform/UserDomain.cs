@@ -171,7 +171,7 @@ namespace Cod.Platform
             return new OperationResult<Guid>(newUser.Result.GetID());
         }
 
-        public async Task<OperationResult<User>> RegisterAsync(Guid? userID, IEnumerable<OpenIDRegistration> registrations, string ip)
+        public async Task<OperationResult<User>> RegisterAsync(Guid? userID, IEnumerable<OpenIDRegistration> registrations, string ip, bool ignoreDuplication = false)
         {
             var newUser = false;
             var channels = new Dictionary<Guid, IEnumerable<OpenID>>();
@@ -196,19 +196,17 @@ namespace Cod.Platform
                         (int)OpenIDKind.SMS => channels[login.User].Count(c => c.GetKind() != (int)OpenIDKind.SMS),
                         _ => channels[login.User].Count(c => c.GetKind() != (int)OpenIDKind.SMS && c.GetKind() != registration.Kind),
                     };
-                    if (count > 1)
+                    if (!ignoreDuplication && count > 1)
                     {
                         // REMARK (5he11) 因SMS和PhoneCall其实等同，所以过滤掉其中1个之后如果还有其他通道，则表示这是一个既有用户
                         return new OperationResult<User>(InternalError.Conflict);
                     }
-                    else
+
+                    // REMARK (5he11) 否则可能是因为用户被动注册，如仅被注册了手机号码通道，无实际载体通道，此时应该合并当前注册与被动注册的用户
+                    registration.OverrideIfExists = true;
+                    if (!passiveUserID.Contains(login.User))
                     {
-                        // REMARK (5he11) 否则可能是因为用户被动注册，如仅被注册了手机号码通道，无实际载体通道，此时应该合并当前注册与被动注册的用户
-                        registration.OverrideIfExists = true;
-                        if (!passiveUserID.Contains(login.User))
-                        {
-                            passiveUserID.Add(login.User);
-                        }
+                        passiveUserID.Add(login.User);
                     }
                 }
                 else
