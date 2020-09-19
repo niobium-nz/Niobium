@@ -289,19 +289,27 @@ namespace Cod.Platform
                 return new OperationResult<User>(InternalError.NotFound);
             }
 
+            if (user.GetRoles().Contains(role))
+            {
+                return new OperationResult<User>(user);
+            }
+
             var result = await this.OnApplyAsync(user, role, parameter);
-            if (!result.IsSuccess)
+            if (result.IsSuccess || result.Code == InternalError.Locked)
+            {
+                user.AddRole(role);
+                if (result.Code == InternalError.Locked)
+                {
+                    user.Disabled = true;
+                }
+
+                await this.SaveEntityAsync();
+                return new OperationResult<User>(user);
+            }
+            else
             {
                 return new OperationResult<User>(result);
             }
-
-            var u = user.AddRole(role);
-            if (u)
-            {
-                await this.SaveEntityAsync();
-            }
-
-            return new OperationResult<User>(user);
         }
 
         protected virtual Task<OperationResult> OnApplyAsync(User user, string role, object data)
