@@ -8,7 +8,7 @@ namespace Cod.Channel
         public void Load(IServiceCollection services)
         {
             InternalError.Register(new InternalErrorRetriever());
-            services.AddTransient<AuthenticatorInitializer>();
+            services.AddTransient<IBootstrapper, AuthenticatorInitializer>();
             services.AddTransient<IQueue, ChannelQueue>();
             services.AddTransient<LoginCommand>();
             services.AddTransient<ICommand>(sp => sp.GetService<LoginCommand>());
