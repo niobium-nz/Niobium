@@ -485,11 +485,16 @@ namespace Cod.Platform
             }
 
             var result = FromXML(body);
-            if (result["return_code"].ToUpperInvariant() != "SUCCESS")
+            if (result["return_code"].ToUpperInvariant() == "SUCCESS" && result["result_code"].ToUpperInvariant() == "SUCCESS")
             {
-                return new OperationResult<string>(InternalError.BadGateway) { Reference = body };
+                return new OperationResult<string>(result["prepay_id"]);
             }
-            return new OperationResult<string>(result["prepay_id"]);
+            else if (result["return_code"].ToUpperInvariant() == "SUCCESS" && result["result_code"].ToUpperInvariant() == "SUCCESS")
+            { 
+                return new OperationResult<string>(InternalError.Conflict);
+            }
+
+            return new OperationResult<string>(InternalError.BadGateway) { Reference = body };
         }
 
         internal Dictionary<string, object> GetJSAPIPaySignature(string prepayID, string appID, string wechatMerchantSignature)
