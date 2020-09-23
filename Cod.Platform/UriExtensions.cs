@@ -25,33 +25,27 @@ namespace Cod.Platform
 
             try
             {
-                using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false)
+                using var httpclient = new HttpClient(HttpHandler.GetHandler(), false)
                 {
 #if !DEBUG
                     Timeout = TimeSpan.FromSeconds(3),
 #endif
-                })
+                };
+                var resp = await httpclient.GetAsync(uri);
+                if (resp.IsSuccessStatusCode)
                 {
-                    var resp = await httpclient.GetAsync(uri);
-
-
-                    if (resp.IsSuccessStatusCode)
-                    {
-                        using (var s = await resp.Content.ReadAsStreamAsync())
-                        {
-                            var responseStream = new MemoryStream((int)s.Length);
-                            await s.CopyToAsync(responseStream);
-                            responseStream.Seek(0, SeekOrigin.Begin);
-                            return responseStream;
-                        }
-                    }
-                    else if (onError != null)
-                    {
-                        await onError(resp);
-                    }
+                    using var s = await resp.Content.ReadAsStreamAsync();
+                    var responseStream = new MemoryStream((int)s.Length);
+                    await s.CopyToAsync(responseStream);
+                    responseStream.Seek(0, SeekOrigin.Begin);
+                    return responseStream;
+                }
+                else if (onError != null)
+                {
+                    await onError(resp);
                 }
             }
-            catch (TaskCanceledException)
+            catch (OperationCanceledException)
             {
             }
             catch (SocketException)

@@ -73,6 +73,7 @@ namespace Cod.Platform
 
             try
             {
+                // TODO (5he11) 这里不应该直接插入然后抓异常，应该先读取，如果值一模一样则什么都不干，如果不一样则offset+1
                 await this.repository.Value.CreateAsync(entity, overrideIfExists);
             }
             catch (StorageException e)

@@ -67,7 +67,7 @@ namespace Cod.Platform
         }
 
         protected virtual int FigureIncome(IEnumerable<Transaction> input)
-            => input.Where(t => t.Delta > 0).DefaultIfEmpty().Sum(t => (int)(t.Delta * 100));
+            => input.Where(t => t.Delta > 0).Select(t => t.Delta).DefaultIfEmpty().Sum(t => (int)(t * 100));
 
         protected virtual Task<string> MakeCompensationTransactionRemarkAsync(string reference)
             => Task.FromResult(reference);
