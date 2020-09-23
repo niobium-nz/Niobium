@@ -216,7 +216,7 @@ namespace Cod.Platform
                 using var httpclient = new HttpClient(HttpHandler.GetHandler(), false)
                 {
 #if !DEBUG
-                    Timeout = TimeSpan.FromSeconds(5)
+                    Timeout = TimeSpan.FromSeconds(8)
 #endif
                 };
                 using var post = new StringContent(str, Encoding.UTF8, "application/x-www-form-urlencoded");
