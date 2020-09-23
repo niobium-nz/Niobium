@@ -489,7 +489,7 @@ namespace Cod.Platform
             {
                 return new OperationResult<string>(result["prepay_id"]);
             }
-            else if (result["return_code"].ToUpperInvariant() == "SUCCESS" && result["result_code"].ToUpperInvariant() == "SUCCESS")
+            else if (result.ContainsKey("err_code_des") && result["err_code_des"].Contains("订单号重复"))
             { 
                 return new OperationResult<string>(InternalError.Conflict);
             }
