@@ -104,7 +104,12 @@ namespace Cod.Platform
             }
             var key = await this.configuration.Value.GetSettingAsync<string>("WINDCAVE_KEY");
             var secret = await this.configuration.Value.GetSettingAsync<string>("WINDCAVE_SECRET");
-            using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
+            using var httpclient = new HttpClient(HttpHandler.GetHandler(), false)
+            {
+#if !DEBUG
+                Timeout = TimeSpan.FromSeconds(15),
+#endif
+            };
             var request = new CreateWindcaveTransactionRequest(kind, currency, amount, transactionID: transactionID, cardID: cardID)
             {
                 MerchantReference = reference,
@@ -115,9 +120,6 @@ namespace Cod.Platform
             using var httprequest = new HttpRequestMessage(HttpMethod.Post, $"{Host}/transactions")
             {
                 Content = content,
-#if !DEBUG
-                Timeout = TimeSpan.FromSeconds(15),
-#endif
             };
             var auth = Base64.Encode($"{key}:{secret}");
             httprequest.Headers.Authorization = new AuthenticationHeaderValue(Authentication.BasicLoginScheme, auth);
