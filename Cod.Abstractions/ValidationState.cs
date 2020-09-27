@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace Cod
 {
@@ -37,6 +38,6 @@ namespace Cod
             return b;
         }
 
-        public IDictionary<string, List<string>> ToDictionary() => this.errors;
+        public IReadOnlyDictionary<string, IEnumerable<string>> ToDictionary() => this.errors.ToDictionary(kv => kv.Key, kv => kv.Value.AsEnumerable());
     }
 }

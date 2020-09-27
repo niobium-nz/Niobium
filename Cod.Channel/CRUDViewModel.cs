@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Cod.Channel
@@ -28,6 +29,8 @@ namespace Cod.Channel
 
         protected virtual Task OnUpdateError(CommandExecutionEventArgs args) => Task.CompletedTask;
 
+        protected virtual Task OnModelStateError(IReadOnlyDictionary<string, IEnumerable<string>> errors) => Task.CompletedTask;
+
         protected virtual Task OnUpdateSuccess(CommandExecutionEventArgs args)
         {
             this.Updating = default;
@@ -55,6 +58,10 @@ namespace Cod.Channel
             {
                 await this.OnCreateSuccess(result);
             }
+            else if (result.Result.Code == InternalError.BadRequest)
+            {
+                await this.OnModelStateError((IReadOnlyDictionary<string, IEnumerable<string>>)result.Result.Reference);
+            }
             else
             {
                 await this.OnCreateError(result);
@@ -67,6 +74,10 @@ namespace Cod.Channel
             if (result.Result.IsSuccess)
             {
                 await this.OnUpdateSuccess(result);
+            }
+            else if (result.Result.Code == InternalError.BadRequest)
+            {
+                await this.OnModelStateError((IReadOnlyDictionary<string, IEnumerable<string>>)result.Result.Reference);
             }
             else
             {
