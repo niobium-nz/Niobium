@@ -12,14 +12,21 @@ namespace Cod.Platform
         {
             var q = CloudStorage.GetQueue(queueName);
             var msg = await q.GetMessageAsync();
-            return new DisposableQueueMessage(
-                () => q.DeleteMessage(msg.Id, msg.PopReceipt),
-                () => q.DeleteMessageAsync(msg.Id, msg.PopReceipt))
+            if (msg != null)
             {
-                Body = msg.AsString,
-                PartitionKey = queueName,
-                RowKey = msg.Id
-            };
+                return new DisposableQueueMessage(
+                    () => q.DeleteMessage(msg.Id, msg.PopReceipt),
+                    () => q.DeleteMessageAsync(msg.Id, msg.PopReceipt))
+                {
+                    Body = msg.AsString,
+                    PartitionKey = queueName,
+                    RowKey = msg.Id
+                };
+            }
+            else
+            {
+                return null;
+            }
         }
 
         public async Task<OperationResult> EnqueueAsync(IEnumerable<QueueMessage> entities)
