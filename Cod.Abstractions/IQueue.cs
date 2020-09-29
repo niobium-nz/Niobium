@@ -9,5 +9,7 @@ namespace Cod
         Task<OperationResult> EnqueueAsync(IEnumerable<QueueMessage> entities);
 
         Task<IEnumerable<QueueMessage>> PeekAsync(string queueName, int limit);
+
+        Task<QueueMessage> DequeueAsync(string queueName);
     }
 }

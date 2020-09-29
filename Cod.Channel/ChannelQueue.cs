@@ -29,6 +29,8 @@ namespace Cod.Channel
             this.httpClient = httpClient;
         }
 
+        public Task<QueueMessage> DequeueAsync(string queueName) => throw new NotImplementedException();
+
         public async Task<OperationResult> EnqueueAsync(IEnumerable<QueueMessage> entities)
         {
             var endpoint = await this.configuration.GetSettingAsStringAsync(Constants.KEY_QUEUE_URL);
