@@ -4,5 +4,8 @@
     {
         public static OperationResult ToOperationResult(this ValidationState validationState)
             => new OperationResult(InternalError.BadRequest) { Reference = validationState.ToDictionary() };
+
+        public static OperationResult ToOperationResult<T>(this ValidationState validationState)
+            => new OperationResult<T>(InternalError.BadRequest) { Reference = validationState.ToDictionary() };
     }
 }
