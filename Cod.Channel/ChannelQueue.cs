@@ -29,7 +29,15 @@ namespace Cod.Channel
             this.httpClient = httpClient;
         }
 
-        public Task<QueueMessage> DequeueAsync(string queueName) => throw new NotImplementedException();
+        public Task<DisposableQueueMessage> DequeueAsync(string queueName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IEnumerable<DisposableQueueMessage>> DequeueAsync(string queueName, int limit)
+        {
+            throw new NotImplementedException();
+        }
 
         public async Task<OperationResult> EnqueueAsync(IEnumerable<QueueMessage> entities)
         {
@@ -119,5 +127,7 @@ namespace Cod.Channel
 
             return new OperationResult<string>(result.Result);
         }
+
+
     }
 }
