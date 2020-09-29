@@ -8,7 +8,7 @@ namespace Cod.Platform
 {
     internal class PlatformQueue : IQueue
     {
-        public async Task<QueueMessage> DequeueAsync(string queueName)
+        public async Task<DisposableQueueMessage> DequeueAsync(string queueName)
         {
             var q = CloudStorage.GetQueue(queueName);
             var msg = await q.GetMessageAsync();
@@ -28,6 +28,30 @@ namespace Cod.Platform
                 return null;
             }
         }
+
+        public async Task<IEnumerable<DisposableQueueMessage>> DequeueAsync(string queueName, int limit)
+        {
+            var result = new List<DisposableQueueMessage>();
+            var q = CloudStorage.GetQueue(queueName);
+            var msgs = await q.GetMessagesAsync(limit);
+            if (msgs != null && msgs.Any())
+            {
+                foreach (var msg in msgs)
+                {
+                    result.Add(new DisposableQueueMessage(
+                        () => q.DeleteMessage(msg.Id, msg.PopReceipt),
+                        () => q.DeleteMessageAsync(msg.Id, msg.PopReceipt))
+                    {
+                        Body = msg.AsString,
+                        PartitionKey = queueName,
+                        RowKey = msg.Id
+                    });
+                }
+
+            }
+            return result;
+        }
+
 
         public async Task<OperationResult> EnqueueAsync(IEnumerable<QueueMessage> entities)
         {

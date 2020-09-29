@@ -10,6 +10,8 @@ namespace Cod
 
         Task<IEnumerable<QueueMessage>> PeekAsync(string queueName, int limit);
 
-        Task<QueueMessage> DequeueAsync(string queueName);
+        Task<DisposableQueueMessage> DequeueAsync(string queueName);
+
+        Task<IEnumerable<DisposableQueueMessage>> DequeueAsync(string queueName, int limit);
     }
 }

@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Cod.Model;
 
-namespace Cod.Platform
+namespace Cod.Model
 {
     public class DisposableQueueMessage : QueueMessage, IDisposable, IAsyncDisposable
     {
