@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Cod.Platform
@@ -59,6 +60,14 @@ namespace Cod.Platform
             using (var ms = new MemoryStream(result.PFX))
             {
                 await this.blobRepository.Value.PutAsync("certificates", $"{entity.GetHostname()}.pfx", ms, true);
+            }
+            using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(result.PEMCert)))
+            {
+                await this.blobRepository.Value.PutAsync("certificates", $"{entity.GetHostname()}.cert.pem", ms, true);
+            }
+            using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(result.PEMKey)))
+            {
+                await this.blobRepository.Value.PutAsync("certificates", $"{entity.GetHostname()}.key.pem", ms, true);
             }
 
             var x509Certificate = new X509Certificate(result.PFX, pfxPassword);

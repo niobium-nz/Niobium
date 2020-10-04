@@ -4,6 +4,8 @@
     {
         public byte[] PFX { get; set; }
 
-        public string PEM { get; set; }
+        public string PEMCert { get; set; }
+
+        public string PEMKey { get; set; }
     }
 }

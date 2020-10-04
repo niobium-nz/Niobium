@@ -55,22 +55,31 @@ namespace Cod.Platform
                 Result = async () =>
                 {
                     var r = new SSLCertificateApplicationResult();
-                    var success = false;
+                    var success = true;
                     for (var i = 0; i < 500; i++)
                     {
+                        success = true;
                         await Task.Delay(1000);
 
-                        var or = await order.Resource();
-                        if (or.Status == OrderStatus.Ready)
+                        foreach (var challenge in challenges)
                         {
-                            success = true;
+                            var cr = await challenge.Validate();
+                            if (!cr.Status.HasValue || cr.Status.Value != ChallengeStatus.Valid)
+                            {
+                                success = false;
+                                break;
+                            }
+                        }
+
+                        if (success)
+                        {
                             break;
                         }
                     }
 
                     if (success)
                     {
-                        var privateKey = KeyFactory.NewKey(KeyAlgorithm.ES256);
+                        var privateKey = KeyFactory.NewKey(KeyAlgorithm.RS256);
                         var cert = await order.Generate(new CsrInfo
                         {
                             CountryName = country,
@@ -80,7 +89,8 @@ namespace Cod.Platform
                             OrganizationUnit = unit,
                         }, privateKey);
 
-                        r.PEM = cert.ToPem();
+                        r.PEMCert = cert.ToPem();
+                        r.PEMKey = privateKey.ToPem();
                         var pfxBuilder = cert.ToPfx(privateKey);
                         r.PFX = pfxBuilder.Build(domain, password);
                     }
