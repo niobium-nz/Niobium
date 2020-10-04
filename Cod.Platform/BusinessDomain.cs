@@ -60,8 +60,8 @@ namespace Cod.Platform
 
                     var remark = await this.MakeCompensationTransactionRemarkAsync(interest.Target);
                     var id = relatedTransactions.Max(t => t.GetCreated());
-                    await this.MakeTransactionAsync(compensation, CompensationTransactionReason, remark, interest.Target, id: id.AddMilliseconds(1).ToReverseUnixTimestamp());
-                    await this.MakeTransactionAsync(-costOnCompensation, CompensationTransactionReason, remark, interest.Target, id: id.AddMilliseconds(2).ToReverseUnixTimestamp());
+                    await this.MakeTransactionAsync(compensation / 100d, CompensationTransactionReason, remark, interest.Target, id: id.AddMilliseconds(1).ToReverseUnixTimestamp());
+                    await this.MakeTransactionAsync(-costOnCompensation / 100d, CompensationTransactionReason, remark, interest.Target, id: id.AddMilliseconds(2).ToReverseUnixTimestamp());
                 }
             }
         }
