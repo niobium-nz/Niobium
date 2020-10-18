@@ -34,7 +34,7 @@ namespace Cod.Platform
             => await CloudStorage.GetTable<T>().InsertOrReplaceAsync(entities);
 
         public async Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities, bool successIfNotExist = false)
-            => await CloudStorage.GetTable<T>().RemoveAsync(entities, successIfNotExist);
+            => await CloudStorage.GetTable<T>().RemoveAsync(entities, successIfNotExist: successIfNotExist);
 
         public async Task<TableQueryResult<T>> GetAsync(string partitionKey, int limit)
             => await CloudStorage.GetTable<T>().WhereAsync<T>(
