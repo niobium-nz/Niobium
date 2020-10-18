@@ -71,20 +71,28 @@ namespace Cod.Platform
                 }
             }
 
-            try
+            if (overrideIfExists)
             {
-                // TODO (5he11) 这里不应该直接插入然后抓异常，应该先读取，如果值一模一样则什么都不干，如果不一样则offset+1
-                await this.repository.Value.CreateAsync(entity, overrideIfExists);
+                await this.repository.Value.CreateAsync(entity, true);
             }
-            catch (StorageException e)
+            else
             {
-                if (e.RequestInformation.HttpStatusCode == 409)
+                var existing = await this.repository.Value.GetAsync(entity.PartitionKey, entity.RowKey);
+                if (existing == null)
                 {
-                    await this.RetryRegistration(entity, app, ++retryCount, overrideIfExists, offsetPrefix);
+                    await this.repository.Value.CreateAsync(entity, true);
                 }
                 else
                 {
-                    throw;
+                    // REMARK (5he11) 如果既有的数据的值一模一样则什么都不干，如果不一样则offset+1
+                    if (existing.Identity == entity.Identity)
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        await this.RetryRegistration(entity, app, ++retryCount, overrideIfExists, offsetPrefix);
+                    }
                 }
             }
         }
