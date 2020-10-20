@@ -4,27 +4,27 @@ namespace Cod.Platform
 {
     internal static class WindcaveHelper
     {
-        public static string ToWindcaveType(this CreditCardTransactionKind kind)
+        public static string ToWindcaveType(this PaymentKind kind)
             => kind switch
             {
-                CreditCardTransactionKind.Authorize => "auth",
-                CreditCardTransactionKind.Complete => "complete",
-                CreditCardTransactionKind.Charge => "purchase",
-                CreditCardTransactionKind.Void => "void",
-                CreditCardTransactionKind.Refund => "refund",
-                CreditCardTransactionKind.Validate => "validate",
+                PaymentKind.Authorize => "auth",
+                PaymentKind.Complete => "complete",
+                PaymentKind.Charge => "purchase",
+                PaymentKind.Void => "void",
+                PaymentKind.Refund => "refund",
+                PaymentKind.Validate => "validate",
                 _ => throw new NotSupportedException(),
             };
 
-        public static CreditCardTransactionKind FromWindcaveType(this string type)
+        public static PaymentKind FromWindcaveType(this string type)
             => type switch
             {
-                "auth" => CreditCardTransactionKind.Authorize,
-                "purchase" => CreditCardTransactionKind.Charge,
-                "complete" => CreditCardTransactionKind.Complete,
-                "void" => CreditCardTransactionKind.Void,
-                "refund" => CreditCardTransactionKind.Refund,
-                "validate" => CreditCardTransactionKind.Validate,
+                "auth" => PaymentKind.Authorize,
+                "purchase" => PaymentKind.Charge,
+                "complete" => PaymentKind.Complete,
+                "void" => PaymentKind.Void,
+                "refund" => PaymentKind.Refund,
+                "validate" => PaymentKind.Validate,
                 _ => throw new NotImplementedException(),
             };
     }

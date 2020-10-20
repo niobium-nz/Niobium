@@ -445,7 +445,7 @@ namespace Cod.Platform
             return new OperationResult<WechatUserInfo>(status) { Reference = json };
         }
 
-        internal async Task<OperationResult<string>> JSAPIPay(string account, int amount, string appID, string device, string order, string product, string attach, string ip,
+        internal async Task<OperationResult<string>> JSAPIPay(string account, int amount, string appID, string device, string reference, string desc, string attach, string ip,
                     string wechatMerchantID, string wechatMerchantNotifyUri, string wechatMerchantSignature)
         {
             var nonceStr = Guid.NewGuid().ToString("N").ToUpperInvariant();
@@ -456,8 +456,8 @@ namespace Cod.Platform
                 { "nonce_str" , nonceStr },
                 { "device_info" , device },
                 { "sign_type", "MD5" },
-                { "body", product },
-                { "out_trade_no", order },
+                { "body", desc },
+                { "out_trade_no", reference },
                 { "total_fee", amount },
                 { "spbill_create_ip", ip },
                 { "openid", account },
@@ -472,7 +472,7 @@ namespace Cod.Platform
             var xml = GetXML(param);
             if (Logger.Instance != null)
             {
-                Logger.Instance.LogInformation($"微信支付调试: attach={attach} device={device} order={order} xml={xml}");
+                Logger.Instance.LogInformation($"微信支付调试: attach={attach} device={device} order={reference} xml={xml}");
             }
 
             var resp = await httpclient.PostAsync($"https://{WechatPayHost}/pay/unifiedorder",

@@ -9,6 +9,7 @@ namespace Cod.Platform
     public class UserDomain : ImpedableDomain<User>, IAccountable, ILoggerSite
     {
         private const string ClientIDSplitString = "###";
+        public const OpenIDKind DefaultOpenIDKind = OpenIDKind.Username;
 
         private readonly Lazy<ICacheStore> cache;
         private readonly Lazy<IRepository<WechatEntity>> wechatRepository;
@@ -57,7 +58,7 @@ namespace Cod.Platform
         {
             if (!kind.HasValue)
             {
-                kind = OpenIDKind.Username;
+                kind = DefaultOpenIDKind;
             }
 
             var login = await this.loginRepository.Value.GetAsync(
@@ -218,8 +219,10 @@ namespace Cod.Platform
             if (!userID.HasValue)
             {
                 userID = passiveUserID.Count == 1 ? passiveUserID[0] : Guid.NewGuid();
-                newUser = true;
             }
+
+            var existing = await this.Repository.GetAsync(User.BuildPartitionKey(userID.Value), User.BuildRowKey(userID.Value));
+            newUser = existing == null;
 
             foreach (var registration in registrations)
             {

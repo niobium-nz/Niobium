@@ -120,4 +120,7 @@
   <data name="SignatureMissing" xml:space="preserve">
     <value>The value of 'ETag' signature cannot be empty.</value>
   </data>
+  <data name="TransactionReason_Deposit" xml:space="preserve">
+    <value>Online Deposit</value>
+  </data>
 </root>

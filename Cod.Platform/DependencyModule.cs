@@ -15,6 +15,7 @@ namespace Cod.Platform
             builder.RegisterType<AzureStorageSignatureService>().AsImplementedInterfaces();
             builder.RegisterType<WechatIntegration>();
             builder.RegisterType<BaiduIntegration>();
+            builder.RegisterType<WindcaveIntegration>();
             builder.RegisterType<CloudTableRepository<Account>>().As<IRepository<Account>>();
             builder.RegisterType<CloudTableRepository<Accounting>>().As<IRepository<Accounting>>();
             builder.RegisterType<CloudTableRepository<Entitlement>>().As<IRepository<Entitlement>>();
@@ -28,6 +29,7 @@ namespace Cod.Platform
             builder.RegisterType<CloudTableRepository<Interest>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Job>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Hostname>>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<PaymentMethod>>().AsImplementedInterfaces();
 
             builder.RegisterType<UserDomain>();
             builder.RegisterType<GenericDomainRepository<UserDomain, User>>().As<IDomainRepository<UserDomain, User>>();
@@ -38,7 +40,10 @@ namespace Cod.Platform
             builder.RegisterType<BusinessDomain>();
             builder.RegisterType<GenericDomainRepository<BusinessDomain, Business>>().As<IDomainRepository<BusinessDomain, Business>>();
 
-            builder.RegisterType<ChargeRepository>().As<IRepository<Charge>>();
+            builder.RegisterType<PaymentService>().AsImplementedInterfaces();
+            builder.RegisterType<WindcavePaymentProcessor>().AsImplementedInterfaces();
+            builder.RegisterType<WechatPaymentProcessor>().AsImplementedInterfaces();
+
             builder.RegisterType<WechatRepository>().AsSelf();
             builder.Register(ctx => new CachedRepository<WechatEntity>(
                     ctx.Resolve<WechatRepository>(),

@@ -120,4 +120,7 @@
   <data name="SignatureMissing" xml:space="preserve">
     <value>'ETag' 签名的值不可为空.</value>
   </data>
+  <data name="TransactionReason_Deposit" xml:space="preserve">
+    <value>线上充值</value>
+  </data>
 </root>

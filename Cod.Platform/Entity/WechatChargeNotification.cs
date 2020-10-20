@@ -1,11 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
 {
-    public class WechatChargeNotification : ChargeNotification
+    public class WechatChargeNotification
     {
+        public WechatChargeNotification(string content) => this.ParseContent(content);
+
+        public string AppID { get; protected set; }
+
+        public PaymentChannels PaymentKind { get; protected set; }
+
+        public int Amount { get; protected set; }
+
+        public string Order { get; protected set; }
+
+        public string Account { get; protected set; }
+
+        public string Message { get; protected set; }
+
+        public string Attach { get; protected set; }
+
+        public DateTimeOffset Paid { get; protected set; }
+
+        public string Reference { get; protected set; }
+
         public string MerchantID { get; private set; }
 
         public string NonceString { get; private set; }
@@ -16,11 +37,7 @@ namespace Cod.Platform
 
         public Dictionary<string, string> Params { get; private set; }
 
-        public WechatChargeNotification(string content) : base(content)
-        {
-        }
-
-        protected override void ParseContent(string content)
+        private void ParseContent(string content)
         {
             var param = WechatIntegration.FromXML(content);
             this.Reference = param["transaction_id"];
@@ -48,7 +65,7 @@ namespace Cod.Platform
 
             if (param["trade_type"].ToUpperInvariant() == "JSAPI")
             {
-                this.PaymentKind = PaymentKinds.Wechat;
+                this.PaymentKind = PaymentChannels.Wechat;
             }
             else
             {
@@ -57,13 +74,13 @@ namespace Cod.Platform
             this.Params = param;
         }
 
-        public override bool Success() => this.ResultCode != null && this.ResultCode.ToUpperInvariant() == "SUCCESS";
+        public bool Success() => this.ResultCode != null && this.ResultCode.ToUpperInvariant() == "SUCCESS";
 
-        public override bool Validate(string merchantSecret)
+        public bool Validate(string merchantSecret)
         {
-            var result = base.Validate(merchantSecret);
-            if (!result)
+            if (!this.Success())
             {
+                this.LogError($"微信回调通知失败. 错误消息: {this.Message}");
                 return false;
             }
 
@@ -75,6 +92,15 @@ namespace Cod.Platform
             }
 
             return true;
+        }
+
+        private void LogError(string log)
+        {
+            var logger = Logger.Instance;
+            if (logger != null)
+            {
+                logger.LogError(log);
+            }
         }
     }
 }

@@ -1,16 +1,17 @@
-using System;
-
-namespace Cod
+﻿namespace Cod
 {
-    [Flags]
-    public enum PaymentKinds : int
+    public enum PaymentKind
     {
-        Unknown = 0,
+        Authorize,
 
-        Wechat = 1,
+        Complete,
 
-        Alipay = 2,
+        Charge,
 
-        CreditCard = 4,
+        Void,
+
+        Refund,
+
+        Validate,
     }
 }

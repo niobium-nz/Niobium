@@ -22,6 +22,12 @@ namespace Cod.Model
 
         public string Corelation { get; set; }
 
+        public string Account { get; set; }
+
+        public int Status { get; set; }
+
+        public int Provider { get; set; }
+
         public DateTimeOffset? Created { get; set; }
 
         public void SetOwner(string value) => this.PartitionKey = BuildPartitionKey(value);

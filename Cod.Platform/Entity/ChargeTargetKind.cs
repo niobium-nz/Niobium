@@ -1,6 +1,6 @@
 ﻿namespace Cod.Platform
 {
-    public enum TopupTargetKind : int
+    public enum ChargeTargetKind : int
     {
         Invalid = 0,
         User = 1,

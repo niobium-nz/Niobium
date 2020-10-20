@@ -68,5 +68,14 @@ namespace Cod.Platform {
                 return ResourceManager.GetString("SignatureMissing", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Online Deposit.
+        /// </summary>
+        internal static string TransactionReason_Deposit {
+            get {
+                return ResourceManager.GetString("TransactionReason_Deposit", resourceCulture);
+            }
+        }
     }
 }

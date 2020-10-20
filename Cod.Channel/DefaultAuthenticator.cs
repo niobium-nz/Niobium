@@ -20,8 +20,6 @@ namespace Cod.Channel
         private readonly IEnumerable<IEventHandler<IAuthenticator>> eventHandlers;
         private ConcurrentBag<KeyValuePair<string, string>> claims;
 
-        public event EventHandler AuthenticationRequired;
-
         public async Task<OperationResult<IEnumerable<KeyValuePair<string, string>>>> GetClaimsAsync()
         {
             if (!this.IsAuthenticated())
@@ -91,7 +89,6 @@ namespace Cod.Channel
                 }
                 else
                 {
-                    AuthenticationRequired?.Invoke(this, EventArgs.Empty);
                     return new OperationResult<StorageSignature>(this.signatures[key]);
                 }
             }

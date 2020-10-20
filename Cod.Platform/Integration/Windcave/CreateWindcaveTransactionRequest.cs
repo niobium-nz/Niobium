@@ -5,7 +5,7 @@ namespace Cod.Platform
 {
     internal class CreateWindcaveTransactionRequest
     {
-        public CreateWindcaveTransactionRequest(CreditCardTransactionKind kind, Currency currency, int amount, string transactionID = null, string cardID = null)
+        public CreateWindcaveTransactionRequest(PaymentKind kind, Currency currency, int amount, string transactionID = null, string cardID = null)
         {
             this.Type = kind.ToWindcaveType();
             this.Amount = (amount / 100d).ToString();

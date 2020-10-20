@@ -1,6 +1,6 @@
 ﻿namespace Cod.Platform
 {
-    internal class WindcaveCard
+    public class WindcaveCard
     {
         public string ID { get; set; }
 

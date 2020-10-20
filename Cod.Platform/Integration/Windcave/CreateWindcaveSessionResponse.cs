@@ -12,7 +12,7 @@ namespace Cod.Platform
 
         public string Type { get; set; }
 
-        public CreditCardTransactionKind GetKind() => WindcaveHelper.FromWindcaveType(this.Type);
+        public PaymentKind GetKind() => WindcaveHelper.FromWindcaveType(this.Type);
 
         public string Amount { get; set; }
 

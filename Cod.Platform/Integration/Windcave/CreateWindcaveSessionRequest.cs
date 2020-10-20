@@ -2,7 +2,7 @@
 {
     internal class CreateWindcaveSessionRequest
     {
-        public CreateWindcaveSessionRequest(CreditCardTransactionKind kind, Currency currency, int amount)
+        public CreateWindcaveSessionRequest(PaymentKind kind, Currency currency, int amount)
         {
             this.Type = kind.ToWindcaveType();
             this.Amount = (amount / 100d).ToString();
