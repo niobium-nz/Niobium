@@ -157,6 +157,10 @@ namespace Cod.Platform
                 {
                     transaction = authorized;
                 }
+                else
+                {
+                    return new OperationResult<ChargeResult>(InternalError.PaymentRequired);
+                }
             }
             else if (n.Kind == WindcaveNotificationKind.Transaction)
             {
