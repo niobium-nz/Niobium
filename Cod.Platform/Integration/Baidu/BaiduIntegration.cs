@@ -234,7 +234,7 @@ namespace Cod.Platform
                             {
                                 Text = r.Words,
                                 IsConfident = r.Probability.Variance < 0.019d // REMARK (5he11) 方差不能太大，否则识别不准确
-                                 && r.Probability.Min > 0.6d // REMARK (5he11) 最小信心不能太小，否则识别不准确
+                                 && r.Probability.Min > 0.7d // REMARK (5he11) 最小信心不能太小，否则识别不准确
                             }));
                     }
                     return new OperationResult<IEnumerable<OCRScanResult>>(InternalError.InternalServerError) { Reference = json };
