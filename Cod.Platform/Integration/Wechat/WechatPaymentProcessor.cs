@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Cod.Platform.Integration.Wechat;
 using Microsoft.Extensions.Logging;
@@ -31,10 +32,13 @@ namespace Cod.Platform
                 return new OperationResult<ChargeResponse>(InternalError.NotAcceptable);
             }
 
+            // REMARK (5he11) 微信虽然接受订单号内容可以是任意字符，但是长度有限制，所以过滤掉无用字符，缩短长度
+            request.Order = String.Concat(request.Order.Where(Char.IsLetterOrDigit));
+
             var payer = (WechatPayer)request.Account;
             var apiUri = await this.configuration.Value.GetSettingAsync<string>(Constant.API_URL);
             var branding = await this.brandService.Value.GetAsync(OpenIDKind.Wechat, payer.AppID);
-            var reference = request.Reference ?? $"{(int)request.TargetKind}|{request.Target}";
+            var attach = request.Reference ?? WechatChargeNotification.BuildAttach(request.TargetKind, request.Target);
             var prepayid = await this.wechatIntegration.Value.JSAPIPay(
                 payer.OpenID,
                 request.Amount,
@@ -42,7 +46,7 @@ namespace Cod.Platform
                 request.Source,
                 request.Order,
                 request.Description,
-                reference,
+                attach,
                 request.IP,
                 branding.WechatMerchantID,
                 $"{apiUri}/v1/wechat/notifications",
@@ -68,7 +72,39 @@ namespace Cod.Platform
             }
         }
 
-        public Task<OperationResult<ChargeResult>> ReportAsync(object notification) => throw new NotImplementedException();
+        public async Task<OperationResult<ChargeResult>> ReportAsync(object notification)
+        {
+            if (notification is WechatChargeNotification wechatChargeNotification)
+            {
+                var branding = await brandService.Value.GetAsync(OpenIDKind.Wechat, wechatChargeNotification.AppID);
+                if (!wechatChargeNotification.Validate(branding.WechatMerchantSignature))
+                {
+                    return new OperationResult<ChargeResult>(InternalError.Forbidden);
+                }
+
+                return new OperationResult<ChargeResult>(new ChargeResult
+                {
+                    Account = new WechatPayer
+                    {
+                        AppID = wechatChargeNotification.AppID,
+                        OpenID = wechatChargeNotification.Account,
+                        OpenIDKind = OpenIDKind.Wechat,
+                    },
+                    Amount = wechatChargeNotification.Amount,
+                    Channel = PaymentChannels.Wechat,
+                    Currency = Constant.CNY,
+                    PaymentKind = PaymentKind.Charge,
+                    Reference = wechatChargeNotification.Attach,
+                    Source = wechatChargeNotification.Device,
+                    Target = wechatChargeNotification.GetTarget(),
+                    TargetKind = wechatChargeNotification.GetKind(),
+                    UpstreamID = wechatChargeNotification.Reference,
+                    AuthorizedAt = wechatChargeNotification.Paid,
+                });
+            }
+
+            throw new NotSupportedException();
+        }
 
         private static bool Support(ChargeRequest request) => request != null && request.Channel == PaymentChannels.Wechat;
     }

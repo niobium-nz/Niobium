@@ -257,7 +257,7 @@ namespace Cod.Platform
                 PaymentKind = transaction.GetKind(),
                 Reference = transaction.MerchantReference,
                 Source = transaction.ClientType,
-                Target = user,
+                Target = user.ToKey(),
                 TargetKind = ChargeTargetKind.User,
                 UpstreamID = transaction.ID,
                 AuthorizedAt = transaction.GetTime(),

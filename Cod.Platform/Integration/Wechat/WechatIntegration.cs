@@ -446,8 +446,22 @@ namespace Cod.Platform
         }
 
         internal async Task<OperationResult<string>> JSAPIPay(string account, int amount, string appID, string device, string reference, string desc, string attach, string ip,
-                    string wechatMerchantID, string wechatMerchantNotifyUri, string wechatMerchantSignature)
+                    string wechatMerchantID, string wechatMerchantNotifyUri, string wechatMerchantSignature, int retry = 0)
         {
+            if (retry > 10)
+            {
+                return new OperationResult<string>(InternalError.Conflict);
+            }
+
+            if (retry == 1)
+            {
+                reference += retry.ToString();
+            }
+            else if (retry > 1)
+            {
+                reference = $"{reference.Substring(0, reference.Length - 1)}{retry}";
+            }
+
             var nonceStr = Guid.NewGuid().ToString("N").ToUpperInvariant();
             var param = new Dictionary<string, object>
             {
@@ -472,7 +486,7 @@ namespace Cod.Platform
             var xml = GetXML(param);
             if (Logger.Instance != null)
             {
-                Logger.Instance.LogInformation($"微信支付调试: attach={attach} device={device} order={reference} xml={xml}");
+                Logger.Instance.LogInformation($"微信支付调试: attach={attach} device={device} order={reference} xml={xml} retry={retry}");
             }
 
             var resp = await httpclient.PostAsync($"https://{WechatPayHost}/pay/unifiedorder",
@@ -490,8 +504,9 @@ namespace Cod.Platform
                 return new OperationResult<string>(result["prepay_id"]);
             }
             else if (result.ContainsKey("err_code_des") && result["err_code_des"].Contains("订单号重复"))
-            { 
-                return new OperationResult<string>(InternalError.Conflict);
+            {
+                return await this.JSAPIPay(
+                    account, amount, appID, device, reference, desc, attach, ip, wechatMerchantID, wechatMerchantNotifyUri, wechatMerchantSignature, ++retry);
             }
 
             return new OperationResult<string>(InternalError.BadGateway) { Reference = body };

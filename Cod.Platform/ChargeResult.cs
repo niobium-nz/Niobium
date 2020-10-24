@@ -6,7 +6,7 @@ namespace Cod.Platform
     {
         public ChargeTargetKind TargetKind { get; set; }
 
-        public Guid Target { get; set; }
+        public string Target { get; set; }
 
         public PaymentChannels Channel { get; set; }
 
