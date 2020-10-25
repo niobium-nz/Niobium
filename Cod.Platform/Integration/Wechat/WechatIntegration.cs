@@ -309,8 +309,17 @@ namespace Cod.Platform
                 }
                 else
                 {
+                    if (Logger.Instance != null)
+                    {
+                        Logger.Instance.LogError($"An error occurred while trying to aquire Wechat access token for {appID} with status code={status}: {json}");
+                    }
                     return new OperationResult<string>(InternalError.BadGateway) { Reference = json };
                 }
+            }
+
+            if (Logger.Instance != null)
+            {
+                Logger.Instance.LogError($"An error occurred while trying to aquire Wechat access token for {appID} with status code={status}: {json}");
             }
             return new OperationResult<string>(status) { Reference = json };
         }
