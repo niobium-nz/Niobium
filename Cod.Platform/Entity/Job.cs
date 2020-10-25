@@ -1,22 +1,13 @@
-﻿using System;
-using Microsoft.Azure.Cosmos.Table;
+﻿using Microsoft.Azure.Cosmos.Table;
+using System.Collections.Generic;
 
 namespace Cod.Platform
 {
-    public class Job : TableEntity, IEntity
+    public class Job : Cod.Model.Job, ITableEntity
     {
-        public const string SMS = "SMS";
 
-        public string Reference { get; set; }
+        public void ReadEntity(IDictionary<string, EntityProperty> properties, OperationContext operationContext) => TableEntityHelper.ReflectionRead(this, properties, operationContext);
 
-        public DateTimeOffset? Created { get; set; }
-
-        public string GetKind() => this.PartitionKey;
-
-        public string GetCorrelation() => this.RowKey;
-
-        public static string BuildPartitionKey(string kind) => kind.Trim().ToUpperInvariant();
-
-        public static string BuildRowKey(string correlation) => correlation.Trim();
+        public IDictionary<string, EntityProperty> WriteEntity(OperationContext operationContext) => TableEntityHelper.ReflectionWrite(this, operationContext);
     }
 }
