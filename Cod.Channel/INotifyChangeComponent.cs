@@ -1,4 +1,4 @@
-namespace Cod.Channel.Blazor
+namespace Cod.Channel
 {
     public interface INotifyChangeComponent
     {
