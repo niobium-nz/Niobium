@@ -16,12 +16,12 @@ namespace Cod.Platform
 
         public WindcaveIntegration(Lazy<IConfigurationProvider> configuration) => this.configuration = configuration;
 
-        internal async Task<OperationResult<WindcaveTransaction>> QueryTransactionAsync(string id)
+        internal async Task<OperationResult<WindcaveTransaction>> QueryTransactionAsync(string transactionID)
         {
             var key = await this.configuration.Value.GetSettingAsync<string>("WINDCAVE_KEY");
             var secret = await this.configuration.Value.GetSettingAsync<string>("WINDCAVE_SECRET");
             using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
-            using var httprequest = new HttpRequestMessage(HttpMethod.Get, $"{Host}/transactions/{id.Trim()}");
+            using var httprequest = new HttpRequestMessage(HttpMethod.Get, $"{Host}/transactions/{transactionID.Trim()}");
             var auth = Base64.Encode($"{key}:{secret}");
             httprequest.Headers.Authorization = new AuthenticationHeaderValue(Authentication.BasicLoginScheme, auth);
             var resp = await httpclient.SendAsync(httprequest);
@@ -30,7 +30,7 @@ namespace Cod.Platform
             if (status == 200)
             {
                 var result = JsonSerializer.DeserializeObject<WindcaveTransaction>(json);
-                if (result.ID == id)
+                if (result.ID == transactionID)
                 {
                     return new OperationResult<WindcaveTransaction>(result);
                 }
@@ -38,7 +38,7 @@ namespace Cod.Platform
 
             if (Logger.Instance != null)
             {
-                Logger.Instance.LogError($"An error occurred while trying to query WindCave payment transaction {id}: {json}");
+                Logger.Instance.LogError($"An error occurred while trying to query WindCave payment transaction {transactionID}: {json}");
             }
             return new OperationResult<WindcaveTransaction>(InternalError.BadGateway) { Reference = json };
         }
@@ -190,6 +190,23 @@ namespace Cod.Platform
             Uri declinedUri,
             Uri canceledUri)
             => await this.CreateSessionAsync(Guid.NewGuid(), kind, currency, amount, reference, notificationUri, approvedUri, declinedUri, canceledUri, 3);
+
+
+        public async Task<OperationResult<WindcaveCard>> QueryCardAsync(string transactionID)
+        {
+            var result = await this.QueryTransactionAsync(transactionID);
+            if (!result.IsSuccess)
+            {
+                return new OperationResult<WindcaveCard>(result.Code)
+                {
+                    Reference = result.Reference,
+                };
+            }
+            else
+            {
+                return new OperationResult<WindcaveCard>(result.Result.Card);
+            }
+        }
 
         private async Task<OperationResult<PaymentSession>> CreateSessionAsync(
             Guid requestID,
