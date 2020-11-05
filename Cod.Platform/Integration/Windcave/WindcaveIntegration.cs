@@ -9,12 +9,45 @@ using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
 {
-    internal class WindcaveIntegration
+    public class WindcaveIntegration
     {
         private const string Host = "https://sec.windcave.com/api/v1";
         private readonly Lazy<IConfigurationProvider> configuration;
 
         public WindcaveIntegration(Lazy<IConfigurationProvider> configuration) => this.configuration = configuration;
+
+        public async Task<OperationResult<WindcaveCard>> QueryCardAsync(string transactionID)
+        {
+            var result = await this.QueryTransactionAsync(transactionID);
+            if (!result.IsSuccess)
+            {
+                return new OperationResult<WindcaveCard>(result.Code)
+                {
+                    Reference = result.Reference,
+                };
+            }
+            else
+            {
+                return new OperationResult<WindcaveCard>(result.Result.Card);
+            }
+        }
+
+        internal async Task<OperationResult<WindcaveTransaction>> CreateTransactionAsync(
+            PaymentKind kind,
+            Currency currency,
+            int amount,
+            string reference,
+            Uri notificationUri,
+            string cardID)
+            => await this.CreateTransactionAsync(Guid.NewGuid(), kind, currency, amount, reference, notificationUri, cardID, null, 3);
+
+        internal async Task<OperationResult> CompleteTransactionAsync(
+            Currency currency,
+            int amount,
+            string reference,
+            Uri notificationUri,
+            string transactionID)
+            => await this.CreateTransactionAsync(Guid.NewGuid(), PaymentKind.Complete, currency, amount, reference, notificationUri, null, transactionID, 3);
 
         internal async Task<OperationResult<WindcaveTransaction>> QueryTransactionAsync(string transactionID)
         {
@@ -74,22 +107,16 @@ namespace Cod.Platform
             return new OperationResult<CreateWindcaveSessionResponse>(InternalError.BadGateway) { Reference = json };
         }
 
-        public async Task<OperationResult<WindcaveTransaction>> CreateTransactionAsync(
+        internal async Task<OperationResult<PaymentSession>> CreateSessionAsync(
             PaymentKind kind,
             Currency currency,
             int amount,
             string reference,
             Uri notificationUri,
-            string cardID)
-            => await this.CreateTransactionAsync(Guid.NewGuid(), kind, currency, amount, reference, notificationUri, cardID, null, 3);
-
-        public async Task<OperationResult> CompleteTransactionAsync(
-            Currency currency,
-            int amount,
-            string reference,
-            Uri notificationUri,
-            string transactionID)
-            => await this.CreateTransactionAsync(Guid.NewGuid(), PaymentKind.Complete, currency, amount, reference, notificationUri, null, transactionID, 3);
+            Uri approvedUri,
+            Uri declinedUri,
+            Uri canceledUri)
+            => await this.CreateSessionAsync(Guid.NewGuid(), kind, currency, amount, reference, notificationUri, approvedUri, declinedUri, canceledUri, 3);
 
         private async Task<OperationResult<WindcaveTransaction>> CreateTransactionAsync(
             Guid requestID,
@@ -178,34 +205,6 @@ namespace Cod.Platform
             }
 
             return await this.CreateTransactionAsync(requestID, kind, currency, amount, reference, notificationUri, cardID, transactionID, --retryCount);
-        }
-
-        public async Task<OperationResult<PaymentSession>> CreateSessionAsync(
-            PaymentKind kind,
-            Currency currency,
-            int amount,
-            string reference,
-            Uri notificationUri,
-            Uri approvedUri,
-            Uri declinedUri,
-            Uri canceledUri)
-            => await this.CreateSessionAsync(Guid.NewGuid(), kind, currency, amount, reference, notificationUri, approvedUri, declinedUri, canceledUri, 3);
-
-
-        public async Task<OperationResult<WindcaveCard>> QueryCardAsync(string transactionID)
-        {
-            var result = await this.QueryTransactionAsync(transactionID);
-            if (!result.IsSuccess)
-            {
-                return new OperationResult<WindcaveCard>(result.Code)
-                {
-                    Reference = result.Reference,
-                };
-            }
-            else
-            {
-                return new OperationResult<WindcaveCard>(result.Result.Card);
-            }
         }
 
         private async Task<OperationResult<PaymentSession>> CreateSessionAsync(
