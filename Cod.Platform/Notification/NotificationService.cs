@@ -39,9 +39,17 @@ namespace Cod.Platform
                 }
                 else
                 {
-                    break;
+                    if (level + 1 > maxLevel)
+                    {
+                        return new OperationResult<int>(result);
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
             }
+
             return await this.SendAsync(brand, user, context, template, parameters, ++level);
         }
 
