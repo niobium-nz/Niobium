@@ -92,10 +92,17 @@ namespace Cod.Platform
                         info.Issuer = i.Value.Trim();
                         break;
                     case "失效日期":
-                        var ed = i.Value.Trim().ParseDate();
-                        if (ed.HasValue)
+                        if (i.Value.Trim().Contains("长期"))
                         {
-                            info.Expiry = ed.Value;
+                            info.Expiry = DateTimeOffsetExtensions.MaxValueForTableStorage;
+                        }
+                        else
+                        {
+                            var ed = i.Value.Trim().ParseDate();
+                            if (ed.HasValue)
+                            {
+                                info.Expiry = ed.Value;
+                            }
                         }
 
                         break;
