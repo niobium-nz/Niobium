@@ -12,6 +12,6 @@ namespace Cod.Channel.Blazor
 
         public string CurrentUri => this.manager.Uri;
 
-        public void NavigateTo(string url) => this.manager.NavigateTo(url);
+        public void NavigateTo(string url, bool forceLoad = false) => this.manager.NavigateTo(url, forceLoad: forceLoad);
     }
 }

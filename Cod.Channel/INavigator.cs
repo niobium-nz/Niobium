@@ -6,6 +6,6 @@
 
         string CurrentUri { get; }
 
-        void NavigateTo(string url);
+        void NavigateTo(string url, bool forceLoad = false);
     }
 }
