@@ -1,11 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace Cod
 {
     public struct Currency : IEquatable<Currency>
     {
+        private static readonly IReadOnlyDictionary<string, CultureInfo> cultures = new Dictionary<string, CultureInfo>
+        {
+            { "NZD", CultureInfo.GetCultureInfo("en-NZ") },
+            { "AUD", CultureInfo.GetCultureInfo("en-AU") },
+            { "USD", CultureInfo.GetCultureInfo("en-US") },
+            { "CNY", CultureInfo.GetCultureInfo("zh-CN") },
+        };
+
         private static readonly string[] codes = new string[]
         {
             "AED",
@@ -200,6 +209,24 @@ namespace Cod
             }
 
             return new Currency { Code = code };
+        }
+
+        public static CultureInfo GetCulture(Currency currency)
+        {
+            return GetCulture(currency.Code);
+        }
+
+        public static CultureInfo GetCulture(string code)
+        {
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                throw new ArgumentNullException(nameof(code));
+            }
+            if (!cultures.ContainsKey(code))
+            {
+                throw new NotSupportedException();
+            }
+            return cultures[code];
         }
 
         public string Code { get; private set; }
