@@ -53,5 +53,21 @@ namespace Cod
 
             return new DateTimeOffset(year, month, day, 0, 0, 0, TimeSpan.Zero);
         }
+
+        public static DateTimeOffset ToLocal(this DateTimeOffset dateTimeOffset, TimeZoneInfo timeZoneInfo)
+        {
+            _ = timeZoneInfo ?? throw new ArgumentNullException(nameof(timeZoneInfo));
+            return TimeZoneInfo.ConvertTime(dateTimeOffset, timeZoneInfo);
+        }
+
+        public static string ToDisplayLocalShortDate(this DateTimeOffset dateTimeOffset, TimeZoneInfo timeZoneInfo) => dateTimeOffset.ToLocal(timeZoneInfo).DateTime.ToShortDateString();
+
+        public static string ToDisplayLocalLongDate(this DateTimeOffset dateTimeOffset, TimeZoneInfo timeZoneInfo) => dateTimeOffset.ToLocal(timeZoneInfo).DateTime.ToLongDateString();
+
+        public static string ToDisplayLocal(this DateTimeOffset dateTimeOffset, TimeZoneInfo timeZoneInfo)
+        {
+            _ = timeZoneInfo ?? throw new ArgumentNullException(nameof(timeZoneInfo));
+            return dateTimeOffset.ToLocal(timeZoneInfo).DateTime.ToString();
+        }
     }
 }
