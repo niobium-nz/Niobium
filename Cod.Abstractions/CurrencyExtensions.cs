@@ -1,26 +1,28 @@
-﻿namespace Cod
+﻿using System.Globalization;
+
+namespace Cod
 {
     public static class CurrencyExtensions
     {
-        public static string ToDisplayLocal(this float payment, Currency currency)
+        public static string ToDisplayLocal(this Currency currency, float payment)
         {
-            return ToDisplayLocal((decimal)payment, currency);
+            return ToDisplayLocal(currency, (decimal)payment);
         }
 
-        public static string ToDisplayLocal(this double payment, Currency currency)
+        public static string ToDisplayLocal(this Currency currency, double payment)
         {
-            return ToDisplayLocal((decimal)payment, currency);
+            return ToDisplayLocal(currency, (decimal)payment);
         }
 
-        public static string ToDisplayLocal(this int payment, Currency currency)
+        public static string ToDisplayLocal(this Currency currency, int payment)
         {
-            return ToDisplayLocal((decimal)payment, currency);
+            return ToDisplayLocal(currency, (decimal)payment);
         }
 
-        public static string ToDisplayLocal(this decimal payment, Currency currency)
+        public static string ToDisplayLocal(this Currency currency, decimal payment)
         {
-            System.Globalization.CultureInfo culture = Currency.GetCulture(currency.Code);
-            return $"{payment.ToString("C2", culture)} {currency.Code}";
+            CultureInfo culture = Currency.GetCulture(currency.Code);
+            return $"{currency.Code}{payment.ToString("C2", culture)}";
         }
     }
 }

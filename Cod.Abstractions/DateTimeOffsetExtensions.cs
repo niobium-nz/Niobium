@@ -57,8 +57,7 @@ namespace Cod
         public static DateTimeOffset ToLocal(this DateTimeOffset dateTimeOffset, TimeZoneInfo timeZoneInfo)
         {
             _ = timeZoneInfo ?? throw new ArgumentNullException(nameof(timeZoneInfo));
-            var offset = timeZoneInfo.BaseUtcOffset;
-            return dateTimeOffset.ToUniversalTime().ToOffset(offset);
+            return TimeZoneInfo.ConvertTime(dateTimeOffset, timeZoneInfo);
         }
 
         public static string ToDisplayLocalShortDate(this DateTimeOffset dateTimeOffset, TimeZoneInfo timeZoneInfo) => dateTimeOffset.ToLocal(timeZoneInfo).DateTime.ToShortDateString();
