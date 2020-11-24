@@ -78,7 +78,7 @@ namespace Cod.Platform
                 }
             }
 
-            return await this.BuildAsync(mainIdentity, dic);
+            return await this.BuildAsync(mainIdentity, dic, validHours: validHours);
         }
 
         private async Task<string> BuildAsync(string mainIdentity, IEnumerable<KeyValuePair<string, string>> entitlements = null, ushort validHours = 8)
