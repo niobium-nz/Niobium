@@ -6,6 +6,17 @@ namespace Cod
 {
     public class SHA
     {
+        public static string SHA384Hash(string data, int maxLength = -1)
+        {
+            using SHA384 sha = new SHA384Managed();
+            var hash = sha.ComputeHash(Encoding.UTF8.GetBytes(data)).ToHex();
+            if (maxLength > 0 && hash.Length > maxLength)
+            {
+                hash = hash.Substring(0, maxLength);
+            }
+            return hash;
+        }
+
         public static string SHA256Hash(string data, int maxLength = -1)
         {
             using var hmac = new HMACSHA256();
