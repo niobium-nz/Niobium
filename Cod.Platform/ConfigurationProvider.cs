@@ -60,6 +60,11 @@ namespace Cod.Platform
                 v = config.Value[$"Values:{key}"];
             }
 
+            if (v == null && key == "STORAGE-ACCOUNT")
+            {
+                return GetSetting("STORAGE_ACCOUNT", cache);
+            }
+
             if (cache && v != null)
             {
                 if (Caches.ContainsKey(key))

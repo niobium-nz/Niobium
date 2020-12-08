@@ -69,8 +69,7 @@ namespace Cod.Platform
                 return new OperationResult<User>(InternalError.NotFound);
             }
 
-            var secret = await this.configuration.Value.GetSettingAsync<string>(Constant.AUTH_SECRET_NAME);
-            if (login.Credentials.ToUpper() != SHA.SHA256Hash(password, secret).ToUpper())
+            if (login.Credentials.ToUpper() != password.ToUpper())
             {
                 return new OperationResult<User>(InternalError.AuthenticationRequired);
             }
@@ -231,13 +230,12 @@ namespace Cod.Platform
 
             await this.openIDManager.Value.RegisterAsync(registrations);
 
-            var secret = await this.configuration.Value.GetSettingAsync<string>(Constant.AUTH_SECRET_NAME);
             var logins = new List<Login>();
             foreach (var registration in registrations)
             {
                 if (registration.Kind == (int)OpenIDKind.Username)
                 {
-                    registration.Credentials = SHA.SHA256Hash(registration.Credentials, secret);
+                    registration.Credentials = registration.Credentials.Trim();
                 }
 
                 logins.Add(new Login
