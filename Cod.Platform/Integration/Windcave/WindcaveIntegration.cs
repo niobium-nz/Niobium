@@ -41,7 +41,7 @@ namespace Cod.Platform
             string cardID)
             => await this.CreateTransactionAsync(Guid.NewGuid(), kind, currency, amount, reference, notificationUri, cardID, null, 3);
 
-        internal async Task<OperationResult> CompleteTransactionAsync(
+        internal async Task<OperationResult<WindcaveTransaction>> CompleteTransactionAsync(
             Currency currency,
             int amount,
             string reference,

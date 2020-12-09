@@ -79,7 +79,7 @@ namespace Cod.Platform
                     return new OperationResult<ChargeResponse>(complete);
                 }
 
-                result.UpstreamID = (string)request.Account;
+                result.UpstreamID = complete.Result.ID;
                 result.Reference = request.Reference;
             }
             else
