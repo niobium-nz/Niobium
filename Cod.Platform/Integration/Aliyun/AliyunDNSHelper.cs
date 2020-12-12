@@ -29,6 +29,11 @@ namespace Cod.Platform
 
             var key = await this.configuration.Value.GetSettingAsync<string>("ALIYUN_KEY");
             var secret = await this.configuration.Value.GetSettingAsync<string>("ALIYUN_SECRET");
+            if (!secret.EndsWith("&"))
+            {
+                secret += "&";
+            }
+
             var result = await AliyunSDKCLient.MakeRequestAsync(
                 AliyunDNSHost,
                 new[]
@@ -86,6 +91,10 @@ namespace Cod.Platform
 
             var key = await this.configuration.Value.GetSettingAsync<string>("ALIYUN_KEY");
             var secret = await this.configuration.Value.GetSettingAsync<string>("ALIYUN_SECRET");
+            if (!secret.EndsWith("&"))
+            {
+                secret += "&";
+            }
 
             var response = await AliyunSDKCLient.MakeRequestAsync(
                 AliyunDNSHost,
@@ -130,6 +139,10 @@ namespace Cod.Platform
 
             var key = await this.configuration.Value.GetSettingAsync<string>("ALIYUN_KEY");
             var secret = await this.configuration.Value.GetSettingAsync<string>("ALIYUN_SECRET");
+            if (!secret.EndsWith("&"))
+            {
+                secret += "&";
+            }
 
             var query = await this.QueryRecordsAsync(domain);
             if (!query.IsSuccess)
