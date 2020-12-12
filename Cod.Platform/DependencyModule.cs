@@ -41,7 +41,8 @@ namespace Cod.Platform
             builder.RegisterType<GenericDomainRepository<BusinessDomain, Business>>().As<IDomainRepository<BusinessDomain, Business>>();
 
             builder.RegisterType<PaymentService>().AsImplementedInterfaces();
-            builder.RegisterType<WindcavePaymentProcessor>().AsImplementedInterfaces();
+            builder.RegisterType<WindcavePaymentProcessor>();
+            builder.Register(context => context.Resolve<WindcavePaymentProcessor>()).As<IPaymentProcessor>();
             builder.RegisterType<WechatPaymentProcessor>().AsImplementedInterfaces();
 
             builder.RegisterType<WechatRepository>().AsSelf();

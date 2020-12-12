@@ -34,7 +34,7 @@ namespace Cod.Platform
             this.logger = logger;
         }
 
-        public async Task<OperationResult<ChargeResponse>> ChargeAsync(ChargeRequest request)
+        public virtual async Task<OperationResult<ChargeResponse>> ChargeAsync(ChargeRequest request)
         {
             if (!Support(request))
             {
@@ -133,7 +133,7 @@ namespace Cod.Platform
             return session;
         }
 
-        public async Task<OperationResult<ChargeResult>> ReportAsync(object notification)
+        public virtual async Task<OperationResult<ChargeResult>> ReportAsync(object notification)
         {
             if (!(notification is WindcaveNotification n))
             {
