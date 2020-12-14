@@ -65,7 +65,7 @@ namespace Cod.Platform
                             r.Lines.Select(l => new OCRScanResult
                             {
                                 Text = l.Text.EndsWith("7A") ? l.Text.Substring(0, l.Text.Length - 2) : l.Text,
-                                IsConfident = true,
+                                IsConfident = l.Words.Average(w => w.Confidence) > 0.8d,
                             })));
                     return new OperationResult<IEnumerable<OCRScanResult>>(result);
                 }
