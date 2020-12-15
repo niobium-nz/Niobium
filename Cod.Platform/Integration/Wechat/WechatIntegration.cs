@@ -339,6 +339,9 @@ namespace Cod.Platform
             }
 
             using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
+#if !DEBUG
+                httpclient.Timeout = TimeSpan.FromSeconds(5);
+#endif
             var query = HttpUtility.ParseQueryString(String.Empty);
             query["access_token"] = token.Result;
             var request = new WechatTemplateMessageRequest
@@ -352,6 +355,7 @@ namespace Cod.Platform
             data = data.Replace("\"JSON_DATA\"", parameters.ToJson());
             using var content = new StringContent(data);
             var resp = await httpclient.PostAsync($"https://{WechatHost}/cgi-bin/message/template/send?{query}", content);
+
             var status = (int)resp.StatusCode;
             var json = await resp.Content.ReadAsStringAsync();
             if (status >= 200 && status < 400)
@@ -492,6 +496,9 @@ namespace Cod.Platform
             param.Add("sign", sign);
 
             using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
+#if !DEBUG
+            httpclient.Timeout = TimeSpan.FromSeconds(5);
+#endif
             var xml = GetXML(param);
             if (Logger.Instance != null)
             {
