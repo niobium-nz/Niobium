@@ -79,6 +79,11 @@ namespace Cod.Platform
                     return new OperationResult<ChargeResponse>(complete);
                 }
 
+                if (!complete.Result.Authorised)
+                {
+                    return new OperationResult<ChargeResponse>(InternalError.PaymentRequired, complete.Result.ResponseText);
+                }
+
                 result.UpstreamID = complete.Result.ID;
                 result.Reference = request.Reference;
             }
@@ -94,6 +99,11 @@ namespace Cod.Platform
                 if (!transaction.IsSuccess)
                 {
                     return new OperationResult<ChargeResponse>(transaction);
+                }
+
+                if (!transaction.Result.Authorised)
+                {
+                    return new OperationResult<ChargeResponse>(InternalError.PaymentRequired, transaction.Result.ResponseText);
                 }
 
                 result.UpstreamID = transaction.Result.ID;
