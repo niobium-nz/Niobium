@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,18 +8,17 @@ namespace Cod.Platform
     public abstract class PlatformDomain<T> : GenericDomain<T>, IPlatformDomain<T> where T : IEntity
     {
         private readonly Lazy<IRepository<T>> repository;
+        private T cache;
         private Func<Task<T>> getEntity;
         private string partitionKey;
         private string rowKey;
-        private T cache;
+        public PlatformDomain(Lazy<IRepository<T>> repository) => this.repository = repository;
 
         public override string PartitionKey => this.partitionKey;
 
         public override string RowKey => this.rowKey;
 
         protected IRepository<T> Repository => this.repository.Value;
-
-        public PlatformDomain(Lazy<IRepository<T>> repository) => this.repository = repository;
 
         public async Task<T> GetEntityAsync()
         {
@@ -28,17 +27,6 @@ namespace Cod.Platform
                 this.cache = await this.getEntity();
             }
             return this.cache;
-        }
-
-        protected override void OnInitialize(T entity)
-        {
-            if (!this.Initialized)
-            {
-                this.getEntity = () => Task.FromResult(entity);
-                this.partitionKey = entity.PartitionKey;
-                this.rowKey = entity.RowKey;
-            }
-            this.Initialized = true;
         }
 
         public IDomain<T> Initialize(string partitionKey, string rowKey)
@@ -53,8 +41,27 @@ namespace Cod.Platform
             return this;
         }
 
-        protected async Task SaveEntityAsync()
-            => await this.SaveEntityAsync(new[] { await this.GetEntityAsync() });
+        public async Task<PlatformDomain<T>> ReloadAsync()
+        {
+            if (!this.Initialized)
+            {
+                throw new NotSupportedException();
+            }
+            this.cache = await this.Repository.GetAsync(this.partitionKey, this.rowKey);
+            return this;
+        }
+
+        protected override void OnInitialize(T entity)
+        {
+            if (!this.Initialized)
+            {
+                this.getEntity = () => Task.FromResult(entity);
+                this.partitionKey = entity.PartitionKey;
+                this.rowKey = entity.RowKey;
+            }
+            this.Initialized = true;
+        }
+        protected async Task SaveEntityAsync() => await this.SaveEntityAsync(new[] { await this.GetEntityAsync() });
 
         protected async Task SaveEntityAsync(IEnumerable<T> model)
         {

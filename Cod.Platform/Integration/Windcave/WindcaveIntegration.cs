@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Sockets;
@@ -12,6 +13,9 @@ namespace Cod.Platform
     public class WindcaveIntegration
     {
         private const string Host = "https://sec.windcave.com/api/v1";
+        private const int CreateTransactionRetry = 20;
+        private const int DefaultRetry = 3;
+
         private readonly Lazy<IConfigurationProvider> configuration;
 
         public WindcaveIntegration(Lazy<IConfigurationProvider> configuration) => this.configuration = configuration;
@@ -38,19 +42,30 @@ namespace Cod.Platform
             int amount,
             string reference,
             Uri notificationUri,
-            string cardID)
-            => await this.CreateTransactionAsync(Guid.NewGuid(), kind, currency, amount, reference, notificationUri, cardID, null, 3);
+            string cardID) => await this.CreateTransactionAsync(Guid.NewGuid(), kind, currency, amount, reference, notificationUri, cardID, null, DefaultRetry);
 
         internal async Task<OperationResult<WindcaveTransaction>> CompleteTransactionAsync(
             Currency currency,
             int amount,
             string reference,
             Uri notificationUri,
-            string transactionID)
-            => await this.CreateTransactionAsync(Guid.NewGuid(), PaymentKind.Complete, currency, amount, reference, notificationUri, null, transactionID, 3);
+            string transactionID) => await this.CreateTransactionAsync(Guid.NewGuid(), PaymentKind.Complete, currency, amount, reference, notificationUri, null, transactionID, DefaultRetry);
 
-        internal async Task<OperationResult<WindcaveTransaction>> QueryTransactionAsync(string transactionID)
+        internal async Task<OperationResult<WindcaveTransaction>> VoidTransactionAsync(
+            Currency currency,
+            int amount,
+            string reference,
+            Uri notificationUri,
+            string transactionID) => await this.CreateTransactionAsync(Guid.NewGuid(), PaymentKind.Void, currency, amount, reference, notificationUri, null, transactionID, DefaultRetry);
+
+
+        internal async Task<OperationResult<WindcaveTransaction>> QueryTransactionAsync(string transactionID, int retryCount = DefaultRetry)
         {
+            if (retryCount <= 0)
+            {
+                return new OperationResult<WindcaveTransaction>(InternalError.BadGateway);
+            }
+
             var key = await this.configuration.Value.GetSettingAsync<string>("WINDCAVE_KEY");
             var secret = await this.configuration.Value.GetSettingAsync<string>("WINDCAVE_SECRET");
             using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
@@ -73,7 +88,8 @@ namespace Cod.Platform
             {
                 Logger.Instance.LogError($"An error occurred while trying to query WindCave payment transaction {transactionID}: {json}");
             }
-            return new OperationResult<WindcaveTransaction>(InternalError.BadGateway) { Reference = json };
+            await Task.Delay(TimeSpan.FromMilliseconds(500));
+            return await this.QueryTransactionAsync(transactionID, --retryCount);
         }
 
         internal async Task<OperationResult<CreateWindcaveSessionResponse>> QuerySessionAsync(string id)
@@ -115,8 +131,7 @@ namespace Cod.Platform
             Uri notificationUri,
             Uri approvedUri,
             Uri declinedUri,
-            Uri canceledUri)
-            => await this.CreateSessionAsync(Guid.NewGuid(), kind, currency, amount, reference, notificationUri, approvedUri, declinedUri, canceledUri, 3);
+            Uri canceledUri) => await this.CreateSessionAsync(Guid.NewGuid(), kind, currency, amount, reference, notificationUri, approvedUri, declinedUri, canceledUri, 3);
 
         private async Task<OperationResult<WindcaveTransaction>> CreateTransactionAsync(
             Guid requestID,
@@ -141,11 +156,25 @@ namespace Cod.Platform
                 Timeout = TimeSpan.FromSeconds(15),
 #endif
             };
-            var request = new CreateWindcaveTransactionRequest(kind, currency, amount, transactionID: transactionID, cardID: cardID)
+            CreateWindcaveTransactionRequest request = null;
+            switch (kind)
             {
-                MerchantReference = reference,
-                NotificationUrl = notificationUri.AbsoluteUri,
-            };
+                case PaymentKind.Void:
+                    request = new CreateWindcaveTransactionRequest(kind, currency, transactionID)
+                    {
+                        MerchantReference = reference,
+                        NotificationUrl = notificationUri.AbsoluteUri,
+                    };
+                    break;
+                default:
+                    request = new CreateWindcaveTransactionRequest(kind, currency, amount, transactionID: transactionID, cardID: cardID)
+                    {
+                        MerchantReference = reference,
+                        NotificationUrl = notificationUri.AbsoluteUri,
+                    };
+                    break;
+            }
+
             var data = JsonSerializer.SerializeObject(request, JsonSerializationFormat.CamelCase);
             using var content = new StringContent(data, Encoding.UTF8, "application/json");
             using var httprequest = new HttpRequestMessage(HttpMethod.Post, $"{Host}/transactions")
@@ -162,16 +191,24 @@ namespace Cod.Platform
                 var json = await resp.Content.ReadAsStringAsync();
                 if (status >= 200 && status < 400)
                 {
-                    var result = JsonSerializer.DeserializeObject<WindcaveTransaction>(json);
-                    if (!String.IsNullOrWhiteSpace(result.ID))
+                    if ((HttpStatusCode)status == HttpStatusCode.Accepted)
                     {
-                        return new OperationResult<WindcaveTransaction>(result);
+                        var response = JsonSerializer.DeserializeObject<CreateWindcaveTransactionAcceptedResponse>(json);
+                        return await this.QueryTransactionAsync(response.ID, CreateTransactionRetry);
                     }
                     else
                     {
-                        if (Logger.Instance != null)
+                        var result = JsonSerializer.DeserializeObject<WindcaveTransaction>(json);
+                        if (!String.IsNullOrWhiteSpace(result.ID))
                         {
-                            Logger.Instance.LogError($"An server error occurred while trying to create WindCave payment session {kind}->{currency}${amount} on {reference} with status code={status}: {json}");
+                            return new OperationResult<WindcaveTransaction>(result);
+                        }
+                        else
+                        {
+                            if (Logger.Instance != null)
+                            {
+                                Logger.Instance.LogError($"An server error occurred while trying to create WindCave payment session {kind}->{currency}${amount} on {reference} with status code={status}: {json}");
+                            }
                         }
                     }
                 }

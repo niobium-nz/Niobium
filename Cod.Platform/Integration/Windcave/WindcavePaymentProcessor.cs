@@ -87,6 +87,27 @@ namespace Cod.Platform
                 result.UpstreamID = complete.Result.ID;
                 result.Reference = request.Reference;
             }
+            else if (request.PaymentKind == PaymentKind.Void)
+            {
+                var transaction = await this.windcaveIntegration.Value.VoidTransactionAsync(
+                     request.Currency,
+                     request.Amount,
+                     request.Reference,
+                     callbackUri,
+                     (string)request.Account);
+                if (!transaction.IsSuccess)
+                {
+                    return new OperationResult<ChargeResponse>(transaction);
+                }
+
+                if (!transaction.Result.Authorised)
+                {
+                    return new OperationResult<ChargeResponse>(InternalError.PaymentRequired, transaction.Result.ResponseText);
+                }
+
+                result.UpstreamID = transaction.Result.ID;
+                result.Reference = transaction.Result.MerchantReference;
+            }
             else
             {
                 var transaction = await this.windcaveIntegration.Value.CreateTransactionAsync(

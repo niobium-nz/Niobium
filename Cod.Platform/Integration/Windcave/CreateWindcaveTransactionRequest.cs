@@ -1,10 +1,21 @@
-﻿using System;
+using System;
 using Newtonsoft.Json;
 
 namespace Cod.Platform
 {
     internal class CreateWindcaveTransactionRequest
     {
+        public CreateWindcaveTransactionRequest(PaymentKind kind, Currency currency, string transactionID)
+        {
+            if (string.IsNullOrWhiteSpace(transactionID))
+            {
+                throw new ArgumentNullException(nameof(transactionID));
+            }
+            this.Type = kind.ToWindcaveType();
+            this.Currency = currency.ToString();
+            this.TransactionId = transactionID;
+        }
+
         public CreateWindcaveTransactionRequest(PaymentKind kind, Currency currency, int amount, string transactionID = null, string cardID = null)
         {
             this.Type = kind.ToWindcaveType();
@@ -28,6 +39,7 @@ namespace Cod.Platform
 
         public string Type { get; set; }
 
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public string Amount { get; set; }
 
         public string Currency { get; set; }
