@@ -59,13 +59,13 @@ namespace Cod.Platform
                                 l.Words.Select(w => new OCRScanResult
                                 {
                                     Text = w.Text.EndsWith("7A") ? w.Text.Substring(0, w.Text.Length - 2) : w.Text, // REMARK (5he11) Azure has issue with recognition of "湖" and it'd end up with "7A"
-                                    IsConfident = w.Confidence > 0.8d,
+                                    IsConfident = w.Confidence > 0.7d,
                                 }))));
                     result.AddRange(ocr.AnalyzeResult.ReadResults.SelectMany(r =>
                             r.Lines.Select(l => new OCRScanResult
                             {
                                 Text = l.Text.EndsWith("7A") ? l.Text.Substring(0, l.Text.Length - 2) : l.Text,
-                                IsConfident = l.Words.Max(w => w.Confidence) > 0.8d,
+                                IsConfident = l.Words.Max(w => w.Confidence) > 0.7d,
                             })));
                     return new OperationResult<IEnumerable<OCRScanResult>>(result);
                 }
