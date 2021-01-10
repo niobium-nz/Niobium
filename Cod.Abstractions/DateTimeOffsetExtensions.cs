@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Globalization;
 
 namespace Cod
 {
@@ -19,6 +20,72 @@ namespace Cod
 
         public static DateTimeOffset FromReverseUnixTimeMilliseconds(long reverseUnixTimestamp)
             => DateTimeOffset.FromUnixTimeMilliseconds(reverseUnixTimestampAnchor - reverseUnixTimestamp);
+
+        public static string ToISO8601(this DateTimeOffset input, CultureInfo culture)
+        {
+            _ = culture ?? throw new ArgumentNullException(nameof(culture));
+            return input.ToString("o", culture);
+        }
+
+        public static string ToYearMonth(this DateTimeOffset input, CultureInfo culture)
+        {
+            _ = culture ?? throw new ArgumentNullException(nameof(culture));
+            return input.ToString("y", culture);
+        }
+
+        public static string ToRFC1123(this DateTimeOffset input, CultureInfo culture)
+        {
+            _ = culture ?? throw new ArgumentNullException(nameof(culture));
+            return input.ToString("r", culture);
+        }
+
+        public static string ToHourMinute(this DateTimeOffset input, CultureInfo culture)
+        {
+            _ = culture ?? throw new ArgumentNullException(nameof(culture));
+            return input.ToString("t", culture);
+        }
+
+        public static string ToHourMinuteSecond(this DateTimeOffset input, CultureInfo culture)
+        {
+            _ = culture ?? throw new ArgumentNullException(nameof(culture));
+            return input.ToString("T", culture);
+        }
+
+        public static string ToYearMonthDayHourMinuteSecond(this DateTimeOffset input, CultureInfo culture)
+        {
+            _ = culture ?? throw new ArgumentNullException(nameof(culture));
+            return input.ToString("G", culture);
+        }
+
+        public static string ToYearMonthDayHourMinuteSecondInNames(this DateTimeOffset input, CultureInfo culture)
+        {
+            _ = culture ?? throw new ArgumentNullException(nameof(culture));
+            return input.ToString("F", culture);
+        }
+
+        public static string ToYearMonthDayHourMinute(this DateTimeOffset input, CultureInfo culture)
+        {
+            _ = culture ?? throw new ArgumentNullException(nameof(culture));
+            return input.ToString("g", culture);
+        }
+
+        public static string ToYearMonthDay(this DateTimeOffset input, CultureInfo culture)
+        {
+            _ = culture ?? throw new ArgumentNullException(nameof(culture));
+            return input.ToString("d", culture);
+        }
+
+        public static string ToYearMonthDayInNames(this DateTimeOffset input, CultureInfo culture)
+        {
+            _ = culture ?? throw new ArgumentNullException(nameof(culture));
+            return input.ToString("D", culture);
+        }
+
+        public static string ToMonthDay(this DateTimeOffset input, CultureInfo culture)
+        {
+            _ = culture ?? throw new ArgumentNullException(nameof(culture));
+            return input.ToString("m", culture);
+        }
 
         public static string ToSixDigitsDate(this DateTimeOffset input)
             => input.ToString("yyyyMMdd");
