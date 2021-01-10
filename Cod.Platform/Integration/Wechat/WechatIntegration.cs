@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -304,7 +304,7 @@ namespace Cod.Platform
                 var result = JsonSerializer.DeserializeObject<TokenResult>(json, JsonSerializationFormat.UnderstoreCase);
                 if (!String.IsNullOrWhiteSpace(result.AccessToken))
                 {
-                    await this.cacheStore.Value.SetAsync(appID, AccessTokenCacheKey, result.AccessToken, true, DateTimeOffset.UtcNow.Add(AccessTokenCacheExpiry));
+                    await this.cacheStore.Value.SetAsync(appID, AccessTokenCacheKey, result.AccessToken, false, DateTimeOffset.UtcNow.Add(AccessTokenCacheExpiry));
                     return new OperationResult<string>(result.AccessToken);
                 }
                 else

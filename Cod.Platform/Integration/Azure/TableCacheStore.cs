@@ -1,7 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
-using Cod.Platform.Model;
 
 namespace Cod.Platform
 {
