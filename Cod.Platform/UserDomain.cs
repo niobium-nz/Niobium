@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -288,6 +288,11 @@ namespace Cod.Platform
             if (user == null)
             {
                 return new OperationResult<User>(InternalError.NotFound);
+            }
+
+            if (user.GetRoles().Contains(role))
+            {
+                return new OperationResult<User>(user);
             }
 
             var result = await this.OnApplyAsync(user, role, parameter);
