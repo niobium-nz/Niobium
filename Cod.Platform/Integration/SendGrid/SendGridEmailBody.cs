@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace Cod.Platform
 {
@@ -6,7 +6,7 @@ namespace Cod.Platform
     {
         public IEnumerable<SendGridEmailAddress> To { get; set; }
 
-        public IDictionary<string, string> DynamicTemplateData { get; set; }
+        public IDictionary<string, object> DynamicTemplateData { get; set; }
 
         public string Subject { get; set; }
     }
