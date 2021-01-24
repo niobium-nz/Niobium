@@ -1,6 +1,6 @@
-﻿namespace Cod.Platform
+namespace Cod.Platform
 {
-    public abstract class Constant
+    public abstract class Constant : Cod.Constant
     {
         public const string STORAGE_CONNECTION_NAME = "STORAGE-ACCOUNT";
         public const string HTTP_PROXY_HOST = "PROXY-HOST";

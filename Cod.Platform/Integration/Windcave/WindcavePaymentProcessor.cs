@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,6 +9,7 @@ namespace Cod.Platform
     internal class WindcavePaymentProcessor : IPaymentProcessor
     {
         private static readonly TimeSpan ValidTransactionMaxDelay = TimeSpan.FromMinutes(5);
+
         private static readonly Dictionary<string, object> CallbackUriParameters = new Dictionary<string, object>
         {
             { Endpoints.ParameterPaymentServiceProvider, PaymentServiceProvider.Windcave },
@@ -271,7 +272,7 @@ namespace Cod.Platform
                         Provider = (int)PaymentServiceProvider.Windcave,
                         Reason = (int)TransactionReason.Deposit,
                         Status = (int)status,
-                        Remark = Localization.TransactionReason_Deposit,
+                        Remark = Constant.TRANSACTION_REASON_DEPOSIT,
                     };
 
                     await this.transactionRepo.Value.CreateAsync(t);
