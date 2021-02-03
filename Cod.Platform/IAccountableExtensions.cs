@@ -122,14 +122,14 @@ namespace Cod.Platform
             };
 
         public static async Task<IEnumerable<Transaction>> MakeTransactionAsync(this IAccountable accountable,
-            double delta, int reason, string remark, string reference, string id = null, string corelation = null)
-            => await MakeTransactionAsync(new[] { await accountable.BuildTransactionAsync(delta, reason, remark, reference, id, corelation) }, accountable.CacheStore);
+            double delta, int reason, string remark, string reference, string id = null, string corelation = null, IRepository<Transaction> repository = null)
+            => await MakeTransactionAsync(new[] { await accountable.BuildTransactionAsync(delta, reason, remark, reference, id, corelation) }, accountable.CacheStore, repository);
 
-        public static async Task<IEnumerable<Transaction>> MakeTransactionAsync(TransactionRequest request, ICacheStore cacheStore)
-          => await MakeTransactionAsync(new[] { request }, cacheStore);
+        public static async Task<IEnumerable<Transaction>> MakeTransactionAsync(TransactionRequest request, ICacheStore cacheStore, IRepository<Transaction> repository = null)
+          => await MakeTransactionAsync(new[] { request }, cacheStore, repository);
 
         //TODO (5he11) 此方法要加锁并且实现事务
-        public static async Task<IEnumerable<Transaction>> MakeTransactionAsync(IEnumerable<TransactionRequest> requests, ICacheStore cacheStore)
+        public static async Task<IEnumerable<Transaction>> MakeTransactionAsync(IEnumerable<TransactionRequest> requests, ICacheStore cacheStore, IRepository<Transaction> repository = null)
         {
             var transactions = new List<Transaction>();
             var count = 0;
@@ -160,8 +160,15 @@ namespace Cod.Platform
                 transactions.Add(transaction);
                 count++;
             }
+            if (repository == null)
+            {
+                await CloudStorage.GetTable<Transaction>().InsertAsync(transactions);
+            }
+            else
+            {
+                await repository.CreateAsync(transactions);
+            }
 
-            await CloudStorage.GetTable<Transaction>().InsertAsync(transactions);
             var now = DateTimeOffset.UtcNow.ToSixDigitsDate();
             foreach (var transaction in transactions)
             {
