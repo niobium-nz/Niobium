@@ -12,6 +12,7 @@ namespace Cod.Platform
         private Func<Task<T>> getEntity;
         private string partitionKey;
         private string rowKey;
+
         public PlatformDomain(Lazy<IRepository<T>> repository) => this.repository = repository;
 
         public override string PartitionKey => this.partitionKey;
@@ -61,25 +62,34 @@ namespace Cod.Platform
             }
             this.Initialized = true;
         }
-        protected async Task SaveEntityAsync() => await this.SaveEntityAsync(new[] { await this.GetEntityAsync() });
 
-        protected async Task SaveEntityAsync(IEnumerable<T> model)
+        protected async Task SaveEntityAsync(bool force = false)
+            => await this.SaveEntityAsync(new[] { await this.GetEntityAsync() }, force);
+
+        protected async Task SaveEntityAsync(IEnumerable<T> model, bool force = false)
         {
-            if (model == null)
+            if (model == null || !model.Any())
             {
                 return;
             }
-
-            var groups = model.GroupBy(m => m.ETag == null);
-            foreach (var group in groups)
+            if (force)
             {
-                if (group.Key)
+                await this.Repository.CreateOrUpdateAsync(model);
+            }
+            else
+            {
+                var groups = model.GroupBy(m => m.ETag == null);
+
+                foreach (var group in groups)
                 {
-                    await this.Repository.CreateAsync(model);
-                }
-                else
-                {
-                    await this.Repository.UpdateAsync(model);
+                    if (group.Key)
+                    {
+                        await this.Repository.CreateAsync(group);
+                    }
+                    else
+                    {
+                        await this.Repository.UpdateAsync(group);
+                    }
                 }
             }
 
