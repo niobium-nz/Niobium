@@ -47,7 +47,7 @@ namespace Cod.Channel.Mobile
             var viewModelName = $"{viewName}Model, {viewAssemblyName}";
 
             var viewModelType = Type.GetType(viewModelName);
-            if (viewModelType != null)
+            if (viewModelType == null)
             {
                 throw new NotImplementedException($"ViewModel {viewModelName} does not exist.");
             }
