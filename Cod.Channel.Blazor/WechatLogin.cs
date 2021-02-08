@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -51,8 +51,6 @@ namespace Cod.Channel.Blazor
         [Inject]
         protected IConfigurationProvider Configuration { get; set; }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2208:Instantiate argument exceptions correctly", Justification = "BlazorComponentParameter")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "Exception")]
         protected override async Task OnInitializedAsync()
         {
             if (String.IsNullOrWhiteSpace(this.AppID))
