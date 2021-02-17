@@ -5,5 +5,7 @@ namespace Cod.Platform
         Setup = 1,
 
         Charge = 2,
+
+        Refund = 3,
     }
 }

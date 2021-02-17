@@ -47,14 +47,23 @@ namespace Cod.Platform
             return await service.GetAsync(id);
         }
 
+        public async Task<Stripe.Charge> RetriveChargeAsync(string id)
+        {
+            StripeConfiguration.ApiKey = await this.configuration.Value.GetSettingAsync<string>("STRIPE_KEY");
+            var service = new ChargeService();
+            return await service.GetAsync(id);
+        }
+
+        public async Task<Stripe.Refund> RetriveRefundAsync(string id)
+        {
+            StripeConfiguration.ApiKey = await this.configuration.Value.GetSettingAsync<string>("STRIPE_KEY");
+            var service = new RefundService();
+            return await service.GetAsync(id);
+        }
+
         public async Task<Stripe.PaymentMethod> RetrivePaymentMethodAsync(string id)
         {
             StripeConfiguration.ApiKey = await this.configuration.Value.GetSettingAsync<string>("STRIPE_KEY");
-
-            if (id.Contains("_secret_"))
-            {
-                id = id.Split(new[] { "_secret_" }, StringSplitOptions.RemoveEmptyEntries)[0];
-            }
             var service = new PaymentMethodService();
             return await service.GetAsync(id);
         }

@@ -1,5 +1,4 @@
 using System;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Stripe;
@@ -118,7 +117,7 @@ namespace Cod.Platform
             return new OperationResult<ChargeResponse>(result);
         }
 
-        public async virtual Task<OperationResult<ChargeResult>> ReportAsync(object report)
+        public virtual async Task<OperationResult<ChargeResult>> ReportAsync(object report)
         {
             if (!(report is StripeReport r))
             {
@@ -183,7 +182,104 @@ namespace Cod.Platform
                 });
             }
 
-            return new OperationResult<ChargeResult>(InternalError.NotAcceptable);
+            // TODO (5he11) 这里要挂个HOOK，让外边可以根据Transaction.Reference（订单号）更新订单上边的Transaction字段；上边操作transaction的其实应该按照status决定删除，还是不管，还是插入
+            if (r.Kind == StripeReportKind.Charge)
+            {
+                var charge = await this.stripeIntegration.Value.RetriveChargeAsync(r.ID);
+                var reference = charge.Metadata[nameof(Order)];
+                var key = StorageKeyExtensions.ParseFullID(reference);
+                var user = Guid.Parse(key.PartitionKey);
+                var order = key.RowKey;
+                var timestamp = new DateTimeOffset(charge.Created);
+                var tpk = Transaction.BuildPartitionKey(user.ToKey());
+                var trk = Transaction.BuildRowKey(timestamp);
+                var transaction = await this.transactionRepo.Value.GetAsync(tpk, trk);
+
+                if (transaction == null)
+                {
+                    transaction = new Transaction
+                    {
+                        PartitionKey = user.ToKey(),
+                        RowKey = timestamp.ToReverseUnixTimestamp(),
+                        Account = $"{charge.CustomerId}{PaymentInfoSpliter}{charge.PaymentIntentId}",
+                        Corelation = charge.Id,
+                        Reference = order,
+                        Delta = charge.AmountCaptured / 100d,
+                        Provider = (int)PaymentServiceProvider.Stripe,
+                        Reason = (int)TransactionReason.Deposit,
+                        Status = (int)TransactionStatus.Completed,
+                        Remark = Constant.TRANSACTION_REASON_DEPOSIT,
+                    };
+
+                    await this.transactionRepo.Value.CreateAsync(transaction);
+                }
+
+                return new OperationResult<ChargeResult>(new ChargeResult
+                {
+                    Account = transaction.Account,
+                    Amount = (int)charge.AmountCaptured,
+                    Channel = PaymentChannels.Cards,
+                    Currency = Currency.Parse(charge.Currency),
+                    PaymentKind =  PaymentKind.Complete,
+                    Reference = reference,
+                    Target = user.ToKey(),
+                    TargetKind = ChargeTargetKind.User,
+                    UpstreamID = charge.Id,
+                    AuthorizedAt = timestamp,
+                    Transaction = transaction,
+                });
+            }
+            else if (r.Kind == StripeReportKind.Refund)
+            {
+                var refund = await this.stripeIntegration.Value.RetriveRefundAsync(r.ID);
+                var charge1 = await this.stripeIntegration.Value.RetriveChargeAsync(refund.ChargeId);
+                var reference = charge1.Metadata[nameof(Order)];
+                var key = StorageKeyExtensions.ParseFullID(reference);
+                var user = Guid.Parse(key.PartitionKey);
+                var order = key.RowKey;
+                var timestamp = new DateTimeOffset(refund.Created);
+                var tpk = Transaction.BuildPartitionKey(user.ToKey());
+                var trk = Transaction.BuildRowKey(timestamp);
+                var transaction = await this.transactionRepo.Value.GetAsync(tpk, trk);
+
+                if (transaction == null)
+                {
+                    transaction = new Transaction
+                    {
+                        PartitionKey = user.ToKey(),
+                        RowKey = timestamp.ToReverseUnixTimestamp(),
+                        Account = $"{charge1.CustomerId}{PaymentInfoSpliter}{charge1.PaymentIntentId}",
+                        Corelation = refund.Id,
+                        Reference = order,
+                        Delta = -refund.Amount / 100d,
+                        Provider = (int)PaymentServiceProvider.Stripe,
+                        Reason = (int)TransactionReason.Refund,
+                        Status = (int)TransactionStatus.Refunded,
+                        Remark = Constant.TRANSACTION_REASON_REFUND,
+                    };
+
+                    await this.transactionRepo.Value.CreateAsync(transaction);
+                }
+
+                return new OperationResult<ChargeResult>(new ChargeResult
+                {
+                    Account = transaction.Account,
+                    Amount = -(int)refund.Amount,
+                    Channel = PaymentChannels.Cards,
+                    Currency = Currency.Parse(refund.Currency),
+                    PaymentKind = PaymentKind.Complete,
+                    Reference = reference,
+                    Target = user.ToKey(),
+                    TargetKind = ChargeTargetKind.User,
+                    UpstreamID = refund.Id,
+                    AuthorizedAt = timestamp,
+                    Transaction = transaction,
+                });
+            }
+            else
+            {
+                return new OperationResult<ChargeResult>(InternalError.NotAcceptable);
+            }
         }
 
         private static bool Support(ChargeRequest request) => request != null && request.Channel == PaymentChannels.Cards;

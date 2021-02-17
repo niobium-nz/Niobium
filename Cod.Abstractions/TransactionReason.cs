@@ -1,4 +1,4 @@
-﻿namespace Cod
+namespace Cod
 {
     public enum TransactionReason : int
     {
@@ -7,5 +7,7 @@
         Deposit = 4,
 
         Adjustment = 11,
+
+        Refund = 99,
     }
 }
