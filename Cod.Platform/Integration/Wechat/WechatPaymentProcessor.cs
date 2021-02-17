@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Cod.Platform.Integration.Wechat;
@@ -103,7 +103,7 @@ namespace Cod.Platform
                 });
             }
 
-            throw new NotSupportedException();
+            return new OperationResult<ChargeResult>(InternalError.NotAcceptable);
         }
 
         private static bool Support(ChargeRequest request) => request != null && request.Channel == PaymentChannels.Wechat;

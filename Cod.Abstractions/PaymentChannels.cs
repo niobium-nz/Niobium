@@ -9,6 +9,6 @@ namespace Cod
 
         Alipay = 1,
 
-        CreditCard = 2,
+        Cards = 2,
     }
 }

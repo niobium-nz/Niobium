@@ -1,4 +1,4 @@
-﻿namespace Cod
+namespace Cod
 {
     public enum PaymentMethodKind : int
     {
@@ -8,16 +8,18 @@
 
         WechatInApp = 2,
 
-        Visa = 11,
+        Visa = 32,
 
-        MasterCard = 12,
+        MasterCard = 64,
 
-        AmericanExpress = 13,
+        AmericanExpress = 128,
 
-        UnionPay = 14,
+        UnionPay = 256,
 
-        JCB = 15,
+        JCB = 512,
 
-        DinnersClub = 16,
+        DinnersClub = 1024,
+
+        Discover = 2048,
     }
 }

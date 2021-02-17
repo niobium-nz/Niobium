@@ -1,4 +1,4 @@
-﻿namespace Cod
+namespace Cod
 {
     public enum PaymentServiceProvider : int
     {
@@ -8,6 +8,6 @@
 
         Alipay = 2,
 
-        Windcave = 3,
+        Stripe = 3,
     }
 }

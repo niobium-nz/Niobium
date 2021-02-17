@@ -1,4 +1,4 @@
-﻿using Autofac;
+using Autofac;
 using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
@@ -15,7 +15,6 @@ namespace Cod.Platform
             builder.RegisterType<AzureStorageSignatureService>().AsImplementedInterfaces();
             builder.RegisterType<WechatIntegration>();
             builder.RegisterType<BaiduIntegration>();
-            builder.RegisterType<WindcaveIntegration>();
             builder.RegisterType<CloudTableRepository<Account>>().As<IRepository<Account>>();
             builder.RegisterType<CloudTableRepository<Accounting>>().As<IRepository<Accounting>>();
             builder.RegisterType<CloudTableRepository<Entitlement>>().As<IRepository<Entitlement>>();
@@ -41,8 +40,6 @@ namespace Cod.Platform
             builder.RegisterType<GenericDomainRepository<BusinessDomain, Business>>().As<IDomainRepository<BusinessDomain, Business>>();
 
             builder.RegisterType<PaymentService>().AsImplementedInterfaces();
-            builder.RegisterType<WindcavePaymentProcessor>();
-            builder.Register(context => context.Resolve<WindcavePaymentProcessor>()).As<IPaymentProcessor>();
             builder.RegisterType<WechatPaymentProcessor>().AsImplementedInterfaces();
 
             builder.RegisterType<WechatRepository>().AsSelf();
