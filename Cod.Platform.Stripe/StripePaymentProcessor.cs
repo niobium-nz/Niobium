@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Stripe;
@@ -63,10 +64,12 @@ namespace Cod.Platform
             if (request.PaymentKind == PaymentKind.Complete)
             {
                 transaction = await this.stripeIntegration.Value.CompleteAsync((string)request.Account, request.Amount);
+                result.UpstreamID = transaction.Result.Charges.ToList().Where(c => c.AmountCaptured == request.Amount).OrderByDescending(c => c.Created).First().Id;
             }
             else if (request.PaymentKind == PaymentKind.Void)
             {
                 transaction = await this.stripeIntegration.Value.VoidAsync((string)request.Account);
+                result.UpstreamID = transaction.Result.Id;
             }
             else
             {
@@ -85,6 +88,7 @@ namespace Cod.Platform
                      request.Reference,
                      paymentInfoParts[0],
                      paymentInfoParts[1]);
+                    result.UpstreamID = transaction.Result.Id;
                 }
                 else if (request.PaymentKind == PaymentKind.Charge)
                 {
@@ -94,6 +98,7 @@ namespace Cod.Platform
                      request.Reference,
                      paymentInfoParts[0],
                      paymentInfoParts[1]);
+                    result.UpstreamID = transaction.Result.Charges.ToList().Where(c => c.AmountCaptured == request.Amount).OrderByDescending(c => c.Created).First().Id;
                 }
                 else
                 {
@@ -201,7 +206,7 @@ namespace Cod.Platform
                     {
                         PartitionKey = user.ToKey(),
                         RowKey = timestamp.ToReverseUnixTimestamp(),
-                        Account = $"{charge.CustomerId}{PaymentInfoSpliter}{charge.PaymentIntentId}",
+                        Account = $"{charge.CustomerId}{PaymentInfoSpliter}{charge.PaymentMethod}",
                         Corelation = charge.Id,
                         Reference = order,
                         Delta = charge.AmountCaptured / 100d,
