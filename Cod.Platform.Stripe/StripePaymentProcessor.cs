@@ -116,7 +116,6 @@ namespace Cod.Platform
                 return new OperationResult<ChargeResponse>(InternalError.PaymentRequired, transaction.Result.LastPaymentError.StripeResponse?.Content);
             }
 
-            result.UpstreamID = transaction.Result.Id;
             result.Reference = request.Reference;
 
             return new OperationResult<ChargeResponse>(result);
