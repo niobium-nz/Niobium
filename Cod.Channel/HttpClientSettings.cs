@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using System.Net.Http.Headers;
 
-namespace Cod.Channel.Blazor
+namespace Cod.Channel
 {
     public static class HttpClientSettings
     {

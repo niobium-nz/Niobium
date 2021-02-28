@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -38,10 +38,8 @@ namespace Cod.Platform
             builder.Query = query.ToString();
             var url = builder.ToString();
 
-            using (var httpclient = new HttpClient(HttpHandler.GetHandler(), false))
-            {
-                return await httpclient.GetAsync(url);
-            }
+            using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
+            return await httpclient.GetAsync(url);
         }
 
         private static string IssueSignature(IEnumerable<KeyValuePair<string, string>> param, string secret)
