@@ -1,7 +1,17 @@
-﻿namespace Cod.Channel
+namespace Cod.Channel
 {
     public class LoginCommandParameter
     {
+        public LoginCommandParameter()
+            : this(null, null, null, false, null)
+        {
+        }
+
+        public LoginCommandParameter(string scheme)
+            : this(scheme, null, null, false, null)
+        {
+        }
+
         public LoginCommandParameter(string scheme, string username, string password)
             : this(scheme, username, password, false, null)
         {
@@ -21,14 +31,14 @@
             this.Remember = remember;
         }
 
-        public string Scheme { get; private set; }
+        public string Scheme { get; set; }
 
-        public string Username { get; private set; }
+        public string Username { get; set; }
 
-        public bool Remember { get; private set; }
+        public bool Remember { get; set; }
 
-        public string Password { get; private set; }
+        public string Password { get; set; }
 
-        public string ReturnUrl { get; private set; }
+        public string ReturnUrl { get; set; }
     }
 }
