@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Specialized;
 using System.Net;
+using System.Threading.Tasks;
 using System.Web;
 
 namespace Cod.Channel
@@ -9,7 +10,7 @@ namespace Cod.Channel
     {
         private readonly static NameValueCollection EmptyQueryString = new NameValueCollection();
 
-        public static void CheckAndPerformGoto(this INavigator navigator)
+        public async static Task CheckAndPerformGotoAsync(this INavigator navigator)
         {
             var queries = navigator.GetQueryStrings();
             var go = queries.Get("go");
@@ -18,7 +19,7 @@ namespace Cod.Channel
                 queries.Remove("go");
                 var queryString = queries.ToString();
                 go = WebUtility.UrlDecode(go);
-                navigator.NavigateTo($"{navigator.BaseUri}{go}?{queryString}");
+                await navigator.NavigateToAsync($"{navigator.BaseUri}{go}?{queryString}");
             }
         }
 

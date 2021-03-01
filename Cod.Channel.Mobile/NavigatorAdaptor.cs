@@ -1,4 +1,6 @@
 using System;
+using System.Threading.Tasks;
+using Xamarin.Forms;
 
 namespace Cod.Channel.Mobile
 {
@@ -6,9 +8,16 @@ namespace Cod.Channel.Mobile
     {
         public string BaseUri => String.Empty;
 
-        public string CurrentUri => String.Empty;
+        public string CurrentUri => Shell.Current.CurrentState.Location.AbsoluteUri;
 
-        public void NavigateTo(string url, bool forceLoad = false)
-        { }
+        public async Task NavigateToAsync(string url, bool forceLoad = false)
+        {
+            if (forceLoad && !url.StartsWith("//"))
+            {
+                url = $"//{url}";
+            }
+
+            await Shell.Current.GoToAsync(url);
+        }
     }
 }

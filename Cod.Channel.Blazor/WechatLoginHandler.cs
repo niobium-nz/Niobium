@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
@@ -20,7 +20,7 @@ namespace Cod.Channel.Blazor
         protected IConfigurationProvider Configuration { get; set; }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2208:Instantiate argument exceptions correctly", Justification = "BlazorComponentParameter")]
-        protected async override Task OnInitializedAsync()
+        protected override async Task OnInitializedAsync()
         {
             var queries = this.Navigator.GetQueryStrings();
             var code = queries.Get("code");
@@ -34,7 +34,7 @@ namespace Cod.Channel.Blazor
             {
                 var apiUrl = await this.Configuration.GetSettingAsStringAsync(Constants.KEY_API_URL);
                 var apiLoginUrl = $"{apiUrl}/v1/wechat/login?id={loginID}&code={code}";
-                this.Navigator.NavigateTo(apiLoginUrl);
+                await this.Navigator.NavigateToAsync(apiLoginUrl);
                 return;
             }
 
@@ -54,11 +54,11 @@ namespace Cod.Channel.Blazor
                 var targetHost = new Uri(returnUrl).Host;
                 if (currentHost.ToUpperInvariant() == targetHost.ToUpperInvariant())
                 {
-                    this.Navigator.NavigateTo(returnUrl);
+                    await this.Navigator.NavigateToAsync(returnUrl);
                 }
             }
 
-            this.Navigator.NavigateTo(this.Navigator.BaseUri);
+            await this.Navigator.NavigateToAsync(this.Navigator.BaseUri);
         }
     }
 }

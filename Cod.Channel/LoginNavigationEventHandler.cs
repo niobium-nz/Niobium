@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 
 namespace Cod.Channel
@@ -9,7 +9,7 @@ namespace Cod.Channel
 
         public LoginNavigationEventHandler(INavigator navigator) => this.navigator = navigator;
 
-        protected override Task CoreHandleAsync(IAuthenticator sender, object e)
+        protected async override Task CoreHandleAsync(IAuthenticator sender, object e)
         {
             if (!sender.IsAuthenticated())
             {
@@ -19,9 +19,9 @@ namespace Cod.Channel
                 {
                     returnUrl = this.navigator.CurrentUri;
                 }
-                this.navigator.NavigateTo($"/login?returnUrl={returnUrl}");
+
+                await this.navigator.NavigateToAsync($"/login?returnUrl={returnUrl}");
             }
-            return Task.CompletedTask;
         }
     }
 }

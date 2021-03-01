@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 
 namespace Cod.Channel.Blazor
@@ -12,6 +13,10 @@ namespace Cod.Channel.Blazor
 
         public string CurrentUri => this.manager.Uri;
 
-        public void NavigateTo(string url, bool forceLoad = false) => this.manager.NavigateTo(url, forceLoad: forceLoad);
+        public Task NavigateToAsync(string url, bool forceLoad = false)
+        {
+            this.manager.NavigateTo(url, forceLoad: forceLoad);
+            return Task.CompletedTask;
+        }
     }
 }

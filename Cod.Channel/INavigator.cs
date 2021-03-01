@@ -1,4 +1,6 @@
-﻿namespace Cod.Channel
+using System.Threading.Tasks;
+
+namespace Cod.Channel
 {
     public interface INavigator
     {
@@ -6,6 +8,6 @@
 
         string CurrentUri { get; }
 
-        void NavigateTo(string url, bool forceLoad = false);
+        Task NavigateToAsync(string url, bool forceLoad = false);
     }
 }

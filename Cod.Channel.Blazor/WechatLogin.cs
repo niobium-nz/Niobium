@@ -81,7 +81,7 @@ namespace Cod.Channel.Blazor
             if (type == BrowserType.Wechat)
             {
                 var callbackUrl = $"{this.Navigator.BaseUri}?go={this.Handler}";
-                this.Navigator.NavigateTo(baseUrl
+                await this.Navigator.NavigateToAsync(baseUrl
                     .Replace("{REDIRECT}", WebUtility.UrlEncode(callbackUrl))
                     .Replace("{STATE}", WebUtility.UrlEncode(returnUrl)));
             }
@@ -128,7 +128,7 @@ namespace Cod.Channel.Blazor
             }
             else
             {
-                this.Navigator.NavigateTo($"{this.Navigator.BaseUri}{this.Handler}?code={code}&state={WebUtility.UrlEncode(returnUrl)}");
+                await this.Navigator.NavigateToAsync($"{this.Navigator.BaseUri}{this.Handler}?code={code}&state={WebUtility.UrlEncode(returnUrl)}");
             }
         }
 

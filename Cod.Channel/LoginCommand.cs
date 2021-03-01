@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -62,7 +62,7 @@ namespace Cod.Channel
 
                     if (!String.IsNullOrWhiteSpace(returnUrl))
                     {
-                        this.navigator.NavigateTo(returnUrl);
+                        await this.navigator.NavigateToAsync(returnUrl);
                     }
 
                     return new OperationResult<bool>(true);
