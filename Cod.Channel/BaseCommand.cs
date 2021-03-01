@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+using System;
+using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
@@ -13,7 +14,7 @@ namespace Cod.Channel
 
         public abstract CommandID ID { get; }
 
-        public virtual bool CanExecute => true;
+        public event EventHandler CanExecuteChanged;
 
         public abstract Task<CommandExecutionEventArgs> ExecuteAsync(object parameter);
 
@@ -24,5 +25,11 @@ namespace Cod.Channel
             => this.Commander.OnExecuted(new CommandExecutionRecord(e));
 
         public void Initialize(ICommander commander) => this.Commander = commander;
+
+        public virtual bool CanExecute(object parameter) => true;
+
+        public async void Execute(object parameter) => await this.ExecuteAsync(parameter);
+
+        protected virtual void OnCanExecuteChanged(object sender, EventArgs e) => this.CanExecuteChanged?.Invoke(sender, e);
     }
 }

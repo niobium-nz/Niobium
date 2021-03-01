@@ -1,23 +1,15 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
-    public interface ICommand<T>
+    public interface ICommand<T> : ICommand
     {
-        CommandID ID { get; }
-
-        bool CanExecute { get; }
-
-        void Initialize(ICommander commander);
-
         Task<CommandExecutionEventArgs> ExecuteAsync(T parameter);
     }
 
-    public interface ICommand
+    public interface ICommand : System.Windows.Input.ICommand
     {
         CommandID ID { get; }
-
-        bool CanExecute { get; }
 
         void Initialize(ICommander commander);
 
