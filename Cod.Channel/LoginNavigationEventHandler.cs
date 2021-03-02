@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
-    internal class LoginNavigationEventHandler : DomainEventHandler<IAuthenticator>
+    public class LoginNavigationEventHandler : DomainEventHandler<IAuthenticator>
     {
         private readonly INavigator navigator;
 
