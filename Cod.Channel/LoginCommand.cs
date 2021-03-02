@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
-    internal class LoginCommand : GenericCommand<LoginCommandParameter, OperationResult<bool>>
+    public class LoginCommand : GenericCommand<LoginCommandParameter, OperationResult<bool>>
     {
         private readonly IAuthenticator authenticator;
         private readonly INavigator navigator;
