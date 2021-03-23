@@ -32,6 +32,11 @@ namespace Cod.Platform
 
         public virtual async Task<OperationResult<ChargeResponse>> ChargeAsync(ChargeRequest request)
         {
+            if (request is null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
             if (!Support(request))
             {
                 return new OperationResult<ChargeResponse>(InternalError.NotAcceptable);
@@ -121,9 +126,9 @@ namespace Cod.Platform
             return new OperationResult<ChargeResponse>(result);
         }
 
-        public virtual async Task<OperationResult<ChargeResult>> ReportAsync(object report)
+        public virtual async Task<OperationResult<ChargeResult>> ReportAsync(object notification)
         {
-            if (!(report is StripeReport r))
+            if (notification is not StripeReport r)
             {
                 return new OperationResult<ChargeResult>(InternalError.NotAcceptable);
             }
@@ -288,15 +293,15 @@ namespace Cod.Platform
 
         private static bool Support(ChargeRequest request) => request != null && request.Channel == PaymentChannels.Cards;
 
-        private static PaymentMethodKind FigureCardType(string input) => (input.ToLower()) switch
+        private static PaymentMethodKind FigureCardType(string input) => (input.ToUpperInvariant()) switch
         {
-            "visa" => PaymentMethodKind.Visa,
-            "mastercard" => PaymentMethodKind.MasterCard,
-            "amex" => PaymentMethodKind.AmericanExpress,
-            "unionpay" => PaymentMethodKind.UnionPay,
-            "diners" => PaymentMethodKind.DinnersClub,
-            "discover" => PaymentMethodKind.Discover,
-            "jcb" => PaymentMethodKind.JCB,
+            "VISA" => PaymentMethodKind.Visa,
+            "MASTERCARD" => PaymentMethodKind.MasterCard,
+            "AMEX" => PaymentMethodKind.AmericanExpress,
+            "UNIONPAY" => PaymentMethodKind.UnionPay,
+            "DINERS" => PaymentMethodKind.DinnersClub,
+            "DISCOVER" => PaymentMethodKind.Discover,
+            "JCB" => PaymentMethodKind.JCB,
             _ => throw new NotImplementedException(),
         };
     }

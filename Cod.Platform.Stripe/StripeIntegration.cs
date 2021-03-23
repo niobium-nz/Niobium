@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Net.Sockets;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using Stripe;
 
@@ -37,6 +36,11 @@ namespace Cod.Platform
 
         public async Task<SetupIntent> RetriveSetupIntentAsync(string id)
         {
+            if (id is null)
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
             StripeConfiguration.ApiKey = await this.configuration.Value.GetSettingAsync<string>("STRIPE_KEY");
 
             if (id.Contains("_secret_"))
@@ -89,7 +93,9 @@ namespace Cod.Platform
                 var result = await service.CreateAsync(new PaymentIntentCreateOptions
                 {
                     Amount = amount,
+#pragma warning disable CA1308 // Stripe standard
                     Currency = currency.ToString().ToLowerInvariant(),
+#pragma warning restore CA1308 // Stripe standard
                     Confirm = true,
                     OffSession = true,
                     Customer = customer,
@@ -240,7 +246,9 @@ namespace Cod.Platform
                 var result = await service.CreateAsync(new PaymentIntentCreateOptions
                 {
                     Amount = amount,
+#pragma warning disable CA1308 // Stripe standard
                     Currency = currency.ToString().ToLowerInvariant(),
+#pragma warning restore CA1308 // Stripe standard
                     Confirm = true,
                     OffSession = true,
                     Customer = customer,

@@ -2,6 +2,8 @@ namespace Cod.Platform
 {
     public enum StripeReportKind
     {
+        Unknown = 0,
+
         Setup = 1,
 
         Charge = 2,
