@@ -30,8 +30,15 @@ namespace Cod.Platform
                 }
             };
             var setupIntentService = new SetupIntentService();
-            var intent = await setupIntentService.CreateAsync(setupIntentOptions);
-            return new OperationResult<SetupIntent>(intent);
+            try
+            {
+                var intent = await setupIntentService.CreateAsync(setupIntentOptions);
+                return new OperationResult<SetupIntent>(intent);
+            }
+            catch (StripeException se)
+            {
+                return new OperationResult<SetupIntent>((int)se.HttpStatusCode, se.Message);
+            }
         }
 
         public async Task<SetupIntent> RetriveSetupIntentAsync(string id)
@@ -48,6 +55,7 @@ namespace Cod.Platform
                 id = id.Split(new[] { "_secret_" }, StringSplitOptions.RemoveEmptyEntries)[0];
             }
             var service = new SetupIntentService();
+
             return await service.GetAsync(id);
         }
 
@@ -106,6 +114,10 @@ namespace Cod.Platform
                 return new OperationResult<PaymentIntent>(result);
 
             }
+            catch (StripeException se)
+            {
+                return new OperationResult<PaymentIntent>((int)se.HttpStatusCode, se.Message);
+            }
             catch (HttpRequestException)
             {
             }
@@ -139,6 +151,10 @@ namespace Cod.Platform
                 var service = new RefundService();
                 var result = await service.CreateAsync(new RefundCreateOptions { Charge = chargeID, Amount = amount });
                 return new OperationResult<Refund>(result);
+            }
+            catch (StripeException se)
+            {
+                return new OperationResult<Refund>((int)se.HttpStatusCode, se.Message);
             }
             catch (HttpRequestException)
             {
@@ -175,6 +191,10 @@ namespace Cod.Platform
                 return new OperationResult<PaymentIntent>(result);
 
             }
+            catch (StripeException se)
+            {
+                return new OperationResult<PaymentIntent>((int)se.HttpStatusCode, se.Message);
+            }
             catch (HttpRequestException)
             {
             }
@@ -208,6 +228,10 @@ namespace Cod.Platform
                 var result = await service.CancelAsync(paymentIntentID);
                 return new OperationResult<PaymentIntent>(result);
 
+            }
+            catch (StripeException se)
+            {
+                return new OperationResult<PaymentIntent>((int)se.HttpStatusCode, se.Message);
             }
             catch (HttpRequestException)
             {
@@ -258,6 +282,10 @@ namespace Cod.Platform
                 });
                 return new OperationResult<PaymentIntent>(result);
 
+            }
+            catch (StripeException se)
+            {
+                return new OperationResult<PaymentIntent>((int)se.HttpStatusCode, se.Message);
             }
             catch (HttpRequestException)
             {
