@@ -69,11 +69,19 @@ namespace Cod.Platform
             if (request.PaymentKind == PaymentKind.Complete)
             {
                 transaction = await this.stripeIntegration.Value.CompleteAsync((string)request.Account, request.Amount);
+                if (!transaction.IsSuccess)
+                {
+                    return new OperationResult<ChargeResponse>(transaction);
+                }
                 result.UpstreamID = transaction.Result.Charges.ToList().Where(c => c.AmountCaptured == request.Amount).OrderByDescending(c => c.Created).First().Id;
             }
             else if (request.PaymentKind == PaymentKind.Void)
             {
                 transaction = await this.stripeIntegration.Value.VoidAsync((string)request.Account);
+                if (!transaction.IsSuccess)
+                {
+                    return new OperationResult<ChargeResponse>(transaction);
+                }
                 result.UpstreamID = transaction.Result.Id;
             }
             else
@@ -93,6 +101,10 @@ namespace Cod.Platform
                      request.Reference,
                      paymentInfoParts[0],
                      paymentInfoParts[1]);
+                    if (!transaction.IsSuccess)
+                    {
+                        return new OperationResult<ChargeResponse>(transaction);
+                    }
                     result.UpstreamID = transaction.Result.Id;
                 }
                 else if (request.PaymentKind == PaymentKind.Charge)
@@ -103,6 +115,10 @@ namespace Cod.Platform
                      request.Reference,
                      paymentInfoParts[0],
                      paymentInfoParts[1]);
+                    if (!transaction.IsSuccess)
+                    {
+                        return new OperationResult<ChargeResponse>(transaction);
+                    }
                     result.UpstreamID = transaction.Result.Charges.ToList().Where(c => c.AmountCaptured == request.Amount).OrderByDescending(c => c.Created).First().Id;
                 }
                 else
@@ -229,7 +245,7 @@ namespace Cod.Platform
                     Amount = (int)charge.AmountCaptured,
                     Channel = PaymentChannels.Cards,
                     Currency = Currency.Parse(charge.Currency),
-                    PaymentKind =  PaymentKind.Complete,
+                    PaymentKind = PaymentKind.Complete,
                     Reference = reference,
                     Target = user.ToKey(),
                     TargetKind = ChargeTargetKind.User,
