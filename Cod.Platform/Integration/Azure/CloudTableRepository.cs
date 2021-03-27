@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos.Table;
@@ -57,5 +57,19 @@ namespace Cod.Platform
                     TableOperators.And,
                         TableQuery.GenerateFilterCondition(nameof(ITableEntity.RowKey), QueryComparisons.LessThanOrEqual, rowKeyEnd))),
                 takeCount: limit);
+
+        public async Task<TableQueryResult<T>> GetAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, IList<string> fields, int limit = -1)
+            => await CloudStorage.GetTable<T>().WhereAsync<T>(
+                TableQuery.CombineFilters(
+                    TableQuery.GenerateFilterCondition(nameof(ITableEntity.PartitionKey), QueryComparisons.Equal, partitionKey),
+                TableOperators.And,
+                    TableQuery.CombineFilters(
+                        TableQuery.GenerateFilterCondition(nameof(ITableEntity.RowKey), QueryComparisons.GreaterThanOrEqual, rowKeyStart),
+                    TableOperators.And,
+                        TableQuery.GenerateFilterCondition(nameof(ITableEntity.RowKey), QueryComparisons.LessThanOrEqual, rowKeyEnd))),
+                fields: fields,
+                takeCount: limit);
+        public async Task<TableQueryResult<T>> GetAsync(string partitionKey, IList<string> fields, int limit = -1)
+            => await CloudStorage.GetTable<T>().WhereAsync<T>(takeCount: limit, fields: fields);
     }
 }
