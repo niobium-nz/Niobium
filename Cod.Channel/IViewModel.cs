@@ -1,4 +1,6 @@
-﻿namespace Cod.Channel
+using System.Threading.Tasks;
+
+namespace Cod.Channel
 {
     public interface IViewModel<TDomain, TEntity>
         where TDomain : IChannelDomain<TEntity>
@@ -10,6 +12,6 @@
 
         string ETag { get; }
 
-        IViewModel<TDomain, TEntity> Initialize(TDomain domain);
+        Task<IViewModel<TDomain, TEntity>> InitializeAsync(TDomain domain);
     }
 }

@@ -1,12 +1,13 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
     public static class IViewModelExtensions
     {
-        public static IList<TViewModel> Refresh<TEntity, TViewModel, TDomain>(
+        public static async Task<IList<TViewModel>> RefreshAsync<TEntity, TViewModel, TDomain>(
             this IList<TViewModel> existings,
             IEnumerable<TDomain> refreshments,
             Func<TViewModel> createViewModel, TEntity dummy)
@@ -27,7 +28,7 @@ namespace Cod.Channel
                     && e.ETag != refreshment.Entity.ETag);
                 if (changed != null)
                 {
-                    changed.Initialize(refreshment);
+                    await changed.InitializeAsync(refreshment);
                 }
 
                 var added = !existings.Any(e =>
@@ -36,7 +37,7 @@ namespace Cod.Channel
 
                 if (added)
                 {
-                    var vm = (TViewModel)createViewModel().Initialize(refreshment);
+                    var vm = (TViewModel)(await createViewModel().InitializeAsync(refreshment));
                     existings.Add(vm);
                 }
             }

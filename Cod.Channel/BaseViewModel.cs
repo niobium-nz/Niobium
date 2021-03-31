@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
@@ -16,15 +17,16 @@ namespace Cod.Channel
 
         protected TDomain Domain { get; private set; }
 
-        public IViewModel<TDomain, TEntity> Initialize(TDomain domain)
+        public async Task<IViewModel<TDomain, TEntity>> InitializeAsync(TDomain domain)
         {
             this.Domain = domain;
-            this.OnInitialize();
+            await this.OnInitializeAsync();
             return this;
         }
 
-        protected virtual void OnInitialize()
+        protected virtual Task OnInitializeAsync()
         {
+            return Task.CompletedTask;
         }
     }
 }
