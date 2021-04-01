@@ -110,9 +110,14 @@ namespace Cod.Platform
         {
             var domain = this.createDomain();
             domain.Initialize(entity);
-            this.instanceCache.AddOrUpdate(entity.GetKey(), domain, (key, existing) => domain);
 
-            if (clearPartitionCache)
+            // REMARK (5he11) 可能存在一种情况是接口使用者仅仅为了拿到一个空白的Domain Object所以仅仅传入一个无用的new Entity()，此时这个entity的GetKey返回null
+            if (entity.PartitionKey != null && entity.RowKey != null)
+            {
+                this.instanceCache.AddOrUpdate(entity.GetKey(), domain, (key, existing) => domain);
+            }
+
+            if (clearPartitionCache && entity.PartitionKey != null)
             {
                 this.partitionCache.TryRemove(entity.PartitionKey, out _);
             }
