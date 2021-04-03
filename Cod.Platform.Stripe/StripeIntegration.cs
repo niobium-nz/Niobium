@@ -4,6 +4,7 @@ using System.IO;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Stripe;
 
 namespace Cod.Platform
@@ -11,8 +12,13 @@ namespace Cod.Platform
     public class StripeIntegration
     {
         private readonly Lazy<IConfigurationProvider> configuration;
+        private readonly ILogger logger;
 
-        public StripeIntegration(Lazy<IConfigurationProvider> configuration) => this.configuration = configuration;
+        public StripeIntegration(Lazy<IConfigurationProvider> configuration, ILogger logger)
+        {
+            this.configuration = configuration;
+            this.logger = logger;
+        }
 
         public async Task<OperationResult<SetupIntent>> CreateSetupIntentAsync(Guid user)
         {
@@ -37,7 +43,8 @@ namespace Cod.Platform
             }
             catch (StripeException se)
             {
-                return new OperationResult<SetupIntent>((int)se.HttpStatusCode, se.Message);
+                this.logger.LogError(se, nameof(StripeIntegration));
+                return ConvertStripeError<SetupIntent>(se.StripeError);
             }
         }
 
@@ -116,7 +123,8 @@ namespace Cod.Platform
             }
             catch (StripeException se)
             {
-                return new OperationResult<PaymentIntent>((int)se.HttpStatusCode, se.Message);
+                this.logger.LogError(se, nameof(StripeIntegration));
+                return ConvertStripeError<PaymentIntent>(se.StripeError);
             }
             catch (HttpRequestException)
             {
@@ -154,7 +162,8 @@ namespace Cod.Platform
             }
             catch (StripeException se)
             {
-                return new OperationResult<Refund>((int)se.HttpStatusCode, se.Message);
+                this.logger.LogError(se, nameof(StripeIntegration));
+                return ConvertStripeError<Refund>(se.StripeError);
             }
             catch (HttpRequestException)
             {
@@ -193,7 +202,8 @@ namespace Cod.Platform
             }
             catch (StripeException se)
             {
-                return new OperationResult<PaymentIntent>((int)se.HttpStatusCode, se.Message);
+                this.logger.LogError(se, nameof(StripeIntegration));
+                return ConvertStripeError<PaymentIntent>(se.StripeError);
             }
             catch (HttpRequestException)
             {
@@ -231,7 +241,8 @@ namespace Cod.Platform
             }
             catch (StripeException se)
             {
-                return new OperationResult<PaymentIntent>((int)se.HttpStatusCode, se.Message);
+                this.logger.LogError(se, nameof(StripeIntegration));
+                return ConvertStripeError<PaymentIntent>(se.StripeError);
             }
             catch (HttpRequestException)
             {
@@ -285,7 +296,8 @@ namespace Cod.Platform
             }
             catch (StripeException se)
             {
-                return new OperationResult<PaymentIntent>((int)se.HttpStatusCode, se.Message);
+                this.logger.LogError(se, nameof(StripeIntegration));
+                return ConvertStripeError<PaymentIntent>(se.StripeError);
             }
             catch (HttpRequestException)
             {
@@ -301,6 +313,34 @@ namespace Cod.Platform
             }
 
             return await this.AuthorizeAsync(currency, amount, reference, customer, paymentMethod, --retryCount);
+        }
+
+        private static OperationResult<T> ConvertStripeError<T>(StripeError stripeError)
+        {
+            if(stripeError == null)
+            {
+                return new OperationResult<T>(InternalError.PaymentError_Unknown);
+            }
+
+            if (!string.IsNullOrWhiteSpace(stripeError.Code) && !string.IsNullOrWhiteSpace(stripeError.DeclineCode))
+            {
+                var code = stripeError.Code.Trim();
+                var declineCode = stripeError.DeclineCode.Trim();
+                if (code == "card_declined" && declineCode == "incorrect_cvc")
+                {
+                    return new OperationResult<T>(InternalError.PaymentError_IncorrectCVC);
+                }
+                else if (code == "card_declined" && declineCode == "expired_card")
+                {
+                    return new OperationResult<T>(InternalError.PaymentError_ExpiredCard);
+                }
+                else if (code == "card_declined" && declineCode == "insufficient_funds")
+                {
+                    return new OperationResult<T>(InternalError.PaymentError_InsufficientFunds);
+                }
+            }
+
+            return new OperationResult<T>(InternalError.PaymentError_Unknown);
         }
     }
 }
