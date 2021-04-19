@@ -1,10 +1,13 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace Cod
 {
     public struct StorageKey : IEquatable<StorageKey>
     {
+        public const string MinKey = "!";
+        public const string MaxKey = "~";
+
         public string PartitionKey { get; set; }
 
         public string RowKey { get; set; }

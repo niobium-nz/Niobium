@@ -69,7 +69,35 @@ namespace Cod.Platform
                         TableQuery.GenerateFilterCondition(nameof(ITableEntity.RowKey), QueryComparisons.LessThanOrEqual, rowKeyEnd))),
                 fields: fields,
                 takeCount: limit);
+
         public async Task<TableQueryResult<T>> GetAsync(string partitionKey, IList<string> fields, int limit = -1)
             => await CloudStorage.GetTable<T>().WhereAsync<T>(takeCount: limit, fields: fields);
+
+        public async Task<TableQueryResult<T>> GetAsync(string partitionKeyStart, string partitionKeyEnd, IList<string> fields, int limit = -1)
+          => await CloudStorage.GetTable<T>().WhereAsync<T>(
+                    TableQuery.CombineFilters(
+                        TableQuery.GenerateFilterCondition(nameof(ITableEntity.PartitionKey), QueryComparisons.GreaterThanOrEqual, partitionKeyStart),
+                    TableOperators.And,
+                        TableQuery.GenerateFilterCondition(nameof(ITableEntity.PartitionKey), QueryComparisons.LessThanOrEqual, partitionKeyEnd)),
+                fields: fields,
+                takeCount: limit);
+
+        public async Task<TableQueryResult<T>> GetAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int limit = -1)
+            => await this.GetAsync(partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, null, limit: limit);
+
+        public async Task<TableQueryResult<T>> GetAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, IList<string> fields, int limit = -1)
+          => await CloudStorage.GetTable<T>().WhereAsync<T>(
+                TableQuery.CombineFilters(
+                    TableQuery.CombineFilters(
+                        TableQuery.GenerateFilterCondition(nameof(ITableEntity.PartitionKey), QueryComparisons.GreaterThanOrEqual, partitionKeyStart),
+                    TableOperators.And,
+                        TableQuery.GenerateFilterCondition(nameof(ITableEntity.PartitionKey), QueryComparisons.LessThanOrEqual, partitionKeyEnd)),
+                TableOperators.And,
+                    TableQuery.CombineFilters(
+                        TableQuery.GenerateFilterCondition(nameof(ITableEntity.RowKey), QueryComparisons.GreaterThanOrEqual, rowKeyStart),
+                    TableOperators.And,
+                        TableQuery.GenerateFilterCondition(nameof(ITableEntity.RowKey), QueryComparisons.LessThanOrEqual, rowKeyEnd))),
+                fields: fields,
+                takeCount: limit);
     }
 }
