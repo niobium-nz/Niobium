@@ -29,20 +29,13 @@ namespace Cod.Platform
             var c = CloudStorage.GetBlobContainer(container);
 
             var result = new List<Uri>();
-            BlobContinuationToken token = null;
-            while (true)
+            BlobContinuationToken token = new BlobContinuationToken();
+            while (token != null)
             {
                 var r = await c.ListBlobsSegmentedAsync(prefix, token);
-                if (r.ContinuationToken == null)
-                {
-                    break;
-                }
-                else
-                {
-                    result.AddRange(r.Results.Select(b => b.Uri));
-                }
+                result.AddRange(r.Results.Select(b => b.Uri));
+                token = r.ContinuationToken;
             }
-
             return result;
         }
 
