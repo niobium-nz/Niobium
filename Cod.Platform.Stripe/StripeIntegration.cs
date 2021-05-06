@@ -319,7 +319,7 @@ namespace Cod.Platform
         {
             if(stripeError == null)
             {
-                return new OperationResult<T>(InternalError.PaymentError_Unknown);
+                return new OperationResult<T>(InternalError.PaymentErrorUnknown);
             }
 
             if (!string.IsNullOrWhiteSpace(stripeError.Code) && !string.IsNullOrWhiteSpace(stripeError.DeclineCode))
@@ -328,19 +328,19 @@ namespace Cod.Platform
                 var declineCode = stripeError.DeclineCode.Trim();
                 if (code == "card_declined" && declineCode == "incorrect_cvc")
                 {
-                    return new OperationResult<T>(InternalError.PaymentError_IncorrectCVC);
+                    return new OperationResult<T>(InternalError.PaymentErrorIncorrectCVC);
                 }
                 else if (code == "card_declined" && declineCode == "expired_card")
                 {
-                    return new OperationResult<T>(InternalError.PaymentError_ExpiredCard);
+                    return new OperationResult<T>(InternalError.PaymentErrorExpiredCard);
                 }
                 else if (code == "card_declined" && declineCode == "insufficient_funds")
                 {
-                    return new OperationResult<T>(InternalError.PaymentError_InsufficientFunds);
+                    return new OperationResult<T>(InternalError.PaymentErrorInsufficientFunds);
                 }
             }
 
-            return new OperationResult<T>(InternalError.PaymentError_Unknown);
+            return new OperationResult<T>(InternalError.PaymentErrorUnknown);
         }
     }
 }
