@@ -10,7 +10,7 @@ namespace Cod.Channel
         public static async Task<IList<TViewModel>> RefreshAsync<TEntity, TViewModel, TDomain>(
             this IList<TViewModel> existings,
             IEnumerable<TDomain> refreshments,
-            Func<TViewModel> createViewModel, TEntity dummy)
+            Func<TViewModel> createViewModel, TEntity dummy, IUIRefreshable parent = null)
             where TViewModel : IViewModel<TDomain, TEntity>
             where TDomain : IChannelDomain<TEntity>
             where TEntity : IEntity
@@ -28,7 +28,7 @@ namespace Cod.Channel
                     && e.ETag != refreshment.Entity.ETag);
                 if (changed != null)
                 {
-                    await changed.InitializeAsync(refreshment);
+                    await changed.InitializeAsync(domain: refreshment, parent: parent, force: true);
                 }
 
                 var added = !existings.Any(e =>
@@ -37,7 +37,7 @@ namespace Cod.Channel
 
                 if (added)
                 {
-                    var vm = (TViewModel)(await createViewModel().InitializeAsync(refreshment));
+                    var vm = (TViewModel)(await createViewModel().InitializeAsync(domain: refreshment, parent: parent, force: false));
                     existings.Add(vm);
                 }
             }

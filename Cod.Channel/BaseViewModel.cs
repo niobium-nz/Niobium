@@ -15,12 +15,35 @@ namespace Cod.Channel
 
         public DateTimeOffset? Created => this.Domain.Entity.Created;
 
+        public IUIRefreshable Parent { get; private set; }
+
+        protected bool UIRefreshableInitialized { get; private set; }
+
         protected TDomain Domain { get; private set; }
 
-        public async Task<IViewModel<TDomain, TEntity>> InitializeAsync(TDomain domain)
+        protected bool DomainInitialized { get; private set; }
+
+        public async Task<IViewModel<TDomain, TEntity>> InitializeAsync(TDomain domain, IUIRefreshable parent = null, bool force = false)
         {
-            this.Domain = domain;
-            await this.OnInitializeAsync();
+            var shouldNotify = false;
+
+            if (force || !this.DomainInitialized)
+            {
+                this.Domain = domain;
+                shouldNotify = true;
+                this.DomainInitialized = true;
+            }
+            if (force || !this.UIRefreshableInitialized)
+            {
+                this.Parent = parent;
+                shouldNotify = true;
+                this.UIRefreshableInitialized = true;
+            }
+            if (shouldNotify)
+            {
+                await this.OnInitializeAsync();
+            }
+
             return this;
         }
 

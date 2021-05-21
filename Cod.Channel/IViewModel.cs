@@ -12,6 +12,8 @@ namespace Cod.Channel
 
         string ETag { get; }
 
-        Task<IViewModel<TDomain, TEntity>> InitializeAsync(TDomain domain);
+        IUIRefreshable Parent { get; }
+
+        Task<IViewModel<TDomain, TEntity>> InitializeAsync(TDomain domain, IUIRefreshable parent = null, bool force = false);
     }
 }
