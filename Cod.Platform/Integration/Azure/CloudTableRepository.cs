@@ -71,7 +71,9 @@ namespace Cod.Platform
                 takeCount: limit);
 
         public async Task<TableQueryResult<T>> GetAsync(string partitionKey, IList<string> fields, int limit = -1)
-            => await CloudStorage.GetTable<T>().WhereAsync<T>(takeCount: limit, fields: fields);
+            => await CloudStorage.GetTable<T>().WhereAsync<T>(
+                TableQuery.GenerateFilterCondition(nameof(ITableEntity.PartitionKey), QueryComparisons.Equal, partitionKey),
+                takeCount: limit, fields: fields);
 
         public async Task<TableQueryResult<T>> GetAsync(string partitionKeyStart, string partitionKeyEnd, IList<string> fields, int limit = -1)
           => await CloudStorage.GetTable<T>().WhereAsync<T>(
