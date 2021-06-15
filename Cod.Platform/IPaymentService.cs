@@ -1,9 +1,11 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 
 namespace Cod.Platform
 {
     public interface IPaymentService
     {
+        Task<OperationResult<ChargeResult>> RetrieveChargeAsync(string transaction, PaymentChannels paymentChannel);
+
         Task<OperationResult<ChargeResponse>> ChargeAsync(ChargeRequest request);
 
         Task<OperationResult<ChargeResult>> ReportAsync(object notification);

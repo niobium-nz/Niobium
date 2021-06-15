@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -9,6 +9,22 @@ namespace Cod.Platform
         private readonly Lazy<IEnumerable<IPaymentProcessor>> processors;
 
         public PaymentService(Lazy<IEnumerable<IPaymentProcessor>> processors) => this.processors = processors;
+
+        public async Task<OperationResult<ChargeResult>> RetrieveChargeAsync(string transaction, PaymentChannels paymentChannel)
+        {
+            foreach (var processor in this.processors.Value)
+            {
+                var result = await processor.RetrieveChargeAsync(transaction, paymentChannel);
+                if (result.Code == InternalError.NotAcceptable)
+                {
+                    continue;
+                }
+
+                return result;
+            }
+
+            throw new NotSupportedException();
+        }
 
         public async Task<OperationResult<ChargeResponse>> ChargeAsync(ChargeRequest request)
         {

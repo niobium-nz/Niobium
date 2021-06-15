@@ -107,5 +107,14 @@ namespace Cod.Platform
         }
 
         private static bool Support(ChargeRequest request) => request != null && request.Channel == PaymentChannels.Wechat;
+
+        public Task<OperationResult<ChargeResult>> RetrieveChargeAsync(string transaction, PaymentChannels paymentChannels)
+        {
+            if (paymentChannels != PaymentChannels.Wechat)
+            {
+                return Task.FromResult(new OperationResult<ChargeResult>(InternalError.NotAcceptable));
+            }
+            throw new NotSupportedException();
+        }
     }
 }

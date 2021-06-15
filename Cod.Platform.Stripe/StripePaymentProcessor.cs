@@ -64,20 +64,9 @@ namespace Cod.Platform
             }
 
             var result = new ChargeResponse();
-            OperationResult<PaymentIntent> transaction;
-
-            if (request.PaymentKind == PaymentKind.Complete)
+            if (request.PaymentKind == PaymentKind.Refund)
             {
-                transaction = await this.stripeIntegration.Value.CompleteAsync((string)request.Account, request.Amount);
-                if (!transaction.IsSuccess)
-                {
-                    return new OperationResult<ChargeResponse>(transaction);
-                }
-                result.UpstreamID = transaction.Result.Charges.ToList().Where(c => c.AmountCaptured == request.Amount).OrderByDescending(c => c.Created).First().Id;
-            }
-            else if (request.PaymentKind == PaymentKind.Void)
-            {
-                transaction = await this.stripeIntegration.Value.VoidAsync((string)request.Account);
+                var transaction = await this.stripeIntegration.Value.RefundAsync((string)request.Account, request.Amount);
                 if (!transaction.IsSuccess)
                 {
                     return new OperationResult<ChargeResponse>(transaction);
@@ -86,58 +75,81 @@ namespace Cod.Platform
             }
             else
             {
-                var paymentInfo = (string)request.Account;
-                var paymentInfoParts = paymentInfo.Split(new[] { PaymentInfoSpliter }, StringSplitOptions.RemoveEmptyEntries);
-                if (paymentInfoParts.Length != 2)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(request));
-                }
+                OperationResult<PaymentIntent> transaction;
 
-                if (request.PaymentKind == PaymentKind.Authorize)
+                if (request.PaymentKind == PaymentKind.Complete)
                 {
-                    transaction = await this.stripeIntegration.Value.AuthorizeAsync(
-                     request.Currency,
-                     request.Amount,
-                     request.Reference,
-                     paymentInfoParts[0],
-                     paymentInfoParts[1]);
-                    if (!transaction.IsSuccess)
-                    {
-                        return new OperationResult<ChargeResponse>(transaction);
-                    }
-                    result.UpstreamID = transaction.Result.Id;
-                }
-                else if (request.PaymentKind == PaymentKind.Charge)
-                {
-                    transaction = await this.stripeIntegration.Value.ChargeAsync(
-                     request.Currency,
-                     request.Amount,
-                     request.Reference,
-                     paymentInfoParts[0],
-                     paymentInfoParts[1]);
+                    transaction = await this.stripeIntegration.Value.CompleteAsync((string)request.Account, request.Amount);
                     if (!transaction.IsSuccess)
                     {
                         return new OperationResult<ChargeResponse>(transaction);
                     }
                     result.UpstreamID = transaction.Result.Charges.ToList().Where(c => c.AmountCaptured == request.Amount).OrderByDescending(c => c.Created).First().Id;
                 }
+                else if (request.PaymentKind == PaymentKind.Void)
+                {
+                    transaction = await this.stripeIntegration.Value.VoidAsync((string)request.Account);
+                    if (!transaction.IsSuccess)
+                    {
+                        return new OperationResult<ChargeResponse>(transaction);
+                    }
+                    result.UpstreamID = transaction.Result.Id;
+                }
                 else
                 {
-                    throw new NotImplementedException();
+                    var paymentInfo = (string)request.Account;
+                    var paymentInfoParts = paymentInfo.Split(new[] { PaymentInfoSpliter }, StringSplitOptions.RemoveEmptyEntries);
+                    if (paymentInfoParts.Length != 2)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(request));
+                    }
+
+                    if (request.PaymentKind == PaymentKind.Authorize)
+                    {
+                        transaction = await this.stripeIntegration.Value.AuthorizeAsync(
+                         request.Currency,
+                         request.Amount,
+                         request.Reference,
+                         paymentInfoParts[0],
+                         paymentInfoParts[1]);
+                        if (!transaction.IsSuccess)
+                        {
+                            return new OperationResult<ChargeResponse>(transaction);
+                        }
+                        result.UpstreamID = transaction.Result.Id;
+                    }
+                    else if (request.PaymentKind == PaymentKind.Charge)
+                    {
+                        transaction = await this.stripeIntegration.Value.ChargeAsync(
+                         request.Currency,
+                         request.Amount,
+                         request.Reference,
+                         paymentInfoParts[0],
+                         paymentInfoParts[1]);
+                        if (!transaction.IsSuccess)
+                        {
+                            return new OperationResult<ChargeResponse>(transaction);
+                        }
+                        result.UpstreamID = transaction.Result.Charges.ToList().Where(c => c.AmountCaptured == request.Amount).OrderByDescending(c => c.Created).First().Id;
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
                 }
-            }
 
-            if (!transaction.IsSuccess)
-            {
-                return new OperationResult<ChargeResponse>(transaction);
-            }
+                if (!transaction.IsSuccess)
+                {
+                    return new OperationResult<ChargeResponse>(transaction);
+                }
 
-            if (transaction.Result.LastPaymentError != null)
-            {
-                return new OperationResult<ChargeResponse>(InternalError.PaymentRequired, transaction.Result.LastPaymentError.StripeResponse?.Content);
-            }
+                if (transaction.Result.LastPaymentError != null)
+                {
+                    return new OperationResult<ChargeResponse>(InternalError.PaymentRequired, transaction.Result.LastPaymentError.StripeResponse?.Content);
+                }
 
-            result.Reference = request.Reference;
+                result.Reference = request.Reference;
+            }
 
             return new OperationResult<ChargeResponse>(result);
         }
@@ -320,5 +332,36 @@ namespace Cod.Platform
             "JCB" => PaymentMethodKind.JCB,
             _ => throw new NotImplementedException(),
         };
+
+        public async Task<OperationResult<ChargeResult>> RetrieveChargeAsync(string transaction, PaymentChannels paymentChannel)
+        {
+            if (paymentChannel != PaymentChannels.Cards)
+            {
+                return new OperationResult<ChargeResult>(InternalError.NotAcceptable);
+            }
+
+            var charge = await this.stripeIntegration.Value.RetriveChargeAsync(transaction);
+            if (charge == null)
+            {
+                return new OperationResult<ChargeResult>(InternalError.NotFound);
+            }
+            var reference = charge.Metadata[nameof(Order)];
+            var key = StorageKeyExtensions.ParseFullID(reference);
+            var user = Guid.Parse(key.PartitionKey);
+            var order = key.RowKey;
+            var result = new ChargeResult
+            {
+                Account = user,
+                Amount = (int)charge.AmountCaptured,
+                Channel = PaymentChannels.Cards,
+                Currency = Currency.Parse(charge.Currency),
+                PaymentKind = PaymentKind.Charge,
+                Reference = reference,
+                TargetKind = ChargeTargetKind.User,
+                UpstreamID = charge.Id,
+            };
+
+            return new OperationResult<ChargeResult>(result);
+        }
     }
 }
