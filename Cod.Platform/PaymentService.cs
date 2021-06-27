@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Cod.Platform
 {
-    internal class PaymentService : IPaymentService
+    public class PaymentService : IPaymentService
     {
         private readonly Lazy<IEnumerable<IPaymentProcessor>> processors;
 
