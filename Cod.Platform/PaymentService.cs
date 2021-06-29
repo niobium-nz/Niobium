@@ -10,7 +10,7 @@ namespace Cod.Platform
 
         public PaymentService(Lazy<IEnumerable<IPaymentProcessor>> processors) => this.processors = processors;
 
-        public async Task<OperationResult<ChargeResult>> RetrieveChargeAsync(string transaction, PaymentChannels paymentChannel)
+        public virtual async Task<OperationResult<ChargeResult>> RetrieveChargeAsync(string transaction, PaymentChannels paymentChannel)
         {
             foreach (var processor in this.processors.Value)
             {
@@ -26,7 +26,7 @@ namespace Cod.Platform
             throw new NotSupportedException();
         }
 
-        public async Task<OperationResult<ChargeResponse>> ChargeAsync(ChargeRequest request)
+        public virtual async Task<OperationResult<ChargeResponse>> ChargeAsync(ChargeRequest request)
         {
             foreach (var processor in this.processors.Value)
             {
@@ -42,7 +42,7 @@ namespace Cod.Platform
             throw new NotSupportedException();
         }
 
-        public async Task<OperationResult<ChargeResult>> ReportAsync(object notification)
+        public virtual async Task<OperationResult<ChargeResult>> ReportAsync(object notification)
         {
             foreach (var processor in this.processors.Value)
             {
