@@ -26,7 +26,6 @@ namespace Cod.Channel.Device
         private string secondaryPFXCertificatePath;
         private string secondaryPFXCertificatePassword;
         private readonly ILogger logger;
-        private readonly ConcurrentQueue<ITimestampable> events = new ConcurrentQueue<ITimestampable>();
         private readonly SemaphoreSlim initSemaphore = new SemaphoreSlim(1, 1);
         private volatile DeviceClient deviceClient;
         private volatile ConnectionStatus connectionStatus = ConnectionStatus.Disconnected;
@@ -34,7 +33,7 @@ namespace Cod.Channel.Device
         private Task sendingTask;
         private bool disposed;
 
-        protected IReadOnlyCollection<ITimestampable> Events => this.events;
+        protected ConcurrentQueue<ITimestampable> Events { get; set; } = new ConcurrentQueue<ITimestampable>();
 
         protected bool IsDeviceConnected => this.Status == DeviceConnectionStatus.Connected;
 
@@ -136,7 +135,7 @@ namespace Cod.Channel.Device
 
         public Task SendAsync(ITimestampable data)
         {
-            this.events.Enqueue(data);
+            this.Events.Enqueue(data);
             return Task.CompletedTask;
         }
 
@@ -200,12 +199,12 @@ namespace Cod.Channel.Device
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                if (this.IsDeviceConnected && this.events.Count > 0)
+                if (this.IsDeviceConnected && this.Events.Count > 0)
                 {
                     ITimestampable data = null;
                     try
                     {
-                        if (this.events.TryDequeue(out data))
+                        if (this.Events.TryDequeue(out data))
                         {
                             data.SetTimestamp(DateTimeOffset.UtcNow);
                             var json = JsonSerializer.SerializeObject(data);
@@ -236,7 +235,7 @@ namespace Cod.Channel.Device
 
                     if (data != null)
                     {
-                        this.events.Enqueue(data);
+                        this.Events.Enqueue(data);
                         await this.SaveAsync();
                     }
 
@@ -412,6 +411,7 @@ namespace Cod.Channel.Device
             if (disposing)
             {
                 await this.DisconnectAsync();
+                await this.SaveAsync();
             }
         }
     }
