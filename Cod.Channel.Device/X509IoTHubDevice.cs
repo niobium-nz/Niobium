@@ -245,14 +245,6 @@ namespace Cod.Channel.IoT
             }
         }
 
-        protected async virtual Task<MethodResponse> DirectMethodAsync(MethodRequest methodRequest, object userContext)
-        {
-            Console.WriteLine($"\t *** {methodRequest.Name} was called with parameter {methodRequest.DataAsJson}.");
-            var retValue = new MethodResponse(Encoding.UTF8.GetBytes(methodRequest.DataAsJson), 200);
-            await Task.Delay(5000);
-            return retValue;
-        }
-
         protected async virtual Task ReceiveAsync(Message receivedMessage, object _)
         {
             using (receivedMessage)
@@ -403,10 +395,19 @@ namespace Cod.Channel.IoT
         {
             if (!this.disposed)
             {
-                await this.DisconnectAsync();
+                await this.DisposeAsync(true);
             }
 
             this.disposed = true;
+        }
+
+
+        protected virtual async ValueTask DisposeAsync(bool disposing)
+        {
+            if (disposing)
+            {
+                await this.DisconnectAsync();
+            }
         }
     }
 }
