@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+using System;
+using Newtonsoft.Json;
 
 namespace Cod
 {
@@ -22,6 +23,16 @@ namespace Cod
             JsonSerializationFormat.TypedPascalCase => JsonConvert.DeserializeObject<T>(value, JsonSetting.TypedPascalCase),
             JsonSerializationFormat.TypedCamelCase => JsonConvert.DeserializeObject<T>(value, JsonSetting.TypedCamelCase),
             _ => JsonConvert.DeserializeObject<T>(value),
+        };
+
+        public static object DeserializeObject(Type targetType, string value, JsonSerializationFormat? format = null) => format switch
+        {
+            JsonSerializationFormat.PascalCase => JsonConvert.DeserializeObject(value, type: targetType, settings: JsonSetting.PascalCase),
+            JsonSerializationFormat.CamelCase => JsonConvert.DeserializeObject(value, type: targetType, settings: JsonSetting.CamelCase),
+            JsonSerializationFormat.UnderstoreCase => JsonConvert.DeserializeObject(value, type: targetType, settings: JsonSetting.UnderstoreCase),
+            JsonSerializationFormat.TypedPascalCase => JsonConvert.DeserializeObject(value, type: targetType, settings: JsonSetting.TypedPascalCase),
+            JsonSerializationFormat.TypedCamelCase => JsonConvert.DeserializeObject(value, type: targetType, settings: JsonSetting.TypedCamelCase),
+            _ => JsonConvert.DeserializeObject(value, targetType),
         };
     }
 }
