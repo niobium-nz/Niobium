@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace Cod.Channel.IoT
 {
-    class X509IoTHubDevice : IDevice
+    public class X509IoTHubDevice : IDevice
     {
         private static readonly TimeSpan interval = TimeSpan.FromMilliseconds(500);
         private readonly string provisioningEndpoint;
@@ -293,19 +293,8 @@ namespace Cod.Channel.IoT
                         case ConnectionStatusChangeReason.Bad_Credential:
                             // When getting this reason, the current certificate being used is not valid.
                             // If we had a backup, we can try using that.
-                            if (!String.IsNullOrWhiteSpace(this.secondaryPFXCertificatePath) && !String.IsNullOrWhiteSpace(this.secondaryPFXCertificatePassword))
-                            {
-                                var swapPfx = this.pfxCertificatePath;
-                                var swapPassword = this.pfxCertificatePassword;
-
-                                this.logger.LogWarning($"The current connection string is invalid. Trying another.");
-                                this.pfxCertificatePath = this.secondaryPFXCertificatePath;
-                                this.pfxCertificatePassword = this.secondaryPFXCertificatePassword;
-                                this.secondaryPFXCertificatePath = swapPfx;
-                                this.secondaryPFXCertificatePassword = swapPassword;
-                            }
-
                             this.logger.LogWarning("### The supplied credentials are invalid. Update the parameters and run again.");
+                            this.SwapSecondaryCredentials();
                             await this.ConnectAsync();
                             break;
 
@@ -318,6 +307,7 @@ namespace Cod.Channel.IoT
                             this.logger.LogWarning("### The DeviceClient has been disconnected because the retry policy expired." +
                                 "\nIf you want to perform more operations on the device client, you should dispose (DisposeAsync()) and then open (OpenAsync()) the client.");
 
+                            this.assignedHub = null;
                             await this.ConnectAsync();
                             break;
 
@@ -325,6 +315,7 @@ namespace Cod.Channel.IoT
                             this.logger.LogWarning("### The DeviceClient has been disconnected due to a non-retry-able exception. Inspect the exception for details." +
                                 "\nIf you want to perform more operations on the device client, you should dispose (DisposeAsync()) and then open (OpenAsync()) the client.");
 
+                            this.assignedHub = null;
                             await this.ConnectAsync();
                             break;
 
@@ -339,6 +330,21 @@ namespace Cod.Channel.IoT
                 default:
                     this.logger.LogError("### This combination of ConnectionStatus and ConnectionStatusChangeReason is not expected, contact the client library team with logs.");
                     break;
+            }
+        }
+
+        private void SwapSecondaryCredentials()
+        {
+            if (!String.IsNullOrWhiteSpace(this.secondaryPFXCertificatePath) && !String.IsNullOrWhiteSpace(this.secondaryPFXCertificatePassword))
+            {
+                var swapPfx = this.pfxCertificatePath;
+                var swapPassword = this.pfxCertificatePassword;
+
+                this.logger.LogWarning($"The current connection string is invalid. Trying another.");
+                this.pfxCertificatePath = this.secondaryPFXCertificatePath;
+                this.pfxCertificatePassword = this.secondaryPFXCertificatePassword;
+                this.secondaryPFXCertificatePath = swapPfx;
+                this.secondaryPFXCertificatePassword = swapPassword;
             }
         }
 
