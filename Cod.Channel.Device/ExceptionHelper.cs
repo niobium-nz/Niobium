@@ -10,7 +10,7 @@ using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 
-namespace Cod.Channel.IoT
+namespace Cod.Channel.Device
 {
     internal class ExceptionHelper
     {

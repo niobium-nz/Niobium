@@ -1,4 +1,4 @@
-namespace Cod.Channel.IoT
+namespace Cod.Channel.Device
 {
     public enum DeviceConnectionStatus : int
     {

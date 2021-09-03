@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace Cod.Channel.IoT
+namespace Cod.Channel.Device
 {
     public interface IDevice : IAsyncDisposable
     {

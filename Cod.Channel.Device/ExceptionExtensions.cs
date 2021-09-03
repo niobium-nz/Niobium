@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Cod.Channel.IoT
+namespace Cod.Channel.Device
 {
     internal static class ExceptionExtensions
     {

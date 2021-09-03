@@ -1,26 +1,25 @@
-using Cod;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Azure.Devices.Client;
 using Microsoft.Azure.Devices.Client.Exceptions;
 using Microsoft.Azure.Devices.Provisioning.Client;
 using Microsoft.Azure.Devices.Provisioning.Client.Transport;
 using Microsoft.Azure.Devices.Shared;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Concurrent;
-using System.IO;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace Cod.Channel.IoT
+namespace Cod.Channel.Device
 {
     public class X509IoTHubDevice : IDevice
     {
         private static readonly TimeSpan interval = TimeSpan.FromMilliseconds(500);
         private readonly string provisioningEndpoint;
         private readonly string provisioningIDScope;
-        private string assignedHub;
         private string id;
         private string pfxCertificatePath;
         private string pfxCertificatePassword;
@@ -30,13 +29,18 @@ namespace Cod.Channel.IoT
         private readonly ConcurrentQueue<ITimestampable> events = new ConcurrentQueue<ITimestampable>();
         private readonly SemaphoreSlim initSemaphore = new SemaphoreSlim(1, 1);
         private volatile DeviceClient deviceClient;
-        protected DeviceClient DeviceClient => this.deviceClient;
         private volatile ConnectionStatus connectionStatus = ConnectionStatus.Disconnected;
         private CancellationTokenSource sendingTaskCancellation;
         private Task sendingTask;
         private bool disposed;
 
-        private bool IsDeviceConnected => this.Status == DeviceConnectionStatus.Connected;
+        protected IReadOnlyCollection<ITimestampable> Events => this.events;
+
+        protected bool IsDeviceConnected => this.Status == DeviceConnectionStatus.Connected;
+
+        protected string AssignedHub { get; private set; }
+
+        protected DeviceClient DeviceClient => this.deviceClient;
 
         public DeviceConnectionStatus Status { get => (DeviceConnectionStatus)(int)this.connectionStatus; }
 
@@ -77,7 +81,7 @@ namespace Cod.Channel.IoT
             this.logger = logger;
             this.provisioningEndpoint = provisioningEndpoint;
             this.provisioningIDScope = provisioningIDScope;
-            this.assignedHub = assignedHub;
+            this.AssignedHub = assignedHub;
         }
 
         public async Task ConnectAsync()
@@ -93,14 +97,14 @@ namespace Cod.Channel.IoT
                         this.logger.LogTrace($"Attempting to initialize the client instance, current status={this.connectionStatus}");
                         await this.DisconnectAsync();
 
-                        if (this.assignedHub == null)
+                        if (this.AssignedHub == null)
                         {
                             await this.ProvisioningAsync();
                         }
 
                         using var certificate = this.LoadCertificate();
                         var auth = new DeviceAuthenticationWithX509Certificate(this.id, certificate);
-                        this.deviceClient = DeviceClient.Create(this.assignedHub, auth, TransportType.Mqtt);
+                        this.deviceClient = DeviceClient.Create(this.AssignedHub, auth, TransportType.Mqtt);
                         this.DeviceClient.SetConnectionStatusChangesHandler(ConnectionStatusChangeHandler);
                         await this.DeviceClient.SetReceiveMessageHandlerAsync(ReceiveAsync, this.DeviceClient);
                         this.logger.LogTrace($"Initialized the client instance.");
@@ -185,7 +189,8 @@ namespace Cod.Channel.IoT
             }
 
             this.logger.LogInformation($"Device {result.DeviceId} provisioning to {result.AssignedHub}.");
-            this.assignedHub = result.AssignedHub;
+            this.AssignedHub = result.AssignedHub;
+            await this.SaveAsync();
             return result.AssignedHub;
         }
 
@@ -299,7 +304,7 @@ namespace Cod.Channel.IoT
                             this.logger.LogWarning("### The DeviceClient has been disconnected because the retry policy expired." +
                                 "\nIf you want to perform more operations on the device client, you should dispose (DisposeAsync()) and then open (OpenAsync()) the client.");
 
-                            this.assignedHub = null;
+                            this.AssignedHub = null;
                             await this.ConnectAsync();
                             break;
 
@@ -307,7 +312,7 @@ namespace Cod.Channel.IoT
                             this.logger.LogWarning("### The DeviceClient has been disconnected due to a non-retry-able exception. Inspect the exception for details." +
                                 "\nIf you want to perform more operations on the device client, you should dispose (DisposeAsync()) and then open (OpenAsync()) the client.");
 
-                            this.assignedHub = null;
+                            this.AssignedHub = null;
                             await this.ConnectAsync();
                             break;
 
