@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Azure.Management.AppService.Fluent;
 using Microsoft.Azure.Management.AppService.Fluent.Models;
@@ -18,7 +18,7 @@ namespace Cod.Platform
                 tenantID,
                 isAzureChina ? AzureEnvironment.AzureChinaCloud : AzureEnvironment.AzureGlobalCloud);
 
-            return Azure.Configure()
+            return Microsoft.Azure.Management.Fluent.Azure.Configure()
                 .WithLogLevel(HttpLoggingDelegatingHandler.Level.Basic)
                 .Authenticate(credentials)
                 .WithSubscription(subscriptionID);
