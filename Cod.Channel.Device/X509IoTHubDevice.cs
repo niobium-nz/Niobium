@@ -31,6 +31,8 @@ namespace Cod.Channel.Device
         private volatile ConnectionStatus connectionStatus = ConnectionStatus.Disconnected;
         private CancellationTokenSource sendingTaskCancellation;
         private Task sendingTask;
+        private DeviceDesiredPropertyUpdateCallback desiredPropertyUpdateCallback;
+        private long lastTwinVersion = long.MinValue;
         private bool disposed;
 
         protected ConcurrentQueue<ITimestampable> Events { get; set; } = new ConcurrentQueue<ITimestampable>();
@@ -104,14 +106,12 @@ namespace Cod.Channel.Device
                         using var certificate = this.LoadCertificate();
                         var auth = new DeviceAuthenticationWithX509Certificate(this.id, certificate);
                         this.deviceClient = DeviceClient.Create(this.AssignedHub, auth, TransportType.Mqtt);
+
                         this.DeviceClient.SetConnectionStatusChangesHandler(ConnectionStatusChangeHandler);
+                        await this.DeviceClient.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertyChangedAsync, null);
                         await this.DeviceClient.SetReceiveMessageHandlerAsync(ReceiveAsync, this.DeviceClient);
-                        this.logger.LogTrace($"Initialized the client instance.");
-
                         await this.RegisterDirectMethodsAsync();
-
-                        this.sendingTaskCancellation = new CancellationTokenSource();
-                        this.sendingTask = this.SendCoreAsync(this.sendingTaskCancellation.Token);
+                        this.logger.LogTrace($"Initialized the client instance.");
                     }
                 }
                 finally
@@ -126,6 +126,9 @@ namespace Cod.Channel.Device
                 // OpenAsync() is an idempotent call, it has the same effect if called once or multiple times on the same client.
                 await this.DeviceClient.OpenAsync();
                 this.logger.LogTrace($"Opened the client instance.");
+
+                this.sendingTaskCancellation = new CancellationTokenSource();
+                this.sendingTask = this.SendCoreAsync(this.sendingTaskCancellation.Token);
             }
             catch (UnauthorizedException)
             {
@@ -137,6 +140,23 @@ namespace Cod.Channel.Device
         {
             this.Events.Enqueue(data);
             return Task.CompletedTask;
+        }
+
+        public Task SetDesiredPropertyUpdateCallbackAsync(DeviceDesiredPropertyUpdateCallback callback)
+        {
+            this.desiredPropertyUpdateCallback = callback;
+            return Task.CompletedTask;
+        }
+
+        public async Task UpdateReportedPropertiesAsync(IReadOnlyDictionary<string, object> reportedProperties)
+        {
+            var properties = new TwinCollection();
+            foreach (var key in reportedProperties.Keys)
+            {
+                properties[key] = reportedProperties[key];
+            }
+
+            await this.DeviceClient.UpdateReportedPropertiesAsync(properties);
         }
 
         protected async Task DisconnectAsync()
@@ -161,6 +181,7 @@ namespace Cod.Channel.Device
                     if (this.IsDeviceConnected)
                     {
                         await this.UnregisterDirectMethodsAsync();
+                        await this.DeviceClient.SetDesiredPropertyUpdateCallbackAsync(null, null);
                         await this.DeviceClient.SetReceiveMessageHandlerAsync(null, null);
                         await this.DeviceClient.CloseAsync();
                     }
@@ -197,6 +218,9 @@ namespace Cod.Channel.Device
 
         protected async Task SendCoreAsync(CancellationToken cancellationToken)
         {
+            var latestTwin = await this.DeviceClient.GetTwinAsync();
+            await this.OnDesiredPropertyChangedAsync(latestTwin.Properties.Desired, null);
+
             while (!cancellationToken.IsCancellationRequested)
             {
                 if (this.IsDeviceConnected && this.Events.Count > 0)
@@ -326,6 +350,27 @@ namespace Cod.Channel.Device
                 default:
                     this.logger.LogError("### This combination of ConnectionStatus and ConnectionStatusChangeReason is not expected, contact the client library team with logs.");
                     break;
+            }
+        }
+
+        protected virtual async Task OnDesiredPropertyChangedAsync(TwinCollection desiredProperties, object userContext)
+        {
+            if (this.lastTwinVersion >= desiredProperties.Version)
+            {
+                // do not proceed on any update that's older on its version
+                return;
+            }
+
+            if (this.desiredPropertyUpdateCallback != null)
+            {
+                this.lastTwinVersion = desiredProperties.Version;
+                var properties = new Dictionary<string, object>();
+                foreach (KeyValuePair<string, object> desiredProperty in desiredProperties)
+                {
+                    properties.Add(desiredProperty.Key, desiredProperty.Value);
+                }
+
+                await this.desiredPropertyUpdateCallback(properties);
             }
         }
 
