@@ -16,7 +16,14 @@ namespace Cod.Platform
             using var key = RSA.Create(KEY_SIZE);
             using var cert = await certificateClient.IssueClientCertificateAsync(name, issuer, key.ExportRSAPublicKey());
             var certWithKey = cert.CopyWithPrivateKey(key);
-            certWithKey.FriendlyName = name;
+            try
+            {
+                certWithKey.FriendlyName = name;
+            }
+            catch (PlatformNotSupportedException)
+            {
+                // REMARK (5he11) just to make *nix happy
+            }
             return certWithKey;
         }
 
@@ -39,7 +46,14 @@ namespace Cod.Platform
             using (ca.Value)
             {
                 var certificate = request.Create(ca, DateTimeOffset.UtcNow, ca.Value.NotAfter.AddDays(-1), Encoding.UTF8.GetBytes(name));
-                certificate.FriendlyName = name;
+                try
+                {
+                    certificate.FriendlyName = name;
+                }
+                catch (PlatformNotSupportedException)
+                {
+                    // REMARK (5he11) just to make *nix happy
+                }
                 return certificate;
             }
         }
