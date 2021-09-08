@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -63,6 +63,11 @@ namespace Cod.Platform
             if (v == null && key == "STORAGE-ACCOUNT")
             {
                 return GetSetting("STORAGE_ACCOUNT", cache);
+            }
+
+            if (v == null && key == "AUTH-TOKEN-KEY")
+            {
+                return GetSetting("AUTH_TOKEN_KEY", cache);
             }
 
             if (cache && v != null)
