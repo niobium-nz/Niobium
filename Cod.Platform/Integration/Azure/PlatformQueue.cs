@@ -8,7 +8,7 @@ namespace Cod.Platform
 {
     public class PlatformQueue : IQueue
     {
-        public async Task<DisposableQueueMessage> DequeueAsync(string queueName)
+        public virtual async Task<DisposableQueueMessage> DequeueAsync(string queueName)
         {
             var q = CloudStorage.GetQueue(queueName);
             var msg = await q.GetMessageAsync();
@@ -29,7 +29,7 @@ namespace Cod.Platform
             }
         }
 
-        public async Task<IEnumerable<DisposableQueueMessage>> DequeueAsync(string queueName, int limit)
+        public virtual async Task<IEnumerable<DisposableQueueMessage>> DequeueAsync(string queueName, int limit)
         {
             var result = new List<DisposableQueueMessage>();
             var q = CloudStorage.GetQueue(queueName);
@@ -53,7 +53,7 @@ namespace Cod.Platform
         }
 
 
-        public async Task<OperationResult> EnqueueAsync(IEnumerable<QueueMessage> entities)
+        public virtual async Task<OperationResult> EnqueueAsync(IEnumerable<QueueMessage> entities)
         {
             foreach (var item in entities)
             {
@@ -73,7 +73,7 @@ namespace Cod.Platform
             return OperationResult.Success;
         }
 
-        public async Task<IEnumerable<QueueMessage>> PeekAsync(string queueName, int limit)
+        public virtual async Task<IEnumerable<QueueMessage>> PeekAsync(string queueName, int limit)
             => (await CloudStorage.GetQueue(queueName).PeekMessagesAsync(limit)).Select(m => new QueueMessage
             {
                 Body = m.AsString,
