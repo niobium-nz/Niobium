@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Cod.Model;
@@ -6,7 +6,7 @@ using Microsoft.Azure.Storage.Queue;
 
 namespace Cod.Platform
 {
-    internal class PlatformQueue : IQueue
+    public class PlatformQueue : IQueue
     {
         public async Task<DisposableQueueMessage> DequeueAsync(string queueName)
         {
