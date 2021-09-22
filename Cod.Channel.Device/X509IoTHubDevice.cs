@@ -225,23 +225,27 @@ namespace Cod.Channel.Device
             {
                 if (this.IsDeviceConnected && this.Events.Count > 0)
                 {
-                    ITimestampable data = null;
+                    var sending = new List<ITimestampable>();
+
                     try
                     {
-                        if (this.Events.TryDequeue(out data))
+                        while (this.Events.TryDequeue(out var data))
                         {
                             data.SetTimestamp(DateTimeOffset.UtcNow);
-                            var json = JsonSerializer.SerializeObject(data);
-                            using var message = new Message(Encoding.UTF8.GetBytes(json))
-                            {
-                                ContentEncoding = "utf-8",
-                                ContentType = "application/json",
-                            };
-
-                            await this.DeviceClient.SendEventAsync(message);
-                            await this.SaveAsync();
-                            continue;
+                            sending.Add(data);
                         }
+
+                        var json = JsonSerializer.SerializeObject(sending);
+                        using var message = new Message(Encoding.UTF8.GetBytes(json))
+                        {
+                            ContentEncoding = "utf-8",
+                            ContentType = "application/json",
+                        };
+
+                        await this.DeviceClient.SendEventAsync(message);
+                        await this.SaveAsync();
+                        sending.Clear();
+                        continue;
                     }
                     catch (IotHubException ex) when (ex.IsTransient)
                     {
@@ -257,9 +261,13 @@ namespace Cod.Channel.Device
                         this.logger.LogError($"Unexpected error {ex}");
                     }
 
-                    if (data != null)
+                    if (sending.Count > 0)
                     {
-                        this.Events.Enqueue(data);
+                        foreach (var item in sending)
+                        {
+                            this.Events.Enqueue(item);
+                        }
+                        sending.Clear();
                         await this.SaveAsync();
                     }
 
