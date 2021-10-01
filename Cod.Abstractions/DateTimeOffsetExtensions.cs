@@ -11,7 +11,7 @@ namespace Cod
         private const int MinWeek = 1;
         private const int MaxWeek = WeeksInLongYear;
 
-        private static readonly TimeSpan chinaTimeOffset = TimeSpan.FromHours(8);
+        public static readonly TimeSpan ChinaTimeOffset = TimeSpan.FromHours(8);
         private static readonly long reverseUnixTimestampAnchor = DateTimeOffset.Parse("2050-01-01T00:00:00Z").ToUnixTimeMilliseconds();
 
         public static DateTimeOffset MaxValueForTableStorage { get; private set; } = DateTimeOffset.Parse("2100-01-01T00:00:00Z");
@@ -97,10 +97,10 @@ namespace Cod
             => input.ToString("yyyyMMdd");
 
         public static string ToDisplayCST(this DateTimeOffset input)
-            => input.ToOffset(chinaTimeOffset).ToString("yyyy-MM-dd HH:mm:ss");
+            => input.ToOffset(ChinaTimeOffset).ToString("yyyy-MM-dd HH:mm:ss");
 
         public static string ToDisplayCSTShort(this DateTimeOffset input)
-            => input.ToOffset(chinaTimeOffset).ToString("MM-dd");
+            => input.ToOffset(ChinaTimeOffset).ToString("MM-dd");
 
         public static DateTimeOffset? ParseDate(this string dateString)
         {
