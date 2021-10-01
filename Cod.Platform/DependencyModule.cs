@@ -12,6 +12,7 @@ namespace Cod.Platform
             InternalError.Register(ErrorRetriever);
             builder.Register(_ => Logger.Instance).As<ILogger>();
             builder.RegisterType<AzureOCRScaner>();
+            builder.RegisterType<AppInsights>();
             builder.RegisterType<AzureStorageSignatureService>().AsImplementedInterfaces();
             builder.RegisterType<WechatIntegration>();
             builder.RegisterType<BaiduIntegration>();

@@ -20,7 +20,7 @@ namespace Cod.Platform
             using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
             var endpoint = isAzureChina ? "https://api.applicationinsights.azure.cn" : "https://api.applicationinsights.io";
             using var request = new HttpRequestMessage(HttpMethod.Post, $"{endpoint}/v1/apps/{appInsightsAPIAccessApplicationID}/query?timespan={start.ToString("o").Replace("+00:00", "Z")}/{end.ToString("o").Replace("+00:00", "Z")}");
-            query = query.Replace("\"", "\\\"");
+            query = query.Replace("\\", "\\\\").Replace("\"", "\\\""); // REMARK (5he11) json escape
             request.Headers.TryAddWithoutValidation("X-Api-Key", appInsightsAPIAccessApplicationKey);
             request.Content = new StringContent(QUERY_TEMPLATE.Replace("XXX", query, StringComparison.InvariantCulture), Encoding.UTF8, "application/json");
             using var response = await httpclient.SendAsync(request);
