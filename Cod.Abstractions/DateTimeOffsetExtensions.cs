@@ -5,6 +5,12 @@ namespace Cod
 {
     public static class DateTimeOffsetExtensions
     {
+        private const int WeeksInLongYear = 53;
+        private const int WeeksInShortYear = 52;
+
+        private const int MinWeek = 1;
+        private const int MaxWeek = WeeksInLongYear;
+
         private static readonly TimeSpan chinaTimeOffset = TimeSpan.FromHours(8);
         private static readonly long reverseUnixTimestampAnchor = DateTimeOffset.Parse("2050-01-01T00:00:00Z").ToUnixTimeMilliseconds();
 
@@ -135,6 +141,56 @@ namespace Cod
         {
             _ = timeZoneInfo ?? throw new ArgumentNullException(nameof(timeZoneInfo));
             return dateTimeOffset.ToLocal(timeZoneInfo).DateTime.ToString();
+        }
+
+        public static int GetWeekOfYear(this DateTimeOffset offset) => GetWeekOfYear(offset.UtcDateTime);
+
+        public static int GetWeekOfYear(this DateTime date)
+        {
+            int week = GetWeekNumber(date);
+
+            if (week < MinWeek)
+            {
+                // If the week number obtained equals 0, it means that the
+                // given date belongs to the preceding (week-based) year.
+                return GetWeeksInYear(date.Year - 1);
+            }
+
+            if (week > GetWeeksInYear(date.Year))
+            {
+                // If a week number of 53 is obtained, one must check that
+                // the date is not actually in week 1 of the following year.
+                return MinWeek;
+            }
+
+            return week;
+        }
+
+        public static int GetWeeksInYear(int year)
+        {
+            if (year < 1000 || year >= 3000)
+            {
+                throw new ArgumentOutOfRangeException(nameof(year));
+            }
+
+            static int P(int y) => (y + (y / 4) - (y / 100) + (y / 400)) % 7;
+
+            if (P(year) == 4 || P(year - 1) == 3)
+            {
+                return WeeksInLongYear;
+            }
+
+            return WeeksInShortYear;
+        }
+
+        private static int GetWeekNumber(DateTime date)
+        {
+            return (date.DayOfYear - GetWeekday(date.DayOfWeek) + 10) / 7;
+        }
+
+        private static int GetWeekday(DayOfWeek dayOfWeek)
+        {
+            return dayOfWeek == DayOfWeek.Sunday ? 7 : (int)dayOfWeek;
         }
     }
 }
