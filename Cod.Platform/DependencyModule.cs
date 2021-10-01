@@ -30,6 +30,7 @@ namespace Cod.Platform
             builder.RegisterType<CloudTableRepository<Job>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Hostname>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<PaymentMethod>>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<Report>>().AsImplementedInterfaces();
 
             builder.RegisterType<UserDomain>();
             builder.RegisterType<GenericDomainRepository<UserDomain, User>>().As<IDomainRepository<UserDomain, User>>();
