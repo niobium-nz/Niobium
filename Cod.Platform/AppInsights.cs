@@ -26,11 +26,15 @@ namespace Cod.Platform
             using var response = await httpclient.SendAsync(request);
             if (!response.IsSuccessStatusCode)
             {
-                return null;
+                var error = new AppInsightsQueryResult { Success = false };
+                error.Error = await response.Content.ReadAsStringAsync();
+                return error;
             }
 
             var body = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.DeserializeObject<AppInsightsQueryResult>(body);
+            var result = JsonSerializer.DeserializeObject<AppInsightsQueryResult>(body);
+            result.Success = true;
+            return result;
         }
     }
 }
