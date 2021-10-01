@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace Cod.Model
 {
@@ -13,6 +13,8 @@ namespace Cod.Model
         public DateTimeOffset Timestamp { get; set; }
 
         public DateTimeOffset? Created { get; set; }
+
+        public DateTimeOffset Expiry { get; set; }
 
         public string Reference { get; set; }
     }
