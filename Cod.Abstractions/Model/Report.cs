@@ -54,6 +54,6 @@ namespace Cod.Model
 
         public ushort GetSequence() => UInt16.Parse(this.PartitionKey.Substring(5, 4));
 
-        public long GetID() => Int64.Parse(this.RowKey);
+        public string GetID() => this.RowKey.Trim();
     }
 }
