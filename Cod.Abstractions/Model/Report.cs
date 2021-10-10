@@ -16,12 +16,12 @@ namespace Cod.Model
 
         public long Count { get; set; }
 
-        public static string BuildPartitionKey(ushort year, ReportPeriod period, ushort sequence)
+        public static string BuildPartitionKey(ushort kind, ReportPeriod period, string group, ushort year, ushort sequence)
         {
-            return $"{year}|{(int)period}|{sequence.ToString().PadLeft(4, '0')}";
+            return $"{kind.ToString().PadLeft(2, '0')}|{(int)period}|{group.Trim()}|{year}|{sequence.ToString().PadLeft(4, '0')}";
         }
 
-        public static string BuildPartitionKey(ushort year, ReportPeriod period, DateTimeOffset time)
+        public static string BuildPartitionKey(ushort kind, ReportPeriod period, string group, ushort year, DateTimeOffset time)
         {
             var sequence = period switch
             {
@@ -35,7 +35,7 @@ namespace Cod.Model
                 ReportPeriod.Annually => 0,
                 _ => throw new NotImplementedException(),
             };
-            return BuildPartitionKey(year, period, (ushort)sequence);
+            return BuildPartitionKey(kind, period, group, year, (ushort)sequence);
         }
 
         public static string BuildRowKey(string id)
@@ -48,11 +48,15 @@ namespace Cod.Model
             return id.Trim();
         }
 
-        public int GetYear() => Int32.Parse(this.PartitionKey.Substring(0, 4));
+        public int GetYear() => Int32.Parse(this.PartitionKey.Substring(this.PartitionKey.Length - 8, 4));
 
-        public ReportPeriod GetPeriod() => (ReportPeriod)Int32.Parse(this.PartitionKey.Substring(4, 1));
+        public ReportPeriod GetPeriod() => (ReportPeriod)Int32.Parse(this.PartitionKey.Substring(2, 1));
 
-        public ushort GetSequence() => UInt16.Parse(this.PartitionKey.Substring(5, 4));
+        public ushort GetSequence() => UInt16.Parse(this.PartitionKey.Substring(this.PartitionKey.Length - 4, 4));
+
+        public ushort GetKind() => UInt16.Parse(this.PartitionKey.Substring(0, 2));
+
+        public string GetGroup() => this.PartitionKey.Substring(3, this.PartitionKey.Length - 2 - 1 - 4 - 4);
 
         public string GetID() => this.RowKey.Trim();
     }
