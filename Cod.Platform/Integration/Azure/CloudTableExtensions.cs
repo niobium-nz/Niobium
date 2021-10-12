@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -174,7 +174,7 @@ namespace Cod.Platform
             {
                 query = query.Select(fields);
             }
-            if (takeCount > 0)
+            if (takeCount > 0 && takeCount <= 1000)
             {
                 query = query.Take(takeCount);
             }
