@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -75,6 +75,7 @@ namespace Cod.Platform
                 var templates = await this.repository.GetAsync();
                 this.Cache.Clear();
                 this.Cache.AddRange(templates);
+                this.lastCached = DateTimeOffset.UtcNow;
             }
         }
     }
