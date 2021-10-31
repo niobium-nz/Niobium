@@ -1,10 +1,11 @@
-﻿namespace Cod.Platform
+namespace Cod.Platform
 {
     public enum ChargeTargetKind : int
     {
         Invalid = 0,
         User = 1,
         Business = 2,
-        Order = 3
+        Delivery = 3,
+        Sending = 4
     }
 }
