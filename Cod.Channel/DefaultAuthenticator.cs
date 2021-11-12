@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -148,7 +148,11 @@ namespace Cod.Channel
 
         public async Task SetTokenAsync(string token)
         {
-            await this.CleanupCredentialsAsync();
+            // REMARK (5he11) 下边这3行代码手动清理掉内存中的凭据，不应该直接调用 CleanupCredentialsAsync 方法，因为直接调用方法会导致 LocalStorage 中的持久化数据被清空，而浏览器瞬间开多个页签同时访问的时候，此方法会被并发调用，可能导致存储中保留的数据被错误的清除掉，导致需要重新登录
+            this.claims = new ConcurrentBag<KeyValuePair<string, string>>();
+            this.signatures.Clear();
+            await this.SaveSignaturesAsync(this.signatures);
+
             try
             {
                 var jwt = new JsonWebToken(token);
