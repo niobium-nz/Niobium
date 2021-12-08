@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -6,6 +6,7 @@ namespace Cod.Platform
 {
     internal class NotificationService : INotificationService
     {
+        private static readonly IReadOnlyDictionary<string, object> EmptyParameters = new Dictionary<string, object>();
         private readonly Lazy<IEnumerable<INotificationChannel>> channels;
 
         public NotificationService(Lazy<IEnumerable<INotificationChannel>> channels) => this.channels = channels;
@@ -23,6 +24,11 @@ namespace Cod.Platform
             if (level > maxLevel)
             {
                 return new OperationResult<int>(InternalError.InternalServerError);
+            }
+
+            if (parameters == null)
+            {
+                parameters = EmptyParameters;
             }
 
             foreach (var channel in this.channels.Value)

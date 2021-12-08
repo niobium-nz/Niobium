@@ -96,43 +96,35 @@ namespace Cod.Channel.Device
                     if (ShouldClientBeInitialized(this.connectionStatus))
                     {
                         this.logger.LogTrace($"Attempting to initialize the client instance, current status={this.connectionStatus}");
-                        await this.DisconnectAsync();
-
+                        
                         if (this.AssignedHub == null)
                         {
                             await this.ProvisioningAsync();
                         }
 
-                        using var certificate = this.LoadCertificate();
-                        var auth = new DeviceAuthenticationWithX509Certificate(this.id, certificate);
-                        this.deviceClient = DeviceClient.Create(this.AssignedHub, auth, TransportType.Mqtt);
+                        if (this.AssignedHub != null)
+                        {
+                            await this.DisconnectAsync();
+                            using var certificate = this.LoadCertificate();
+                            var auth = new DeviceAuthenticationWithX509Certificate(this.id, certificate);
+                            this.deviceClient = DeviceClient.Create(this.AssignedHub, auth, TransportType.Mqtt);
+                            this.DeviceClient.SetConnectionStatusChangesHandler(this.ConnectionStatusChangeHandler);
 
-                        this.DeviceClient.SetConnectionStatusChangesHandler(ConnectionStatusChangeHandler);
-                        await this.DeviceClient.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertyChangedAsync, null);
-                        await this.DeviceClient.SetReceiveMessageHandlerAsync(ReceiveAsync, this.DeviceClient);
-                        await this.RegisterDirectMethodsAsync();
-                        this.logger.LogTrace($"Initialized the client instance.");
+                            // Force connection now.
+                            // OpenAsync() is an idempotent call, it has the same effect if called once or multiple times on the same client.
+                            await this.DeviceClient.OpenAsync();
+                            this.logger.LogTrace($"Opened the client instance.");
+                        }
                     }
+                }
+                catch (UnauthorizedException)
+                {
+                    // Handled by the ConnectionStatusChangeHandler
                 }
                 finally
                 {
                     this.initSemaphore.Release();
                 }
-            }
-
-            try
-            {
-                // Force connection now.
-                // OpenAsync() is an idempotent call, it has the same effect if called once or multiple times on the same client.
-                await this.DeviceClient.OpenAsync();
-                this.logger.LogTrace($"Opened the client instance.");
-
-                this.sendingTaskCancellation = new CancellationTokenSource();
-                this.sendingTask = this.SendCoreAsync(this.sendingTaskCancellation.Token);
-            }
-            catch (UnauthorizedException)
-            {
-                // Handled by the ConnectionStatusChangeHandler
             }
         }
 
@@ -192,6 +184,7 @@ namespace Cod.Channel.Device
         }
 
         protected virtual Task RegisterDirectMethodsAsync() => Task.CompletedTask;
+
         protected virtual Task UnregisterDirectMethodsAsync() => Task.CompletedTask;
 
         protected virtual async Task<string> ProvisioningAsync()
@@ -200,18 +193,26 @@ namespace Cod.Channel.Device
             using var security = new SecurityProviderX509Certificate(certificate);
             using var transport = new ProvisioningTransportHandlerMqtt();
             var provClient = ProvisioningDeviceClient.Create(this.provisioningEndpoint, this.provisioningIDScope, security, transport);
-            var result = await provClient.RegisterAsync();
 
-            if (result.Status != ProvisioningRegistrationStatusType.Assigned)
+            try
             {
-                this.logger.LogError($"Provisioning failed with status {result.Status}.");
+                var result = await provClient.RegisterAsync();
+
+                if (result.Status != ProvisioningRegistrationStatusType.Assigned || result.AssignedHub == null)
+                {
+                    this.logger.LogError($"Provisioning failed with status {result.Status}.");
+                    return null;
+                }
+
+                this.logger.LogInformation($"Device {result.DeviceId} provisioning to {result.AssignedHub}.");
+                this.AssignedHub = result.AssignedHub;
+                await this.SaveAsync();
+                return result.AssignedHub;
+            }
+            catch
+            {
                 return null;
             }
-
-            this.logger.LogInformation($"Device {result.DeviceId} provisioning to {result.AssignedHub}.");
-            this.AssignedHub = result.AssignedHub;
-            await this.SaveAsync();
-            return result.AssignedHub;
         }
 
         protected virtual Task SaveAsync() => Task.CompletedTask;
@@ -303,7 +304,14 @@ namespace Cod.Channel.Device
             switch (status)
             {
                 case ConnectionStatus.Connected:
-                    this.logger.LogTrace("### The DeviceClient is CONNECTED; all operations will be carried out as normal.");
+                    this.sendingTaskCancellation = new CancellationTokenSource();
+                    this.sendingTask = this.SendCoreAsync(this.sendingTaskCancellation.Token);
+                    
+                    // TODO GetCurrentTwinAsync
+                    await this.DeviceClient.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertyChangedAsync, null);
+                    await this.DeviceClient.SetReceiveMessageHandlerAsync(ReceiveAsync, this.DeviceClient);
+                    await this.RegisterDirectMethodsAsync();
+                    this.logger.LogInformation("### The DeviceClient is CONNECTED; all operations will be carried out as normal.");
                     break;
 
                 case ConnectionStatus.Disconnected_Retrying:
