@@ -133,6 +133,8 @@ namespace Cod.Channel.Device
             return Task.CompletedTask;
         }
 
+        public async Task ReportPropertyChangesAsync(IReadOnlyDictionary<string, object> properties) => await this.UpdateReportedPropertiesAsync(properties);
+
         protected virtual async Task UpdateReportedPropertiesAsync(IReadOnlyDictionary<string, object> reportedProperties)
         {
             var properties = new TwinCollection();

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Cod.Channel.Device
@@ -10,5 +11,7 @@ namespace Cod.Channel.Device
         Task ConnectAsync();
 
         Task SendAsync(ITimestampable data);
+
+        Task ReportPropertyChangesAsync(IReadOnlyDictionary<string, object> properties);
     }
 }
