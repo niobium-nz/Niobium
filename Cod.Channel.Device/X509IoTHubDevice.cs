@@ -299,12 +299,24 @@ namespace Cod.Channel.Device
                 case ConnectionStatus.Connected:
                     this.sendingTaskCancellation = new CancellationTokenSource();
                     this.sendingTask = this.SendCoreAsync(this.sendingTaskCancellation.Token);
-                    
-                    // TODO GetCurrentTwinAsync
+
                     await this.DeviceClient.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertyChangedAsync, null);
                     await this.DeviceClient.SetReceiveMessageHandlerAsync(ReceiveAsync, this.DeviceClient);
                     await this.RegisterDirectMethodsAsync();
                     this.logger.LogInformation("### The DeviceClient is CONNECTED; all operations will be carried out as normal.");
+
+                    var twin = await this.DeviceClient.GetTwinAsync();
+                    var refresh = new Dictionary<string, object>();
+                    foreach (KeyValuePair<string, object> property in twin.Properties.Desired)
+                    {
+                        refresh.Add(property.Key, property.Value);
+                    }
+
+                    if (refresh.Count > 0)
+                    {
+                        await this.OnDesiredPropertyUpdated(refresh);
+                    }
+
                     break;
 
                 case ConnectionStatus.Disconnected_Retrying:
