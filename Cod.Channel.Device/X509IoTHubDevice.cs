@@ -31,7 +31,6 @@ namespace Cod.Channel.Device
         private volatile ConnectionStatus connectionStatus = ConnectionStatus.Disconnected;
         private CancellationTokenSource sendingTaskCancellation;
         private Task sendingTask;
-        private DeviceDesiredPropertyUpdateCallback desiredPropertyUpdateCallback;
         private long lastTwinVersion = long.MinValue;
         private bool disposed;
 
@@ -134,13 +133,7 @@ namespace Cod.Channel.Device
             return Task.CompletedTask;
         }
 
-        public Task SetDesiredPropertyUpdateCallbackAsync(DeviceDesiredPropertyUpdateCallback callback)
-        {
-            this.desiredPropertyUpdateCallback = callback;
-            return Task.CompletedTask;
-        }
-
-        public async Task UpdateReportedPropertiesAsync(IReadOnlyDictionary<string, object> reportedProperties)
+        protected virtual async Task UpdateReportedPropertiesAsync(IReadOnlyDictionary<string, object> reportedProperties)
         {
             var properties = new TwinCollection();
             foreach (var key in reportedProperties.Keys)
@@ -377,18 +370,17 @@ namespace Cod.Channel.Device
                 return;
             }
 
-            if (this.desiredPropertyUpdateCallback != null)
+            this.lastTwinVersion = desiredProperties.Version;
+            var properties = new Dictionary<string, object>();
+            foreach (KeyValuePair<string, object> desiredProperty in desiredProperties)
             {
-                this.lastTwinVersion = desiredProperties.Version;
-                var properties = new Dictionary<string, object>();
-                foreach (KeyValuePair<string, object> desiredProperty in desiredProperties)
-                {
-                    properties.Add(desiredProperty.Key, desiredProperty.Value);
-                }
-
-                await this.desiredPropertyUpdateCallback(properties);
+                properties.Add(desiredProperty.Key, desiredProperty.Value);
             }
+
+            await this.OnDesiredPropertyUpdated(properties);
         }
+
+        protected virtual Task OnDesiredPropertyUpdated(IReadOnlyDictionary<string, object> properties) => Task.CompletedTask;
 
         private void SwapSecondaryCredentials()
         {
@@ -423,10 +415,8 @@ namespace Cod.Channel.Device
             certificateCollection.Import(pfxCertificatePath, pfxCertificatePassword, X509KeyStorageFlags.UserKeySet);
 
             X509Certificate2 certificate = null;
-
             foreach (X509Certificate2 element in certificateCollection)
             {
-                Console.WriteLine($"Found certificate: {element?.Thumbprint} {element?.Subject}; PrivateKey: {element?.HasPrivateKey}");
                 if (certificate == null && element.HasPrivateKey)
                 {
                     certificate = element;
@@ -441,8 +431,6 @@ namespace Cod.Channel.Device
             {
                 throw new FileNotFoundException($"{pfxCertificatePath} did not contain any certificate with a private key.");
             }
-
-            Console.WriteLine($"Using certificate {certificate.Thumbprint} {certificate.Subject}");
 
             return certificate;
         }
