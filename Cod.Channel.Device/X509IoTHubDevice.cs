@@ -214,9 +214,6 @@ namespace Cod.Channel.Device
 
         protected async Task SendCoreAsync(CancellationToken cancellationToken)
         {
-            var latestTwin = await this.DeviceClient.GetTwinAsync();
-            await this.OnDesiredPropertyChangedAsync(latestTwin.Properties.Desired, null);
-
             while (!cancellationToken.IsCancellationRequested)
             {
                 if (this.IsDeviceConnected && this.Events.Count > 0)
@@ -308,17 +305,7 @@ namespace Cod.Channel.Device
                     this.logger.LogInformation("### The DeviceClient is CONNECTED; all operations will be carried out as normal.");
 
                     var twin = await this.DeviceClient.GetTwinAsync();
-                    var refresh = new Dictionary<string, object>();
-                    foreach (KeyValuePair<string, object> property in twin.Properties.Desired)
-                    {
-                        refresh.Add(property.Key, property.Value);
-                    }
-
-                    if (refresh.Count > 0)
-                    {
-                        await this.OnDesiredPropertyUpdated(refresh);
-                    }
-
+                    await this.OnDesiredPropertyChangedAsync(twin.Properties.Desired, null);
                     break;
 
                 case ConnectionStatus.Disconnected_Retrying:
@@ -384,14 +371,18 @@ namespace Cod.Channel.Device
                 return;
             }
 
-            this.lastTwinVersion = desiredProperties.Version;
             var properties = new Dictionary<string, object>();
             foreach (KeyValuePair<string, object> desiredProperty in desiredProperties)
             {
                 properties.Add(desiredProperty.Key, desiredProperty.Value);
             }
 
-            await this.OnDesiredPropertyUpdated(properties);
+            if (properties.Count > 0)
+            {
+                await this.OnDesiredPropertyUpdated(properties);
+            }
+
+            this.lastTwinVersion = desiredProperties.Version;
         }
 
         protected virtual Task OnDesiredPropertyUpdated(IReadOnlyDictionary<string, object> properties) => Task.CompletedTask;
