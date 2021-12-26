@@ -253,19 +253,21 @@ namespace Cod.Channel.Device
                     {
                         this.logger.LogError($"Unexpected error {ex}");
                     }
-
-                    if (sending.Count > 0)
-                    {
-                        foreach (var item in sending)
+                    finally
+                    { 
+                        if (sending.Count > 0)
                         {
-                            this.Events.Enqueue(item);
+                            foreach (var item in sending)
+                            {
+                                this.Events.Enqueue(item);
+                            }
+                            sending.Clear();
+                            await this.SaveAsync();
                         }
-                        sending.Clear();
-                        await this.SaveAsync();
-                    }
 
-                    // wait and retry
-                    await Task.Delay(interval);
+                        // wait and retry
+                        await Task.Delay(interval);
+                    }
                 }
                 else
                 {
