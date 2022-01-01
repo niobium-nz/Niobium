@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace Cod.Platform
@@ -15,7 +15,7 @@ namespace Cod.Platform
 
         public string Credentials { get; set; }
 
-        public bool OverrideIfExists { get; set; }
+        public bool ForceOffset0 { get; set; }
 
         public string OffsetPrefix { get; set; }
 

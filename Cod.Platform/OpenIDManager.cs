@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos.Table;
@@ -10,11 +10,6 @@ namespace Cod.Platform
         private readonly Lazy<IQueryableRepository<OpenID>> repository;
 
         public OpenIDManager(Lazy<IQueryableRepository<OpenID>> repository) => this.repository = repository;
-
-        public async Task<OpenID> GetChannelAsync(Guid user, int kind, string identifier)
-            => await this.repository.Value.GetAsync(
-                OpenID.BuildPartitionKey(user),
-                OpenID.BuildRowKey(kind, identifier));
 
         public async Task<IEnumerable<OpenID>> GetChannelsAsync(Guid user)
             => await this.repository.Value.GetAsync(OpenID.BuildPartitionKey(user));
@@ -41,11 +36,11 @@ namespace Cod.Platform
                     RowKey = OpenID.BuildRowKey(registration.Kind, registration.App, registration.OffsetPrefix),
                     Identity = registration.Identity,
                 };
-                await this.RetryRegistration(entity, registration.App, 0, registration.OverrideIfExists, registration.OffsetPrefix);
+                await this.RetryRegistration(entity, registration.App, 0, registration.ForceOffset0, registration.OffsetPrefix);
             }
         }
 
-        private async Task RetryRegistration(OpenID entity, string app, int retryCount, bool overrideIfExists, string offsetPrefix)
+        private async Task RetryRegistration(OpenID entity, string app, int retryCount, bool forceOffset0, string offsetPrefix)
         {
             var kind = entity.GetKind();
             if (String.IsNullOrWhiteSpace(app))
@@ -71,7 +66,7 @@ namespace Cod.Platform
                 }
             }
 
-            if (overrideIfExists)
+            if (forceOffset0)
             {
                 await this.repository.Value.CreateAsync(entity, true);
             }
@@ -91,7 +86,7 @@ namespace Cod.Platform
                     }
                     else
                     {
-                        await this.RetryRegistration(entity, app, ++retryCount, overrideIfExists, offsetPrefix);
+                        await this.RetryRegistration(entity, app, ++retryCount, forceOffset0, offsetPrefix);
                     }
                 }
             }

@@ -16,6 +16,7 @@ namespace Cod.Platform
         private readonly Lazy<IRepository<Login>> loginRepository;
         private readonly Lazy<IRepository<Entitlement>> entitlementRepository;
         private readonly Lazy<IOpenIDManager> openIDManager;
+        private readonly Lazy<IRepository<OpenID>> openIDRepository;
         private readonly Lazy<ITokenBuilder> tokenBuilder;
         private readonly Lazy<IConfigurationProvider> configuration;
 
@@ -26,6 +27,7 @@ namespace Cod.Platform
             Lazy<IRepository<Login>> loginRepository,
             Lazy<IRepository<Entitlement>> entitlementRepository,
             Lazy<IOpenIDManager> openIDManager,
+            Lazy<IRepository<OpenID>> openIDRepository,
             Lazy<IEnumerable<IImpedimentPolicy>> policies,
             Lazy<ITokenBuilder> tokenBuilder,
             Lazy<IConfigurationProvider> configuration,
@@ -37,6 +39,7 @@ namespace Cod.Platform
             this.loginRepository = loginRepository;
             this.entitlementRepository = entitlementRepository;
             this.openIDManager = openIDManager;
+            this.openIDRepository = openIDRepository;
             this.tokenBuilder = tokenBuilder;
             this.configuration = configuration;
             this.Logger = logger;
@@ -175,6 +178,7 @@ namespace Cod.Platform
         {
             var newUser = false;
             var channels = new Dictionary<Guid, IEnumerable<OpenID>>();
+            var openIDsToRemove = new List<OpenID>();
             var passiveUserID = new List<Guid>();
 
             foreach (var registration in registrations)
@@ -184,10 +188,11 @@ namespace Cod.Platform
                     Login.BuildRowKey(registration.Identity));
                 if (login != null)
                 {
+                    IEnumerable<OpenID> openIDs = null;
                     if (!channels.ContainsKey(login.User))
                     {
-                        var c = await this.openIDManager.Value.GetChannelsAsync(login.User);
-                        channels.Add(login.User, c);
+                        openIDs = await this.openIDManager.Value.GetChannelsAsync(login.User);
+                        channels.Add(login.User, openIDs);
                     }
 
                     var count = registration.Kind switch
@@ -202,16 +207,36 @@ namespace Cod.Platform
                         return new OperationResult<User>(InternalError.Conflict);
                     }
 
-                    // REMARK (5he11) 否则可能是因为用户被动注册，如仅被注册了手机号码通道，无实际载体通道，此时应该合并当前注册与被动注册的用户
-                    registration.OverrideIfExists = true;
-                    if (!passiveUserID.Contains(login.User))
+                    if (userID.HasValue && login.User != userID.Value)
                     {
-                        passiveUserID.Add(login.User);
+                        // REMARK (5he11) 如果一个现有用户去“偷”另外一个用户的Login的话，则不应该为了优化性能而强制使用0号记录，应该让程序自动判断使用哪个Offset，否则可能导致该现有的既有的第0个OpenID被覆盖
+                        registration.ForceOffset0 = false;
+
+                        if (openIDs != null)
+                        {
+                            foreach (var openid in openIDs)
+                            {
+                                // REMARK (5he11) 遇到“偷”Login的情形，需要查出被偷的Login所对应的OpenID中是否存在与即将创建的OpenID相同的既有OpenID，如果存在，则需要删除
+                                if (openid.Identity == registration.Identity && !openIDsToRemove.Any(o => o.GetKey() == openid.GetKey()))
+                                {
+                                    openIDsToRemove.Add(openid);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // REMARK (5he11) 否则可能是因为用户被动注册，如仅被注册了手机号码通道，无实际载体通道，此时应该合并当前注册与被动注册的用户
+                        registration.ForceOffset0 = true;
+                        if (!passiveUserID.Contains(login.User))
+                        {
+                            passiveUserID.Add(login.User);
+                        }
                     }
                 }
                 else
                 {
-                    registration.OverrideIfExists = false;
+                    registration.ForceOffset0 = false;
                 }
             }
 
@@ -230,7 +255,7 @@ namespace Cod.Platform
 
             await this.openIDManager.Value.RegisterAsync(registrations);
 
-            var logins = new List<Login>();
+            var newLogins = new List<Login>();
             foreach (var registration in registrations)
             {
                 if (registration.Kind == (int)OpenIDKind.Username)
@@ -238,7 +263,7 @@ namespace Cod.Platform
                     registration.Credentials = registration.Credentials.Trim();
                 }
 
-                logins.Add(new Login
+                newLogins.Add(new Login
                 {
                     PartitionKey = Login.BuildPartitionKey(registration.Kind, registration.App),
                     RowKey = Login.BuildRowKey(registration.Identity),
@@ -246,7 +271,13 @@ namespace Cod.Platform
                     Credentials = registration.Credentials,
                 });
             }
-            await this.loginRepository.Value.CreateAsync(logins, true);
+            await this.loginRepository.Value.CreateAsync(newLogins, true);
+
+            if (openIDsToRemove.Count > 0)
+            {
+                // REMARK (5he11) 这些记录本质上是因为某用户添加绑定，因此“自动”从其他已有用户处“偷”过来的Login，因为其他用户被“偷”Login，所以这些用户被偷的Login的相关OpenID应该删除才对
+                await this.openIDRepository.Value.DeleteAsync(openIDsToRemove, successIfNotExist: true);
+            }
 
             if (newUser)
             {
