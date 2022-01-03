@@ -235,7 +235,7 @@ namespace Cod.Channel.Device
                             ContentType = "application/json",
                         };
 
-                        await this.DeviceClient.SendEventAsync(message);
+                        await this.DeviceClient.SendEventAsync(message, cancellationToken);
                         await this.SaveAsync();
                         sending.Clear();
                         continue;
