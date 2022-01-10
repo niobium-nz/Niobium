@@ -212,7 +212,7 @@ namespace Cod.Channel.Device
 
         protected virtual Task SaveAsync() => Task.CompletedTask;
 
-        protected async Task SendCoreAsync(CancellationToken cancellationToken)
+        protected async virtual Task SendCoreAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -236,6 +236,7 @@ namespace Cod.Channel.Device
                         };
 
                         await this.DeviceClient.SendEventAsync(message, cancellationToken);
+                        await this.OnSent(this, sending);
                         await this.SaveAsync();
                         sending.Clear();
                         continue;
@@ -257,6 +258,8 @@ namespace Cod.Channel.Device
                     { 
                         if (sending.Count > 0)
                         {
+                            await this.OnSendFailed(this, sending);
+
                             foreach (var item in sending)
                             {
                                 this.Events.Enqueue(item);
@@ -275,6 +278,10 @@ namespace Cod.Channel.Device
                 }
             }
         }
+
+        protected virtual Task OnSent(object sender, List<ITimestampable> messages) => Task.CompletedTask;
+
+        protected virtual Task OnSendFailed(object sender, List<ITimestampable> messages) => Task.CompletedTask;
 
         protected async virtual Task ReceiveAsync(Message receivedMessage, object _)
         {
