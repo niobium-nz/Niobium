@@ -127,10 +127,10 @@ namespace Cod.Channel.Device
             }
         }
 
-        public Task SendAsync(ITimestampable data)
+        public async Task SendAsync(ITimestampable data)
         {
             this.Events.Enqueue(data);
-            return Task.CompletedTask;
+            await this.SaveAsync();
         }
 
         public async Task ReportPropertyChangesAsync(IReadOnlyDictionary<string, object> properties) => await this.UpdateReportedPropertiesAsync(properties);
