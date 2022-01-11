@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -20,7 +20,7 @@ namespace Cod.Channel
         };
 
         public static async Task<OperationResult<TableQueryResult<T>>> GetAsync<T>(IHttpClient httpClient,
-            string baseUrl, string connectionString,
+            string baseUrl, string resource, string connectionString,
             string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd,
             ContinuationToken continuationToken = null, int count = -1)
         {
@@ -95,7 +95,10 @@ namespace Cod.Channel
                 countPath = $"&$top={count}";
             }
 
-            var resource = typeof(T).Name;
+            if (string.IsNullOrEmpty(resource))
+            {
+                resource = typeof(T).Name;
+            }
             var url = new StringBuilder(baseUrl);
             url.Append("/");
             url.Append(resource);

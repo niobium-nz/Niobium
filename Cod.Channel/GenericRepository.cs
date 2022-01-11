@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -29,6 +29,8 @@ namespace Cod.Channel
         protected List<TDomain> CachedData { get; private set; }
 
         public virtual IReadOnlyCollection<TDomain> Data => this.CachedData;
+
+        protected virtual string TableName => typeof(TEntity).Name;
 
         public async Task<OperationResult<TDomain>> LoadAsync(string partitionKey, string rowKey, bool force = false)
         {
@@ -172,16 +174,16 @@ namespace Cod.Channel
             {
                 throw new NotSupportedException();
             }
-            
 
-            var signature = await this.authenticator.AquireSignatureAsync(StorageType.Table, typeof(TEntity).Name, pk, rk);
+
+            var signature = await this.authenticator.AquireSignatureAsync(StorageType.Table, this.TableName, pk, rk);
             if (!signature.IsSuccess)
             {
                 return new OperationResult<TableQueryResult<TEntity>>(signature);
             }
 
             var baseUrl = await this.configuration.GetSettingAsStringAsync(Constants.KEY_TABLE_URL);
-            return await TableStorageHelper.GetAsync<TEntity>(this.httpClient, baseUrl, signature.Result.Signature, partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, continuationToken, count);
+            return await TableStorageHelper.GetAsync<TEntity>(this.httpClient, baseUrl, this.TableName, signature.Result.Signature, partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, continuationToken, count);
         }
 
         protected virtual IReadOnlyCollection<TDomain> Cache(IEnumerable<TEntity> entities)
