@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Text;
 
 namespace Cod
@@ -45,5 +46,19 @@ namespace Cod
                 return cnChar;
             }
         }
+
+        public static bool IsNumberCharacter(char input) => char.GetUnicodeCategory(input) == UnicodeCategory.DecimalDigitNumber;
+
+        public static bool IsEnglishCharacter(char input) =>
+            char.GetUnicodeCategory(input) == UnicodeCategory.LowercaseLetter
+            || char.GetUnicodeCategory(input) == UnicodeCategory.UppercaseLetter;
+
+        public static bool IsChineseCharacter(char input) => char.GetUnicodeCategory(input) == UnicodeCategory.OtherLetter;
+
+        public static bool IsChineseOrEnglishCharacter(char input) => IsEnglishCharacter(input) || IsChineseCharacter(input);
+
+        public static bool IsChineseOrEnglishOrNumberCharacter(char input) =>
+            IsChineseOrEnglishCharacter(input) || IsNumberCharacter(input);
+
     }
 }
