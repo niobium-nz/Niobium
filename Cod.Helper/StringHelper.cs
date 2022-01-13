@@ -16,7 +16,6 @@ namespace Cod
                 throw new NotSupportedException();
             }
 
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             byte[] arrCN = encoding.GetBytes(cnChar);
             if (arrCN.Length > 1)
             {
