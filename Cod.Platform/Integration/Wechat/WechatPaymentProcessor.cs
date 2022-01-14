@@ -32,9 +32,6 @@ namespace Cod.Platform
                 return new OperationResult<ChargeResponse>(InternalError.NotAcceptable);
             }
 
-            // REMARK (5he11) 微信虽然接受订单号内容可以是任意字符，但是长度有限制，所以过滤掉无用字符，缩短长度
-            request.Order = String.Concat(request.Order.Where(Char.IsLetterOrDigit));
-
             var payer = (WechatPayer)request.Account;
             var apiUri = await this.configuration.Value.GetSettingAsync<string>(Constant.API_URL);
             var branding = await this.brandService.Value.GetAsync(OpenIDKind.Wechat, payer.AppID);
@@ -44,7 +41,7 @@ namespace Cod.Platform
                 request.Amount,
                 payer.AppID,
                 request.Source,
-                request.Order,
+                String.Concat(request.Order.Where(Char.IsLetterOrDigit)), // REMARK (5he11) 微信虽然接受订单号内容可以是任意字符，但是长度有限制，所以过滤掉无用字符，缩短长度
                 request.Description,
                 attach,
                 request.IP,
