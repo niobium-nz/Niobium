@@ -6,3 +6,4 @@ root = false
 
 # Suppress warning
 dotnet_diagnostic.CA1307.severity = none
+dotnet_diagnostic.NU5100.severity = none

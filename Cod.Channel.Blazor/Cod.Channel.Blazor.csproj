@@ -16,7 +16,6 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
-
   <PropertyGroup>
     <Nullable>disable</Nullable>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
