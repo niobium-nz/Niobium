@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -76,7 +76,7 @@ namespace Cod.Platform
                     {
                         sb.Append("{\"aps\":{\"content-available\":1},");
                         var json = JsonSerializer.SerializeObject(message.Message, JsonSerializationFormat.CamelCase);
-                        sb.Append(json.Substring(1));
+                        sb.Append(json[1..]);
                     }
                     else
                     {

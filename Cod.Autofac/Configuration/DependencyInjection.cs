@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Concurrent;
 using System.Reflection;
 using Autofac;
@@ -8,14 +7,14 @@ namespace AzureFunctions.Autofac.Configuration
 {
     public static class DependencyInjection
     {
-        private static readonly ConcurrentDictionary<string, IContainer> containers = new ConcurrentDictionary<string, IContainer>();
-        private static readonly ConcurrentDictionary<Guid, ILifetimeScope> instanceContainers = new ConcurrentDictionary<Guid, ILifetimeScope>();
+        private static readonly ConcurrentDictionary<string, IContainer> containers = new();
+        private static readonly ConcurrentDictionary<Guid, ILifetimeScope> instanceContainers = new();
         public static void Initialize(Action<ContainerBuilder> cfg, string functionClassName) => containers.GetOrAdd(functionClassName, str =>
-                                                                                               {
-                                                                                                   var builder = new ContainerBuilder();
-                                                                                                   cfg(builder);
-                                                                                                   return builder.Build();
-                                                                                               });
+        {
+            var builder = new ContainerBuilder();
+            cfg(builder);
+            return builder.Build();
+        });
 
         public static object Resolve(Type type, string name, string functionClassName, Guid functionInstanceId)
         {
@@ -61,6 +60,11 @@ namespace AzureFunctions.Autofac.Configuration
         /// <param name="verifyUnnecessaryConfig">If true, verify that no configuration exists unless there is at least one injected parameter. Defaults to true.</param>
         public static void VerifyConfiguration(Type type, bool verifyUnnecessaryConfig = true)
         {
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
             var configAttr = type.GetCustomAttribute<DependencyInjectionConfigAttribute>();
             var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Static);
             var injectAttrFound = false;

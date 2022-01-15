@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Reflection;
 using System.Threading.Tasks;
 using AzureFunctions.Autofac.Exceptions;
@@ -20,7 +20,7 @@ namespace AzureFunctions.Autofac
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
             //Get the resolver starting with method then class
             var method = context.Parameter.Member as MethodInfo;
