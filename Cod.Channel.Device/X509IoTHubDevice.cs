@@ -305,16 +305,19 @@ namespace Cod.Channel.Device
             switch (status)
             {
                 case ConnectionStatus.Connected:
-                    this.sendingTaskCancellation = new CancellationTokenSource();
-                    this.sendingTask = this.SendCoreAsync(this.sendingTaskCancellation.Token);
+                    if (this.sendingTaskCancellation == null)
+                    {
+                        this.sendingTaskCancellation = new CancellationTokenSource();
+                        this.sendingTask = this.SendCoreAsync(this.sendingTaskCancellation.Token);
 
-                    await this.DeviceClient.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertyChangedAsync, null);
-                    await this.DeviceClient.SetReceiveMessageHandlerAsync(ReceiveAsync, this.DeviceClient);
-                    await this.RegisterDirectMethodsAsync();
-                    this.logger.LogInformation("### The DeviceClient is CONNECTED; all operations will be carried out as normal.");
+                        await this.DeviceClient.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertyChangedAsync, null);
+                        await this.DeviceClient.SetReceiveMessageHandlerAsync(ReceiveAsync, this.DeviceClient);
+                        await this.RegisterDirectMethodsAsync();
+                    }
 
                     var twin = await this.DeviceClient.GetTwinAsync();
                     await this.OnDesiredPropertyChangedAsync(twin.Properties.Desired, null);
+                    this.logger.LogInformation("### The DeviceClient is CONNECTED; all operations will be carried out as normal.");
                     break;
 
                 case ConnectionStatus.Disconnected_Retrying:
