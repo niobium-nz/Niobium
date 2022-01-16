@@ -335,30 +335,23 @@ namespace Cod.Channel.Device
                         case ConnectionStatusChangeReason.Bad_Credential:
                             // When getting this reason, the current certificate being used is not valid.
                             // If we had a backup, we can try using that.
-                            this.logger.LogWarning("### The supplied credentials are invalid. Update the parameters and run again.");
+                            this.logger.LogTrace("### The supplied credentials are invalid. Update the parameters and run again.");
                             this.SwapSecondaryCredentials();
-                            await this.ConnectAsync();
                             break;
 
                         case ConnectionStatusChangeReason.Device_Disabled:
-                            this.logger.LogWarning("### The device has been deleted or marked as disabled (on your hub instance)." +
+                            this.logger.LogTrace("### The device has been deleted or marked as disabled (on your hub instance)." +
                                 "\nFix the device status in Azure and then create a new device client instance.");
                             break;
 
                         case ConnectionStatusChangeReason.Retry_Expired:
-                            this.logger.LogWarning("### The DeviceClient has been disconnected because the retry policy expired." +
+                            this.logger.LogTrace("### The DeviceClient has been disconnected because the retry policy expired." +
                                 "\nIf you want to perform more operations on the device client, you should dispose (DisposeAsync()) and then open (OpenAsync()) the client.");
-
-                            this.AssignedHub = null;
-                            await this.ConnectAsync();
                             break;
 
                         case ConnectionStatusChangeReason.Communication_Error:
-                            this.logger.LogWarning("### The DeviceClient has been disconnected due to a non-retry-able exception. Inspect the exception for details." +
+                            this.logger.LogTrace("### The DeviceClient has been disconnected due to a non-retry-able exception. Inspect the exception for details." +
                                 "\nIf you want to perform more operations on the device client, you should dispose (DisposeAsync()) and then open (OpenAsync()) the client.");
-
-                            this.AssignedHub = null;
-                            await this.ConnectAsync();
                             break;
 
                         default:
@@ -367,6 +360,8 @@ namespace Cod.Channel.Device
 
                     }
 
+                    this.AssignedHub = null;
+                    await this.ConnectAsync();
                     break;
 
                 default:

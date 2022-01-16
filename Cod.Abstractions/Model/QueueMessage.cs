@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace Cod.Model
 {
@@ -13,6 +13,8 @@ namespace Cod.Model
         public string RowKey { get; set; }
 
         public string ETag { get; set; }
+
+        public bool RetryDisabled { get; set; } = false;
 
         public DateTimeOffset? Created { get; set; }
 
