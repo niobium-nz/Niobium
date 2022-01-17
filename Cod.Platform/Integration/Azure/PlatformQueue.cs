@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Cod.Model;
 using Microsoft.Azure.Storage.Queue;
 

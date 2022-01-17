@@ -72,7 +72,7 @@ namespace Cod.Platform
                 return new OperationResult<User>(InternalError.NotFound);
             }
 
-            if (login.Credentials.ToUpper() != password.ToUpper())
+            if (login.Credentials.ToUpperInvariant() != password.ToUpperInvariant())
             {
                 return new OperationResult<User>(InternalError.AuthenticationRequired);
             }

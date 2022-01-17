@@ -567,6 +567,7 @@ namespace Cod.Platform
             return MD5Sign(sorted, signKey);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5351:Do Not Use Broken Cryptographic Algorithms", Justification = "StupidWechat")]
         internal static string MD5Sign(IOrderedEnumerable<KeyValuePair<string, string>> items, string signKey)
         {
             var tosign = "";
@@ -585,7 +586,7 @@ namespace Cod.Platform
             {
                 sb.Append(b.ToString("x2"));
             }
-            var sign = sb.ToString().ToUpper();
+            var sign = sb.ToString().ToUpperInvariant();
             return sign;
         }
 

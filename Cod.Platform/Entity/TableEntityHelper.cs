@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
@@ -10,7 +10,7 @@ namespace Cod.Platform
     {
         private static ConcurrentDictionary<Type, Dictionary<string, EdmType>> propertyResolverCache = new ConcurrentDictionary<Type, Dictionary<string, EdmType>>();
 
-        private static bool disablePropertyResolverCache = false;
+        private static bool disablePropertyResolverCache;
 
         internal static ConcurrentDictionary<Type, Dictionary<string, EdmType>> PropertyResolverCache
         {

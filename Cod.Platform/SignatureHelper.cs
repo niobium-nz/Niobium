@@ -1,4 +1,4 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Cod.Platform
@@ -15,7 +15,7 @@ namespace Cod.Platform
             {
                 result.Append(crypto[i].ToString("X2"));
             }
-            return result.ToString().Substring(16, 32).ToLower();
+            return result.ToString().Substring(16, 32).ToLowerInvariant();
         }
     }
 }
