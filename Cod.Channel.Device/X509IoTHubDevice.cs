@@ -94,7 +94,7 @@ namespace Cod.Channel.Device
                 {
                     if (ShouldClientBeInitialized(this.connectionStatus))
                     {
-                        this.logger.LogTrace($"Attempting to initialize the client instance, current status={this.connectionStatus}");
+                        this.logger.LogInformation($"Attempting to initialize the client instance, current status={this.connectionStatus}");
                         
                         if (this.AssignedHub == null)
                         {
@@ -112,7 +112,7 @@ namespace Cod.Channel.Device
                             // Force connection now.
                             // OpenAsync() is an idempotent call, it has the same effect if called once or multiple times on the same client.
                             await this.DeviceClient.OpenAsync();
-                            this.logger.LogTrace($"Opened the client instance.");
+                            this.logger.LogInformation($"Opened the client instance.");
                         }
                     }
                 }
@@ -152,6 +152,7 @@ namespace Cod.Channel.Device
             {
                 using (this.sendingTaskCancellation)
                 {
+                    this.logger.LogInformation($"Canceling sending task...");
                     this.sendingTaskCancellation.Cancel();
                     Task.WaitAll(new[] { this.sendingTask }, TimeSpan.FromSeconds(5));
                 }
@@ -163,6 +164,7 @@ namespace Cod.Channel.Device
             // If the device client instance has been previously initialized, then dispose it.
             if (this.DeviceClient != null)
             {
+                this.logger.LogInformation($"Previous deivce client in place, disposing...");
                 using (DeviceClient)
                 {
                     if (this.IsDeviceConnected)
@@ -171,6 +173,7 @@ namespace Cod.Channel.Device
                         await this.DeviceClient.SetDesiredPropertyUpdateCallbackAsync(null, null);
                         await this.DeviceClient.SetReceiveMessageHandlerAsync(null, null);
                         await this.DeviceClient.CloseAsync();
+                        this.logger.LogInformation($"Previous deivce client has been closed.");
                     }
                 }
 
