@@ -207,8 +207,9 @@ namespace Cod.Channel.Device
                 await this.SaveAsync();
                 return result.AssignedHub;
             }
-            catch
+            catch (Exception e)
             {
+                this.logger.LogError(e, e.Message);
                 return null;
             }
         }
