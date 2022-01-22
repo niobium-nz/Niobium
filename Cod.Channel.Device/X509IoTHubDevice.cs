@@ -26,7 +26,7 @@ namespace Cod.Channel.Device
         private string secondaryPFXCertificatePath;
         private string secondaryPFXCertificatePassword;
         private readonly ILogger logger;
-        private readonly SemaphoreSlim initSemaphore = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim initSemaphore = new(1, 1);
         private volatile DeviceClient deviceClient;
         private volatile ConnectionStatus connectionStatus = ConnectionStatus.Disconnected;
         private CancellationTokenSource sendingTaskCancellation;
@@ -120,20 +120,6 @@ namespace Cod.Channel.Device
                                 // OpenAsync() is an idempotent call, it has the same effect if called once or multiple times on the same client.
                                 await this.DeviceClient.OpenAsync(cancellationToken);
                                 this.logger.LogInformation($"Opened the client instance.");
-
-                                try
-                                {
-                                    if (this.ensureConnectivityTaskCancellation != null
-                                        && !this.ensureConnectivityTaskCancellation.IsCancellationRequested
-                                        && this.ensureConnectivityTaskCancellation.Token.CanBeCanceled)
-                                    {
-                                        this.ensureConnectivityTaskCancellation.Cancel();
-                                    }
-                                }
-                                catch (Exception)
-                                {
-                                }
-
                                 return;
                             }
                         }
@@ -177,31 +163,16 @@ namespace Cod.Channel.Device
 
         protected async Task DisconnectAsync(bool cancelAutoReconnection)
         {
-            if (cancelAutoReconnection && this.ensureConnectivityTaskCancellation != null)
+            if (cancelAutoReconnection)
             {
-                using (this.ensureConnectivityTaskCancellation)
-                {
-                    this.logger.LogInformation($"Canceling ensureConnectivity task...");
-                    this.ensureConnectivityTaskCancellation.Cancel();
-                    Task.WaitAll(new[] { this.ensureConnectivityTask }, 5000);
-                }
-
+                this.CancelTask(this.ensureConnectivityTaskCancellation, this.ensureConnectivityTask);
                 this.ensureConnectivityTaskCancellation = null;
                 this.ensureConnectivityTask = null;
             }
 
-            if (this.sendingTaskCancellation != null)
-            {
-                using (this.sendingTaskCancellation)
-                {
-                    this.logger.LogInformation($"Canceling sending task...");
-                    this.sendingTaskCancellation.Cancel();
-                    Task.WaitAll(new[] { this.sendingTask }, 5000);
-                }
-
-                this.sendingTaskCancellation = null;
-                this.sendingTask = null;
-            }
+            this.CancelTask(this.sendingTaskCancellation, this.sendingTask);
+            this.sendingTaskCancellation = null;
+            this.sendingTask = null;
 
             // If the device client instance has been previously initialized, then dispose it.
             if (this.DeviceClient != null)
@@ -211,10 +182,17 @@ namespace Cod.Channel.Device
                 {
                     if (this.IsDeviceConnected)
                     {
-                        await this.UnregisterDirectMethodsAsync(CancellationToken.None);
-                        await this.DeviceClient.SetDesiredPropertyUpdateCallbackAsync(null, null);
-                        await this.DeviceClient.SetReceiveMessageHandlerAsync(null, null);
-                        await this.DeviceClient.CloseAsync();
+                        try
+                        {
+                            await this.UnregisterDirectMethodsAsync(CancellationToken.None);
+                            await this.DeviceClient.SetDesiredPropertyUpdateCallbackAsync(null, null);
+                            await this.DeviceClient.SetReceiveMessageHandlerAsync(null, null);
+                            await this.DeviceClient.CloseAsync();
+                        }
+                        catch (Exception e)
+                        {
+                            this.logger.LogError(e, e.Message);
+                        }
                         this.logger.LogInformation($"Previous deivce client has been closed.");
                     }
                 }
@@ -364,6 +342,10 @@ namespace Cod.Channel.Device
                     var twin = await this.DeviceClient.GetTwinAsync(this.sendingTaskCancellation.Token);
                     await this.OnDesiredPropertyChangedAsync(twin.Properties.Desired, null);
                     this.logger.LogInformation("### The DeviceClient is CONNECTED; all operations will be carried out as normal.");
+
+                    this.CancelTask(this.ensureConnectivityTaskCancellation, this.ensureConnectivityTask);
+                    this.ensureConnectivityTaskCancellation = null;
+                    this.ensureConnectivityTask = null;
                     break;
 
                 case ConnectionStatus.Disconnected_Retrying:
@@ -411,7 +393,7 @@ namespace Cod.Channel.Device
                     if (this.ensureConnectivityTaskCancellation == null)
                     {
                         this.ensureConnectivityTaskCancellation = new CancellationTokenSource();
-                        this.ensureConnectivityTask = this.ConnectAsync(this.sendingTaskCancellation.Token);
+                        this.ensureConnectivityTask = this.ConnectAsync(this.ensureConnectivityTaskCancellation.Token);
                     }
                     break;
 
@@ -444,6 +426,37 @@ namespace Cod.Channel.Device
         }
 
         protected virtual Task OnDesiredPropertyUpdated(IReadOnlyDictionary<string, object> properties) => Task.CompletedTask;
+
+        private void CancelTask(CancellationTokenSource source, Task task)
+        {
+            try
+            {
+                if (source != null)
+                {
+                    using (source)
+                    {
+                        if (!source.IsCancellationRequested
+                            && (source.Token != null
+                            && source.Token.CanBeCanceled))
+                        {
+                            this.logger.LogInformation($"Canceling task...");
+                            source.Cancel();
+                        }
+
+                        if (task != null)
+                        {
+                            Task.WaitAll(new[] { task }, 5000);
+                        }
+                    }
+
+                    this.logger.LogInformation($"Task cancelled.");
+                }
+            }
+            catch (Exception e)
+            {
+                this.logger.LogError(e, e.Message);
+            }
+        }
 
         private void SwapSecondaryCredentials()
         {
