@@ -30,7 +30,9 @@ namespace Cod.Channel.Device
         private volatile DeviceClient deviceClient;
         private volatile ConnectionStatus connectionStatus = ConnectionStatus.Disconnected;
         private CancellationTokenSource sendingTaskCancellation;
+        private CancellationTokenSource ensureConnectivityTaskCancellation;
         private Task sendingTask;
+        private Task ensureConnectivityTask;
         private long lastTwinVersion = long.MinValue;
         private bool disposed;
 
@@ -84,53 +86,80 @@ namespace Cod.Channel.Device
             this.AssignedHub = assignedHub;
         }
 
-        public async Task ConnectAsync()
+        public async Task ConnectAsync() => await ConnectAsync(CancellationToken.None).ConfigureAwait(false);
+
+        public async Task ConnectAsync(CancellationToken cancellationToken)
         {
-            if (ShouldClientBeInitialized(this.connectionStatus))
+            while (!cancellationToken.IsCancellationRequested)
             {
-                // Allow a single thread to dispose and initialize the client instance.
-                await this.initSemaphore.WaitAsync();
-                try
+                if (ShouldClientBeInitialized(this.connectionStatus) && !cancellationToken.IsCancellationRequested)
                 {
-                    if (ShouldClientBeInitialized(this.connectionStatus))
+                    try
                     {
-                        this.logger.LogInformation($"Attempting to initialize the client instance, current status={this.connectionStatus}");
-                        
-                        if (this.AssignedHub == null)
-                        {
-                            await this.ProvisioningAsync();
-                        }
+                        // Allow a single thread to dispose and initialize the client instance.
+                        await this.initSemaphore.WaitAsync(cancellationToken);
 
-                        if (this.AssignedHub != null)
+                        if (ShouldClientBeInitialized(this.connectionStatus) && !cancellationToken.IsCancellationRequested)
                         {
-                            await this.DisconnectAsync();
-                            using var certificate = this.LoadCertificate();
-                            var auth = new DeviceAuthenticationWithX509Certificate(this.id, certificate);
-                            this.deviceClient = DeviceClient.Create(this.AssignedHub, auth, TransportType.Mqtt);
-                            this.DeviceClient.SetConnectionStatusChangesHandler(this.ConnectionStatusChangeHandler);
+                            this.logger.LogInformation($"Attempting to initialize the client instance, current status={this.connectionStatus}");
 
-                            // Force connection now.
-                            // OpenAsync() is an idempotent call, it has the same effect if called once or multiple times on the same client.
-                            await this.DeviceClient.OpenAsync();
-                            this.logger.LogInformation($"Opened the client instance.");
+                            if (this.AssignedHub == null)
+                            {
+                                await this.ProvisioningAsync(cancellationToken);
+                            }
+
+                            if (this.AssignedHub != null)
+                            {
+                                await this.DisconnectAsync();
+                                using var certificate = this.LoadCertificate();
+                                var auth = new DeviceAuthenticationWithX509Certificate(this.id, certificate);
+                                this.deviceClient = DeviceClient.Create(this.AssignedHub, auth, TransportType.Mqtt);
+                                this.DeviceClient.SetConnectionStatusChangesHandler(this.ConnectionStatusChangeHandler);
+
+                                // Force connection now.
+                                // OpenAsync() is an idempotent call, it has the same effect if called once or multiple times on the same client.
+                                await this.DeviceClient.OpenAsync(cancellationToken);
+                                this.logger.LogInformation($"Opened the client instance.");
+
+                                try
+                                {
+                                    if (this.ensureConnectivityTaskCancellation != null
+                                        && !this.ensureConnectivityTaskCancellation.IsCancellationRequested
+                                        && this.ensureConnectivityTaskCancellation.Token.CanBeCanceled)
+                                    {
+                                        this.ensureConnectivityTaskCancellation.Cancel();
+                                    }
+                                }
+                                catch (Exception)
+                                {
+                                }
+
+                                return;
+                            }
                         }
                     }
-                }
-                catch (UnauthorizedException)
-                {
-                    // Handled by the ConnectionStatusChangeHandler
-                }
-                finally
-                {
-                    this.initSemaphore.Release();
+                    catch (UnauthorizedException)
+                    {
+                        // Handled by the ConnectionStatusChangeHandler
+                    }
+                    catch (Exception e)
+                    {
+                        this.logger.LogError(e, e.Message);
+                    }
+                    finally
+                    {
+                        this.initSemaphore.Release();
+                    }
                 }
             }
         }
 
-        public async Task SendAsync(ITimestampable data)
+        public async Task SendAsync(ITimestampable data) => await SendAsync(data, CancellationToken.None).ConfigureAwait(false);
+
+        public async Task SendAsync(ITimestampable data, CancellationToken cancellationToken)
         {
             this.Events.Enqueue(data);
-            await this.SaveAsync();
+            await this.SaveAsync(cancellationToken);
         }
 
         public async Task ReportPropertyChangesAsync(IReadOnlyDictionary<string, object> properties) => await this.UpdateReportedPropertiesAsync(properties);
@@ -148,13 +177,26 @@ namespace Cod.Channel.Device
 
         protected async Task DisconnectAsync()
         {
+            if (this.ensureConnectivityTaskCancellation != null)
+            {
+                using (this.ensureConnectivityTaskCancellation)
+                {
+                    this.logger.LogInformation($"Canceling ensureConnectivity task...");
+                    this.ensureConnectivityTaskCancellation.Cancel();
+                    Task.WaitAll(new[] { this.ensureConnectivityTask }, 5000);
+                }
+
+                this.ensureConnectivityTaskCancellation = null;
+                this.ensureConnectivityTask = null;
+            }
+
             if (this.sendingTaskCancellation != null)
             {
                 using (this.sendingTaskCancellation)
                 {
                     this.logger.LogInformation($"Canceling sending task...");
                     this.sendingTaskCancellation.Cancel();
-                    Task.WaitAll(new[] { this.sendingTask }, TimeSpan.FromSeconds(5));
+                    Task.WaitAll(new[] { this.sendingTask }, 5000);
                 }
 
                 this.sendingTaskCancellation = null;
@@ -169,7 +211,7 @@ namespace Cod.Channel.Device
                 {
                     if (this.IsDeviceConnected)
                     {
-                        await this.UnregisterDirectMethodsAsync();
+                        await this.UnregisterDirectMethodsAsync(CancellationToken.None);
                         await this.DeviceClient.SetDesiredPropertyUpdateCallbackAsync(null, null);
                         await this.DeviceClient.SetReceiveMessageHandlerAsync(null, null);
                         await this.DeviceClient.CloseAsync();
@@ -181,11 +223,11 @@ namespace Cod.Channel.Device
             }
         }
 
-        protected virtual Task RegisterDirectMethodsAsync() => Task.CompletedTask;
+        protected virtual Task RegisterDirectMethodsAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-        protected virtual Task UnregisterDirectMethodsAsync() => Task.CompletedTask;
+        protected virtual Task UnregisterDirectMethodsAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-        protected virtual async Task<string> ProvisioningAsync()
+        protected virtual async Task<string> ProvisioningAsync(CancellationToken cancellationToken)
         {
             using var certificate = this.LoadCertificate();
             using var security = new SecurityProviderX509Certificate(certificate);
@@ -194,7 +236,7 @@ namespace Cod.Channel.Device
 
             try
             {
-                var result = await provClient.RegisterAsync();
+                var result = await provClient.RegisterAsync(cancellationToken);
 
                 if (result.Status != ProvisioningRegistrationStatusType.Assigned || result.AssignedHub == null)
                 {
@@ -204,7 +246,7 @@ namespace Cod.Channel.Device
 
                 this.logger.LogInformation($"Device {result.DeviceId} provisioning to {result.AssignedHub}.");
                 this.AssignedHub = result.AssignedHub;
-                await this.SaveAsync();
+                await this.SaveAsync(cancellationToken);
                 return result.AssignedHub;
             }
             catch (Exception e)
@@ -214,7 +256,7 @@ namespace Cod.Channel.Device
             }
         }
 
-        protected virtual Task SaveAsync() => Task.CompletedTask;
+        protected virtual Task SaveAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
         protected async virtual Task SendCoreAsync(CancellationToken cancellationToken)
         {
@@ -240,8 +282,8 @@ namespace Cod.Channel.Device
                         };
 
                         await this.DeviceClient.SendEventAsync(message, cancellationToken);
-                        await this.OnSent(this, sending);
-                        await this.SaveAsync();
+                        await this.OnSentAsync(this, sending, cancellationToken);
+                        await this.SaveAsync(cancellationToken);
                         sending.Clear();
                         continue;
                     }
@@ -259,33 +301,33 @@ namespace Cod.Channel.Device
                         this.logger.LogError($"Unexpected error {ex}");
                     }
                     finally
-                    { 
+                    {
                         if (sending.Count > 0)
                         {
-                            await this.OnSendFailed(this, sending);
+                            await this.OnSendFailedAsync(this, sending, cancellationToken);
 
                             foreach (var item in sending)
                             {
                                 this.Events.Enqueue(item);
                             }
                             sending.Clear();
-                            await this.SaveAsync();
+                            await this.SaveAsync(cancellationToken);
                         }
 
                         // wait and retry
-                        await Task.Delay(interval);
+                        await Task.Delay(interval, cancellationToken);
                     }
                 }
                 else
                 {
-                    await Task.Delay(interval);
+                    await Task.Delay(interval, cancellationToken);
                 }
             }
         }
 
-        protected virtual Task OnSent(object sender, List<ITimestampable> messages) => Task.CompletedTask;
+        protected virtual Task OnSentAsync(object sender, List<ITimestampable> messages, CancellationToken cancellationToken) => Task.CompletedTask;
 
-        protected virtual Task OnSendFailed(object sender, List<ITimestampable> messages) => Task.CompletedTask;
+        protected virtual Task OnSendFailedAsync(object sender, List<ITimestampable> messages, CancellationToken cancellationToken) => Task.CompletedTask;
 
         protected async virtual Task ReceiveAsync(Message receivedMessage, object _)
         {
@@ -314,12 +356,12 @@ namespace Cod.Channel.Device
                         this.sendingTaskCancellation = new CancellationTokenSource();
                         this.sendingTask = this.SendCoreAsync(this.sendingTaskCancellation.Token);
 
-                        await this.DeviceClient.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertyChangedAsync, null);
-                        await this.DeviceClient.SetReceiveMessageHandlerAsync(ReceiveAsync, this.DeviceClient);
-                        await this.RegisterDirectMethodsAsync();
+                        await this.DeviceClient.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertyChangedAsync, null, this.sendingTaskCancellation.Token);
+                        await this.DeviceClient.SetReceiveMessageHandlerAsync(ReceiveAsync, this.DeviceClient, this.sendingTaskCancellation.Token);
+                        await this.RegisterDirectMethodsAsync(this.sendingTaskCancellation.Token);
                     }
 
-                    var twin = await this.DeviceClient.GetTwinAsync();
+                    var twin = await this.DeviceClient.GetTwinAsync(this.sendingTaskCancellation.Token);
                     await this.OnDesiredPropertyChangedAsync(twin.Properties.Desired, null);
                     this.logger.LogInformation("### The DeviceClient is CONNECTED; all operations will be carried out as normal.");
                     break;
@@ -365,7 +407,12 @@ namespace Cod.Channel.Device
                     }
 
                     this.AssignedHub = null;
-                    await this.ConnectAsync();
+
+                    if (this.ensureConnectivityTaskCancellation == null)
+                    {
+                        this.ensureConnectivityTaskCancellation = new CancellationTokenSource();
+                        this.ensureConnectivityTask = this.ConnectAsync(this.sendingTaskCancellation.Token);
+                    }
                     break;
 
                 default:
@@ -456,9 +503,7 @@ namespace Cod.Channel.Device
         // If the client reports Disconnected status, you will need to dispose and recreate the client.
         // If the client reports Disabled status, you will need to dispose and recreate the client.
         private static bool ShouldClientBeInitialized(ConnectionStatus connectionStatus)
-        {
-            return connectionStatus == ConnectionStatus.Disconnected || connectionStatus == ConnectionStatus.Disabled;
-        }
+            => connectionStatus == ConnectionStatus.Disconnected || connectionStatus == ConnectionStatus.Disabled;
 
         public async ValueTask DisposeAsync()
         {
@@ -476,7 +521,7 @@ namespace Cod.Channel.Device
             if (disposing)
             {
                 await this.DisconnectAsync();
-                await this.SaveAsync();
+                await this.SaveAsync(CancellationToken.None);
             }
         }
     }
