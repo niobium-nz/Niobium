@@ -110,7 +110,7 @@ namespace Cod.Channel.Device
 
                             if (this.AssignedHub != null)
                             {
-                                await this.DisconnectAsync();
+                                await this.DisconnectAsync(false);
                                 using var certificate = this.LoadCertificate();
                                 var auth = new DeviceAuthenticationWithX509Certificate(this.id, certificate);
                                 this.deviceClient = DeviceClient.Create(this.AssignedHub, auth, TransportType.Mqtt);
@@ -175,9 +175,9 @@ namespace Cod.Channel.Device
             await this.DeviceClient.UpdateReportedPropertiesAsync(properties);
         }
 
-        protected async Task DisconnectAsync()
+        protected async Task DisconnectAsync(bool cancelAutoReconnection)
         {
-            if (this.ensureConnectivityTaskCancellation != null)
+            if (cancelAutoReconnection && this.ensureConnectivityTaskCancellation != null)
             {
                 using (this.ensureConnectivityTaskCancellation)
                 {
@@ -520,7 +520,7 @@ namespace Cod.Channel.Device
         {
             if (disposing)
             {
-                await this.DisconnectAsync();
+                await this.DisconnectAsync(true);
                 await this.SaveAsync(CancellationToken.None);
             }
         }
