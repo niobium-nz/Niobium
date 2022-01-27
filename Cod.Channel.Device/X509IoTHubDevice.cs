@@ -303,6 +303,8 @@ namespace Cod.Channel.Device
             }
         }
 
+        protected virtual Task OnReceivedAsync(CloudToDeviceMessage message) => Task.CompletedTask;
+
         protected virtual Task OnSentAsync(object sender, List<ITimestampable> messages, CancellationToken cancellationToken) => Task.CompletedTask;
 
         protected virtual Task OnSendFailedAsync(object sender, List<ITimestampable> messages, CancellationToken cancellationToken) => Task.CompletedTask;
@@ -312,6 +314,17 @@ namespace Cod.Channel.Device
             using (receivedMessage)
             {
                 this.logger.LogTrace($"{DateTime.Now}> C2D message callback - message received with Id={receivedMessage.MessageId}.");
+                using var reader = new StreamReader(receivedMessage.BodyStream);
+                await this.OnReceivedAsync(new CloudToDeviceMessage
+                {
+                    JSONBody = await reader.ReadToEndAsync(),
+                    CorrelationID = receivedMessage.CorrelationId,
+                    Created = new DateTimeOffset(receivedMessage.CreationTimeUtc),
+                    DeliveryCount = receivedMessage.DeliveryCount,
+                    Enqueued = new DateTimeOffset(receivedMessage.EnqueuedTimeUtc),
+                    Expires = receivedMessage.Properties.ContainsKey(nameof(CloudToDeviceMessage.Expires)) ? DateTimeOffset.Parse(receivedMessage.Properties[nameof(CloudToDeviceMessage.Expires)]) : DateTimeOffset.MaxValue,
+                    Valids = receivedMessage.Properties.ContainsKey(nameof(CloudToDeviceMessage.Valids)) ? DateTimeOffset.Parse(receivedMessage.Properties[nameof(CloudToDeviceMessage.Valids)]) : DateTimeOffset.MinValue,
+                });
                 await this.DeviceClient.CompleteAsync(receivedMessage);
                 this.logger.LogTrace($"{DateTime.Now}> Completed C2D message with Id={receivedMessage.MessageId}.");
             }
