@@ -86,7 +86,7 @@ namespace Cod.Channel.Device
             this.AssignedHub = assignedHub;
         }
 
-        public async Task ConnectAsync() => await ConnectAsync(CancellationToken.None).ConfigureAwait(false);
+        public async Task ConnectAsync() => await ConnectAsync(CancellationToken.None);
 
         public async Task ConnectAsync(CancellationToken cancellationToken)
         {
@@ -140,7 +140,7 @@ namespace Cod.Channel.Device
             }
         }
 
-        public async Task SendAsync(ITimestampable data) => await SendAsync(data, CancellationToken.None).ConfigureAwait(false);
+        public async Task SendAsync(ITimestampable data) => await SendAsync(data, CancellationToken.None);
 
         public async Task SendAsync(ITimestampable data, CancellationToken cancellationToken)
         {

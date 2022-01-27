@@ -1,5 +1,3 @@
-using System;
-using System.Threading.Tasks;
 using Xamarin.Forms;
 
 namespace Cod.Channel.Mobile
