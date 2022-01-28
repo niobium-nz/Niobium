@@ -319,9 +319,9 @@ namespace Cod.Channel.Device
                 {
                     JSONBody = await reader.ReadToEndAsync(),
                     CorrelationID = receivedMessage.CorrelationId,
-                    Created = new DateTimeOffset(receivedMessage.CreationTimeUtc),
+                    Created = receivedMessage.CreationTimeUtc.Year > 2020 ? new DateTimeOffset(receivedMessage.CreationTimeUtc) : DateTimeOffset.UtcNow,
                     DeliveryCount = receivedMessage.DeliveryCount,
-                    Enqueued = new DateTimeOffset(receivedMessage.EnqueuedTimeUtc),
+                    Enqueued = receivedMessage.EnqueuedTimeUtc.Year > 2020 ? new DateTimeOffset(receivedMessage.EnqueuedTimeUtc) : DateTimeOffset.UtcNow,
                     Expires = receivedMessage.Properties.ContainsKey(nameof(CloudToDeviceMessage.Expires)) ? DateTimeOffset.Parse(receivedMessage.Properties[nameof(CloudToDeviceMessage.Expires)]) : DateTimeOffset.MaxValue,
                     Valids = receivedMessage.Properties.ContainsKey(nameof(CloudToDeviceMessage.Valids)) ? DateTimeOffset.Parse(receivedMessage.Properties[nameof(CloudToDeviceMessage.Valids)]) : DateTimeOffset.MinValue,
                 });
