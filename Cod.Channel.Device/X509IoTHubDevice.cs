@@ -314,7 +314,7 @@ namespace Cod.Channel.Device
             using (receivedMessage)
             {
                 this.logger.LogTrace($"{DateTime.Now}> C2D message callback - message received with Id={receivedMessage.MessageId}.");
-                using var reader = new StreamReader(receivedMessage.BodyStream);
+                using var reader = new StreamReader(receivedMessage.BodyStream, Encoding.UTF8);
                 await this.OnReceivedAsync(new CloudToDeviceMessage
                 {
                     JSONBody = await reader.ReadToEndAsync(),
