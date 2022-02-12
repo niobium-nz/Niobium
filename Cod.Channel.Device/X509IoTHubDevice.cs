@@ -303,7 +303,7 @@ namespace Cod.Channel.Device
             }
         }
 
-        protected virtual Task OnReceivedAsync(CloudToDeviceMessage message) => Task.CompletedTask;
+        protected virtual Task<bool> OnReceivedAsync(CloudToDeviceMessage message, Message rawMessage) => Task.FromResult(true);
 
         protected virtual Task OnSentAsync(object sender, List<ITimestampable> messages, CancellationToken cancellationToken) => Task.CompletedTask;
 
@@ -313,11 +313,11 @@ namespace Cod.Channel.Device
         {
             using (receivedMessage)
             {
-                this.logger.LogInformation($"{DateTime.Now}> C2D message callback - message received with Id={receivedMessage.MessageId}.");
+                this.logger.LogTrace($"{DateTime.Now}> C2D message callback - message received with Id={receivedMessage.MessageId}.");
                 using var reader = new StreamReader(receivedMessage.BodyStream, Encoding.UTF8);
                 var body = await reader.ReadToEndAsync();
-                this.logger.LogInformation($"C2D message: {body}");
-                await this.OnReceivedAsync(new CloudToDeviceMessage
+                this.logger.LogTrace($"C2D message: {body}");
+                var success = await this.OnReceivedAsync(new CloudToDeviceMessage
                 {
                     JSONBody = body,
                     CorrelationID = receivedMessage.CorrelationId,
@@ -326,9 +326,13 @@ namespace Cod.Channel.Device
                     Enqueued = receivedMessage.EnqueuedTimeUtc.Year > 2020 ? new DateTimeOffset(receivedMessage.EnqueuedTimeUtc) : DateTimeOffset.UtcNow,
                     Expires = receivedMessage.Properties.ContainsKey(nameof(CloudToDeviceMessage.Expires)) ? DateTimeOffset.Parse(receivedMessage.Properties[nameof(CloudToDeviceMessage.Expires)]) : DateTimeOffset.MaxValue,
                     Valids = receivedMessage.Properties.ContainsKey(nameof(CloudToDeviceMessage.Valids)) ? DateTimeOffset.Parse(receivedMessage.Properties[nameof(CloudToDeviceMessage.Valids)]) : DateTimeOffset.MinValue,
-                });
-                await this.CompleteAsync(receivedMessage);
-                this.logger.LogInformation($"{DateTime.Now}> Completed C2D message with Id={receivedMessage.MessageId}.");
+                }, receivedMessage);
+
+                if (success)
+                {
+                    await this.CompleteAsync(receivedMessage);
+                }
+                this.logger.LogTrace($"{DateTime.Now}> Completed C2D message with Id={receivedMessage.MessageId}.");
             }
         }
 
