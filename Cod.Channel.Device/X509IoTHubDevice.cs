@@ -313,30 +313,45 @@ namespace Cod.Channel.Device
         {
             using (receivedMessage)
             {
-                this.logger.LogTrace($"{DateTime.Now}> C2D message callback - message received with Id={receivedMessage.MessageId}.");
-                using var reader = new StreamReader(receivedMessage.BodyStream, Encoding.UTF8);
-                var body = await reader.ReadToEndAsync();
-                this.logger.LogTrace($"C2D message: {body}");
-                var success = await this.OnReceivedAsync(new CloudToDeviceMessage
+                var success = false;
+                var msgbody = String.Empty;
+                try
                 {
-                    JSONBody = body,
-                    CorrelationID = receivedMessage.CorrelationId,
-                    Created = receivedMessage.CreationTimeUtc.Year > 2020 ? new DateTimeOffset(receivedMessage.CreationTimeUtc) : DateTimeOffset.UtcNow,
-                    DeliveryCount = receivedMessage.DeliveryCount,
-                    Enqueued = receivedMessage.EnqueuedTimeUtc.Year > 2020 ? new DateTimeOffset(receivedMessage.EnqueuedTimeUtc) : DateTimeOffset.UtcNow,
-                    Expires = receivedMessage.Properties.ContainsKey(nameof(CloudToDeviceMessage.Expires)) ? DateTimeOffset.Parse(receivedMessage.Properties[nameof(CloudToDeviceMessage.Expires)]) : DateTimeOffset.MaxValue,
-                    Valids = receivedMessage.Properties.ContainsKey(nameof(CloudToDeviceMessage.Valids)) ? DateTimeOffset.Parse(receivedMessage.Properties[nameof(CloudToDeviceMessage.Valids)]) : DateTimeOffset.MinValue,
-                }, receivedMessage);
-
-                if (success)
-                {
-                    await this.CompleteAsync(receivedMessage);
+                    this.logger.LogTrace($"{DateTime.Now}> C2D message callback - message received with Id={receivedMessage.MessageId}.");
+                    using var reader = new StreamReader(receivedMessage.BodyStream, Encoding.UTF8);
+                    msgbody = await reader.ReadToEndAsync();
+                    this.logger.LogTrace($"C2D message: {msgbody}");
+                    success = await this.OnReceivedAsync(new CloudToDeviceMessage
+                    {
+                        JSONBody = msgbody,
+                        CorrelationID = receivedMessage.CorrelationId,
+                        Created = receivedMessage.CreationTimeUtc.Year > 2020 ? new DateTimeOffset(receivedMessage.CreationTimeUtc) : DateTimeOffset.UtcNow,
+                        DeliveryCount = receivedMessage.DeliveryCount,
+                        Enqueued = receivedMessage.EnqueuedTimeUtc.Year > 2020 ? new DateTimeOffset(receivedMessage.EnqueuedTimeUtc) : DateTimeOffset.UtcNow,
+                        Expires = receivedMessage.Properties.ContainsKey(nameof(CloudToDeviceMessage.Expires)) ? DateTimeOffset.Parse(receivedMessage.Properties[nameof(CloudToDeviceMessage.Expires)]) : DateTimeOffset.MaxValue,
+                        Valids = receivedMessage.Properties.ContainsKey(nameof(CloudToDeviceMessage.Valids)) ? DateTimeOffset.Parse(receivedMessage.Properties[nameof(CloudToDeviceMessage.Valids)]) : DateTimeOffset.MinValue,
+                    }, receivedMessage);
                 }
-                this.logger.LogTrace($"{DateTime.Now}> Completed C2D message with Id={receivedMessage.MessageId}.");
+                finally
+                {
+                    if (success)
+                    {
+                        this.logger.LogTrace($"{DateTime.Now}> Completed C2D message with Id={receivedMessage.MessageId}.");
+                        await this.CompleteAsync(receivedMessage);
+                    }
+                    else
+                    {
+                        this.logger.LogError($"Rejected C2D message with Id={receivedMessage.MessageId}: {msgbody}");
+                        await this.RejectAsync(receivedMessage);
+                    }
+                }
+                
             }
         }
 
         protected async virtual Task CompleteAsync(Message message) => await this.DeviceClient.CompleteAsync(message);
+
+        protected async virtual Task RejectAsync(Message message) => await this.DeviceClient.RejectAsync(message);
 
         // It is not good practice to have async void methods, however, DeviceClient.SetConnectionStatusChangesHandler() event handler signature has a void return type.
         // As a result, any operation within this block will be executed unmonitored on another thread.
