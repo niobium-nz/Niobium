@@ -40,7 +40,14 @@ namespace Cod.Channel
                 return new OperationResult<TDomain>(result);
             }
 
-            return new OperationResult<TDomain>(this.Data.SingleOrDefault(c => c.PartitionKey == partitionKey && c.RowKey == rowKey));
+            var single = this.Data.SingleOrDefault(c => c.PartitionKey == partitionKey && c.RowKey == rowKey);
+            if (single == null && force)
+            {
+                // REMARK (5he11) 如果加载某一精确数据，而且要求强制加载，如果该数据不存在，则应该从缓存中删除，因为这个可能是删除之后的“刷新”操作
+                this.Uncache(partitionKey, rowKey);
+            }
+
+            return new OperationResult<TDomain>(single);
         }
 
         public async Task<OperationResult<IReadOnlyCollection<TDomain>>> LoadAsync(string partitionKey, int count = -1, bool force = false, bool continueToLoadMore = false)
@@ -213,6 +220,9 @@ namespace Cod.Channel
 
             return result;
         }
+
+        protected virtual void Uncache(string partitionKey, string rowKey)
+            => this.CachedData.RemoveAll(c => partitionKey == c.PartitionKey && rowKey == c.RowKey);
 
         protected virtual void Uncache(TDomain domainObject) => this.Uncache(new[] { domainObject });
 

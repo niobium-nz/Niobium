@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text;
 
 namespace Cod
@@ -75,13 +75,35 @@ namespace Cod
                 }
 
                 return msg.ToString();
-            }; 
+            };
         }
 
         public OperationResult(OperationResult result) : this(result.Code)
         {
             this.getMessage = () => result.Message;
             this.Reference = result.Reference;
+        }
+
+        public bool HasResult()
+        {
+            var type = this.GetType();
+            if (!type.IsGenericType)
+            {
+                return false;
+            }
+
+            return type.GetGenericTypeDefinition() == typeof(OperationResult<>);
+        }
+
+        public T GetResult<T>()
+        {
+            var hasResult = this.HasResult();
+            if (hasResult && this is OperationResult<T> result)
+            {
+                return result.Result;
+            }
+
+            return default;
         }
     }
 
