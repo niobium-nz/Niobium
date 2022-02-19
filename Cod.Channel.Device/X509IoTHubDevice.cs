@@ -259,9 +259,9 @@ namespace Cod.Channel.Device
                             ContentType = "application/json",
                         };
 
-                        await this.DeviceClient.SendEventAsync(message, cancellationToken);
-                        await this.OnSentAsync(this, sending, cancellationToken);
-                        await this.SaveAsync(cancellationToken);
+                        await this.DeviceClient.SendEventAsync(message, cancellationToken).ConfigureAwait(false);
+                        await this.OnSentAsync(this, sending, cancellationToken).ConfigureAwait(false);
+                        await this.SaveAsync(cancellationToken).ConfigureAwait(false);
                         sending.Clear();
                         continue;
                     }
@@ -282,23 +282,23 @@ namespace Cod.Channel.Device
                     {
                         if (sending.Count > 0)
                         {
-                            await this.OnSendFailedAsync(this, sending, cancellationToken);
+                            await this.OnSendFailedAsync(this, sending, cancellationToken).ConfigureAwait(false);
 
                             foreach (var item in sending)
                             {
                                 this.Events.Enqueue(item);
                             }
                             sending.Clear();
-                            await this.SaveAsync(cancellationToken);
+                            await this.SaveAsync(cancellationToken).ConfigureAwait(false);
                         }
 
                         // wait and retry
-                        await Task.Delay(interval, cancellationToken);
+                        await Task.Delay(interval, cancellationToken).ConfigureAwait(false);
                     }
                 }
                 else
                 {
-                    await Task.Delay(interval, cancellationToken);
+                    await Task.Delay(interval, cancellationToken).ConfigureAwait(false);
                 }
             }
         }
