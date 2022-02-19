@@ -17,7 +17,8 @@ namespace Cod.Channel.Device
 {
     public class X509IoTHubDevice : IDevice
     {
-        private static readonly TimeSpan interval = TimeSpan.FromMilliseconds(500);
+        private static readonly TimeSpan busyInterval = TimeSpan.FromMilliseconds(500);
+        private static readonly TimeSpan idleInterval = TimeSpan.FromMilliseconds(1000);
         private readonly string provisioningEndpoint;
         private readonly string provisioningIDScope;
         private string id;
@@ -236,9 +237,9 @@ namespace Cod.Channel.Device
 
         protected virtual Task SaveAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-        protected async virtual Task SendCoreAsync(CancellationToken cancellationToken)
+        private async Task SendCoreAsync()
         {
-            while (!cancellationToken.IsCancellationRequested)
+            while (!this.sendingTaskCancellation.Token.IsCancellationRequested)
             {
                 if (this.IsDeviceConnected && this.Events.Count > 0)
                 {
@@ -259,9 +260,9 @@ namespace Cod.Channel.Device
                             ContentType = "application/json",
                         };
 
-                        await this.DeviceClient.SendEventAsync(message, cancellationToken).ConfigureAwait(false);
-                        await this.OnSentAsync(this, sending, cancellationToken).ConfigureAwait(false);
-                        await this.SaveAsync(cancellationToken).ConfigureAwait(false);
+                        await this.DeviceClient.SendEventAsync(message, this.sendingTaskCancellation.Token).ConfigureAwait(false);
+                        await this.OnSentAsync(this, sending, this.sendingTaskCancellation.Token).ConfigureAwait(false);
+                        await this.SaveAsync(this.sendingTaskCancellation.Token).ConfigureAwait(false);
                         sending.Clear();
                         continue;
                     }
@@ -282,23 +283,23 @@ namespace Cod.Channel.Device
                     {
                         if (sending.Count > 0)
                         {
-                            await this.OnSendFailedAsync(this, sending, cancellationToken).ConfigureAwait(false);
+                            await this.OnSendFailedAsync(this, sending, this.sendingTaskCancellation.Token).ConfigureAwait(false);
 
                             foreach (var item in sending)
                             {
                                 this.Events.Enqueue(item);
                             }
                             sending.Clear();
-                            await this.SaveAsync(cancellationToken).ConfigureAwait(false);
+                            await this.SaveAsync(this.sendingTaskCancellation.Token).ConfigureAwait(false);
                         }
 
                         // wait and retry
-                        await Task.Delay(interval, cancellationToken).ConfigureAwait(false);
+                        await Task.Delay(busyInterval, this.sendingTaskCancellation.Token).ConfigureAwait(false);
                     }
                 }
                 else
                 {
-                    await Task.Delay(interval, cancellationToken).ConfigureAwait(false);
+                    await Task.Delay(idleInterval, this.sendingTaskCancellation.Token).ConfigureAwait(false);
                 }
             }
         }
@@ -368,7 +369,7 @@ namespace Cod.Channel.Device
                     if (this.sendingTaskCancellation == null)
                     {
                         this.sendingTaskCancellation = new CancellationTokenSource();
-                        this.sendingTask = this.SendCoreAsync(this.sendingTaskCancellation.Token);
+                        this.sendingTask = Task.Run(this.SendCoreAsync, this.sendingTaskCancellation.Token);
 
                         await this.DeviceClient.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertyChangedAsync, null, this.sendingTaskCancellation.Token);
                         await this.DeviceClient.SetReceiveMessageHandlerAsync(ReceiveAsync, this.DeviceClient, this.sendingTaskCancellation.Token);
