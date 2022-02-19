@@ -34,7 +34,7 @@ namespace Cod.Channel.Device
         private CancellationTokenSource ensureConnectivityTaskCancellation;
         private Task sendingTask;
         private Task ensureConnectivityTask;
-        private long lastTwinVersion = long.MinValue;
+        private long lastTwinVersion = Int64.MinValue;
         private bool disposed;
 
         protected ConcurrentQueue<ITimestampable> Events { get; set; } = new ConcurrentQueue<ITimestampable>();
@@ -45,7 +45,7 @@ namespace Cod.Channel.Device
 
         protected DeviceClient DeviceClient => this.deviceClient;
 
-        public DeviceConnectionStatus Status { get => (DeviceConnectionStatus)(int)this.connectionStatus; }
+        public DeviceConnectionStatus Status => (DeviceConnectionStatus)(int)this.connectionStatus;
 
         public X509IoTHubDevice(
             string provisioningEndpoint,
@@ -57,22 +57,22 @@ namespace Cod.Channel.Device
             string secondaryPFXCertificatePassword,
             ILogger logger)
         {
-            if (string.IsNullOrWhiteSpace(provisioningEndpoint))
+            if (String.IsNullOrWhiteSpace(provisioningEndpoint))
             {
                 throw new ArgumentException($"'{nameof(provisioningEndpoint)}' cannot be null or whitespace.", nameof(provisioningEndpoint));
             }
 
-            if (string.IsNullOrWhiteSpace(provisioningIDScope))
+            if (String.IsNullOrWhiteSpace(provisioningIDScope))
             {
                 throw new ArgumentException($"'{nameof(provisioningIDScope)}' cannot be null or whitespace.", nameof(provisioningIDScope));
             }
 
-            if (string.IsNullOrWhiteSpace(pfxCertificatePath))
+            if (String.IsNullOrWhiteSpace(pfxCertificatePath))
             {
                 throw new ArgumentException($"'{nameof(pfxCertificatePath)}' cannot be null or whitespace.", nameof(pfxCertificatePath));
             }
 
-            if (string.IsNullOrWhiteSpace(pfxCertificatePassword))
+            if (String.IsNullOrWhiteSpace(pfxCertificatePassword))
             {
                 throw new ArgumentException($"'{nameof(pfxCertificatePassword)}' cannot be null or whitespace.", nameof(pfxCertificatePassword));
             }
@@ -87,26 +87,28 @@ namespace Cod.Channel.Device
             this.AssignedHub = assignedHub;
         }
 
-        public async Task ConnectAsync() => await ConnectAsync(CancellationToken.None);
-
-        public async Task ConnectAsync(CancellationToken cancellationToken)
+        public async Task ConnectAsync()
         {
-            while (!cancellationToken.IsCancellationRequested)
+            await this.initSemaphore.WaitAsync();
+
+            if (this.ensureConnectivityTaskCancellation == null)
             {
-                if (ShouldClientBeInitialized(this.connectionStatus) && !cancellationToken.IsCancellationRequested)
+                this.ensureConnectivityTaskCancellation = new CancellationTokenSource();
+            }
+
+            try
+            {
+                while (this.ensureConnectivityTaskCancellation.Token.CanBeCanceled && !this.ensureConnectivityTaskCancellation.Token.IsCancellationRequested)
                 {
-                    try
+                    if (ShouldClientBeInitialized(this.connectionStatus))
                     {
-                        // Allow a single thread to dispose and initialize the client instance.
-                        await this.initSemaphore.WaitAsync(cancellationToken);
+                        this.logger.LogInformation($"Attempting to initialize the client instance, current status={this.connectionStatus}");
 
-                        if (ShouldClientBeInitialized(this.connectionStatus) && !cancellationToken.IsCancellationRequested)
+                        try
                         {
-                            this.logger.LogInformation($"Attempting to initialize the client instance, current status={this.connectionStatus}");
-
                             if (this.AssignedHub == null)
                             {
-                                await this.ProvisioningAsync(cancellationToken);
+                                await this.ProvisioningAsync(this.ensureConnectivityTaskCancellation.Token);
                             }
 
                             if (this.AssignedHub != null)
@@ -119,29 +121,32 @@ namespace Cod.Channel.Device
 
                                 // Force connection now.
                                 // OpenAsync() is an idempotent call, it has the same effect if called once or multiple times on the same client.
-                                await this.DeviceClient.OpenAsync(cancellationToken);
+                                await this.DeviceClient.OpenAsync(this.ensureConnectivityTaskCancellation.Token);
                                 this.logger.LogInformation($"Opened the client instance.");
                                 return;
                             }
                         }
+                        catch (UnauthorizedException)
+                        {
+                            // Handled by the ConnectionStatusChangeHandler
+                        }
+                        catch (Exception e)
+                        {
+                            this.logger.LogError(e, e.Message);
+                        }
                     }
-                    catch (UnauthorizedException)
-                    {
-                        // Handled by the ConnectionStatusChangeHandler
-                    }
-                    catch (Exception e)
-                    {
-                        this.logger.LogError(e, e.Message);
-                    }
-                    finally
-                    {
-                        this.initSemaphore.Release();
-                    }
+                    
+                    await Task.Delay(500);
                 }
+            }
+            finally
+            {
+                this.ensureConnectivityTaskCancellation = null;
+                this.initSemaphore.Release();
             }
         }
 
-        public async Task SendAsync(ITimestampable data) => await SendAsync(data, CancellationToken.None);
+        public async Task SendAsync(ITimestampable data) => await this.SendAsync(data, CancellationToken.None);
 
         public async Task SendAsync(ITimestampable data, CancellationToken cancellationToken)
         {
@@ -179,7 +184,7 @@ namespace Cod.Channel.Device
             if (this.DeviceClient != null)
             {
                 this.logger.LogInformation($"Previous deivce client in place, disposing...");
-                using (DeviceClient)
+                using (this.DeviceClient)
                 {
                     if (this.IsDeviceConnected)
                     {
@@ -310,7 +315,7 @@ namespace Cod.Channel.Device
 
         protected virtual Task OnSendFailedAsync(object sender, List<ITimestampable> messages, CancellationToken cancellationToken) => Task.CompletedTask;
 
-        protected async virtual Task ReceiveAsync(Message receivedMessage, object _)
+        protected virtual async Task ReceiveAsync(Message receivedMessage, object _)
         {
             using (receivedMessage)
             {
@@ -346,19 +351,19 @@ namespace Cod.Channel.Device
                         await this.RejectAsync(receivedMessage);
                     }
                 }
-                
+
             }
         }
 
-        protected async virtual Task CompleteAsync(Message message) => await this.DeviceClient.CompleteAsync(message);
+        protected virtual async Task CompleteAsync(Message message) => await this.DeviceClient.CompleteAsync(message);
 
-        protected async virtual Task RejectAsync(Message message) => await this.DeviceClient.RejectAsync(message);
+        protected virtual async Task RejectAsync(Message message) => await this.DeviceClient.RejectAsync(message);
 
         // It is not good practice to have async void methods, however, DeviceClient.SetConnectionStatusChangesHandler() event handler signature has a void return type.
         // As a result, any operation within this block will be executed unmonitored on another thread.
         // To prevent multi-threaded synchronization issues, the async method InitializeClientAsync being called in here first grabs a lock
         // before attempting to initialize or dispose the device client instance.
-        protected async virtual void ConnectionStatusChangeHandler(ConnectionStatus status, ConnectionStatusChangeReason reason)
+        protected virtual async void ConnectionStatusChangeHandler(ConnectionStatus status, ConnectionStatusChangeReason reason)
         {
             this.logger.LogInformation($"Connection status changed: status={status}, reason={reason}");
             this.connectionStatus = status;
@@ -369,10 +374,11 @@ namespace Cod.Channel.Device
                     if (this.sendingTaskCancellation == null)
                     {
                         this.sendingTaskCancellation = new CancellationTokenSource();
+                        this.logger.LogInformation($"Connected #{Thread.CurrentThread.ManagedThreadId}");
                         this.sendingTask = Task.Run(this.SendCoreAsync, this.sendingTaskCancellation.Token);
 
-                        await this.DeviceClient.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertyChangedAsync, null, this.sendingTaskCancellation.Token);
-                        await this.DeviceClient.SetReceiveMessageHandlerAsync(ReceiveAsync, this.DeviceClient, this.sendingTaskCancellation.Token);
+                        await this.DeviceClient.SetDesiredPropertyUpdateCallbackAsync(this.OnDesiredPropertyChangedAsync, null, this.sendingTaskCancellation.Token);
+                        await this.DeviceClient.SetReceiveMessageHandlerAsync(this.ReceiveAsync, this.DeviceClient, this.sendingTaskCancellation.Token);
                         await this.RegisterDirectMethodsAsync(this.sendingTaskCancellation.Token);
                     }
 
@@ -425,12 +431,10 @@ namespace Cod.Channel.Device
 
                     }
 
-                    this.AssignedHub = null;
-
                     if (this.ensureConnectivityTaskCancellation == null)
                     {
-                        this.ensureConnectivityTaskCancellation = new CancellationTokenSource();
-                        this.ensureConnectivityTask = this.ConnectAsync(this.ensureConnectivityTaskCancellation.Token);
+                        this.AssignedHub = null;
+                        this.ensureConnectivityTask = this.ConnectAsync();
                     }
                     break;
 
@@ -528,7 +532,7 @@ namespace Cod.Channel.Device
             certificateCollection.Import(pfxCertificatePath, pfxCertificatePassword, X509KeyStorageFlags.UserKeySet);
 
             X509Certificate2 certificate = null;
-            foreach (X509Certificate2 element in certificateCollection)
+            foreach (var element in certificateCollection)
             {
                 if (certificate == null && element.HasPrivateKey)
                 {
