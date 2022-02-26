@@ -114,16 +114,13 @@ namespace Cod.Channel.Device
                             if (this.AssignedHub != null)
                             {
                                 await this.DisconnectAsync(false);
-                                this.logger.LogInformation($"Creating new client instance.");
                                 using var certificate = this.LoadCertificate();
                                 var auth = new DeviceAuthenticationWithX509Certificate(this.id, certificate);
                                 this.deviceClient = DeviceClient.Create(this.AssignedHub, auth, TransportType.Mqtt);
-                                this.logger.LogInformation($"New client instance created.");
                                 this.DeviceClient.SetConnectionStatusChangesHandler(this.ConnectionStatusChangeHandler);
 
                                 // Force connection now.
                                 // OpenAsync() is an idempotent call, it has the same effect if called once or multiple times on the same client.
-                                this.logger.LogInformation($"Opening new client instance.");
                                 await this.DeviceClient.OpenAsync(this.ensureConnectivityTaskCancellation.Token);
                                 this.logger.LogInformation($"Opened the client instance.");
                                 return;
@@ -131,7 +128,6 @@ namespace Cod.Channel.Device
                         }
                         catch (UnauthorizedException)
                         {
-                            this.logger.LogInformation($"UnauthorizedException detected.");
                             // Handled by the ConnectionStatusChangeHandler
                         }
                         catch (Exception e)
@@ -411,6 +407,7 @@ namespace Cod.Channel.Device
                             // If we had a backup, we can try using that.
                             this.logger.LogTrace("### The supplied credentials are invalid. Update the parameters and run again.");
                             this.SwapSecondaryCredentials();
+                            this.AssignedHub = null;
                             break;
 
                         case ConnectionStatusChangeReason.Device_Disabled:
