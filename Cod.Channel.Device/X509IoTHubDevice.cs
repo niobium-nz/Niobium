@@ -114,13 +114,16 @@ namespace Cod.Channel.Device
                             if (this.AssignedHub != null)
                             {
                                 await this.DisconnectAsync(false);
+                                this.logger.LogInformation($"Creating new client instance.");
                                 using var certificate = this.LoadCertificate();
                                 var auth = new DeviceAuthenticationWithX509Certificate(this.id, certificate);
                                 this.deviceClient = DeviceClient.Create(this.AssignedHub, auth, TransportType.Mqtt);
+                                this.logger.LogInformation($"New client instance created.");
                                 this.DeviceClient.SetConnectionStatusChangesHandler(this.ConnectionStatusChangeHandler);
 
                                 // Force connection now.
                                 // OpenAsync() is an idempotent call, it has the same effect if called once or multiple times on the same client.
+                                this.logger.LogInformation($"Opening new client instance.");
                                 await this.DeviceClient.OpenAsync(this.ensureConnectivityTaskCancellation.Token);
                                 this.logger.LogInformation($"Opened the client instance.");
                                 return;
@@ -128,6 +131,7 @@ namespace Cod.Channel.Device
                         }
                         catch (UnauthorizedException)
                         {
+                            this.logger.LogInformation($"UnauthorizedException detected.");
                             // Handled by the ConnectionStatusChangeHandler
                         }
                         catch (Exception e)
@@ -199,10 +203,10 @@ namespace Cod.Channel.Device
                         {
                             this.logger.LogError(e, e.Message);
                         }
-                        this.logger.LogInformation($"Previous deivce client has been closed.");
                     }
                 }
 
+                this.logger.LogInformation($"Previous deivce client has been disposed.");
                 this.deviceClient = null;
             }
         }
@@ -374,7 +378,6 @@ namespace Cod.Channel.Device
                     if (this.sendingTaskCancellation == null)
                     {
                         this.sendingTaskCancellation = new CancellationTokenSource();
-                        this.logger.LogInformation($"Connected #{Thread.CurrentThread.ManagedThreadId}");
                         this.sendingTask = Task.Run(this.SendCoreAsync, this.sendingTaskCancellation.Token);
 
                         await this.DeviceClient.SetDesiredPropertyUpdateCallbackAsync(this.OnDesiredPropertyChangedAsync, null, this.sendingTaskCancellation.Token);
