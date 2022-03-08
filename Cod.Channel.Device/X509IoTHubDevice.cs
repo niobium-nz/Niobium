@@ -306,8 +306,12 @@ namespace Cod.Channel.Device
                 {
                     await Task.Delay(idleInterval, this.sendingTaskCancellation.Token).ConfigureAwait(false);
                 }
+
+                await this.LoopAsync(this.sendingTaskCancellation.Token).ConfigureAwait(false);
             }
         }
+
+        protected virtual Task LoopAsync(CancellationToken token) => Task.CompletedTask;
 
         protected virtual Task<bool> OnReceivedAsync(CloudToDeviceMessage message, Message rawMessage) => Task.FromResult(true);
 
