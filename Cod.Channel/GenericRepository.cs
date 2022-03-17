@@ -40,7 +40,7 @@ namespace Cod.Channel
                 return new OperationResult<TDomain>(result);
             }
 
-            var single = this.Data.SingleOrDefault(c => c.PartitionKey == partitionKey && c.RowKey == rowKey);
+            var single = result.Result.SingleOrDefault(c => c.PartitionKey == partitionKey && c.RowKey == rowKey);
             if (single == null && force)
             {
                 // REMARK (5he11) 如果加载某一精确数据，而且要求强制加载，如果该数据不存在，则应该从缓存中删除，因为这个可能是删除之后的“刷新”操作
@@ -221,17 +221,17 @@ namespace Cod.Channel
             return result;
         }
 
-        protected virtual void Uncache(string partitionKey, string rowKey)
+        public void Uncache(string partitionKey, string rowKey)
             => this.CachedData.RemoveAll(c => partitionKey == c.PartitionKey && rowKey == c.RowKey);
 
-        protected virtual void Uncache(TDomain domainObject) => this.Uncache(new[] { domainObject });
+        public void Uncache(TDomain domainObject) => this.Uncache(new[] { domainObject });
 
-        protected virtual void Uncache(IEnumerable<TDomain> domainObjects)
+        public void Uncache(IEnumerable<TDomain> domainObjects)
             => this.CachedData.RemoveAll(c => domainObjects.Any(dobj => dobj.PartitionKey == c.PartitionKey && dobj.RowKey == c.RowKey));
 
-        protected virtual void Uncache(TEntity entity) => this.Uncache(new[] { entity });
+        public void Uncache(TEntity entity) => this.Uncache(new[] { entity });
 
-        protected virtual void Uncache(IEnumerable<TEntity> entities)
+        public void Uncache(IEnumerable<TEntity> entities)
             => this.CachedData.RemoveAll(c => entities.Any(en => en.PartitionKey == c.PartitionKey && en.RowKey == c.RowKey));
 
         protected virtual TDomain ToDomain(TEntity entity) => (TDomain)this.createDomain().Initialize(entity);

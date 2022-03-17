@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -29,15 +29,9 @@ namespace Cod.Channel
             this.httpClient = httpClient;
         }
 
-        public Task<DisposableQueueMessage> DequeueAsync(string queueName)
-        {
-            throw new NotImplementedException();
-        }
+        public Task<DisposableQueueMessage> DequeueAsync(string queueName) => throw new NotImplementedException();
 
-        public Task<IEnumerable<DisposableQueueMessage>> DequeueAsync(string queueName, int limit)
-        {
-            throw new NotImplementedException();
-        }
+        public Task<IEnumerable<DisposableQueueMessage>> DequeueAsync(string queueName, int limit) => throw new NotImplementedException();
 
         public async Task<OperationResult> EnqueueAsync(IEnumerable<QueueMessage> entities)
         {
