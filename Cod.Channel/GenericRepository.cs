@@ -209,6 +209,10 @@ namespace Cod.Channel
                         this.CachedData[i] = d;
                         result.Add(d);
                     }
+                    else
+                    {
+                        result.Add(existing);
+                    }
                 }
                 else
                 {
