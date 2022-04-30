@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.Azure.Cosmos.Table;
 
 namespace Cod.Platform
@@ -22,6 +22,8 @@ namespace Cod.Platform
         public string WechatAbnormalStatusNotificationTemplateID { get; set; }
 
         public string WechatDeviceFaultNotificationTemplateID { get; set; }
+
+        public string WechatOrderStatusNotificationTemplateID { get; set; }
 
         public string WechatMerchantSignature { get; set; }
 
