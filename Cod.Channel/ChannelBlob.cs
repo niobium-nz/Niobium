@@ -17,10 +17,6 @@ namespace Cod.Channel
         private readonly IConfigurationProvider configuration;
         private readonly IHttpClient httpClient;
 
-        public ChannelBlob()
-        {
-        }
-
         public ChannelBlob(IAuthenticator authenticator, IConfigurationProvider configuration, IHttpClient httpClient)
         {
             this.authenticator = authenticator;
@@ -28,25 +24,16 @@ namespace Cod.Channel
             this.httpClient = httpClient;
         }
 
-        public async Task<OperationResult<StorageSignature>> AquireSignatureAsync(string container)
+        public async Task<OperationResult> UploadAsync(string container, string path, string contentType, Stream stream)
         {
-            return await this.authenticator.AquireSignatureAsync(StorageType.Blob, container, null, null);
-        }
-
-        public async Task<OperationResult> Upload(string container, string path, string contentType, Stream stream, string signature = null)
-        {
-            if (string.IsNullOrEmpty(signature))
+            var sig = await this.authenticator.AquireSignatureAsync(StorageType.Blob, container, null, null);
+            if (!sig.IsSuccess)
             {
-                var sig = await this.authenticator.AquireSignatureAsync(StorageType.Blob, container, null, null);
-                if (!sig.IsSuccess)
-                {
-                    return sig;
-                }
-                signature = sig.Result.Signature;
+                return sig;
             }
 
             var endpoint = await this.configuration.GetSettingAsStringAsync(Constants.KEY_BLOB_URL);
-            var url = $"{endpoint}/{container}/{path}{signature}";
+            var url = $"{endpoint}/{container}/{path}{sig.Result.Signature}";
             return await this.SendRequest(url, HttpMethod.Put, contentType, stream);
         }
 
