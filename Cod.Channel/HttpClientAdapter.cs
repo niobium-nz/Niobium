@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -84,17 +84,21 @@ namespace Cod.Channel
             {
                 if (body != null)
                 {
-                    string content;
+                    HttpContent content;
                     if (body is string stringBody)
                     {
-                        content = stringBody;
+                        content = new StringContent(stringBody);
+                    }
+                    else if (body is HttpContent httpContent)
+                    {
+                        content = httpContent;
                     }
                     else
                     {
-                        content = JsonSerializer.SerializeObject(body);
+                        content = new StringContent(JsonSerializer.SerializeObject(body));
                         contentType = "application/json";
                     }
-                    request.Content = new StringContent(content);
+                    request.Content = content;
                     if (contentType != null)
                     {
                         request.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
