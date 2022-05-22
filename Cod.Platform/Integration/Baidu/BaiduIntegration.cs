@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -41,7 +41,14 @@ namespace Cod.Platform
             {
                 foreach (var i in srs.Result.WordsResult)
                 {
-                    kvs.Add(i.Key, i.Value.Words);
+                    if (kvs.ContainsKey(i.Key))
+                    {
+                        kvs[i.Key] = i.Value.Words;
+                    }
+                    else
+                    {
+                        kvs.Add(i.Key, i.Value.Words);
+                    }
                 }
             }
 
@@ -54,7 +61,14 @@ namespace Cod.Platform
             {
                 foreach (var i in srs.Result.WordsResult)
                 {
-                    kvs.Add(i.Key, i.Value.Words);
+                    if (kvs.ContainsKey(i.Key))
+                    {
+                        kvs[i.Key] = i.Value.Words;
+                    }
+                    else
+                    {
+                        kvs.Add(i.Key, i.Value.Words);
+                    }
                 }
             }
 
