@@ -16,6 +16,8 @@ namespace Cod.Model
 
         public long Count { get; set; }
 
+        public string Reference { get; set; }
+
         public static string BuildPartitionKey(ushort kind, ReportPeriod period, string group, ushort year, ushort sequence)
         {
             return $"{kind.ToString().PadLeft(2, '0')}|{(int)period}|{group.Trim()}|{year}|{sequence.ToString().PadLeft(4, '0')}";
