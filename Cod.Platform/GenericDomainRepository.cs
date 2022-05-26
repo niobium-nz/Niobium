@@ -1,8 +1,4 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Cod.Platform
 {
@@ -97,13 +93,14 @@ namespace Cod.Platform
 
         public void Dispose()
         {
-            if (!disposed)
+            if (!this.disposed)
             {
                 this.instanceCache.Clear();
                 this.partitionCache.Clear();
             }
 
-            disposed = true;
+            this.disposed = true;
+            GC.SuppressFinalize(this);
         }
 
         protected Task<TDomain> GetAsync(TEntity entity, bool clearPartitionCache)

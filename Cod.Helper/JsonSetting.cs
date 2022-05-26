@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
 namespace Cod
@@ -7,14 +7,14 @@ namespace Cod
     {
         public static JsonSerializerSettings Default { get; set; } = CamelCase;
 
-        public static readonly JsonSerializerSettings PascalCase = new JsonSerializerSettings { ContractResolver = new DefaultContractResolver() };
+        public static readonly JsonSerializerSettings PascalCase = new() { ContractResolver = new DefaultContractResolver() };
 
-        public static readonly JsonSerializerSettings CamelCase = new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() };
+        public static readonly JsonSerializerSettings CamelCase = new() { ContractResolver = new CamelCasePropertyNamesContractResolver() };
 
-        public static readonly JsonSerializerSettings UnderstoreCase = new JsonSerializerSettings { ContractResolver = new DefaultContractResolver { NamingStrategy = new SnakeCaseNamingStrategy() } };
+        public static readonly JsonSerializerSettings UnderstoreCase = new() { ContractResolver = new DefaultContractResolver { NamingStrategy = new SnakeCaseNamingStrategy() } };
 
-        public static readonly JsonSerializerSettings TypedPascalCase = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
+        public static readonly JsonSerializerSettings TypedPascalCase = new() { TypeNameHandling = TypeNameHandling.Auto };
 
-        public static readonly JsonSerializerSettings TypedCamelCase = new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver(), TypeNameHandling = TypeNameHandling.Auto };
+        public static readonly JsonSerializerSettings TypedCamelCase = new() { ContractResolver = new CamelCasePropertyNamesContractResolver(), TypeNameHandling = TypeNameHandling.Auto };
     }
 }

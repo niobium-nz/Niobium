@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-namespace Cod.Platform
+﻿namespace Cod.Platform
 {
     public interface IHttpProxyFactory
     {

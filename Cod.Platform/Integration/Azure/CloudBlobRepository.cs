@@ -1,18 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Azure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Blob;
 
 namespace Cod.Platform
 {
     internal class CloudBlobRepository : IBlobRepository
     {
-        public async Task CreateIfNotExists(string container)
-        {
-            await CloudStorage.GetBlobContainer(container).CreateIfNotExistsAsync();
-        }
+        public async Task CreateIfNotExists(string container) => await CloudStorage.GetBlobContainer(container).CreateIfNotExistsAsync();
 
         public async Task DeleteAsync(IEnumerable<Uri> blobUris)
         {
@@ -29,7 +21,7 @@ namespace Cod.Platform
             var c = CloudStorage.GetBlobContainer(container);
 
             var result = new List<Uri>();
-            BlobContinuationToken token = new BlobContinuationToken();
+            var token = new BlobContinuationToken();
             while (token != null)
             {
                 var r = await c.ListBlobsSegmentedAsync(prefix, token);

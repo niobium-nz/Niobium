@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -13,7 +14,7 @@ namespace Cod.Platform
             var result = new StringBuilder();
             for (var i = 0; i < crypto.Length; i++)
             {
-                result.Append(crypto[i].ToString("X2"));
+                result.Append(crypto[i].ToString("X2", CultureInfo.InvariantCulture));
             }
             return result.ToString().Substring(16, 32).ToLowerInvariant();
         }

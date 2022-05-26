@@ -1,4 +1,3 @@
-using System;
 using CommonServiceLocator;
 using Xamarin.Forms;
 

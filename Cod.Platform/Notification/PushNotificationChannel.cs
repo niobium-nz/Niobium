@@ -1,8 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace Cod.Platform
 {
     public abstract class PushNotificationChannel : INotificationChannel
@@ -15,7 +10,7 @@ namespace Cod.Platform
             string brand,
             Guid user,
             NotificationContext context,
-            int template,
+            int templateID,
             IReadOnlyDictionary<string, object> parameters,
             int level = 0)
         {
@@ -43,13 +38,13 @@ namespace Cod.Platform
                 return OperationResult.NotAllowed;
             }
 
-            return await this.SendPushAsync(brand, targets, template, parameters);
+            return await this.SendPushAsync(brand, targets, templateID, parameters);
         }
 
         protected abstract Task<OperationResult> SendPushAsync(
             string brand,
             IEnumerable<NotificationContext> targets,
-            int template,
+            int templateID,
             IReadOnlyDictionary<string, object> parameters);
     }
 }

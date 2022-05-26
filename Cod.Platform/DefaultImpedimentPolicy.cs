@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Azure.Cosmos.Table;
+using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {
@@ -84,7 +80,7 @@ namespace Cod.Platform
                             }
                             else
                             {
-                                existing.Policy = string.Join(",", policies);
+                                existing.Policy = String.Join(",", policies);
                                 await this.repository.Value.UpdateAsync(existing);
                             }
                         }

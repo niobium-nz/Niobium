@@ -10,27 +10,25 @@ namespace Cod
         {
             var plainBytes = Encoding.UTF8.GetBytes(plainText);
             using (var rijndaelManaged = GetRijndaelManaged(key))
+            {
                 return Encrypt(plainBytes, rijndaelManaged).ToHex();
+            }
         }
 
         public static string Decrypt(string encryptedText, string key)
         {
             var encryptedBytes = encryptedText.FromHex();
             using (var rijndaelManaged = GetRijndaelManaged(key))
+            {
                 return Encoding.UTF8.GetString(Decrypt(encryptedBytes, rijndaelManaged));
+            }
         }
 
-        private static byte[] Encrypt(byte[] plainBytes, RijndaelManaged rijndaelManaged)
-        {
-            return rijndaelManaged.CreateEncryptor()
+        private static byte[] Encrypt(byte[] plainBytes, RijndaelManaged rijndaelManaged) => rijndaelManaged.CreateEncryptor()
                 .TransformFinalBlock(plainBytes, 0, plainBytes.Length);
-        }
 
-        private static byte[] Decrypt(byte[] encryptedData, RijndaelManaged rijndaelManaged)
-        {
-            return rijndaelManaged.CreateDecryptor()
+        private static byte[] Decrypt(byte[] encryptedData, RijndaelManaged rijndaelManaged) => rijndaelManaged.CreateDecryptor()
                 .TransformFinalBlock(encryptedData, 0, encryptedData.Length);
-        }
 
         private static RijndaelManaged GetRijndaelManaged(string secretKey)
         {

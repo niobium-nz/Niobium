@@ -1,8 +1,9 @@
 using Cod.Model;
-using Microsoft.Azure.Storage.Queue;
+using Microsoft.WindowsAzure.Storage.Queue;
 
 namespace Cod.Platform
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1711:Identifiers should not have incorrect suffix", Justification = "CustomNaming")]
     public class PlatformQueue : IQueue
     {
         public virtual async Task<DisposableQueueMessage> DequeueAsync(string queueName)
@@ -12,7 +13,6 @@ namespace Cod.Platform
             if (msg != null)
             {
                 return new DisposableQueueMessage(
-                    () => q.DeleteMessage(msg.Id, msg.PopReceipt),
                     () => q.DeleteMessageAsync(msg.Id, msg.PopReceipt))
                 {
                     Body = msg.AsString,
@@ -36,7 +36,6 @@ namespace Cod.Platform
                 foreach (var msg in msgs)
                 {
                     result.Add(new DisposableQueueMessage(
-                        () => q.DeleteMessage(msg.Id, msg.PopReceipt),
                         () => q.DeleteMessageAsync(msg.Id, msg.PopReceipt))
                     {
                         Body = msg.AsString,

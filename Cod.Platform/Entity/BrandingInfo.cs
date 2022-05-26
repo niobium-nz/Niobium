@@ -1,5 +1,4 @@
-using System;
-using Microsoft.Azure.Cosmos.Table;
+using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {

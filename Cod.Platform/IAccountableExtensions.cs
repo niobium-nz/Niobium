@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Azure.Cosmos.Table;
 using Microsoft.Extensions.Logging;
+using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {
@@ -137,7 +133,7 @@ namespace Cod.Platform
             {
                 if (String.IsNullOrWhiteSpace(request.Target))
                 {
-                    throw new ArgumentNullException(nameof(request.Target));
+                    throw new ArgumentNullException(nameof(requests));
                 }
 
                 if (request.ID == null)

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Cod
+﻿namespace Cod
 {
     public abstract class GenericDomain<T> : IDomain<T> where T : IEntity
     {

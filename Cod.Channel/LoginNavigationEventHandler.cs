@@ -9,7 +9,7 @@ namespace Cod.Channel
 
         public LoginNavigationEventHandler(INavigator navigator) => this.navigator = navigator;
 
-        protected async override Task CoreHandleAsync(IAuthenticator sender, object e)
+        protected override async Task CoreHandleAsync(IAuthenticator sender, object e)
         {
             if (!sender.IsAuthenticated())
             {

@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+using System.Globalization;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Cod.Platform
 {
@@ -86,8 +82,8 @@ namespace Cod.Platform
             var firstHostname = true;
             foreach (var hostname in hostnames)
             {
-                if ((entity.Wildcard && hostname.EndsWith(entity.GetHostname(), StringComparison.InvariantCultureIgnoreCase))
-                    || (!entity.Wildcard && hostname.Equals(entity.GetHostname(), StringComparison.InvariantCultureIgnoreCase)))
+                if ((entity.Wildcard && hostname.EndsWith(entity.GetHostname(), StringComparison.OrdinalIgnoreCase))
+                    || (!entity.Wildcard && hostname.Equals(entity.GetHostname(), StringComparison.OrdinalIgnoreCase)))
                 {
                     if (firstHostname)
                     {
@@ -110,7 +106,7 @@ namespace Cod.Platform
                 }
             }
 
-            entity.SSLExpiry = DateTimeOffset.Parse(expiry);
+            entity.SSLExpiry = DateTimeOffset.Parse(expiry, CultureInfo.InvariantCulture);
             await this.SaveEntityAsync();
             return OperationResult.Success;
         }

@@ -1,6 +1,3 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Cod.Platform.Integration.Wechat;
 using Microsoft.Extensions.Logging;
 
@@ -55,7 +52,7 @@ namespace Cod.Platform
             }
             else
             {
-                var paySignature = this.wechatIntegration.Value.GetJSAPIPaySignature(prepayid.Result, payer.AppID, branding.WechatMerchantSignature);
+                var paySignature = WechatIntegration.GetJSAPIPaySignature(prepayid.Result, payer.AppID, branding.WechatMerchantSignature);
                 return new OperationResult<ChargeResponse>(
                     new ChargeResponse
                     {
@@ -73,7 +70,7 @@ namespace Cod.Platform
         {
             if (notification is WechatChargeNotification wechatChargeNotification)
             {
-                var branding = await brandService.Value.GetAsync(OpenIDKind.Wechat, wechatChargeNotification.AppID);
+                var branding = await this.brandService.Value.GetAsync(OpenIDKind.Wechat, wechatChargeNotification.AppID);
                 if (!wechatChargeNotification.Validate(branding.WechatMerchantSignature))
                 {
                     return new OperationResult<ChargeResult>(InternalError.Forbidden);

@@ -5,6 +5,6 @@
         Table = 1,
         Queue = 2,
         Blob = 3,
-        File= 4
+        File = 4
     }
 }

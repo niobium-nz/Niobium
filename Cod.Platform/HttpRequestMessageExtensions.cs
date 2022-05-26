@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Cod.Platform
@@ -53,7 +48,7 @@ namespace Cod.Platform
                 return false;
             }
 
-            scheme = auth.Scheme.ToLower();
+            scheme = auth.Scheme.ToLowerInvariant();
             var base64EncodedBytes = Convert.FromBase64String(auth.Parameter);
             var credentials = Encoding.UTF8.GetString(base64EncodedBytes).Split(':');
             identity = credentials[0];
@@ -128,11 +123,11 @@ namespace Cod.Platform
             }
             catch (SecurityTokenValidationException stvex)
             {
-                throw new Exception($"Token failed validation: {stvex.Message}");
+                throw new InvalidDataException($"Token failed validation: {stvex.Message}");
             }
             catch (ArgumentException argex)
             {
-                throw new Exception($"Token was invalid: {argex.Message}");
+                throw new ArgumentException($"Token was invalid: {argex.Message}");
             }
         }
     }

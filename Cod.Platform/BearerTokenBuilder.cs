@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Cod.Platform
@@ -46,16 +42,16 @@ namespace Cod.Platform
                         isBusinessScoped = Guid.TryParse(scope, out _);
                         if (isBusinessScoped)
                         {
-                            roleEntitlement = this.store.Value.Get(roleparts[0], Entitlements.BusinessScopePlaceholder);
+                            roleEntitlement = this.store.Value.GetEntitlements(roleparts[0], Entitlements.BusinessScopePlaceholder);
                         }
                         else
                         {
-                            roleEntitlement = this.store.Value.Get(roleparts[0], Entitlements.CustomScopePlaceholder);
+                            roleEntitlement = this.store.Value.GetEntitlements(roleparts[0], Entitlements.CustomScopePlaceholder);
                         }
                     }
                     else
                     {
-                        roleEntitlement = this.store.Value.Get(r, null);
+                        roleEntitlement = this.store.Value.GetEntitlements(r, null);
                     }
 
                     foreach (var k in roleEntitlement.Keys)

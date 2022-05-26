@@ -1,13 +1,12 @@
-using System;
 using System.Collections.Concurrent;
-using System.Threading.Tasks;
+using System.Globalization;
 
 namespace Cod.Platform
 {
     public class TableCacheStore : ICacheStore
     {
-        private readonly ConcurrentDictionary<string, object> memoryCache = new ConcurrentDictionary<string, object>();
-        private readonly ConcurrentDictionary<string, DateTimeOffset> memoryCacheExpiry = new ConcurrentDictionary<string, DateTimeOffset>();
+        private readonly ConcurrentDictionary<string, object> memoryCache = new();
+        private readonly ConcurrentDictionary<string, DateTimeOffset> memoryCacheExpiry = new();
 
         public async Task DeleteAsync(string partitionKey, string rowKey)
         {
@@ -62,7 +61,7 @@ namespace Cod.Platform
                         this.memoryCacheExpiry.AddOrUpdate(memkey, cache.Expiry, (a, b) => cache.Expiry);
                     }
 
-                    return (T)Convert.ChangeType(cache.Value, typeof(T));
+                    return (T)Convert.ChangeType(cache.Value, typeof(T), CultureInfo.InvariantCulture);
                 }
             }
             return default;
@@ -93,7 +92,7 @@ namespace Cod.Platform
                 RowKey = rowKey,
                 Value = value.ToString(),
                 InMemory = memoryCached,
-                Expiry = expiry ?? DateTimeOffset.Parse("2100-01-01T00:00:00Z")
+                Expiry = expiry ?? DateTimeOffset.Parse("2100-01-01T00:00:00Z", CultureInfo.InvariantCulture)
             } });
         }
     }

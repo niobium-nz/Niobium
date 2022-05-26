@@ -44,7 +44,7 @@ namespace Cod.Channel
             object body = null,
             IEnumerable<KeyValuePair<string, string>> headers = null,
             string contentType = null)
-            => await RequestAsync(method, uri, bearerToken, body, headers, contentType, 0);
+            => await this.RequestAsync(method, uri, bearerToken, body, headers, contentType, 0);
 
         private async Task<OperationResult<HttpResponseMessage>> RequestAsync(
             HttpMethod method,
@@ -126,7 +126,7 @@ namespace Cod.Channel
             }
             catch (Exception)
             {
-                return await RequestAsync(
+                return await this.RequestAsync(
                     method,
                     uri,
                     bearerToken: bearerToken,

@@ -16,16 +16,16 @@ namespace Cod
                 throw new NotSupportedException();
             }
 
-            byte[] arrCN = encoding.GetBytes(cnChar);
+            var arrCN = encoding.GetBytes(cnChar);
             if (arrCN.Length > 1)
             {
-                int area = (short)arrCN[0];
-                int pos = (short)arrCN[1];
-                int code = (area << 8) + pos;
+                int area = arrCN[0];
+                int pos = arrCN[1];
+                var code = (area << 8) + pos;
 
-                for (int i = 0; i < 26; i++)
+                for (var i = 0; i < 26; i++)
                 {
-                    int max = 55290;
+                    var max = 55290;
 
                     if (i != 25)
                     {
@@ -46,13 +46,13 @@ namespace Cod
             }
         }
 
-        public static bool IsNumberCharacter(char input) => char.GetUnicodeCategory(input) == UnicodeCategory.DecimalDigitNumber;
+        public static bool IsNumberCharacter(char input) => Char.GetUnicodeCategory(input) == UnicodeCategory.DecimalDigitNumber;
 
         public static bool IsEnglishCharacter(char input) =>
-            char.GetUnicodeCategory(input) == UnicodeCategory.LowercaseLetter
-            || char.GetUnicodeCategory(input) == UnicodeCategory.UppercaseLetter;
+            Char.GetUnicodeCategory(input) == UnicodeCategory.LowercaseLetter
+            || Char.GetUnicodeCategory(input) == UnicodeCategory.UppercaseLetter;
 
-        public static bool IsChineseCharacter(char input) => char.GetUnicodeCategory(input) == UnicodeCategory.OtherLetter;
+        public static bool IsChineseCharacter(char input) => Char.GetUnicodeCategory(input) == UnicodeCategory.OtherLetter;
 
         public static bool IsChineseOrEnglishCharacter(char input) => IsEnglishCharacter(input) || IsChineseCharacter(input);
 

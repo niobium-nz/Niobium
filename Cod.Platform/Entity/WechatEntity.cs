@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Cod.Platform
+﻿namespace Cod.Platform
 {
     public class WechatEntity : ICachableEntity
     {

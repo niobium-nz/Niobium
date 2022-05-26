@@ -8,9 +8,9 @@ namespace Cod.Channel
 {
     public static class INavigatorExtensions
     {
-        private readonly static NameValueCollection EmptyQueryString = new NameValueCollection();
+        private static readonly NameValueCollection EmptyQueryString = new NameValueCollection();
 
-        public async static Task CheckAndPerformGotoAsync(this INavigator navigator)
+        public static async Task CheckAndPerformGotoAsync(this INavigator navigator)
         {
             var queries = navigator.GetQueryStrings();
             var go = queries.Get("go");

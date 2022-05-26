@@ -1,7 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Cod.Platform.Model;
 using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
@@ -21,6 +17,7 @@ namespace Cod.Platform
             this.logger = logger;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1725:Parameter names should match base declaration", Justification = "Meaningful")]
         public async Task<WechatEntity> GetAsync(string appID, string feature)
         {
             if (String.IsNullOrWhiteSpace(appID))

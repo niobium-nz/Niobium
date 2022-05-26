@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using Microsoft.JSInterop;
+﻿using Microsoft.JSInterop;
 
 namespace Cod.Channel.Blazor
 {
@@ -7,10 +6,7 @@ namespace Cod.Channel.Blazor
     {
         private readonly IJSRuntime runtime;
 
-        public BlazorBrowser(IJSRuntime runtime)
-        {
-            this.runtime = runtime;
-        }
+        public BlazorBrowser(IJSRuntime runtime) => this.runtime = runtime;
 
         public async Task<string> GetLocateAsync() => await this.runtime.InvokeAsync<string>("getLocate", null);
 

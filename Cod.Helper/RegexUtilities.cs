@@ -8,8 +8,10 @@ namespace Cod
     {
         public static bool IsValidEmail(string email)
         {
-            if (string.IsNullOrWhiteSpace(email))
+            if (String.IsNullOrWhiteSpace(email))
+            {
                 return false;
+            }
 
             try
             {

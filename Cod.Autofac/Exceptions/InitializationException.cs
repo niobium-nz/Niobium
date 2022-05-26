@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace AzureFunctions.Autofac.Exceptions
+﻿namespace AzureFunctions.Autofac.Exceptions
 {
     public class InitializationException : Exception
     {

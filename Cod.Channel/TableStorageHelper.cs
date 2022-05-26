@@ -95,7 +95,7 @@ namespace Cod.Channel
                 countPath = $"&$top={count}";
             }
 
-            if (string.IsNullOrEmpty(resource))
+            if (String.IsNullOrEmpty(resource))
             {
                 resource = typeof(T).Name;
             }

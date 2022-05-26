@@ -1,6 +1,6 @@
-﻿using Microsoft.Azure.Cosmos.Table;
-using Microsoft.Azure.Storage.Blob;
-using Microsoft.Azure.Storage.Queue;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Queue;
+using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {

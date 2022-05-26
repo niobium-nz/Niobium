@@ -1,6 +1,5 @@
 ﻿using System.Security.Claims;
-using System.Threading.Tasks;
-using Microsoft.Azure.Cosmos.Table;
+using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {
@@ -28,10 +27,10 @@ namespace Cod.Platform
         protected virtual async Task<bool> HasPermission(ClaimsPrincipal principal, string partition)
         {
             var owner = this.GetOwnerID(principal);
-            return await ExistAsync<TOwnership>(owner, partition);
+            return await this.ExistAsync<TOwnership>(owner, partition);
         }
 
-        protected async virtual Task<bool> ExistAsync<TEntity>(string partitionKey, string rowKey) where TEntity : ITableEntity, new()
+        protected virtual async Task<bool> ExistAsync<TEntity>(string partitionKey, string rowKey) where TEntity : ITableEntity, new()
         {
             var entity = await CloudStorage.GetTable<TEntity>().RetrieveAsync<TEntity>(partitionKey, rowKey);
             return entity != null;

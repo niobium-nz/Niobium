@@ -1,20 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Cod.Platform.Model;
-
-namespace Cod.Platform
+﻿namespace Cod.Platform
 {
     internal class MemoryCachedBrandService : IBrandService
     {
         private static IEnumerable<BrandingInfo> cache;
         private readonly Lazy<IRepository<BrandingInfo>> repository;
 
-        public MemoryCachedBrandService(Lazy<IRepository<BrandingInfo>> repository)
-        {
-            this.repository = repository;
-        }
+        public MemoryCachedBrandService(Lazy<IRepository<BrandingInfo>> repository) => this.repository = repository;
 
         public async Task<BrandingInfo> GetAsync(string name)
         {
@@ -22,13 +13,13 @@ namespace Cod.Platform
 
             if (cache == null)
             {
-                cache = await repository.Value.GetAsync();
+                cache = await this.repository.Value.GetAsync();
             }
 
             var result = cache.SingleOrDefault(b => b.PartitionKey == name);
             if (result == null)
             {
-                cache = await repository.Value.GetAsync();
+                cache = await this.repository.Value.GetAsync();
             }
 
             return cache.SingleOrDefault(b => b.PartitionKey == name);
@@ -45,13 +36,13 @@ namespace Cod.Platform
 
             if (cache == null)
             {
-                cache = await repository.Value.GetAsync();
+                cache = await this.repository.Value.GetAsync();
             }
 
             var result = cache.SingleOrDefault(b => b.WechatAppID == app);
             if (result == null)
             {
-                cache = await repository.Value.GetAsync();
+                cache = await this.repository.Value.GetAsync();
             }
 
             return cache.SingleOrDefault(b => b.WechatAppID == app);

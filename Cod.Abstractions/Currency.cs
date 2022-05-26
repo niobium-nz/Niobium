@@ -211,14 +211,11 @@ namespace Cod
             return new Currency { Code = code };
         }
 
-        public static CultureInfo GetCulture(Currency currency)
-        {
-            return GetCulture(currency.Code);
-        }
+        public static CultureInfo GetCulture(Currency currency) => GetCulture(currency.Code);
 
         public static CultureInfo GetCulture(string code)
         {
-            if (string.IsNullOrWhiteSpace(code))
+            if (String.IsNullOrWhiteSpace(code))
             {
                 throw new ArgumentNullException(nameof(code));
             }

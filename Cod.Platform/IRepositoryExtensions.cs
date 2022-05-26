@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-
-namespace Cod.Platform
+﻿namespace Cod.Platform
 {
     public static class IRepositoryExtensions
     {

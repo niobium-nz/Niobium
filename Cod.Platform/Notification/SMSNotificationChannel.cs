@@ -1,8 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace Cod.Platform
 {
     public abstract class SMSNotificationChannel : INotificationChannel
@@ -15,7 +10,7 @@ namespace Cod.Platform
             string brand,
             Guid user,
             NotificationContext context,
-            int template,
+            int templateID,
             IReadOnlyDictionary<string, object> parameters,
             int level = 0)
         {
@@ -59,7 +54,7 @@ namespace Cod.Platform
                 return OperationResult.NotAllowed;
             }
 
-            if (mobile[0] == '+' && !mobile.Substring(1, mobile.Length - 1).All(Char.IsDigit))
+            if (mobile[0] == '+' && !mobile[1..].All(Char.IsDigit))
             {
                 return OperationResult.NotAllowed;
             }
@@ -68,13 +63,13 @@ namespace Cod.Platform
                 return OperationResult.NotAllowed;
             }
 
-            return await this.SendSMSAsync(brand, mobile, template, parameters);
+            return await this.SendSMSAsync(brand, mobile, templateID, parameters);
         }
 
         protected abstract Task<OperationResult> SendSMSAsync(
             string brand,
             string mobile,
-            int template,
+            int templateID,
             IReadOnlyDictionary<string, object> parameters);
     }
 }

@@ -2,7 +2,7 @@
 
 namespace Cod.Channel
 {
-    class BusyState : IDisposable
+    internal class BusyState : IDisposable
     {
         private ICommander commander;
         private string group;

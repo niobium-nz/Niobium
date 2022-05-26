@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
 namespace Cod.Platform
 {
     public interface IQueryableRepository<T> : IRepository<T>

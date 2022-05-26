@@ -20,9 +20,9 @@ namespace Cod.Channel.Device
                 if (exception is AggregateException aggEx
                     && aggEx.InnerExceptions != null)
                 {
-                    foreach (Exception ex in aggEx.InnerExceptions)
+                    foreach (var ex in aggEx.InnerExceptions)
                     {
-                        foreach (Exception innerEx in ex.Unwind(true))
+                        foreach (var innerEx in ex.Unwind(true))
                         {
                             yield return innerEx;
                         }

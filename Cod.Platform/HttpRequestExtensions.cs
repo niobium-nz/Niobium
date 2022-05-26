@@ -1,14 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
-using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -249,7 +244,7 @@ namespace Cod.Platform
             var stringToSign = $"{req.Path.Value}?{requestBody}";
             var tenantSecret = Cod.Platform.SignatureHelper.GetTenantSecret(tenant, secret);
             var signature = Cod.SignatureHelper.GetSignature(stringToSign, tenantSecret);
-            if (signature.ToUpper() != requestSignature.ToUpper())
+            if (signature.ToUpperInvariant() != requestSignature.ToUpperInvariant())
             {
                 return new OperationResult<T>(InternalError.AuthenticationRequired);
             }
@@ -283,11 +278,11 @@ namespace Cod.Platform
             }
             catch (SecurityTokenValidationException stvex)
             {
-                throw new Exception($"Token failed validation: {stvex.Message}");
+                throw new InvalidDataException($"Token failed validation: {stvex.Message}");
             }
             catch (ArgumentException argex)
             {
-                throw new Exception($"Token was invalid: {argex.Message}");
+                throw new ArgumentException($"Token was invalid: {argex.Message}");
             }
         }
 

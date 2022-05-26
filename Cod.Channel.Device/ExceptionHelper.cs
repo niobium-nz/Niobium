@@ -1,4 +1,3 @@
-using DotNetty.Transport.Channels;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,6 +8,7 @@ using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
+using DotNetty.Transport.Channels;
 
 namespace Cod.Channel.Device
 {
@@ -26,20 +26,11 @@ namespace Cod.Channel.Device
             typeof(WebSocketException),
         };
 
-        private static bool IsNetwork(Exception singleException)
-        {
-            return s_networkExceptions.Any(baseExceptionType => baseExceptionType.IsInstanceOfType(singleException));
-        }
+        private static bool IsNetwork(Exception singleException) => s_networkExceptions.Any(baseExceptionType => baseExceptionType.IsInstanceOfType(singleException));
 
-        internal static bool IsNetworkExceptionChain(Exception exceptionChain)
-        {
-            return exceptionChain.Unwind(true).Any(e => IsNetwork(e) && !IsTlsSecurity(e));
-        }
+        internal static bool IsNetworkExceptionChain(Exception exceptionChain) => exceptionChain.Unwind(true).Any(e => IsNetwork(e) && !IsTlsSecurity(e));
 
-        internal static bool IsSecurityExceptionChain(Exception exceptionChain)
-        {
-            return exceptionChain.Unwind(true).Any(e => IsTlsSecurity(e));
-        }
+        internal static bool IsSecurityExceptionChain(Exception exceptionChain) => exceptionChain.Unwind(true).Any(e => IsTlsSecurity(e));
 
         private static bool IsTlsSecurity(Exception singleException)
         {

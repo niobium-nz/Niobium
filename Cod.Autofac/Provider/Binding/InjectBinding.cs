@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using AzureFunctions.Autofac.Configuration;
+﻿using AzureFunctions.Autofac.Configuration;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Protocols;
 

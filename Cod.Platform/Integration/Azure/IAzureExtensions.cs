@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Microsoft.Azure.Management.AppService.Fluent;
 using Microsoft.Azure.Management.AppService.Fluent.Models;
 using Microsoft.Azure.Management.Fluent;
@@ -24,13 +22,13 @@ namespace Cod.Platform
                 .WithSubscription(subscriptionID);
         }
 
-        public async static Task<IFunctionApp> GetFunctionAppAsync(this IAzure azure, string resourceGroup, string name) => await azure.AppServices.FunctionApps.GetByResourceGroupAsync(resourceGroup, name);
+        public static async Task<IFunctionApp> GetFunctionAppAsync(this IAzure azure, string resourceGroup, string name) => await azure.AppServices.FunctionApps.GetByResourceGroupAsync(resourceGroup, name);
 
-        public async static Task<IFunctionApp> GetFunctionAppAsync(this IAzure azure, string funcId) => await azure.AppServices.FunctionApps.GetByIdAsync(funcId);
+        public static async Task<IFunctionApp> GetFunctionAppAsync(this IAzure azure, string funcId) => await azure.AppServices.FunctionApps.GetByIdAsync(funcId);
 
         public static IEnumerable<string> QueryDomainBindings(this IFunctionApp function) => function.EnabledHostNames;
 
-        public async static Task AddHostnameBindingAsync(this IFunctionApp function, string domain, string subDomain)
+        public static async Task AddHostnameBindingAsync(this IFunctionApp function, string domain, string subDomain)
             => await function.Update()
             .DefineHostnameBinding()
             .WithThirdPartyDomain(domain)
@@ -38,9 +36,9 @@ namespace Cod.Platform
             .WithDnsRecordType(CustomHostNameDnsRecordType.CName)
             .Attach().ApplyAsync();
 
-        public async static Task RemoveHostnameBindingAsync(this IFunctionApp function, string hostname) => await function.Update().WithoutHostnameBinding(hostname).ApplyAsync();
+        public static async Task RemoveHostnameBindingAsync(this IFunctionApp function, string hostname) => await function.Update().WithoutHostnameBinding(hostname).ApplyAsync();
 
-        public async static Task UploadAndBindSSLCertificateAsync(this IFunctionApp functionApp, byte[] pfx, string password, string hostname)
+        public static async Task UploadAndBindSSLCertificateAsync(this IFunctionApp functionApp, byte[] pfx, string password, string hostname)
             => await functionApp.Update()
                 .WithThirdPartyHostnameBinding(hostname)
                 .DefineSslBinding()
@@ -50,7 +48,7 @@ namespace Cod.Platform
                 .Attach()
                 .ApplyAsync();
 
-        public async static Task BindExistingSSLCertificateAsync(this IFunctionApp functionApp, string certificateNameOrThumbprint, string hostname)
+        public static async Task BindExistingSSLCertificateAsync(this IFunctionApp functionApp, string certificateNameOrThumbprint, string hostname)
             => await functionApp.Update()
                 .WithThirdPartyHostnameBinding(hostname)
                 .DefineSslBinding()
@@ -60,6 +58,6 @@ namespace Cod.Platform
                 .Attach()
                 .ApplyAsync();
 
-        public async static Task RemoveSSLCertificateBindingAsync(this IFunctionApp functionApp, string hostname) => await functionApp.Update().WithoutSslBinding(hostname).ApplyAsync();
+        public static async Task RemoveSSLCertificateBindingAsync(this IFunctionApp functionApp, string hostname) => await functionApp.Update().WithoutSslBinding(hostname).ApplyAsync();
     }
 }

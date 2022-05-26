@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 
 namespace Cod.Platform
@@ -15,13 +15,13 @@ namespace Cod.Platform
         {
             var sb = new StringBuilder();
             var index = 1;
-            sb.Append($"{{\"frist\":{{\"value\":\"{this.First.Value}\",\"color\":\"{this.First.Color}\"}},");
+            sb.Append(CultureInfo.InvariantCulture, $"{{\"frist\":{{\"value\":\"{this.First.Value}\",\"color\":\"{this.First.Color}\"}},");
             foreach (var item in this.Keywords)
             {
-                sb.Append($"\"keyword{index}\":{{\"value\":\"{item.Value}\",\"color\":\"{item.Color}\"}},");
+                sb.Append(CultureInfo.InvariantCulture, $"\"keyword{index}\":{{\"value\":\"{item.Value}\",\"color\":\"{item.Color}\"}},");
                 index++;
             }
-            sb.Append($"\"remark\":{{\"value\":\"{this.Remark.Value}\",\"color\":\"{this.Remark.Color}\"}}}}");
+            sb.Append(CultureInfo.InvariantCulture, $"\"remark\":{{\"value\":\"{this.Remark.Value}\",\"color\":\"{this.Remark.Color}\"}}}}");
             return sb.ToString();
         }
     }

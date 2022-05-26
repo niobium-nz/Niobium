@@ -13,7 +13,7 @@ namespace Cod.Channel
         private const string MessageTemplatePlaceholder = "$$$MESSAGE$$$";
         private const string MessageTemplate = "<QueueMessage><MessageText>" + MessageTemplatePlaceholder + "</MessageText></QueueMessage>";
         private const string XMLMediaType = "application/xml";
-        private static readonly Regex MessageRegex = new Regex("<MessageText>(.*)</MessageText>");
+        private static readonly Regex MessageRegex = new("<MessageText>(.*)</MessageText>");
         private static readonly IDictionary<string, string> StorageRequestHeaders = new Dictionary<string, string>
         {
             { "x-ms-version", "2018-03-28" },

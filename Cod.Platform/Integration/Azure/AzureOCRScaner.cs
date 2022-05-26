@@ -1,11 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Cod.Platform
 {
@@ -46,9 +40,9 @@ namespace Cod.Platform
                         ocrResultJson = await ocrResultResponse.Content.ReadAsStringAsync();
                         ++i;
                     }
-                    while (i < 60 && ocrResultJson.IndexOf("\"status\":\"succeeded\"") == -1);
+                    while (i < 60 && !ocrResultJson.Contains("\"status\":\"succeeded\"", StringComparison.InvariantCultureIgnoreCase));
 
-                    if (i == 60 && ocrResultJson.IndexOf("\"status\":\"succeeded\"") == -1)
+                    if (i == 60 && !ocrResultJson.Contains("\"status\":\"succeeded\"", StringComparison.InvariantCultureIgnoreCase))
                     {
                         return new OperationResult<IEnumerable<OCRScanResult>>(InternalError.BadGateway) { Reference = operationLocation };
                     }
@@ -58,13 +52,13 @@ namespace Cod.Platform
                             r.Lines.SelectMany(l =>
                                 l.Words.Select(w => new OCRScanResult
                                 {
-                                    Text = w.Text.EndsWith("7A") ? w.Text.Substring(0, w.Text.Length - 2) : w.Text, // REMARK (5he11) Azure has issue with recognition of "湖" and it'd end up with "7A"
+                                    Text = w.Text.EndsWith("7A", StringComparison.InvariantCultureIgnoreCase) ? w.Text[0..^2] : w.Text, // REMARK (5he11) Azure has issue with recognition of "湖" and it'd end up with "7A"
                                     IsConfident = w.Confidence > 0.63d,
                                 }))));
                     result.AddRange(ocr.AnalyzeResult.ReadResults.SelectMany(r =>
                             r.Lines.Select(l => new OCRScanResult
                             {
-                                Text = l.Text.EndsWith("7A") ? l.Text.Substring(0, l.Text.Length - 2) : l.Text,
+                                Text = l.Text.EndsWith("7A", StringComparison.InvariantCultureIgnoreCase) ? l.Text[0..^2] : l.Text,
                                 IsConfident = l.Words.Max(w => w.Confidence) > 0.63d,
                             })));
                     return new OperationResult<IEnumerable<OCRScanResult>>(result);

@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
 {
     internal class AliyunDNSHelper : IDNSManager
     {
-        private static readonly Uri AliyunDNSHost = new Uri("https://alidns.aliyuncs.com/");
+        private static readonly Uri AliyunDNSHost = new("https://alidns.aliyuncs.com/");
         private readonly Lazy<IConfigurationProvider> configuration;
         private readonly ILogger logger;
 
@@ -29,7 +25,7 @@ namespace Cod.Platform
 
             var key = await this.configuration.Value.GetSettingAsync<string>("ALIYUN_KEY");
             var secret = await this.configuration.Value.GetSettingAsync<string>("ALIYUN_SECRET");
-            if (!secret.EndsWith("&"))
+            if (!secret.EndsWith("&", StringComparison.InvariantCultureIgnoreCase))
             {
                 secret += "&";
             }
@@ -91,7 +87,7 @@ namespace Cod.Platform
 
             var key = await this.configuration.Value.GetSettingAsync<string>("ALIYUN_KEY");
             var secret = await this.configuration.Value.GetSettingAsync<string>("ALIYUN_SECRET");
-            if (!secret.EndsWith("&"))
+            if (!secret.EndsWith("&", StringComparison.InvariantCultureIgnoreCase))
             {
                 secret += "&";
             }
@@ -139,7 +135,7 @@ namespace Cod.Platform
 
             var key = await this.configuration.Value.GetSettingAsync<string>("ALIYUN_KEY");
             var secret = await this.configuration.Value.GetSettingAsync<string>("ALIYUN_SECRET");
-            if (!secret.EndsWith("&"))
+            if (!secret.EndsWith("&", StringComparison.InvariantCultureIgnoreCase))
             {
                 secret += "&";
             }

@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace Cod.Platform
 {
     public class OpenIDRegistration
@@ -19,9 +16,7 @@ namespace Cod.Platform
 
         public string OffsetPrefix { get; set; }
 
-        public static IEnumerable<OpenIDRegistration> Build(string mobile)
-        {
-            return new[]
+        public static IEnumerable<OpenIDRegistration> Build(string mobile) => new[]
             {
                 new OpenIDRegistration
                 {
@@ -34,7 +29,6 @@ namespace Cod.Platform
                     Kind = (int)OpenIDKind.SMS,
                 },
             };
-        }
 
         public static IEnumerable<OpenIDRegistration> Build(OpenIDKind kind, string app, string openID, string credentials)
         {
@@ -61,9 +55,7 @@ namespace Cod.Platform
             return result;
         }
 
-        public static IEnumerable<OpenIDRegistration> Build(string mobile, OpenIDKind kind, string app, string openID)
-        {
-            return new[]
+        public static IEnumerable<OpenIDRegistration> Build(string mobile, OpenIDKind kind, string app, string openID) => new[]
             {
                 new OpenIDRegistration
                 {
@@ -82,6 +74,5 @@ namespace Cod.Platform
                     App = app,
                 },
             };
-        }
     }
 }

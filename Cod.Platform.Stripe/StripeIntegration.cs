@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net.Http;
 using System.Net.Sockets;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Stripe;
 
@@ -317,12 +312,12 @@ namespace Cod.Platform
 
         private static OperationResult<T> ConvertStripeError<T>(StripeError stripeError)
         {
-            if(stripeError == null)
+            if (stripeError == null)
             {
                 return new OperationResult<T>(InternalError.PaymentErrorUnknown);
             }
 
-            if (!string.IsNullOrWhiteSpace(stripeError.Code) && !string.IsNullOrWhiteSpace(stripeError.DeclineCode))
+            if (!String.IsNullOrWhiteSpace(stripeError.Code) && !String.IsNullOrWhiteSpace(stripeError.DeclineCode))
             {
                 var code = stripeError.Code.Trim();
                 var declineCode = stripeError.DeclineCode.Trim();

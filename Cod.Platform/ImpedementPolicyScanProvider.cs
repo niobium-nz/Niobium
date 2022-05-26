@@ -1,10 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.Azure.Cosmos.Table;
+﻿using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {
-    class ImpedementPolicyScanProvider : IImpedimentPolicy
+    internal class ImpedementPolicyScanProvider : IImpedimentPolicy
     {
         public async Task<IEnumerable<Impediment>> GetImpedimentsAsync(IImpedimentContext context)
         {
@@ -17,19 +15,10 @@ namespace Cod.Platform
             return await table.WhereAsync<Impediment>(filter);
         }
 
-        public Task<bool> ImpedeAsync(IImpedimentContext context)
-        {
-            return Task.FromResult(false);
-        }
+        public Task<bool> ImpedeAsync(IImpedimentContext context) => Task.FromResult(false);
 
-        public Task<bool> SupportAsync(IImpedimentContext context)
-        {
-            return Task.FromResult(context != null && string.IsNullOrEmpty(context.Category));
-        }
+        public Task<bool> SupportAsync(IImpedimentContext context) => Task.FromResult(context != null && String.IsNullOrEmpty(context.Category));
 
-        public Task<bool> UnimpedeAsync(IImpedimentContext context)
-        {
-            return Task.FromResult(false);
-        }
+        public Task<bool> UnimpedeAsync(IImpedimentContext context) => Task.FromResult(false);
     }
 }

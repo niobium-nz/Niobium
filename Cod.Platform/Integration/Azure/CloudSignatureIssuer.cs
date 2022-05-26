@@ -1,6 +1,7 @@
-﻿using Microsoft.Azure.Cosmos.Table;
-using Microsoft.Azure.Storage.Blob;
-using Microsoft.Azure.Storage.Queue;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Queue;
+using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {
@@ -12,9 +13,9 @@ namespace Cod.Platform
                 SharedAccessProtocol.HttpsOrHttp, null);
 
         public string Issue(string resource, SharedAccessQueuePolicy policy)
-            => CloudStorage.GetQueue(resource).GetSharedAccessSignature(policy, null, Microsoft.Azure.Storage.SharedAccessProtocol.HttpsOrHttp, null);
+            => CloudStorage.GetQueue(resource).GetSharedAccessSignature(policy, null, SharedAccessProtocol.HttpsOrHttp, null);
 
         public string Issue(string resource, SharedAccessBlobPolicy policy)
-            => CloudStorage.GetBlobContainer(resource).GetSharedAccessSignature(policy, null, Microsoft.Azure.Storage.SharedAccessProtocol.HttpsOrHttp, null);
+            => CloudStorage.GetBlobContainer(resource).GetSharedAccessSignature(policy, null, SharedAccessProtocol.HttpsOrHttp, null);
     }
 }

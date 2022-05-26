@@ -104,22 +104,22 @@ namespace Cod
 
         public static DateTimeOffset? ParseDate(this string dateString)
         {
-            if (string.IsNullOrWhiteSpace(dateString) || dateString.Length != 8)
+            if (String.IsNullOrWhiteSpace(dateString) || dateString.Length != 8)
             {
                 return null;
             }
 
-            if (!int.TryParse(dateString.Substring(0, 4), out var year))
+            if (!Int32.TryParse(dateString.Substring(0, 4), out var year))
             {
                 return null;
             }
 
-            if (!int.TryParse(dateString.Substring(4, 2), out var month))
+            if (!Int32.TryParse(dateString.Substring(4, 2), out var month))
             {
                 return null;
             }
 
-            if (!int.TryParse(dateString.Substring(6, 2), out var day))
+            if (!Int32.TryParse(dateString.Substring(6, 2), out var day))
             {
                 return null;
             }
@@ -147,7 +147,7 @@ namespace Cod
 
         public static int GetWeekOfYear(this DateTime date)
         {
-            int week = GetWeekNumber(date);
+            var week = GetWeekNumber(date);
 
             if (week < MinWeek)
             {
@@ -185,14 +185,14 @@ namespace Cod
 
         public static DateTimeOffset GetFirstDateOfWeek(int year, int weekOfYear)
         {
-            DateTime jan1 = new DateTime(year, 1, 1);
-            int daysOffset = DayOfWeek.Thursday - jan1.DayOfWeek;
+            var jan1 = new DateTime(year, 1, 1);
+            var daysOffset = DayOfWeek.Thursday - jan1.DayOfWeek;
 
             // Use first Thursday in January to get first week of the year as
             // it will never be in Week 52/53
-            DateTime firstThursday = jan1.AddDays(daysOffset);
+            var firstThursday = jan1.AddDays(daysOffset);
             var cal = CultureInfo.CurrentCulture.Calendar;
-            int firstWeek = cal.GetWeekOfYear(firstThursday, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+            var firstWeek = cal.GetWeekOfYear(firstThursday, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
 
             var weekNum = weekOfYear;
             // As we're adding days to a date in Week 1,
@@ -210,14 +210,8 @@ namespace Cod
             return new DateTimeOffset(result.AddDays(-3), TimeSpan.Zero);
         }
 
-        private static int GetWeekNumber(DateTime date)
-        {
-            return (date.DayOfYear - GetWeekday(date.DayOfWeek) + 10) / 7;
-        }
+        private static int GetWeekNumber(DateTime date) => (date.DayOfYear - GetWeekday(date.DayOfWeek) + 10) / 7;
 
-        private static int GetWeekday(DayOfWeek dayOfWeek)
-        {
-            return dayOfWeek == DayOfWeek.Sunday ? 7 : (int)dayOfWeek;
-        }
+        private static int GetWeekday(DayOfWeek dayOfWeek) => dayOfWeek == DayOfWeek.Sunday ? 7 : (int)dayOfWeek;
     }
 }

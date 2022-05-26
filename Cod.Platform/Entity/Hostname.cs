@@ -1,12 +1,11 @@
-﻿using System;
-using Microsoft.Azure.Cosmos.Table;
+﻿using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {
     public class Hostname : TableEntity, IEntity
     {
         public DateTimeOffset? Created { get; set; }
-        
+
         public bool Wildcard { get; set; }
 
         public DateTimeOffset SSLExpiry { get; set; }

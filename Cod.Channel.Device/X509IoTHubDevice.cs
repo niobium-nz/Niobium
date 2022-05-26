@@ -135,7 +135,7 @@ namespace Cod.Channel.Device
                             this.logger.LogError(e, e.Message);
                         }
                     }
-                    
+
                     await Task.Delay(500);
                 }
             }

@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace Cod.Platform
 {
     public class MemoryCachedRepository<T> : IRepository<T>
@@ -11,10 +6,7 @@ namespace Cod.Platform
         private readonly IRepository<T> repository;
         private DateTimeOffset lastCached = DateTimeOffset.MinValue;
 
-        public MemoryCachedRepository(IRepository<T> repository)
-        {
-            this.repository = repository;
-        }
+        public MemoryCachedRepository(IRepository<T> repository) => this.repository = repository;
 
         protected List<T> Cache { get; private set; } = new List<T>();
 

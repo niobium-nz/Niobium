@@ -10,7 +10,7 @@ namespace Cod.Channel
         private const string AndroidUserAgent = "ANDROID";
         private static readonly string[] AppleUserAgents = new[] { "IPHONE", "IPAD", "IPOD" };
 
-        public async static Task<BrowserType> GetBrowserTypeAsync(this IBrowser browser)
+        public static async Task<BrowserType> GetBrowserTypeAsync(this IBrowser browser)
         {
             var ua = await browser.GetUserAgentAsync();
             ua = ua.ToUpperInvariant();

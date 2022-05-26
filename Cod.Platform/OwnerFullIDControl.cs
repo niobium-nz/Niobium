@@ -1,7 +1,5 @@
-﻿using System;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using Microsoft.Azure.Cosmos.Table;
+﻿using System.Security.Claims;
+using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {

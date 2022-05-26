@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Cod.Platform
 {
@@ -29,7 +24,7 @@ namespace Cod.Platform
             string brand,
             Guid user,
             NotificationContext context,
-            int template,
+            int templateID,
             IReadOnlyDictionary<string, object> parameters, int level = 0)
         {
             if (level != (int)OpenIDKind.Email)
@@ -71,17 +66,17 @@ namespace Cod.Platform
                 return OperationResult.BadRequest;
             }
 
-            return await this.SendEmailAsync(brand, email, context, template, parameters);
+            return await this.SendEmailAsync(brand, email, context, templateID, parameters);
         }
 
         protected virtual async Task<OperationResult> SendEmailAsync(
             string brand,
             string email,
             NotificationContext context,
-            int template,
+            int templateID,
             IReadOnlyDictionary<string, object> parameters)
         {
-            var requestObj = await this.MakeRequestAsync(brand, email, context, template, parameters);
+            var requestObj = await this.MakeRequestAsync(brand, email, context, templateID, parameters);
             var requestData = JsonSerializer.SerializeObject(requestObj, JsonSerializationFormat.UnderstoreCase);
             using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
             httpclient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Key);
@@ -101,7 +96,7 @@ namespace Cod.Platform
             string brand,
             string email,
             NotificationContext context,
-            int template,
+            int templateID,
             IReadOnlyDictionary<string, object> parameters);
     }
 }

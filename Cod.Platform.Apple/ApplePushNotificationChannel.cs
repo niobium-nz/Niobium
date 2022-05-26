@@ -1,16 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 using Jose;
 using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "WindowsOnly")]
     public abstract class ApplePushNotificationChannel : PushNotificationChannel
     {
         private readonly Lazy<ICacheStore> cacheStore;

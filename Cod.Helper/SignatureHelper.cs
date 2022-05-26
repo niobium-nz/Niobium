@@ -9,8 +9,8 @@ namespace Cod
         {
             using (var sha256 = new HMACSHA256(Encoding.UTF8.GetBytes(key)))
             {
-                byte[] source = Encoding.UTF8.GetBytes(input);
-                byte[] crypto = sha256.ComputeHash(source);
+                var source = Encoding.UTF8.GetBytes(input);
+                var crypto = sha256.ComputeHash(source);
                 return crypto.ToHex();
             }
         }

@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Cod.Platform
 {
     public class SendGridEmailBody

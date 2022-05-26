@@ -1,5 +1,7 @@
 namespace Cod.Platform
 {
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores", Justification = "CustomNaming")]
     public abstract class Constant : Cod.Constant
     {
         public const string STORAGE_CONNECTION_NAME = "STORAGE_ACCOUNT";

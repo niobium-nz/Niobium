@@ -1,6 +1,5 @@
 ﻿using System.Security.Claims;
-using System.Threading.Tasks;
-using Microsoft.Azure.Cosmos.Table;
+using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {

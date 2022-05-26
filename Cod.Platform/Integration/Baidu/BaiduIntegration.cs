@@ -1,12 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 
@@ -178,7 +172,7 @@ namespace Cod.Platform
                             r.Text.Select(t => new CodeScanResult
                             {
                                 Code = t,
-                                Kind = r.Type == "CODE_128" ? CodeKind.CODE_128 : r.Type == "QR_CODE" ? CodeKind.QR_CODE : CodeKind.Unknown,
+                                Kind = r.Type == "CODE_128" ? CodeKind.Code128 : r.Type == "QR_CODE" ? CodeKind.QRCode : CodeKind.Unknown,
                             })));
                     }
                     return new OperationResult<IEnumerable<CodeScanResult>>(InternalError.InternalServerError) { Reference = json };

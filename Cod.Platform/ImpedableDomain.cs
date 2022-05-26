@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using System.Linq;
 
 namespace Cod.Platform
 {
@@ -46,10 +42,7 @@ namespace Cod.Platform
 
         public async Task UnimpedeAsync(string category, int cause, string policyInput = null) => await this.UnimpedeAsync(category, new int[] { cause }, policyInput);
 
-        public async Task UnimpedeAsync(string category, IEnumerable<int> causes, string policyInput = null)
-        {
-            await this.UnimpedeAsync(this.GetImpedementID(), category, causes, policyInput);
-        }
+        public async Task UnimpedeAsync(string category, IEnumerable<int> causes, string policyInput = null) => await this.UnimpedeAsync(this.GetImpedementID(), category, causes, policyInput);
 
         public async Task UnimpedeAsync(string impedementID, string category, IEnumerable<int> causes, string policyInput = null)
         {
@@ -75,7 +68,7 @@ namespace Cod.Platform
         {
             if (String.IsNullOrEmpty(category))
             {
-                throw new ArgumentException(nameof(category));
+                throw new ArgumentNullException(nameof(category));
             }
             return await this.GetImpedimentsAsync(category);
         }

@@ -25,7 +25,7 @@ namespace Cod
                 input = input.Substring(3, input.Length - 3);
             }
 
-            if (input.Length != 11 || !input.All(char.IsDigit) || input[0] != '1')
+            if (input.Length != 11 || !input.All(Char.IsDigit) || input[0] != '1')
             {
                 return false;
             }

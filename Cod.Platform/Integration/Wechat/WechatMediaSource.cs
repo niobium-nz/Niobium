@@ -1,6 +1,3 @@
-﻿using System;
-using System.IO;
-
 namespace Cod.Platform
 {
     public class WechatMediaSource : IDisposable
@@ -16,6 +13,8 @@ namespace Cod.Platform
                 this.MediaStream.Dispose();
                 this.MediaStream = null;
             }
+
+            GC.SuppressFinalize(this);
         }
     }
 }

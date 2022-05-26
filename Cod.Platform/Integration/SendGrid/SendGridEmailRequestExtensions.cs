@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-
-namespace Cod.Platform
+﻿namespace Cod.Platform
 {
     public static class SendGridEmailRequestExtensions
     {
-        public async static Task AddAttachmentAsync(
+        public static async Task AddAttachmentAsync(
             this SendGridEmailRequest request,
             Stream input,
             string filename,

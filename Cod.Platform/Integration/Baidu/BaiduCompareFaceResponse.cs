@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Cod.Platform
+﻿namespace Cod.Platform
 {
     public class BaiduCompareFaceResponse : BaiduIntegrationResponse
     {

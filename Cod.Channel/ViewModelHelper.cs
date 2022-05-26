@@ -5,7 +5,7 @@ namespace Cod.Channel
 {
     public static class ViewModelHelper
     {
-        public async static Task ValidateAndExecuteAsync(
+        public static async Task ValidateAndExecuteAsync(
             Func<Task<ICommand>> getCommand,
             Func<Task<object>> getCommandParameter,
             Func<CommandExecutionEventArgs, Task> onSuccess = null,

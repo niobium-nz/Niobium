@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Cod.Platform
+﻿namespace Cod.Platform
 {
     internal class BaiduIDScanResponse : BaiduIntegrationResponse
     {

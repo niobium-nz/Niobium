@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
 namespace Cod.Platform
 {
     public abstract class WechatPushNotificationChannel : PushNotificationChannel
@@ -23,7 +19,7 @@ namespace Cod.Platform
             string brand,
             Guid user,
             NotificationContext context,
-            int template,
+            int templateID,
             IReadOnlyDictionary<string, object> parameters,
             int level = 0)
         {
@@ -31,13 +27,13 @@ namespace Cod.Platform
             {
                 return OperationResult.NotAllowed;
             }
-            return await base.SendAsync(brand, user, context, template, parameters, level);
+            return await base.SendAsync(brand, user, context, templateID, parameters, level);
         }
 
         protected override async Task<OperationResult> SendPushAsync(
             string brand,
             IEnumerable<NotificationContext> targets,
-            int template,
+            int templateID,
             IReadOnlyDictionary<string, object> parameters)
         {
             var result = false;
@@ -57,14 +53,14 @@ namespace Cod.Platform
                     continue;
                 }
 
-                var templateID = await this.GetTemplateIDAsync(brandingInfo, target, template, parameters);
-                var parameter = await this.GetTemplateParameterAsync(brandingInfo, target, template, parameters);
-                var link = await this.GetTemplateLinkAsync(brandingInfo, target, template, parameters);
+                var tid = await this.GetTemplateIDAsync(brandingInfo, target, templateID, parameters);
+                var parameter = await this.GetTemplateParameterAsync(brandingInfo, target, templateID, parameters);
+                var link = await this.GetTemplateLinkAsync(brandingInfo, target, templateID, parameters);
                 var notificationResult = await this.wechatIntegration.Value.SendNotificationAsync(
                     target.App,
                     brandingInfo.WechatSecret,
                     target.Identity,
-                    templateID,
+                    tid,
                     parameter,
                     link);
 
@@ -88,19 +84,19 @@ namespace Cod.Platform
         protected abstract Task<string> GetTemplateIDAsync(
             BrandingInfo brand,
             NotificationContext target,
-            int template,
+            int templateID,
             IReadOnlyDictionary<string, object> parameters);
 
         protected abstract Task<WechatNotificationParameter> GetTemplateParameterAsync(
             BrandingInfo brand,
             NotificationContext target,
-            int template,
+            int templateID,
             IReadOnlyDictionary<string, object> parameters);
 
         protected abstract Task<string> GetTemplateLinkAsync(
             BrandingInfo brand,
             NotificationContext target,
-            int template,
+            int templateID,
             IReadOnlyDictionary<string, object> parameters);
     }
 }

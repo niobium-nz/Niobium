@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
 
 namespace Cod.Platform
 {
@@ -16,9 +13,9 @@ namespace Cod.Platform
 
         public static HttpClientHandler GetHandler() => handler.Value;
 
-        public async static Task<HttpClientHandler> GetProxyHandler(string location, IHttpProxyFactory factory = null)
+        public static async Task<HttpClientHandler> GetProxyHandler(string location, IHttpProxyFactory factory = null)
         {
-            if (string.IsNullOrWhiteSpace(location))
+            if (String.IsNullOrWhiteSpace(location))
             {
                 throw new ArgumentNullException(nameof(location));
             }
@@ -44,7 +41,7 @@ namespace Cod.Platform
                 IWebProxy proxy = null;
                 if (factory != null)
                 {
-                    for (int i = 0; i < 5; i++)
+                    for (var i = 0; i < 5; i++)
                     {
                         var p = await factory.CreateAsync(location);
                         var works = await p.TestAsync();

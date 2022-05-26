@@ -4,10 +4,7 @@ namespace Cod
 {
     public static class StorageKeyExtensions
     {
-        public static string BuildFullID(this StorageKey key)
-        {
-            return $"{key.PartitionKey}$$${key.RowKey}";
-        }
+        public static string BuildFullID(this StorageKey key) => $"{key.PartitionKey}$$${key.RowKey}";
 
         public static StorageKey ParseFullID(string fullID)
         {

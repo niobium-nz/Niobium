@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using Certes;
+﻿using Certes;
 using Certes.Acme;
 using Certes.Acme.Resource;
 

@@ -1,5 +1,5 @@
-﻿using System;
-using Microsoft.Azure.Cosmos.Table;
+using System.Globalization;
+using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {
@@ -11,10 +11,10 @@ namespace Cod.Platform
 
         public string GetCategory() => this.PartitionKey.Split('-')[1];
 
-        public int GetCause() => Int32.Parse(this.RowKey);
+        public int GetCause() => Int32.Parse(this.RowKey, CultureInfo.InvariantCulture);
 
-        public static string BuildPartitionKey(string id, string category) => String.Format("{0}-{1}", id, category);
+        public static string BuildPartitionKey(string id, string category) => FormattableString.Invariant($"{id}-{category}");
 
-        public static string BuildRowKey(int cause) => cause.ToString();
+        public static string BuildRowKey(int cause) => cause.ToString(CultureInfo.InvariantCulture);
     }
 }

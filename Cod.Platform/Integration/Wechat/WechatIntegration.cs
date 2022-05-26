@@ -1,12 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 using System.Web;
 using System.Xml;
 using Cod.Platform.Integration.Wechat;
@@ -110,7 +104,7 @@ namespace Cod.Platform
                     return new OperationResult<IEnumerable<CodeScanResult>>(result.CodeResults.Select(r => new CodeScanResult
                     {
                         Code = r.Data,
-                        Kind = r.TypeName == "CODE_128" ? CodeKind.CODE_128 : r.TypeName == "QR_CODE" ? CodeKind.QR_CODE : CodeKind.Unknown,
+                        Kind = r.TypeName == "CODE_128" ? CodeKind.Code128 : r.TypeName == "QR_CODE" ? CodeKind.QRCode : CodeKind.Unknown,
                     }));
                 }
 
@@ -127,116 +121,6 @@ namespace Cod.Platform
                 return new OperationResult<IEnumerable<CodeScanResult>>(InternalError.BadGateway) { Reference = json };
             }
             return new OperationResult<IEnumerable<CodeScanResult>>(status) { Reference = json };
-        }
-
-        public async Task<OperationResult<string>> PerformOCRAsync(string appId, string secret, string mediaID)
-        {
-            var token = await this.GetAccessTokenAsync(appId, secret);
-            if (!token.IsSuccess)
-            {
-                return token;
-            }
-
-            var path = GetOCRPath(WechatUploadKind.OCR);
-            var query = HttpUtility.ParseQueryString(String.Empty);
-            query["access_token"] = token.Result;
-            query["img_url"] = $"https://{WechatHost}/cgi-bin/media/get?access_token={token.Result}&media_id={mediaID}";
-            using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
-            var resp = await httpclient.PostAsync($"https://{WechatHost}/{path}?{query}", null);
-            var status = (int)resp.StatusCode;
-            var json = await resp.Content.ReadAsStringAsync();
-            if (status >= 200 && status < 400)
-            {
-                if (json.Contains("\"errcode\":0,"))
-                {
-                    return new OperationResult<string>(json);
-                }
-
-                if (json.Contains("\"errcode\":40001,"))
-                {
-                    await this.RevokeAccessTokenAsync(appId);
-                    return await this.PerformOCRAsync(appId, secret, mediaID);
-                }
-
-                if (Logger.Instance != null)
-                {
-                    Logger.Instance.LogError($"An error occurred while trying to Perform OCR over media {mediaID} from Wechat with status code={status}: {json}");
-                }
-                return new OperationResult<string>(InternalError.BadGateway) { Reference = json };
-            }
-            return new OperationResult<string>(status) { Reference = json };
-        }
-
-        public async Task<OperationResult<string>> PerformOCRAsync(string appId, string secret, WechatUploadKind kind, Stream input)
-        {
-            var token = await this.GetAccessTokenAsync(appId, secret);
-            if (!token.IsSuccess)
-            {
-                return token;
-            }
-
-            var path = GetOCRPath(kind);
-            var buff = new byte[512];
-            var hash = Guid.NewGuid().ToString("N").Substring(0, 16).ToLowerInvariant();
-            var request = (HttpWebRequest)WebRequest.Create($"https://{WechatHost}/{path}?access_token={token.Result}");
-            request.Method = "POST";
-            request.ContentType = $"multipart/form-data; boundary=------------------------{hash}";
-            using (var requestStream = request.GetRequestStream())
-            {
-                using (var requestWriter = new StreamWriter(requestStream))
-                {
-                    var sb = new StringBuilder();
-                    sb.Append($"--------------------------{hash}\r\n");
-                    sb.Append($"Content-Disposition: form-data; name=\"img\"; filename=\"{hash}.jpg\"\r\n");
-                    sb.Append("Content-Type: image/jpeg\r\n");
-                    sb.Append("\r\n");
-                    await requestWriter.WriteAsync(sb.ToString());
-                }
-
-                if (input.CanSeek)
-                {
-                    input.Seek(0, SeekOrigin.Begin);
-                }
-
-                while (true)
-                {
-                    var read = await input.ReadAsync(buff, 0, buff.Length);
-                    if (read <= 0)
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        await requestStream.WriteAsync(buff, 0, read);
-                    }
-                }
-
-                using (var requestWriter = new StreamWriter(requestStream))
-                {
-                    await requestWriter.WriteAsync($"\r\n--------------------------{hash}--\r\n");
-                }
-            }
-
-            var response = (HttpWebResponse)request.GetResponse();
-            using var responseStream = response.GetResponseStream();
-            using var sr = new StreamReader(responseStream);
-            var s = await sr.ReadToEndAsync();
-            if (s.Contains("\"errcode\":0,"))
-            {
-                return new OperationResult<string>(s);
-            }
-
-            if (s.Contains("\"errcode\":40001,"))
-            {
-                await this.RevokeAccessTokenAsync(appId);
-                return await this.PerformOCRAsync(appId, secret, kind, input);
-            }
-
-            if (Logger.Instance != null)
-            {
-                Logger.Instance.LogError($"An error occurred while trying to Perform OCR over stream media with status code={(int)response.StatusCode}: {s}");
-            }
-            return new OperationResult<string>(InternalError.BadGateway) { Reference = s };
         }
 
         public async Task<OperationResult<string>> GetJSApiTicket(string appID, string secret)
@@ -468,11 +352,11 @@ namespace Cod.Platform
 
             if (retry == 1)
             {
-                reference += retry.ToString();
+                reference += retry.ToString(CultureInfo.InvariantCulture);
             }
             else if (retry > 1)
             {
-                reference = $"{reference.Substring(0, reference.Length - 1)}{retry}";
+                reference = $"{reference[0..^1]}{retry}";
             }
 
             var nonceStr = Guid.NewGuid().ToString("N").ToUpperInvariant();
@@ -528,7 +412,7 @@ namespace Cod.Platform
             return new OperationResult<string>(InternalError.BadGateway) { Reference = body };
         }
 
-        internal Dictionary<string, object> GetJSAPIPaySignature(string prepayID, string appID, string wechatMerchantSignature)
+        internal static Dictionary<string, object> GetJSAPIPaySignature(string prepayID, string appID, string wechatMerchantSignature)
         {
             var nonceStr = Guid.NewGuid().ToString("N").ToUpperInvariant();
             var timeStamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -537,7 +421,7 @@ namespace Cod.Platform
                 {
                     { "appId", appID },
                     { "nonceStr", nonceStr},
-                    { "timeStamp", timeStamp.ToString() },
+                    { "timeStamp", timeStamp.ToString(CultureInfo.InvariantCulture) },
                     { "package", package },
                     { "signType", "MD5" }
                 };
@@ -584,7 +468,7 @@ namespace Cod.Platform
             var sb = new StringBuilder();
             foreach (var b in bs)
             {
-                sb.Append(b.ToString("x2"));
+                sb.Append(b.ToString("x2", CultureInfo.InvariantCulture));
             }
             var sign = sb.ToString().ToUpperInvariant();
             return sign;

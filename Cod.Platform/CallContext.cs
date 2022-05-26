@@ -1,9 +1,8 @@
 ﻿using System.Collections.Concurrent;
-using System.Threading;
 
 namespace Cod.Platform
 {
-    static class CallContext<T>
+    internal static class CallContext<T>
     {
         private static readonly ConcurrentDictionary<string, AsyncLocal<T>> state = new ConcurrentDictionary<string, AsyncLocal<T>>();
 

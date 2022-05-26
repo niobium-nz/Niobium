@@ -1,9 +1,7 @@
-﻿using System.Collections.Generic;
-
 namespace Cod.Platform
 {
     public interface IEntitlementStore
     {
-        IReadOnlyDictionary<string, string> Get(string role, string scope);
+        IReadOnlyDictionary<string, string> GetEntitlements(string role, string scope);
     }
 }

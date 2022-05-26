@@ -47,9 +47,6 @@ namespace Cod.Channel
             return this;
         }
 
-        protected virtual Task OnInitializeAsync()
-        {
-            return Task.CompletedTask;
-        }
+        protected virtual Task OnInitializeAsync() => Task.CompletedTask;
     }
 }

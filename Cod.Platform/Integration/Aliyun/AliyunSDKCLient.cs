@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Net.Http;
 using System.Text;
-using System.Threading.Tasks;
 using System.Web;
 
 namespace Cod.Platform
@@ -56,16 +51,16 @@ namespace Cod.Platform
             var canonicalizedQueryString = new StringBuilder();
             foreach (var p in sortedDictionary)
             {
-                canonicalizedQueryString.Append("&")
-                    .Append(AliyunStupidEncode(p.Key)).Append("=")
+                canonicalizedQueryString.Append('&')
+                    .Append(AliyunStupidEncode(p.Key)).Append('=')
                     .Append(AliyunStupidEncode(p.Value));
             }
 
             var stringToSign = new StringBuilder();
             stringToSign.Append(method.ToString().ToUpperInvariant());
-            stringToSign.Append("&");
+            stringToSign.Append('&');
             stringToSign.Append(AliyunStupidEncode("/"));
-            stringToSign.Append("&");
+            stringToSign.Append('&');
             stringToSign.Append(AliyunStupidEncode(
                 canonicalizedQueryString.ToString().Substring(1)));
 

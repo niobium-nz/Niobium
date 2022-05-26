@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.Azure.Cosmos.Table;
+using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {
@@ -13,10 +10,7 @@ namespace Cod.Platform
         {
         }
 
-        public CloudTableRepository(string tableName)
-        {
-            this.tableName = tableName;
-        }
+        public CloudTableRepository(string tableName) => this.tableName = tableName;
 
         public async Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist)
         {
@@ -115,7 +109,7 @@ namespace Cod.Platform
 
         private CloudTable GetTable()
         {
-            if (string.IsNullOrEmpty(this.tableName))
+            if (String.IsNullOrEmpty(this.tableName))
             {
                 return CloudStorage.GetTable<T>();
             }

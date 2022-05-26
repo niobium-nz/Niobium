@@ -1,8 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using Cod.Platform.Model;
-
-namespace Cod.Platform
+﻿namespace Cod.Platform
 {
     public interface IAccountingAuditor
     {

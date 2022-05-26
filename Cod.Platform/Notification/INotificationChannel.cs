@@ -1,7 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
 namespace Cod.Platform
 {
     public interface INotificationChannel
@@ -10,7 +6,7 @@ namespace Cod.Platform
             string brand,
             Guid user,
             NotificationContext context,
-            int template,
+            int templateID,
             IReadOnlyDictionary<string, object> parameters,
             int level = 0);
     }

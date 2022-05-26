@@ -6,7 +6,7 @@ namespace Cod
     {
         public static string ToDisplay(this TimeSpan timeSpan, bool displaySeconds = false)
         {
-            var result = string.Empty;
+            var result = String.Empty;
             if (timeSpan.Days > 0)
             {
                 result += $"{timeSpan.Days}天";

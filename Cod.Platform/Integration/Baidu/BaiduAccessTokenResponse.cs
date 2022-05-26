@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Cod.Platform
+﻿namespace Cod.Platform
 {
     internal class BaiduAccessTokenResponse : BaiduIntegrationResponse
     {
@@ -8,6 +6,6 @@ namespace Cod.Platform
 
         public int ExpiresIn { get; set; }
 
-        public TimeSpan GetExpiry() => TimeSpan.FromDays(ExpiresIn / 60 / 60 / 24 - 1);
+        public TimeSpan GetExpiry() => TimeSpan.FromDays(this.ExpiresIn / 60 / 60 / 24 - 1);
     }
 }

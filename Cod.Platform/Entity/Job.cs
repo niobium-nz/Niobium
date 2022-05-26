@@ -1,5 +1,5 @@
-﻿using Microsoft.Azure.Cosmos.Table;
-using System.Collections.Generic;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {

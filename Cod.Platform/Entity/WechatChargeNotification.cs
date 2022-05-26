@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Globalization;
 using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
@@ -48,14 +46,14 @@ namespace Cod.Platform
         {
             if (!this.Success())
             {
-                this.LogError($"微信回调通知失败. 错误消息: {this.Message}");
+                LogError($"微信回调通知失败. 错误消息: {this.Message}");
                 return false;
             }
 
             var signature = WechatIntegration.MD5Sign(this.Params.Where(k => k.Key != "sign").OrderBy(k => k.Key), merchantSecret);
             if (signature != this.WechatSignature)
             {
-                this.LogError($"验证微信签名失败. 微信返回签名:{this.WechatSignature} 自签:{signature}");
+                LogError($"验证微信签名失败. 微信返回签名:{this.WechatSignature} 自签:{signature}");
                 return false;
             }
 
@@ -66,7 +64,7 @@ namespace Cod.Platform
             => this.Attach.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries)[1];
 
         public ChargeTargetKind GetKind()
-            => (ChargeTargetKind)Int32.Parse(this.Attach.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries)[0]);
+            => (ChargeTargetKind)Int32.Parse(this.Attach.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries)[0], CultureInfo.InvariantCulture);
 
         private void ParseContent(string content)
         {
@@ -81,18 +79,18 @@ namespace Cod.Platform
             {
                 this.Message = param["return_msg"];
             }
-            this.Amount = Int32.Parse(param["total_fee"]);
+            this.Amount = Int32.Parse(param["total_fee"], CultureInfo.InvariantCulture);
             this.Order = param["out_trade_no"];
             this.Account = param["openid"];
             this.Device = param["device_info"];
             this.Attach = param["attach"];
             var time = param["time_end"];
-            this.Paid = new DateTimeOffset(Int32.Parse(time.Substring(0, 4)),
-                Int32.Parse(time.Substring(4, 2)),
-                Int32.Parse(time.Substring(6, 2)),
-                Int32.Parse(time.Substring(8, 2)),
-                Int32.Parse(time.Substring(10, 2)),
-                Int32.Parse(time.Substring(12, 2)),
+            this.Paid = new DateTimeOffset(Int32.Parse(time[..4], CultureInfo.InvariantCulture),
+                Int32.Parse(time.Substring(4, 2), CultureInfo.InvariantCulture),
+                Int32.Parse(time.Substring(6, 2), CultureInfo.InvariantCulture),
+                Int32.Parse(time.Substring(8, 2), CultureInfo.InvariantCulture),
+                Int32.Parse(time.Substring(10, 2), CultureInfo.InvariantCulture),
+                Int32.Parse(time.Substring(12, 2), CultureInfo.InvariantCulture),
                 TimeSpan.FromHours(8));
 
             if (param["trade_type"].ToUpperInvariant() == "JSAPI")
@@ -106,7 +104,7 @@ namespace Cod.Platform
             this.Params = param;
         }
 
-        private void LogError(string log)
+        private static void LogError(string log)
         {
             var logger = Logger.Instance;
             if (logger != null)

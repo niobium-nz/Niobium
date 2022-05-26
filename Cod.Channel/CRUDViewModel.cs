@@ -13,11 +13,11 @@ namespace Cod.Channel
 
         public TUpdateParameter Updating { get; protected set; }
 
-        protected virtual ICommand<TCreateParameter> CreateCommand { get => throw new NotImplementedException(); }
+        protected virtual ICommand<TCreateParameter> CreateCommand => throw new NotImplementedException();
 
-        protected virtual ICommand<TUpdateParameter> UpdateCommand { get => throw new NotImplementedException(); }
+        protected virtual ICommand<TUpdateParameter> UpdateCommand => throw new NotImplementedException();
 
-        protected virtual ICommand<StorageKey> DeleteCommand { get => throw new NotImplementedException(); }
+        protected virtual ICommand<StorageKey> DeleteCommand => throw new NotImplementedException();
 
         protected virtual Task OnCreateError(CommandExecutionEventArgs args) => Task.CompletedTask;
 
