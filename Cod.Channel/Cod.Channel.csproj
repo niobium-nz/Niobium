@@ -11,6 +11,8 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <NeutralLanguage>en-US</NeutralLanguage>
     <LangVersion>10.0</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
   </PropertyGroup>
 
   <ItemGroup>
