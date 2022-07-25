@@ -1,4 +1,5 @@
 using Autofac;
+using Cod.Platform.Autofac;
 using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
@@ -9,6 +10,8 @@ namespace Cod.Platform
 
         protected override void Load(ContainerBuilder builder)
         {
+            builder.RegisterModule<LoggerModule>();
+
             InternalError.Register(ErrorRetriever);
             builder.Register(_ => Logger.Instance).As<ILogger>();
             builder.RegisterType<AzureOCRScaner>();
