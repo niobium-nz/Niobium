@@ -2,7 +2,7 @@ using Autofac;
 
 namespace Cod.Platform.Autofac
 {
-    internal sealed class LifetimeScopeWrapper : IDisposable
+    public sealed class LifetimeScopeWrapper : IDisposable
     {
         public ILifetimeScope Scope { get; }
 
