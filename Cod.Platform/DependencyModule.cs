@@ -10,7 +10,7 @@ namespace Cod.Platform
 
         protected override void Load(ContainerBuilder builder)
         {
-            builder.RegisterModule<LoggerModule>();
+            //builder.RegisterModule<LoggerModule>();
 
             InternalError.Register(ErrorRetriever);
             builder.Register(_ => Logger.Instance).As<ILogger>();
