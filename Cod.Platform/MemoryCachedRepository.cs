@@ -3,6 +3,7 @@ namespace Cod.Platform
     public class MemoryCachedRepository<T> : IRepository<T>
         where T : IEntity
     {
+        private static readonly T[] EmptyCache = Array.Empty<T>();
         private readonly IRepository<T> repository;
         private DateTimeOffset lastCached = DateTimeOffset.MinValue;
 
@@ -17,13 +18,14 @@ namespace Cod.Platform
             await this.BuildCache();
 
             IList<T> result;
-            if (limit > 0)
+            var cacheCopy = this.Cache.Count == 0 ? EmptyCache : this.Cache.ToArray();
+            if (limit > 0 && cacheCopy.Length >= limit)
             {
-                result = this.Cache.ToArray().Take(limit).ToArray();
+                result = cacheCopy.Take(limit).ToArray();
             }
             else
             {
-                result = this.Cache.ToArray();
+                result = cacheCopy;
             }
 
             return new TableQueryResult<T>(result, null);
@@ -33,8 +35,9 @@ namespace Cod.Platform
         {
             await this.BuildCache();
 
-            IList<T> result = this.Cache.ToArray().Where(c => c.PartitionKey == partitionKey).ToArray();
-            if (limit > 0)
+            var cacheCopy = this.Cache.Count == 0 ? EmptyCache : this.Cache.ToArray();
+            IList<T> result = cacheCopy.Where(c => c.PartitionKey == partitionKey).ToArray();
+            if (limit > 0 && result.Count >= limit)
             {
                 result = result.Take(limit).ToArray();
             }
@@ -45,7 +48,8 @@ namespace Cod.Platform
         public async Task<T> GetAsync(string partitionKey, string rowKey)
         {
             await this.BuildCache();
-            return this.Cache.ToArray().SingleOrDefault(c => c.PartitionKey == partitionKey && c.RowKey == rowKey);
+            var cacheCopy = this.Cache.Count == 0 ? EmptyCache : this.Cache.ToArray();
+            return cacheCopy.SingleOrDefault(c => c.PartitionKey == partitionKey && c.RowKey == rowKey);
         }
 
         public async Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist)
