@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Configuration;
 
 namespace Cod.Platform
@@ -6,7 +7,7 @@ namespace Cod.Platform
     {
         private static string KeyVaultUrl;
         private static Func<IConfigurationBuilder, IConfigurationBuilder> CustomConfig;
-        private static readonly Dictionary<string, string> Caches = new Dictionary<string, string>();
+        private static readonly ConcurrentDictionary<string, string> Caches = new ConcurrentDictionary<string, string>();
 
         private static readonly Lazy<IConfiguration> config = new Lazy<IConfiguration>(
             () =>
@@ -64,7 +65,7 @@ namespace Cod.Platform
                 }
                 else
                 {
-                    Caches.Add(key, v);
+                    Caches.AddOrUpdate(key, _ => v, (_, _) => v);
                 }
             }
             return v;
