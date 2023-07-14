@@ -1,10 +1,12 @@
 namespace Cod.Platform
 {
-    public class MemoryCachedRepository<T> : IRepository<T>
+    public class MemoryCachedRepository<T> : IRepository<T>, IDisposable
         where T : IEntity
     {
         private static readonly T[] EmptyCache = Array.Empty<T>();
         private readonly IRepository<T> repository;
+        private readonly SemaphoreSlim locker = new(1, 1);
+        private bool disposed;
         private DateTimeOffset lastCached = DateTimeOffset.MinValue;
 
         public MemoryCachedRepository(IRepository<T> repository) => this.repository = repository;
@@ -19,14 +21,7 @@ namespace Cod.Platform
 
             IList<T> result;
             var cacheCopy = this.Cache.Count == 0 ? EmptyCache : this.Cache.ToArray();
-            if (limit > 0 && cacheCopy.Length >= limit)
-            {
-                result = cacheCopy.Take(limit).ToArray();
-            }
-            else
-            {
-                result = cacheCopy;
-            }
+            result = limit > 0 && cacheCopy.Length >= limit ? cacheCopy.Take(limit).ToArray() : (IList<T>)cacheCopy;
 
             return new TableQueryResult<T>(result, null);
         }
@@ -66,13 +61,40 @@ namespace Cod.Platform
 
         private async Task BuildCache()
         {
-            if (DateTimeOffset.UtcNow - this.lastCached > this.CacheRefreshInterval)
+            await this.locker.WaitAsync();
+            try
             {
-                var templates = await this.repository.GetAsync();
-                this.Cache.Clear();
-                this.Cache.AddRange(templates);
-                this.lastCached = DateTimeOffset.UtcNow;
+                if (DateTimeOffset.UtcNow - this.lastCached > this.CacheRefreshInterval)
+                {
+                    var templates = await this.repository.GetAsync();
+                    this.Cache.Clear();
+                    this.Cache.AddRange(templates);
+                    this.lastCached = DateTimeOffset.UtcNow;
+                }
             }
+            finally
+            {
+                _ = this.locker.Release();
+            }
+        }
+
+        public void Dispose()
+        {
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (!this.disposed)
+                {
+                    this.locker.Dispose();
+                }
+            }
+
+            this.disposed = true;
         }
     }
 }
