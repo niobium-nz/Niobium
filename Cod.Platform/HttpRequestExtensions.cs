@@ -18,7 +18,7 @@ namespace Cod.Platform
         private const string AuthorizationRequestHeaderKey = "Authorization";
         private const string ClientIDRequestHeaderKey = "ClientID";
         private const string HeaderCORSKey = "Access-Control-Expose-Headers";
-        private static readonly CultureInfo DefaultUICulture = new CultureInfo("en-US");
+        private static readonly CultureInfo DefaultUICulture = new("en-US");
 
         public static void Register(this HttpRequest request, ILogger logger)
         {
@@ -73,17 +73,11 @@ namespace Cod.Platform
             return result;
         }
 
-        public static IEnumerable<string> GetRemoteIP(this HttpRequest request)
-        {
-            if (request.Headers.TryGetValue("X-Forwarded-For", out var values))
-            {
-                return values.Where(v => !String.IsNullOrWhiteSpace(v))
+        public static IEnumerable<string> GetRemoteIP(this HttpRequest request) => request.Headers.TryGetValue("X-Forwarded-For", out var values)
+                ? values.Where(v => !String.IsNullOrWhiteSpace(v))
                        .SelectMany(v => v.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries))
-                       .Select(v => v.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries).First());
-            }
-            return Enumerable.Empty<string>();
-
-        }
+                       .Select(v => v.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries).First())
+                : Enumerable.Empty<string>();
 
         public static void DeliverAuthenticationToken(this HttpRequest request, string token, string scheme)
         {
@@ -176,14 +170,7 @@ namespace Cod.Platform
             {
                 return null;
             }
-            if (result.Equals(value))
-            {
-                return principal;
-            }
-            else
-            {
-                return null;
-            }
+            return result.Equals(value) ? principal : null;
         }
 
         public static async Task<ClaimsPrincipal> TryParsePrincipalAsync(this HttpRequest request, string scheme = "Bearer")
@@ -213,7 +200,7 @@ namespace Cod.Platform
             }
 
             var model = JsonSerializer.DeserializeObject<T>(requestBody);
-            ValidationHelper.TryValidate(model, out var validation);
+            _ = ValidationHelper.TryValidate(model, out var validation);
 
             string requestSignature = null;
             if (req.Headers.TryGetValue("ETag", out var etag))
@@ -244,12 +231,9 @@ namespace Cod.Platform
             var stringToSign = $"{req.Path.Value}?{requestBody}";
             var tenantSecret = Cod.Platform.SignatureHelper.GetTenantSecret(tenant, secret);
             var signature = Cod.SignatureHelper.GetSignature(stringToSign, tenantSecret);
-            if (signature.ToUpperInvariant() != requestSignature.ToUpperInvariant())
-            {
-                return new OperationResult<T>(InternalError.AuthenticationRequired);
-            }
-
-            return new OperationResult<T>(model);
+            return signature.ToUpperInvariant() != requestSignature.ToUpperInvariant()
+                ? new OperationResult<T>(InternalError.AuthenticationRequired)
+                : new OperationResult<T>(model);
         }
 
         private static Task<ClaimsPrincipal> ValidateAndDecodeAsync(string token)

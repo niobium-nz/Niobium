@@ -4,13 +4,10 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
-using Azure;
 using Azure.Core.Serialization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
-using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace Cod.Platform
 {
@@ -173,11 +170,7 @@ namespace Cod.Platform
             {
                 return null;
             }
-            if (!principal.TryGetClaim<T>(claim, out var result))
-            {
-                return null;
-            }
-            return result.Equals(value) ? principal : null;
+            return !principal.TryGetClaim<T>(claim, out var result) ? null : result.Equals(value) ? principal : null;
         }
 
         public static async Task<ClaimsPrincipal> TryParsePrincipalAsync(this HttpRequestData request, string scheme = "Bearer")
