@@ -7,9 +7,9 @@ namespace Cod.Platform
     {
         private static string KeyVaultUrl;
         private static Func<IConfigurationBuilder, IConfigurationBuilder> CustomConfig;
-        private static readonly ConcurrentDictionary<string, string> Caches = new ConcurrentDictionary<string, string>();
+        private static readonly ConcurrentDictionary<string, string> Caches = new();
 
-        private static readonly Lazy<IConfiguration> config = new Lazy<IConfiguration>(
+        private static readonly Lazy<IConfiguration> config = new(
             () =>
             {
                 IConfigurationBuilder builder = new ConfigurationBuilder();
@@ -23,18 +23,36 @@ namespace Cod.Platform
 
         public static IConfiguration Configuration => config.Value;
 
-        public static void Configure(Func<IConfigurationBuilder, IConfigurationBuilder> func, string keyVaultUrl)
-        {
-            CustomConfig = func;
-            KeyVaultUrl = keyVaultUrl;
-        }
+        public static void Configure(Func<IConfigurationBuilder, IConfigurationBuilder> func) => CustomConfig = func;
+
+        public static void EnableKeyValueSupport(string keyVaultUrl) => KeyVaultUrl = keyVaultUrl;
 
         public async Task<string> GetSettingAsStringAsync(string key, bool cache = true)
         {
+            if (cache)
+            {
+                if (Caches.ContainsKey(key))
+                {
+                    return Caches[key];
+                }
+            }
+
             var v = GetSetting(key);
             if (!String.IsNullOrWhiteSpace(KeyVaultUrl) && v == null && Uri.TryCreate(KeyVaultUrl, UriKind.Absolute, out var uri))
             {
                 v = await SecureVault.GetSecretAsync(uri, key);
+            }
+
+            if (cache && v != null)
+            {
+                if (Caches.ContainsKey(key))
+                {
+                    Caches[key] = v;
+                }
+                else
+                {
+                    _ = Caches.AddOrUpdate(key, _ => v, (_, _) => v);
+                }
             }
             return v;
         }
@@ -52,10 +70,7 @@ namespace Cod.Platform
             }
 
             var v = config.Value[key];
-            if (v == null)
-            {
-                v = config.Value[$"Values:{key}"];
-            }
+            v ??= config.Value[$"Values:{key}"];
 
             if (cache && v != null)
             {
@@ -65,7 +80,7 @@ namespace Cod.Platform
                 }
                 else
                 {
-                    Caches.AddOrUpdate(key, _ => v, (_, _) => v);
+                    _ = Caches.AddOrUpdate(key, _ => v, (_, _) => v);
                 }
             }
             return v;
