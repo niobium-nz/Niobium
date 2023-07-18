@@ -81,7 +81,8 @@ namespace Cod.Platform
         {
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Sid, mainIdentity.Trim())
+                new Claim(ClaimTypes.Sid, mainIdentity.Trim()),
+                new Claim("kid", "0") // for security reasons, newer version of JWT library expects the KID claim exist when validating the token.
             };
 
             if (entitlements != null)
