@@ -77,12 +77,7 @@ namespace Cod.Platform
             var user = await this.Repository.GetAsync(
                 User.BuildPartitionKey(userID),
                 User.BuildRowKey(userID));
-            if (user == null)
-            {
-                return new OperationResult<User>(InternalError.NotFound);
-            }
-
-            return new OperationResult<User>(user);
+            return user == null ? new OperationResult<User>(InternalError.NotFound) : new OperationResult<User>(user);
         }
 
         public async Task<OperationResult<LoginResult>> LoginAsync(OpenIDKind kind, string appID, string authCode)
@@ -162,15 +157,10 @@ namespace Cod.Platform
 
             var registations = OpenIDRegistration.Build(mobile);
             var newUser = await this.RegisterAsync(null, registations, ip);
-            if (!newUser.IsSuccess)
-            {
-                return new OperationResult<Guid>(newUser);
-            }
-
-            return new OperationResult<Guid>(newUser.Result.GetID());
+            return !newUser.IsSuccess ? new OperationResult<Guid>(newUser) : new OperationResult<Guid>(newUser.Result.GetID());
         }
 
-        public async Task<OperationResult<User>> RegisterAsync(Guid? userID, IEnumerable<OpenIDRegistration> registrations, string ip, bool ignoreDuplication = false)
+        public async Task<OperationResult<User>> RegisterAsync(Guid? userID, IEnumerable<OpenIDRegistration> registrations, string ip, RegisterOptionOnDuplication actionOnDuplication = RegisterOptionOnDuplication.RefuseRegistration)
         {
             var newUser = false;
             var channels = new Dictionary<Guid, IEnumerable<OpenID>>();
@@ -197,10 +187,30 @@ namespace Cod.Platform
                         (int)OpenIDKind.SMS => channels[login.User].Count(c => c.GetKind() != (int)OpenIDKind.SMS),
                         _ => channels[login.User].Count(c => c.GetKind() != (int)OpenIDKind.SMS && c.GetKind() != registration.Kind),
                     };
-                    if (!ignoreDuplication && count > 1)
+                    if (count > 1)
                     {
                         // REMARK (5he11) 因SMS和PhoneCall其实等同，所以过滤掉其中1个之后如果还有其他通道，则表示这是一个既有用户
-                        return new OperationResult<User>(InternalError.Conflict);
+                        switch (actionOnDuplication)
+                        {
+                            case RegisterOptionOnDuplication.RefuseRegistration:
+                                return new OperationResult<User>(InternalError.Conflict);
+                            case RegisterOptionOnDuplication.RestoreExistingIdentity:
+                                if (registration.Kind is ((int)OpenIDKind.PhoneCall) or ((int)OpenIDKind.SMS) or ((int)OpenIDKind.Email))
+                                {
+                                    // REMARK (5he11) 如果选择还原用户身份，则仅相信非社交媒体账号作为还原凭据
+                                    userID = login.User;
+                                }
+                                else
+                                {
+                                    continue;
+                                }
+                                break;
+                            case RegisterOptionOnDuplication.CreateNewIdentity:
+                                userID = Guid.NewGuid();
+                                break;
+                            default:
+                                break;
+                        }
                     }
 
                     if (userID.HasValue && login.User != userID.Value)
@@ -232,7 +242,10 @@ namespace Cod.Platform
                 }
                 else
                 {
-                    registration.ForceOffset0 = false;
+                    if (actionOnDuplication == RegisterOptionOnDuplication.RefuseRegistration)
+                    {
+                        registration.ForceOffset0 = false;
+                    }
                 }
             }
 
@@ -267,12 +280,12 @@ namespace Cod.Platform
                     Credentials = registration.Credentials,
                 });
             }
-            await this.loginRepository.Value.CreateAsync(newLogins, true);
+            _ = await this.loginRepository.Value.CreateAsync(newLogins, true);
 
             if (openIDsToRemove.Count > 0)
             {
                 // REMARK (5he11) 这些记录本质上是因为某用户添加绑定，因此“自动”从其他已有用户处“偷”过来的Login，因为其他用户被“偷”Login，所以这些用户被偷的Login的相关OpenID应该删除才对
-                await this.openIDRepository.Value.DeleteAsync(openIDsToRemove, successIfNotExist: true);
+                _ = await this.openIDRepository.Value.DeleteAsync(openIDsToRemove, successIfNotExist: true);
             }
 
             if (newUser)
@@ -325,15 +338,8 @@ namespace Cod.Platform
             var result = await this.OnApplyAsync(user, role, parameter);
             if (result.IsSuccess || result.Code == InternalError.Locked)
             {
-                user.AddRole(role);
-                if (result.Code == InternalError.Locked)
-                {
-                    user.Disabled = true;
-                }
-                else
-                {
-                    user.Disabled = false;
-                }
+                _ = user.AddRole(role);
+                user.Disabled = result.Code == InternalError.Locked;
 
                 await this.SaveEntityAsync();
                 return new OperationResult<User>(user);
@@ -349,14 +355,8 @@ namespace Cod.Platform
 
         protected virtual Task<ushort> GetTokenValidHoursAsync() => Task.FromResult<ushort>(8);
 
-        private static string GenerateClientID(OpenIDKind kind, string appID, string openID, string key)
-        {
-            if (String.IsNullOrWhiteSpace(openID))
-            {
-                return null;
-            }
-
-            return AES.Encrypt($"{(int)kind}{ClientIDSplitString}{appID}{ClientIDSplitString}{openID}", key);
-        }
+        private static string GenerateClientID(OpenIDKind kind, string appID, string openID, string key) => String.IsNullOrWhiteSpace(openID)
+                ? null
+                : AES.Encrypt($"{(int)kind}{ClientIDSplitString}{appID}{ClientIDSplitString}{openID}", key);
     }
 }
