@@ -25,7 +25,15 @@ namespace Cod.Platform
 
         public static void Configure(Func<IConfigurationBuilder, IConfigurationBuilder> func) => CustomConfig = func;
 
-        public static void EnableKeyValueSupport(string keyVaultUrl) => KeyVaultUrl = keyVaultUrl;
+        public static void EnableKeyValueSupport(string keyVaultUrl)
+        {
+            if (String.IsNullOrWhiteSpace(keyVaultUrl))
+            {
+                throw new ArgumentException($"'{nameof(keyVaultUrl)}' cannot be null or whitespace.", nameof(keyVaultUrl));
+            }
+
+            KeyVaultUrl = keyVaultUrl.EndsWith('/') ? keyVaultUrl[..^1] : keyVaultUrl;
+        }
 
         public async Task<string> GetSettingAsStringAsync(string key, bool cache = true)
         {
