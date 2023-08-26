@@ -1,5 +1,4 @@
 using Autofac;
-using Cod.Platform.Autofac;
 using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
@@ -31,15 +30,11 @@ namespace Cod.Platform
             builder.RegisterType<CloudTableRepository<BrandingInfo>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Interest>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Job>>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<Hostname>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<PaymentMethod>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Report>>().AsImplementedInterfaces();
 
             builder.RegisterType<UserDomain>();
             builder.RegisterType<GenericDomainRepository<UserDomain, User>>().As<IDomainRepository<UserDomain, User>>();
-
-            builder.RegisterType<HostnameDomain>();
-            builder.RegisterType<GenericDomainRepository<HostnameDomain, Hostname>>().As<IDomainRepository<HostnameDomain, Hostname>>();
 
             builder.RegisterType<BusinessDomain>();
             builder.RegisterType<GenericDomainRepository<BusinessDomain, Business>>().As<IDomainRepository<BusinessDomain, Business>>();
@@ -65,8 +60,6 @@ namespace Cod.Platform
             builder.RegisterType<OpenIDManager>().AsImplementedInterfaces();
             builder.RegisterType<MemoryCachedBusinessManager>().AsImplementedInterfaces();
             builder.RegisterType<MemoryCachedBrandService>().AsImplementedInterfaces();
-            builder.RegisterType<LetsEncryptClient>().AsImplementedInterfaces();
-            builder.RegisterType<AliyunDNSHelper>().AsImplementedInterfaces();
             base.Load(builder);
         }
     }
