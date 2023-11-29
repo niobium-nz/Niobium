@@ -18,10 +18,10 @@ namespace Cod.Platform
             builder.RegisterType<AzureStorageSignatureService>().AsImplementedInterfaces();
             builder.RegisterType<WechatIntegration>();
             builder.RegisterType<BaiduIntegration>();
-            builder.RegisterType<CloudTableRepository<Account>>().As<IRepository<Account>>();
-            builder.RegisterType<CloudTableRepository<Accounting>>().As<IRepository<Accounting>>();
-            builder.RegisterType<CloudTableRepository<Entitlement>>().As<IRepository<Entitlement>>();
-            builder.RegisterType<CloudTableRepository<Transaction>>().As<IRepository<Transaction>>();
+            builder.RegisterType<CloudTableRepository<Account>>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<Accounting>>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<Entitlement>>().AsImplementedInterfaces();
+            builder.RegisterType<CloudTableRepository<Transaction>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<OpenID>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<Login>>().AsImplementedInterfaces();
             builder.RegisterType<CloudTableRepository<User>>().AsImplementedInterfaces();
