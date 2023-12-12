@@ -1,4 +1,4 @@
-﻿namespace Cod.Platform
+namespace Cod.Platform
 {
     public class CachedRepository<T> : IRepository<T> where T : ICachableEntity, new()
     {
@@ -51,10 +51,10 @@
             return deleted;
         }
 
-        public async Task<TableQueryResult<T>> GetAsync(int limit)
+        public async Task<TableQueryResult<T>> GetAsync(int limit = -1, IList<string> fields = null)
             => await this.tableRepository.GetAsync(limit);
 
-        public async Task<TableQueryResult<T>> GetAsync(string partitionKey, int limit)
+        public async Task<TableQueryResult<T>> GetAsync(string partitionKey, int limit = -1, IList<string> fields = null)
             => await this.tableRepository.GetAsync(partitionKey, limit);
 
         public async Task<T> GetAsync(string partitionKey, string rowKey)

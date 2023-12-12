@@ -41,16 +41,17 @@ namespace Cod.Platform
         public async Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities, bool successIfNotExist = false)
             => await this.GetTable().RemoveAsync(entities, successIfNotExist: successIfNotExist);
 
-        public async Task<TableQueryResult<T>> GetAsync(string partitionKey, int limit)
+        public async Task<TableQueryResult<T>> GetAsync(string partitionKey, int limit = -1, IList<string> fields = null)
             => await this.GetTable().WhereAsync<T>(
                 TableQuery.GenerateFilterCondition(nameof(ITableEntity.PartitionKey), QueryComparisons.Equal, partitionKey),
-                takeCount: limit);
+                takeCount: limit,
+                fields: fields);
 
         public async Task<T> GetAsync(string partitionKey, string rowKey)
             => await this.GetTable().RetrieveAsync<T>(partitionKey, rowKey);
 
-        public async Task<TableQueryResult<T>> GetAsync(int limit)
-            => await this.GetTable().WhereAsync<T>(takeCount: limit);
+        public async Task<TableQueryResult<T>> GetAsync(int limit = -1, IList<string> fields = null)
+            => await this.GetTable().WhereAsync<T>(takeCount: limit, fields: fields);
 
         public async Task<TableQueryResult<T>> GetAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, int limit = -1)
             => await this.GetTable().WhereAsync<T>(

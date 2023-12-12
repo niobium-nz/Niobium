@@ -342,7 +342,7 @@ namespace Cod.Platform
             return new OperationResult<WechatUserInfo>(status) { Reference = json };
         }
 
-        internal async Task<OperationResult<string>> JSAPIPay(string account, int amount, string appID, string device, string reference, string desc, string attach, string ip,
+        internal static async Task<OperationResult<string>> JSAPIPay(string account, int amount, string appID, string device, string reference, string desc, string attach, string ip,
                     string wechatMerchantID, string wechatMerchantNotifyUri, string wechatMerchantSignature, int retry = 0)
         {
             if (retry > 10)
@@ -405,7 +405,7 @@ namespace Cod.Platform
             }
             else if (result.ContainsKey("err_code_des") && result["err_code_des"].Contains("订单号重复"))
             {
-                return await this.JSAPIPay(
+                return await JSAPIPay(
                     account, amount, appID, device, reference, desc, attach, ip, wechatMerchantID, wechatMerchantNotifyUri, wechatMerchantSignature, ++retry);
             }
 

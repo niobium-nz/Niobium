@@ -10,9 +10,9 @@ namespace Cod.Platform
 
         Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities, bool successIfNotExist = false);
 
-        Task<TableQueryResult<T>> GetAsync(int limit = -1);
+        Task<TableQueryResult<T>> GetAsync(int limit = -1, IList<string> fields = null);
 
-        Task<TableQueryResult<T>> GetAsync(string partitionKey, int limit = -1);
+        Task<TableQueryResult<T>> GetAsync(string partitionKey, int limit = -1, IList<string> fields = null);
 
         Task<T> GetAsync(string partitionKey, string rowKey);
     }

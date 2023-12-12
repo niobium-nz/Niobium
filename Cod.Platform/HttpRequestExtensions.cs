@@ -29,7 +29,14 @@ namespace Cod.Platform
                 var parts = value.ToString().Split(',');
                 if (parts.Length > 0)
                 {
-                    CultureInfo.CurrentUICulture = new CultureInfo(parts[0]);
+                    try
+                    {
+                        CultureInfo.CurrentUICulture = new CultureInfo(parts[0]);
+                    }
+                    catch (CultureNotFoundException)
+                    {
+                        throw new NotSupportedException($"The specified culture is not supported: {value}");
+                    }
                     return;
                 }
             }

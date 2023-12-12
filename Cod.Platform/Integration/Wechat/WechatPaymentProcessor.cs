@@ -33,7 +33,7 @@ namespace Cod.Platform
             var apiUri = await this.configuration.Value.GetSettingAsync<string>(Constant.API_URL);
             var branding = await this.brandService.Value.GetAsync(OpenIDKind.Wechat, payer.AppID);
             var attach = request.Reference ?? WechatChargeNotification.BuildAttach(request.TargetKind, request.Target);
-            var prepayid = await this.wechatIntegration.Value.JSAPIPay(
+            var prepayid = await WechatIntegration.JSAPIPay(
                 payer.OpenID,
                 request.Amount,
                 payer.AppID,

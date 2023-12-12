@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
@@ -79,16 +80,14 @@ namespace Cod.Platform
             {
                 try
                 {
-                    await table.ExecuteBatchAsync(entitiesToRemove, (batch, entity) => batch.Delete(entity));
+                    await table.ExecuteBatchAsync(
+                        entitiesToRemove, 
+                        (batch, entity) => batch.Delete(entity),
+                        errorSuppressed: successIfNotExist ? new[] { HttpStatusCode.NotFound } : null);
                     return entitiesToRemove;
                 }
                 catch (StorageException e)
                 {
-                    if (successIfNotExist && e.RequestInformation.HttpStatusCode == 404)
-                    {
-                        return Enumerable.Empty<T>();
-                    }
-
                     if (e.RequestInformation.HttpStatusCode == 400 || e.RequestInformation.HttpStatusCode == 412)
                     {
                         if (i + 1 == 3)
@@ -130,7 +129,10 @@ namespace Cod.Platform
                 }
                 try
                 {
-                    await table.ExecuteBatchAsync(entitiesToRemove, (batch, entity) => batch.Delete(entity));
+                    await table.ExecuteBatchAsync(
+                        entitiesToRemove, 
+                        (batch, entity) => batch.Delete(entity), 
+                        errorSuppressed: successIfNotExist ? new[] { HttpStatusCode.NotFound } : null);
                     break;
                 }
                 catch (StorageException e)
@@ -236,58 +238,48 @@ namespace Cod.Platform
             }
         }
 
-        private static async Task ExecuteBatchAsync<T>(this CloudTable table, IEnumerable<T> entities, Action<TableBatchOperation, T> operation) where T : ITableEntity, new()
+        private static async Task ExecuteBatchAsync<T>(this CloudTable table, IEnumerable<T> entities, Action<TableBatchOperation, T> operation, IEnumerable<HttpStatusCode> errorSuppressed = null) where T : ITableEntity, new()
         {
+            var batchOperations = new List<TableBatchOperation>();
             var groups = entities.GroupBy(r => r.PartitionKey);
-            TableBatchOperation batchOperation;
             foreach (var group in groups)
             {
-                batchOperation = new TableBatchOperation();
+                var batchOperation = new TableBatchOperation();
                 foreach (var entity in group)
                 {
                     operation(batchOperation, entity);
                     if (batchOperation.Count >= 100)
                     {
-                        try
-                        {
-                            await table.ExecuteBatchAsync(batchOperation);
+                        batchOperations.Add(batchOperation);
                             batchOperation = new TableBatchOperation();
                         }
-                        catch (StorageException e)
-                        {
-                            var ri = e.RequestInformation;
-                            var logger = Logger.Instance;
-                            if (ri != null && logger != null)
-                            {
-                                logger.LogError($"An Error occurred with status code {ri.HttpStatusCode} while making changes to storage: {ri.HttpStatusMessage}");
                             }
-                            throw;
                         }
-                    }
-                }
+
+            foreach (var batchOperation in batchOperations)
+            {
+                Func<Task> task = null;
                 if (batchOperation.Count == 1)
                 {
-                    var singleOperation = batchOperation.Single();
-                    try
+                    task = async () =>
                     {
+                        var singleOperation = batchOperation.Single();
                         await table.ExecuteAsync(singleOperation);
+                    };
                     }
-                    catch (StorageException e)
-                    {
-                        var ri = e.RequestInformation;
-                        var logger = Logger.Instance;
-                        if (ri != null && logger != null)
-                        {
-                            logger.LogError($"An Error occurred with status code {ri.HttpStatusCode} while making changes to storage: {ri.HttpStatusMessage}");
-                        }
-                        throw;
-                    }
-                }
                 else if (batchOperation.Count > 0)
+                    {
+                    task = async () =>
+                        {
+                        await table.ExecuteBatchAsync(batchOperation);
+                    };
+                        }
+
+                if (task != null)
                 {
                     try
                     {
-                        await table.ExecuteBatchAsync(batchOperation);
+                        await task();
                     }
                     catch (StorageException e)
                     {
@@ -297,10 +289,14 @@ namespace Cod.Platform
                         {
                             logger.LogError($"An Error occurred with status code {ri.HttpStatusCode} while making changes to storage: {ri.HttpStatusMessage}");
                         }
+
+                        if (errorSuppressed == null || !errorSuppressed.Contains((HttpStatusCode)ri.HttpStatusCode))
+                        {
                         throw;
                     }
                 }
             }
         }
     }
+}
 }

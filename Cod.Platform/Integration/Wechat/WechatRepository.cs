@@ -77,9 +77,9 @@ namespace Cod.Platform
 
         public Task<IEnumerable<WechatEntity>> CreateAsync(IEnumerable<WechatEntity> entities, bool replaceIfExist) => throw new NotImplementedException();
 
-        public Task<TableQueryResult<WechatEntity>> GetAsync(int limit) => throw new NotImplementedException();
+        public Task<TableQueryResult<WechatEntity>> GetAsync(int limit = -1, IList<string> fields = null) => throw new NotImplementedException();
 
-        public Task<TableQueryResult<WechatEntity>> GetAsync(string partitionKey, int limit) => throw new NotImplementedException();
+        public Task<TableQueryResult<WechatEntity>> GetAsync(string partitionKey, int limit = -1, IList<string> fields = null) => throw new NotImplementedException();
 
         public Task<IEnumerable<WechatEntity>> UpdateAsync(IEnumerable<WechatEntity> entities) => throw new NotImplementedException();
 

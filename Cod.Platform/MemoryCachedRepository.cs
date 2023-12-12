@@ -15,8 +15,13 @@ namespace Cod.Platform
 
         protected TimeSpan CacheRefreshInterval { get; set; } = TimeSpan.FromMinutes(10);
 
-        public async Task<TableQueryResult<T>> GetAsync(int limit = -1)
+        public async Task<TableQueryResult<T>> GetAsync(int limit = -1, IList<string> fields = null)
         {
+            if (fields != null)
+            {
+                throw new NotSupportedException($"{typeof(MemoryCachedRepository<T>).Name} does not support query with explicit fields.");
+            }
+
             await this.BuildCache();
 
             IList<T> result;
@@ -26,8 +31,13 @@ namespace Cod.Platform
             return new TableQueryResult<T>(result, null);
         }
 
-        public async Task<TableQueryResult<T>> GetAsync(string partitionKey, int limit = -1)
+        public async Task<TableQueryResult<T>> GetAsync(string partitionKey, int limit = -1, IList<string> fields = null)
         {
+            if (fields != null)
+            {
+                throw new NotSupportedException($"{typeof(MemoryCachedRepository<T>).Name} does not support query with explicit fields.");
+            }
+
             await this.BuildCache();
 
             var cacheCopy = this.Cache.Count == 0 ? EmptyCache : this.Cache.ToArray();
