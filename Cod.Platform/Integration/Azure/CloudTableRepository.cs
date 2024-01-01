@@ -5,12 +5,17 @@ namespace Cod.Platform
     public class CloudTableRepository<T> : IRepository<T>, IQueryableRepository<T> where T : ITableEntity, IEntity, new()
     {
         private readonly string tableName;
+        private readonly string connectionString;
 
         public CloudTableRepository()
         {
         }
 
-        public CloudTableRepository(string tableName) => this.tableName = tableName;
+        public CloudTableRepository(string tableName, string connectionString)
+        {
+            this.tableName = tableName;
+            this.connectionString = connectionString;
+        }
 
         public async Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist)
         {
@@ -112,11 +117,25 @@ namespace Cod.Platform
         {
             if (String.IsNullOrEmpty(this.tableName))
             {
-                return CloudStorage.GetTable<T>();
+                if (this.connectionString == null)
+                {
+                    return CloudStorage.GetTable<T>();
+                }
+                else
+                {
+                    return CloudStorage.GetTable<T>(this.connectionString);
+                }
             }
             else
             {
-                return CloudStorage.GetTable(this.tableName);
+                if (this.connectionString == null)
+                {
+                    return CloudStorage.GetTable(this.tableName);
+                }
+                else 
+                {
+                    return CloudStorage.GetTable(this.tableName, this.connectionString);
+                }
             }
         }
     }
