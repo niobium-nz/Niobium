@@ -24,6 +24,7 @@ namespace Cod.Channel
             this.httpClient = httpClient;
             this.authenticator = authenticator;
             this.createDomain = createDomain;
+            this.TableAPIBaseUrL = this.configuration.GetSettingAsString(Constants.KEY_TABLE_URL);
         }
 
         protected List<TDomain> CachedData { get; private set; }
@@ -31,6 +32,8 @@ namespace Cod.Channel
         public virtual IReadOnlyCollection<TDomain> Data => this.CachedData;
 
         protected virtual string TableName => typeof(TEntity).Name;
+
+        public virtual string TableAPIBaseUrL { get; set; }
 
         public async Task<OperationResult<TDomain>> LoadAsync(string partitionKey, string rowKey, bool force = false)
         {
@@ -189,8 +192,7 @@ namespace Cod.Channel
                 return new OperationResult<TableQueryResult<TEntity>>(signature);
             }
 
-            var baseUrl = await this.configuration.GetSettingAsStringAsync(Constants.KEY_TABLE_URL);
-            return await TableStorageHelper.GetAsync<TEntity>(this.httpClient, baseUrl, this.TableName, signature.Result.Signature, partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, continuationToken, count);
+            return await TableStorageHelper.GetAsync<TEntity>(this.httpClient, this.TableAPIBaseUrL, this.TableName, signature.Result.Signature, partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, continuationToken, count);
         }
 
         protected virtual IReadOnlyCollection<TDomain> Cache(IEnumerable<TEntity> entities)
