@@ -254,6 +254,11 @@ namespace Cod.Platform
                             batchOperation = new TableBatchOperation();
                         }
                             }
+
+                if (batchOperation.Any())
+                {
+                    batchOperations.Add(batchOperation);
+                }
                         }
 
             foreach (var batchOperation in batchOperations)
