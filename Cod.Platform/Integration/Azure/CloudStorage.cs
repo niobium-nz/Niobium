@@ -23,7 +23,20 @@ namespace Cod.Platform
             => GetStorageAccount(connectionString).CreateCloudTableClient().GetTableReference(tableName);
 
         public static CloudTable GetTable(string tableName)
-            => GetStorageAccount().CreateCloudTableClient().GetTableReference(tableName);
+        {
+            var connectionString = ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME);
+            var dbTables = ConfigurationProvider.GetSetting("DB_TABLES");
+            if (!string.IsNullOrEmpty(dbTables))
+            {
+                var tables = dbTables.Split(",", StringSplitOptions.RemoveEmptyEntries);
+                if (tables.Contains(tableName))
+                {
+                    connectionString = ConfigurationProvider.GetSetting("STORAGE_ACCOUNT_DB");
+                }
+            }
+
+            return GetStorageAccount(connectionString).CreateCloudTableClient().GetTableReference(tableName);
+        }
 
         public static CloudQueue GetQueue(string queueName)
             => GetStorageAccount().CreateCloudQueueClient().GetQueueReference(queueName.Trim().ToLowerInvariant());
