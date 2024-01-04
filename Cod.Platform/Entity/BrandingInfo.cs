@@ -6,6 +6,8 @@ namespace Cod.Platform
     {
         public string Name { get; set; }
 
+        public string ApiUri { get; set; }
+
         public string WechatUri { get; set; }
 
         public string WechatAppID { get; set; }
