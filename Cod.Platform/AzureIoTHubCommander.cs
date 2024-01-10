@@ -25,7 +25,7 @@ namespace Cod.Platform
         public async Task<IoTCommandResult> ExecuteAsync(string device, object command, bool fireAndForget = true)
         {
             var msg = command is string str ? str : JsonSerializer.SerializeObject(command);
-            if (!fireAndForget)
+            if (fireAndForget)
             {
                 await this.SendCloudToDeviceMessageAsync(device, msg);
                 return null;
