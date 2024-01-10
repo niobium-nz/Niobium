@@ -16,6 +16,7 @@ namespace Cod.Platform
             builder.RegisterType<AzureOCRScaner>();
             builder.RegisterType<AppInsights>();
             builder.RegisterType<AzureStorageSignatureService>().AsImplementedInterfaces();
+            builder.RegisterType<AzureIoTHubCommander>().AsImplementedInterfaces().SingleInstance();
             builder.RegisterType<WechatIntegration>();
             builder.RegisterType<BaiduIntegration>();
             builder.RegisterType<CloudTableRepository<Account>>().AsImplementedInterfaces();
