@@ -39,7 +39,11 @@ namespace Cod.Platform
         }
 
         public static CloudQueue GetQueue(string queueName)
-            => GetStorageAccount().CreateCloudQueueClient().GetQueueReference(queueName.Trim().ToLowerInvariant());
+        {
+            var conn = ConfigurationProvider.GetSetting(Constant.QUEUE_ENDPOINT);
+            conn ??= ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME);
+            return GetStorageAccount(conn).CreateCloudQueueClient().GetQueueReference(queueName.Trim().ToLowerInvariant());
+        }
 
         public static CloudBlobContainer GetBlobContainer(string containerName)
         {

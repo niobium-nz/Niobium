@@ -5,6 +5,7 @@ namespace Cod.Platform
     public abstract class Constant : Cod.Constant
     {
         public const string BLOB_ENDPOINT = "BLOB_ENDPOINT";
+        public const string QUEUE_ENDPOINT = "QUEUE_ENDPOINT";
 
         public const string STORAGE_CONNECTION_NAME = "STORAGE_ACCOUNT";
         public const string HTTP_PROXY_HOST = "PROXY_HOST";
