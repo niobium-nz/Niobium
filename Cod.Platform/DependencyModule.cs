@@ -12,7 +12,6 @@ namespace Cod.Platform
             //builder.RegisterModule<LoggerModule>();
 
             InternalError.Register(ErrorRetriever);
-            builder.Register(_ => Logger.Instance).As<ILogger>();
             builder.RegisterType<AzureOCRScaner>();
             builder.RegisterType<AppInsights>();
             builder.RegisterType<AzureStorageSignatureService>().AsImplementedInterfaces();
