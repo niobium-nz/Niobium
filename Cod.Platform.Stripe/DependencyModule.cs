@@ -1,18 +1,17 @@
-using Autofac;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace Cod.Platform.Integration.Stripe
+namespace Cod.Platform
 {
-    public class DependencyModule : Module
+    public static class DependencyModule
     {
-        private static readonly IErrorRetriever ErrorRetriever = new InternalErrorRetriever();
-
-        protected override void Load(ContainerBuilder builder)
+        public static IServiceCollection AddStripePlatform(this IServiceCollection services)
         {
-            InternalError.Register(ErrorRetriever);
+            Cod.InternalError.Register(new InternalErrorRetriever());
 
-            builder.RegisterType<StripeIntegration>();
-            builder.RegisterType<StripePaymentProcessor>().AsImplementedInterfaces();
-            base.Load(builder);
+            services.AddTransient<StripeIntegration>();
+            services.AddTransient<IPaymentProcessor, StripePaymentProcessor>();
+
+            return services;
         }
     }
 }

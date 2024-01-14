@@ -22,6 +22,7 @@
     <AnalysisMode>AllEnabledByDefault</AnalysisMode>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <RootNamespace>Cod.Platform</RootNamespace>
+    <NoWarn>CA1848,CA2254</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

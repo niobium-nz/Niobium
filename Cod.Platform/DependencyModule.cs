@@ -4,11 +4,9 @@ namespace Cod.Platform
 {
     public static class DependencyModule
     {
-        private static readonly IErrorRetriever ErrorRetriever = new InternalErrorRetriever();
-
         public static IServiceCollection AddCodPlatform(this IServiceCollection services)
         {
-            Cod.InternalError.Register(ErrorRetriever);
+            Cod.InternalError.Register(new Cod.Platform.InternalErrorRetriever());
 
             services.AddTransient<AzureOCRScaner>();
             services.AddTransient<AppInsights>();
