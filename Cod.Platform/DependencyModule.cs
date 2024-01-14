@@ -61,11 +61,13 @@ namespace Cod.Platform
             services.AddTransient<IQueryableRepository<User>, CloudTableRepository<User>>();
             services.AddTransient<IRepository<User>, CloudTableRepository<User>>();
             services.AddTransient<UserDomain>();
+            services.AddTransient<Func<UserDomain>>(sp => () => sp.GetService<UserDomain>());
             services.AddTransient<IDomainRepository<UserDomain, User>, GenericDomainRepository<UserDomain, User>>();
 
             services.AddTransient<IQueryableRepository<Business>, CloudTableRepository<Business>>();
             services.AddTransient<IRepository<Business>, CloudTableRepository<Business>>();
             services.AddTransient<BusinessDomain>();
+            services.AddTransient<Func<BusinessDomain>>(sp => () => sp.GetService<BusinessDomain>());
             services.AddTransient<IDomainRepository<BusinessDomain, Business>, GenericDomainRepository<BusinessDomain, Business>>();
 
             services.AddTransient<IQueryableRepository<MobileLocation>, CloudTableRepository<MobileLocation>>();
