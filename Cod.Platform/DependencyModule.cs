@@ -8,6 +8,8 @@ namespace Cod.Platform
         {
             Cod.InternalError.Register(new Cod.Platform.InternalErrorRetriever());
 
+            services.AddTransient(typeof(Lazy<>), typeof(LazyWrapper<>));
+
             services.AddTransient<AzureOCRScaner>();
             services.AddTransient<AppInsights>();
             services.AddTransient<WechatIntegration>();
@@ -58,9 +60,13 @@ namespace Cod.Platform
 
             services.AddTransient<IQueryableRepository<User>, CloudTableRepository<User>>();
             services.AddTransient<IRepository<User>, CloudTableRepository<User>>();
+            services.AddTransient<UserDomain>();
+            services.AddTransient<IDomainRepository<UserDomain, User>, GenericDomainRepository<UserDomain, User>>();
 
             services.AddTransient<IQueryableRepository<Business>, CloudTableRepository<Business>>();
             services.AddTransient<IRepository<Business>, CloudTableRepository<Business>>();
+            services.AddTransient<BusinessDomain>();
+            services.AddTransient<IDomainRepository<BusinessDomain, Business>, GenericDomainRepository<BusinessDomain, Business>>();
 
             services.AddTransient<IQueryableRepository<MobileLocation>, CloudTableRepository<MobileLocation>>();
             services.AddTransient<IRepository<MobileLocation>, CloudTableRepository<MobileLocation>>();
@@ -79,12 +85,6 @@ namespace Cod.Platform
 
             services.AddTransient<IQueryableRepository<Report>, CloudTableRepository<Report>>();
             services.AddTransient<IRepository<Report>, CloudTableRepository<Report>>();
-
-            services.AddTransient<UserDomain>();
-            services.AddTransient<IDomainRepository<UserDomain, User>, GenericDomainRepository<UserDomain, User>>();
-
-            services.AddTransient<BusinessDomain>();
-            services.AddTransient<IDomainRepository<BusinessDomain, Business>, GenericDomainRepository<BusinessDomain, Business>>();
 
             return services;
         }
