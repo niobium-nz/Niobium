@@ -16,8 +16,16 @@ namespace Cod.Platform
             var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(azureServiceTokenProvider.KeyVaultTokenCallback));
             var prefix = keyVaultUri.AbsoluteUri.EndsWith('/') ? keyVaultUri.AbsoluteUri[..^1] : keyVaultUri.AbsoluteUri;
             key = key.Trim().Replace('_', '-'); // Azure Key Vault does not support underscore.
-            var secret = await keyVaultClient.GetSecretAsync($"{prefix}/secrets/{key}");
-            return secret.Value;
+            try
+            {
+                var secret = await keyVaultClient.GetSecretAsync($"{prefix}/secrets/{key}");
+                return secret.Value;
+            }
+            catch (Exception)
+            {
+            }
+
+            return null;
         }
     }
 }
