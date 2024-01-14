@@ -1,66 +1,94 @@
-using Autofac;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Cod.Platform
 {
-    public class DependencyModule : Module
+    public static class DependencyModule
     {
         private static readonly IErrorRetriever ErrorRetriever = new InternalErrorRetriever();
 
-        protected override void Load(ContainerBuilder builder)
+        public static IServiceCollection AddCodPlatform(this IServiceCollection services)
         {
-            //builder.RegisterModule<LoggerModule>();
+            Cod.InternalError.Register(ErrorRetriever);
 
-            InternalError.Register(ErrorRetriever);
-            builder.RegisterType<AzureOCRScaner>();
-            builder.RegisterType<AppInsights>();
-            builder.RegisterType<AzureStorageSignatureService>().AsImplementedInterfaces();
-            builder.RegisterType<AzureIoTHubCommander>().AsImplementedInterfaces().SingleInstance();
-            builder.RegisterType<WechatIntegration>();
-            builder.RegisterType<BaiduIntegration>();
-            builder.RegisterType<CloudTableRepository<Account>>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<Accounting>>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<Entitlement>>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<Transaction>>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<OpenID>>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<Login>>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<User>>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<Business>>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<MobileLocation>>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<BrandingInfo>>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<Interest>>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<Job>>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<PaymentMethod>>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<Report>>().AsImplementedInterfaces();
+            services.AddTransient<AzureOCRScaner>();
+            services.AddTransient<AppInsights>();
+            services.AddTransient<WechatIntegration>();
+            services.AddTransient<BaiduIntegration>();
 
-            builder.RegisterType<UserDomain>();
-            builder.RegisterType<GenericDomainRepository<UserDomain, User>>().As<IDomainRepository<UserDomain, User>>();
+            services.AddTransient<ISignatureService, AzureStorageSignatureService>();
+            services.AddSingleton<IIoTCommander, AzureIoTHubCommander>();
+            services.AddTransient<IPaymentService, PaymentService>();
+            services.AddTransient<IPaymentProcessor, WechatPaymentProcessor>();
 
-            builder.RegisterType<BusinessDomain>();
-            builder.RegisterType<GenericDomainRepository<BusinessDomain, Business>>().As<IDomainRepository<BusinessDomain, Business>>();
+            services.AddTransient<ISignatureIssuer, CloudSignatureIssuer>();
+            services.AddTransient<IConfigurationProvider, ConfigurationProvider>();
+            services.AddTransient<IQueue, PlatformQueue>();
+            services.AddTransient<ITokenBuilder, BearerTokenBuilder>();
+            services.AddTransient<IStorageControl, ImpedimentControl>();
+            services.AddTransient<IImpedimentPolicy, ImpedementPolicyScanProvider>();
+            services.AddTransient<IBlobRepository, CloudBlobRepository>();
+            services.AddTransient<INotificationService, NotificationService>();
+            services.AddTransient<IOpenIDManager, OpenIDManager>();
+            services.AddTransient<IBusinessManager, MemoryCachedBusinessManager>();
+            services.AddTransient<IBrandService, MemoryCachedBrandService>();
 
-            builder.RegisterType<PaymentService>().AsImplementedInterfaces();
-            builder.RegisterType<WechatPaymentProcessor>().AsImplementedInterfaces();
-
-            builder.RegisterType<WechatRepository>().AsSelf();
-            builder.Register(ctx => new CachedRepository<WechatEntity>(
-                    ctx.Resolve<WechatRepository>(),
-                    ctx.Resolve<ICacheStore>(),
+            services.AddTransient<WechatRepository>();
+            services.AddTransient<IRepository<WechatEntity>>(sp =>
+                new CachedRepository<WechatEntity>(
+                    sp.GetService<WechatRepository>(),
+                    sp.GetService<ICacheStore>(),
                     true
-                )).As<IRepository<WechatEntity>>();
-            builder.RegisterType<CloudSignatureIssuer>().AsImplementedInterfaces();
-            builder.RegisterType<ConfigurationProvider>().AsImplementedInterfaces();
-            builder.RegisterType<PlatformQueue>().AsImplementedInterfaces();
-            builder.RegisterType<BearerTokenBuilder>().AsImplementedInterfaces();
-            builder.RegisterType<CloudTableRepository<Impediment>>().AsImplementedInterfaces();
-            builder.RegisterType<ImpedimentControl>().AsImplementedInterfaces();
-            builder.RegisterType<ImpedementPolicyScanProvider>().AsImplementedInterfaces();
-            builder.RegisterType<CloudBlobRepository>().AsImplementedInterfaces();
-            builder.RegisterType<NotificationService>().AsImplementedInterfaces();
-            builder.RegisterType<OpenIDManager>().AsImplementedInterfaces();
-            builder.RegisterType<MemoryCachedBusinessManager>().AsImplementedInterfaces();
-            builder.RegisterType<MemoryCachedBrandService>().AsImplementedInterfaces();
-            base.Load(builder);
+                ));
+
+            services.AddTransient<IQueryableRepository<Impediment>, CloudTableRepository<Impediment>>();
+            services.AddTransient<IRepository<Impediment>, CloudTableRepository<Impediment>>();
+
+            services.AddTransient<IQueryableRepository<Accounting>, CloudTableRepository<Accounting>>();
+            services.AddTransient<IRepository<Accounting>, CloudTableRepository<Accounting>>();
+
+            services.AddTransient<IQueryableRepository<Entitlement>, CloudTableRepository<Entitlement>>();
+            services.AddTransient<IRepository<Entitlement>, CloudTableRepository<Entitlement>>();
+
+            services.AddTransient<IQueryableRepository<Transaction>, CloudTableRepository<Transaction>>();
+            services.AddTransient<IRepository<Transaction>, CloudTableRepository<Transaction>>();
+
+            services.AddTransient<IQueryableRepository<OpenID>, CloudTableRepository<OpenID>>();
+            services.AddTransient<IRepository<OpenID>, CloudTableRepository<OpenID>>();
+
+            services.AddTransient<IQueryableRepository<Login>, CloudTableRepository<Login>>();
+            services.AddTransient<IRepository<Login>, CloudTableRepository<Login>>();
+
+            services.AddTransient<IQueryableRepository<User>, CloudTableRepository<User>>();
+            services.AddTransient<IRepository<User>, CloudTableRepository<User>>();
+
+            services.AddTransient<IQueryableRepository<Business>, CloudTableRepository<Business>>();
+            services.AddTransient<IRepository<Business>, CloudTableRepository<Business>>();
+
+            services.AddTransient<IQueryableRepository<MobileLocation>, CloudTableRepository<MobileLocation>>();
+            services.AddTransient<IRepository<MobileLocation>, CloudTableRepository<MobileLocation>>();
+
+            services.AddTransient<IQueryableRepository<BrandingInfo>, CloudTableRepository<BrandingInfo>>();
+            services.AddTransient<IRepository<BrandingInfo>, CloudTableRepository<BrandingInfo>>();
+
+            services.AddTransient<IQueryableRepository<Interest>, CloudTableRepository<Interest>>();
+            services.AddTransient<IRepository<Interest>, CloudTableRepository<Interest>>();
+
+            services.AddTransient<IQueryableRepository<Job>, CloudTableRepository<Job>>();
+            services.AddTransient<IRepository<Job>, CloudTableRepository<Job>>();
+
+            services.AddTransient<IQueryableRepository<PaymentMethod>, CloudTableRepository<PaymentMethod>>();
+            services.AddTransient<IRepository<PaymentMethod>, CloudTableRepository<PaymentMethod>>();
+
+            services.AddTransient<IQueryableRepository<Report>, CloudTableRepository<Report>>();
+            services.AddTransient<IRepository<Report>, CloudTableRepository<Report>>();
+
+            services.AddTransient<UserDomain>();
+            services.AddTransient<IDomainRepository<UserDomain, User>, GenericDomainRepository<UserDomain, User>>();
+
+            services.AddTransient<BusinessDomain>();
+            services.AddTransient<IDomainRepository<BusinessDomain, Business>, GenericDomainRepository<BusinessDomain, Business>>();
+
+            return services;
         }
     }
 }

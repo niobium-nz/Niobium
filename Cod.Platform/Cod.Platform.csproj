@@ -21,6 +21,7 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisMode>Recommended</AnalysisMode>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <NoWarn>CA1848,CA2254</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -43,7 +44,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Cod.Abstractions\Cod.Abstractions.csproj" />
-    <ProjectReference Include="..\Cod.Autofac\Cod.Autofac.csproj" />
     <ProjectReference Include="..\Cod.Helper\Cod.Helper.csproj" />
   </ItemGroup>
 
