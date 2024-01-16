@@ -24,18 +24,9 @@ namespace Cod.Platform
 
         public static CloudTable GetTable(string tableName)
         {
-            var connectionString = ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME);
-            var dbTables = ConfigurationProvider.GetSetting("DB_TABLES");
-            if (!string.IsNullOrEmpty(dbTables))
-            {
-                var tables = dbTables.Split(",", StringSplitOptions.RemoveEmptyEntries);
-                if (tables.Contains(tableName))
-                {
-                    connectionString = ConfigurationProvider.GetSetting("STORAGE_ACCOUNT_DB");
-                }
-            }
-
-            return GetStorageAccount(connectionString).CreateCloudTableClient().GetTableReference(tableName);
+            var conn = ConfigurationProvider.GetSetting(Constant.TABLE_ENDPOINT);
+            conn ??= ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME);
+            return GetStorageAccount(conn).CreateCloudTableClient().GetTableReference(tableName);
         }
 
         public static CloudQueue GetQueue(string queueName)
