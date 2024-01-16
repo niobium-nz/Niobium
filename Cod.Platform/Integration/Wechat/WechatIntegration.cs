@@ -224,7 +224,7 @@ namespace Cod.Platform
 
             using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
 #if !DEBUG
-                httpclient.Timeout = TimeSpan.FromSeconds(5);
+                httpclient.Timeout = TimeSpan.FromSeconds(10);
 #endif
             var query = HttpUtility.ParseQueryString(String.Empty);
             query["access_token"] = token.Result;
