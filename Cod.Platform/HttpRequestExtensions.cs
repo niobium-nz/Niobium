@@ -7,6 +7,7 @@ using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Cod.Platform
@@ -80,11 +81,21 @@ namespace Cod.Platform
             return result;
         }
 
-        public static IEnumerable<string> GetRemoteIP(this HttpRequest request) => request.Headers.TryGetValue("X-Forwarded-For", out var values)
-                ? values.Where(v => !String.IsNullOrWhiteSpace(v))
+        public static IEnumerable<string> GetRemoteIP(this HttpRequest request)
+        {
+            StringValues values;
+            if (!request.Headers.TryGetValue("X-Forwarded-For", out values))
+            {
+                if (!request.Headers.TryGetValue("x-forwarded-for", out values))
+                { 
+                    return Enumerable.Empty<string>();
+                }
+            }
+
+            return values.Where(v => !String.IsNullOrWhiteSpace(v))
                        .SelectMany(v => v.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries))
-                       .Select(v => v.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries).First())
-                : Enumerable.Empty<string>();
+                       .Select(v => v.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries).First());
+        }
 
         public static void DeliverAuthenticationToken(this HttpRequest request, string token, string scheme)
         {
