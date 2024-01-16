@@ -87,8 +87,11 @@ namespace Cod.Platform
             if (!request.Headers.TryGetValue("X-Forwarded-For", out values))
             {
                 if (!request.Headers.TryGetValue("x-forwarded-for", out values))
-                { 
-                    return Enumerable.Empty<string>();
+                {
+                    if (!request.Headers.TryGetValue("CLIENT-IP", out values))
+                    {
+                        return Enumerable.Empty<string>();
+                    }
                 }
             }
 
