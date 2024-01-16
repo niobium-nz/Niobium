@@ -11,7 +11,11 @@ namespace Cod.Platform
             => CloudStorageAccount.Parse(connectionString);
 
         public static CloudStorageAccount GetStorageAccount()
-            => GetStorageAccount(ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME));
+        {
+            var conn = ConfigurationProvider.GetSetting(Constant.BLOB_ENDPOINT);
+            conn ??= ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME);
+            return GetStorageAccount(conn);
+        }
 
         public static CloudTable GetTable<T>(string connectionString) where T : ITableEntity
             => GetTable(typeof(T).Name, connectionString);

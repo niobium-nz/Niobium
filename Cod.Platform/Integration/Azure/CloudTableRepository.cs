@@ -11,7 +11,7 @@ namespace Cod.Platform
         {
         }
 
-        public CloudTableRepository(string tableName, string connectionString)
+        public CloudTableRepository(string tableName, string connectionString = null)
         {
             this.tableName = tableName;
             this.connectionString = connectionString;
