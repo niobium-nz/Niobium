@@ -36,8 +36,6 @@ namespace Cod.Platform
             services.AddTransient<ITokenBuilder, BearerTokenBuilder>();
             services.AddTransient<IStorageControl, ImpedimentControl>();
             services.AddTransient<IImpedimentPolicy, ImpedementPolicyScanProvider>();
-            services.AddTransient<IBlobRepository, CloudBlobRepository>();
-            services.AddTransient<Func<IBlobRepository>>(sp => () => sp.GetService<IBlobRepository>());
             services.AddTransient<INotificationService, NotificationService>();
             services.AddTransient<IOpenIDManager, OpenIDManager>();
             services.AddTransient<IBusinessManager, MemoryCachedBusinessManager>();
