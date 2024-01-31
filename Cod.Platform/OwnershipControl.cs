@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using Cod.Platform.Integration.Azure;
 using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform

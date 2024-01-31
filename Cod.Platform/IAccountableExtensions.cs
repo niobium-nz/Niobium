@@ -1,3 +1,4 @@
+using Cod.Platform.Integration.Azure;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Table;
 

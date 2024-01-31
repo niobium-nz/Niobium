@@ -2,12 +2,14 @@ namespace Cod.Platform
 {
     public interface IBlobRepository
     {
-        Task CreateIfNotExists(string container);
+        IBlobRepository Initialize(string containerName, bool createIfNotExist = true);
 
-        Task<IEnumerable<Uri>> ListAsync(string container, string prefix);
+        IAsyncEnumerable<string> ListAsync(string prefix, CancellationToken cancellationToken = default);
 
-        Task DeleteAsync(IEnumerable<Uri> blobUris);
+        Task GetAsync(string blobName, Stream destination, CancellationToken cancellationToken = default);
 
-        Task PutAsync(string container, string blob, Stream stream, bool replaceIfExist);
+        Task PutAsync(string blobName, Stream stream, bool replaceIfExist = false, IDictionary<string, string> tags = null, CancellationToken cancellationToken = default);
+
+        Task DeleteAsync(IEnumerable<string> blobNames, bool ignoreIfNotExist = true, CancellationToken cancellationToken = default);
     }
 }

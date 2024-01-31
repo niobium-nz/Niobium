@@ -1,3 +1,6 @@
+using Azure.Storage.Blobs;
+using Cod.Platform.Integration.Azure;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Cod.Platform
@@ -7,7 +10,6 @@ namespace Cod.Platform
         public static IServiceCollection AddCodPlatform(this IServiceCollection services)
         {
             Cod.InternalError.Register(new Cod.Platform.InternalErrorRetriever());
-
             services.AddTransient(typeof(Lazy<>), typeof(LazyWrapper<>));
 
             services.AddTransient<AzureOCRScaner>();
@@ -20,13 +22,22 @@ namespace Cod.Platform
             services.AddTransient<IPaymentService, PaymentService>();
             services.AddTransient<IPaymentProcessor, WechatPaymentProcessor>();
 
+            services.AddTransient(sp =>
+            {
+                var conn = ConfigurationProvider.GetSetting(Constant.BLOB_ENDPOINT);
+                conn ??= ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME);
+                return new BlobServiceClient(conn);
+            });
             services.AddTransient<ISignatureIssuer, CloudSignatureIssuer>();
+            services.AddTransient<IBlobSignatureIssuer, AzureBlobSignatureIssuer>();
+
             services.AddTransient<IConfigurationProvider, ConfigurationProvider>();
             services.AddTransient<IQueue, PlatformQueue>();
             services.AddTransient<ITokenBuilder, BearerTokenBuilder>();
             services.AddTransient<IStorageControl, ImpedimentControl>();
             services.AddTransient<IImpedimentPolicy, ImpedementPolicyScanProvider>();
             services.AddTransient<IBlobRepository, CloudBlobRepository>();
+            services.AddTransient<Func<IBlobRepository>>(sp => () => sp.GetService<IBlobRepository>());
             services.AddTransient<INotificationService, NotificationService>();
             services.AddTransient<IOpenIDManager, OpenIDManager>();
             services.AddTransient<IBusinessManager, MemoryCachedBusinessManager>();

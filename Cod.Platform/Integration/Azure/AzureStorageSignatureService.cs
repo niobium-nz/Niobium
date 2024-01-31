@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.Queue;
 using Microsoft.WindowsAzure.Storage.Table;
 
@@ -8,13 +7,16 @@ namespace Cod.Platform
     internal class AzureStorageSignatureService : ISignatureService
     {
         private readonly Lazy<ISignatureIssuer> signatureIssuer;
+        private readonly IBlobSignatureIssuer blobSignatureIssuer;
         private readonly Lazy<IEnumerable<IStorageControl>> storageControls;
 
         public AzureStorageSignatureService(
             Lazy<ISignatureIssuer> signatureIssuer,
+            IBlobSignatureIssuer blobSignatureIssuer,
             Lazy<IEnumerable<IStorageControl>> storageControls)
         {
             this.signatureIssuer = signatureIssuer;
+            this.blobSignatureIssuer = blobSignatureIssuer;
             this.storageControls = storageControls;
         }
 
@@ -72,14 +74,10 @@ namespace Cod.Platform
                                                 SharedAccessStartTime = start,
                                                 SharedAccessExpiryTime = expiry,
                                             }),
-                    StorageType.Blob => this.signatureIssuer.Value.Issue(
+                    StorageType.Blob => (await this.blobSignatureIssuer.IssueAsync(
                                             cred.Resource,
-                                            new SharedAccessBlobPolicy
-                                            {
-                                                Permissions = (SharedAccessBlobPermissions)cred.Permission,
-                                                SharedAccessStartTime = start,
-                                                SharedAccessExpiryTime = expiry,
-                                            }),
+                                            expiry,
+                                            (BlobPermissions)cred.Permission)).Query,
                     StorageType.File => throw new NotImplementedException(),
                     _ => throw new NotImplementedException(),
                 };

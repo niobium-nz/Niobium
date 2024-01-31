@@ -1,5 +1,4 @@
 using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.Queue;
 using Microsoft.WindowsAzure.Storage.Table;
 
@@ -38,20 +37,6 @@ namespace Cod.Platform
             var conn = ConfigurationProvider.GetSetting(Constant.QUEUE_ENDPOINT);
             conn ??= ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME);
             return GetStorageAccount(conn).CreateCloudQueueClient().GetQueueReference(queueName.Trim().ToLowerInvariant());
-        }
-
-        public static CloudBlobContainer GetBlobContainer(string containerName)
-        {
-            var conn = ConfigurationProvider.GetSetting(Constant.BLOB_ENDPOINT);
-            conn ??= ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME);
-            return GetStorageAccount(conn).CreateCloudBlobClient().GetContainerReference(containerName);
-        }
-
-        public static CloudBlockBlob GetBlob(string containerName, string blobName)
-        {
-            var conn = ConfigurationProvider.GetSetting(Constant.BLOB_ENDPOINT);
-            conn ??= ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME);
-            return GetStorageAccount(conn).CreateCloudBlobClient().GetContainerReference(containerName).GetBlockBlobReference(blobName);
         }
     }
 }

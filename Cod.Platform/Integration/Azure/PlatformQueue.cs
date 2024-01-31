@@ -1,4 +1,5 @@
 using Cod.Model;
+using Cod.Platform.Integration.Azure;
 using Microsoft.WindowsAzure.Storage.Queue;
 
 namespace Cod.Platform

@@ -1,5 +1,4 @@
 using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.Queue;
 using Microsoft.WindowsAzure.Storage.Table;
 
@@ -14,8 +13,5 @@ namespace Cod.Platform
 
         public string Issue(string resource, SharedAccessQueuePolicy policy)
             => CloudStorage.GetQueue(resource).GetSharedAccessSignature(policy, null, SharedAccessProtocol.HttpsOrHttp, null);
-
-        public string Issue(string resource, SharedAccessBlobPolicy policy)
-            => CloudStorage.GetBlobContainer(resource).GetSharedAccessSignature(policy, null, SharedAccessProtocol.HttpsOrHttp, null);
     }
 }

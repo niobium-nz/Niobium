@@ -1,3 +1,4 @@
+using Cod.Platform.Integration.Azure;
 using System.Collections.Concurrent;
 using System.Globalization;
 

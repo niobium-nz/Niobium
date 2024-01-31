@@ -1,4 +1,5 @@
-﻿using Microsoft.WindowsAzure.Storage.Table;
+﻿using Cod.Platform.Integration.Azure;
+using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {
