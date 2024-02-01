@@ -1,10 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29424.173
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34525.116
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cod.Autofac", "Cod.Autofac\Cod.Autofac.csproj", "{D73FAC77-3145-4783-A7B7-A482DB63A198}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cod.Abstractions", "Cod.Abstractions\Cod.Abstractions.csproj", "{6D43C27D-58BB-42BD-9181-3B8C33D6F26D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cod.Platform", "Cod.Platform\Cod.Platform.csproj", "{E19C95B6-1DAC-42EF-AF4A-410CCE6B32A3}"
@@ -28,7 +26,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cod.Channel.Mobile", "Cod.C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cod.Platform.Stripe", "Cod.Platform.Stripe\Cod.Platform.Stripe.csproj", "{8D60A293-46B3-4733-A60A-7E2E10BB0A1F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cod.Channel.Device", "Cod.Channel.Device\Cod.Channel.Device.csproj", "{975BE67B-6159-480D-A6A1-FDE3CAF7EE3B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cod.Channel.Device", "Cod.Channel.Device\Cod.Channel.Device.csproj", "{975BE67B-6159-480D-A6A1-FDE3CAF7EE3B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -40,18 +38,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{D73FAC77-3145-4783-A7B7-A482DB63A198}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D73FAC77-3145-4783-A7B7-A482DB63A198}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D73FAC77-3145-4783-A7B7-A482DB63A198}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{D73FAC77-3145-4783-A7B7-A482DB63A198}.Debug|x64.Build.0 = Debug|Any CPU
-		{D73FAC77-3145-4783-A7B7-A482DB63A198}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{D73FAC77-3145-4783-A7B7-A482DB63A198}.Debug|x86.Build.0 = Debug|Any CPU
-		{D73FAC77-3145-4783-A7B7-A482DB63A198}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D73FAC77-3145-4783-A7B7-A482DB63A198}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D73FAC77-3145-4783-A7B7-A482DB63A198}.Release|x64.ActiveCfg = Release|Any CPU
-		{D73FAC77-3145-4783-A7B7-A482DB63A198}.Release|x64.Build.0 = Release|Any CPU
-		{D73FAC77-3145-4783-A7B7-A482DB63A198}.Release|x86.ActiveCfg = Release|Any CPU
-		{D73FAC77-3145-4783-A7B7-A482DB63A198}.Release|x86.Build.0 = Release|Any CPU
 		{6D43C27D-58BB-42BD-9181-3B8C33D6F26D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6D43C27D-58BB-42BD-9181-3B8C33D6F26D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6D43C27D-58BB-42BD-9181-3B8C33D6F26D}.Debug|x64.ActiveCfg = Debug|Any CPU

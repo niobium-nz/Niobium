@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using Microsoft.WindowsAzure.Storage.Queue;
 using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
@@ -8,15 +7,18 @@ namespace Cod.Platform
     {
         private readonly Lazy<ISignatureIssuer> signatureIssuer;
         private readonly IBlobSignatureIssuer blobSignatureIssuer;
+        private readonly IQueueSignatureIssuer queueSignatureIssuer;
         private readonly Lazy<IEnumerable<IStorageControl>> storageControls;
 
         public AzureStorageSignatureService(
             Lazy<ISignatureIssuer> signatureIssuer,
             IBlobSignatureIssuer blobSignatureIssuer,
+            IQueueSignatureIssuer queueSignatureIssuer,
             Lazy<IEnumerable<IStorageControl>> storageControls)
         {
             this.signatureIssuer = signatureIssuer;
             this.blobSignatureIssuer = blobSignatureIssuer;
+            this.queueSignatureIssuer = queueSignatureIssuer;
             this.storageControls = storageControls;
         }
 
@@ -66,14 +68,10 @@ namespace Cod.Platform
                                                 SharedAccessExpiryTime = expiry,
                                             },
                                             cred),
-                    StorageType.Queue => this.signatureIssuer.Value.Issue(
+                    StorageType.Queue => (await this.queueSignatureIssuer.IssueAsync(
                                             cred.Resource,
-                                            new SharedAccessQueuePolicy
-                                            {
-                                                Permissions = (SharedAccessQueuePermissions)cred.Permission,
-                                                SharedAccessStartTime = start,
-                                                SharedAccessExpiryTime = expiry,
-                                            }),
+                                            expiry,
+                                            (QueuePermissions)cred.Permission)).Query,
                     StorageType.Blob => (await this.blobSignatureIssuer.IssueAsync(
                                             cred.Resource,
                                             expiry,

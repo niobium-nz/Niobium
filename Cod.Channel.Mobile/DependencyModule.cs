@@ -1,9 +1,13 @@
-using Autofac;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Cod.Channel.Mobile
 {
-    public class DependencyModule : Autofac.Module
+    public static class DependencyModule
     {
-        protected override void Load(ContainerBuilder builder) => builder.RegisterType<NavigatorAdaptor>().AsImplementedInterfaces().SingleInstance();
+        public static IServiceCollection AddCodMobile(this IServiceCollection services)
+        {
+            services.AddSingleton<INavigator, NavigatorAdaptor>();
+            return services;
+        }
     }
 }

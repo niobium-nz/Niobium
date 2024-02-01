@@ -5,7 +5,7 @@ namespace Cod
 {
     public static class IQueueExtensions
     {
-        public static async Task<OperationResult> EnqueueAsync(this IQueue queue, QueueMessage entity)
+        public static async Task EnqueueAsync(this IQueue queue, QueueMessage entity)
             => await queue.EnqueueAsync(new[] { entity });
     }
 }

@@ -1,4 +1,5 @@
 using Azure.Storage.Blobs;
+using Azure.Storage.Queues;
 using Cod.Platform.Integration.Azure;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,12 +29,20 @@ namespace Cod.Platform
                 conn ??= ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME);
                 return new BlobServiceClient(conn);
             });
+            services.AddTransient(sp =>
+            {
+                var conn = ConfigurationProvider.GetSetting(Constant.QUEUE_ENDPOINT);
+                conn ??= ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME);
+                return new QueueServiceClient(conn);
+            });
+
             services.AddTransient<ISignatureIssuer, CloudSignatureIssuer>();
             services.AddTransient<IBlobSignatureIssuer, AzureBlobSignatureIssuer>();
+            services.AddTransient<IQueueSignatureIssuer, AzureQueueSignatureIssuer>();
             services.AddTransient<IBlobRepository, CloudBlobRepository>();
 
             services.AddTransient<IConfigurationProvider, ConfigurationProvider>();
-            services.AddTransient<IQueue, PlatformQueue>();
+            services.AddTransient<IQueue, CloudPlatformQueue>();
             services.AddTransient<ITokenBuilder, BearerTokenBuilder>();
             services.AddTransient<IStorageControl, ImpedimentControl>();
             services.AddTransient<IImpedimentPolicy, ImpedementPolicyScanProvider>();

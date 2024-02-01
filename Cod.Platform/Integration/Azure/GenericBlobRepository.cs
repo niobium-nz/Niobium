@@ -1,6 +1,6 @@
 namespace Cod.Platform.Integration.Azure
 {
-    public abstract class ScopedCloudBlobRepository
+    public abstract class GenericBlobRepository
     {
         protected IBlobRepository Repository { get; private set; }
 
@@ -8,7 +8,7 @@ namespace Cod.Platform.Integration.Azure
 
         protected abstract string ContainerName { get; }
 
-        public ScopedCloudBlobRepository(IBlobRepository repository)
+        public GenericBlobRepository(IBlobRepository repository)
         {
             Repository = repository ?? throw new ArgumentNullException(nameof(repository));
         }

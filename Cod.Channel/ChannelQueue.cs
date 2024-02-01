@@ -1,10 +1,11 @@
+using Cod.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
-using Cod.Model;
 
 namespace Cod.Channel
 {
@@ -29,60 +30,78 @@ namespace Cod.Channel
             this.httpClient = httpClient;
         }
 
-        public Task<DisposableQueueMessage> DequeueAsync(string queueName) => throw new NotImplementedException();
-
-        public Task<IEnumerable<DisposableQueueMessage>> DequeueAsync(string queueName, int limit) => throw new NotImplementedException();
-
-        public async Task<OperationResult> EnqueueAsync(IEnumerable<QueueMessage> entities)
+        public Task<DisposableQueueMessage> DequeueAsync(string queueName, bool createIfNotExist = true, CancellationToken cancellationToken = default)
         {
-            var endpoint = await this.configuration.GetSettingAsStringAsync(Constants.KEY_QUEUE_URL);
-            var groups = entities.GroupBy(q => q.PartitionKey);
-            foreach (var group in groups)
+            throw new NotImplementedException();
+        }
+
+        public Task<IEnumerable<DisposableQueueMessage>> DequeueAsync(string queueName, int limit, bool createIfNotExist = true, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task EnqueueAsync(IEnumerable<QueueMessage> entities, bool createIfNotExist = true, CancellationToken cancellationToken = default)
+        {
+            string endpoint = await configuration.GetSettingAsStringAsync(Constants.KEY_QUEUE_URL);
+            IEnumerable<IGrouping<string, QueueMessage>> groups = entities.GroupBy(q => q.PartitionKey);
+            foreach (IGrouping<string, QueueMessage> group in groups)
             {
-                var queueName = group.Key;
-                var sig = await this.authenticator.AquireSignatureAsync(StorageType.Queue, queueName, null, null);
+                string queueName = group.Key;
+                OperationResult<StorageSignature> sig = await authenticator.AquireSignatureAsync(StorageType.Queue, queueName, null, null);
                 if (!sig.IsSuccess)
                 {
-                    return sig;
+                    if (sig.Code == InternalError.AuthenticationRequired)
+                    {
+                        throw new UnauthorizedAccessException();
+                    }
+                    else
+                    {
+                        throw new ApplicationException();
+                    }
                 }
 
-                foreach (var message in group)
+                foreach (QueueMessage message in group)
                 {
-                    var timeout = 0;
+                    int timeout = 0;
                     if (message.Delay.HasValue)
                     {
                         timeout = (int)message.Delay.Value.TotalSeconds;
                     }
-                    var url = $"{endpoint}/{queueName}/messages{sig.Result.Signature}&messagettl=-1&visibilitytimeout={timeout}";
-                    var msg = message.Body is string str ? str : JsonSerializer.SerializeObject(message.Body);
-                    var result = await this.SendRequest(url, HttpMethod.Post, msg);
+                    string url = $"{endpoint}/{queueName}/messages{sig.Result.Signature}&messagettl=-1&visibilitytimeout={timeout}";
+                    string msg = message.Body is string str ? str : JsonSerializer.SerializeObject(message.Body);
+                    OperationResult<string> result = await SendRequest(url, HttpMethod.Post, msg);
                     if (!result.IsSuccess)
                     {
-                        return result;
+                        if (result.Code == InternalError.AuthenticationRequired)
+                        {
+                            throw new UnauthorizedAccessException();
+                        }
+                        else
+                        {
+                            throw new ApplicationException();
+                        }
                     }
                 }
             }
-
-            return OperationResult.Success;
         }
 
-        public async Task<IEnumerable<QueueMessage>> PeekAsync(string queueName, int limit)
+        public async Task<IEnumerable<QueueMessage>> PeekAsync(string queueName, int? limit, bool createIfNotExist = true, CancellationToken cancellationToken = default)
         {
-            var sig = await this.authenticator.AquireSignatureAsync(StorageType.Queue, queueName, null, null);
+            OperationResult<StorageSignature> sig = await authenticator.AquireSignatureAsync(StorageType.Queue, queueName, null, null);
             if (!sig.IsSuccess)
             {
                 return Enumerable.Empty<QueueMessage>();
             }
-            var endpoint = await this.configuration.GetSettingAsStringAsync(Constants.KEY_QUEUE_URL);
-            var url = $"{endpoint}/{queueName}/messages{sig.Result.Signature}&peekonly=true";
-            var resp = await this.SendRequest(url, HttpMethod.Get);
+            string endpoint = await configuration.GetSettingAsStringAsync(Constants.KEY_QUEUE_URL);
+            string url = $"{endpoint}/{queueName}/messages{sig.Result.Signature}&peekonly=true";
+            OperationResult<string> resp = await SendRequest(url, HttpMethod.Get);
             if (!resp.IsSuccess)
             {
                 return Enumerable.Empty<QueueMessage>();
             }
 
-            var result = new List<QueueMessage>();
-            var matches = MessageRegex.Matches(resp.Result);
+            List<QueueMessage> result = new();
+            MatchCollection matches = MessageRegex.Matches(resp.Result);
             foreach (Match match in matches)
             {
                 if (match.Success)
@@ -100,26 +119,21 @@ namespace Cod.Channel
 
         protected virtual async Task<OperationResult<string>> SendRequest(string url, HttpMethod method, string message = null)
         {
-            var headers = new List<KeyValuePair<string, string>>();
-            foreach (var key in StorageRequestHeaders.Keys)
+            List<KeyValuePair<string, string>> headers = new();
+            foreach (string key in StorageRequestHeaders.Keys)
             {
                 headers.Add(new KeyValuePair<string, string>(key, StorageRequestHeaders[key]));
             }
             headers.Add(new KeyValuePair<string, string>("x-ms-date", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString()));
 
-            var result = await this.httpClient.RequestAsync<string>(
+            OperationResult<string> result = await httpClient.RequestAsync<string>(
                 method,
                 url,
                 body: MessageTemplate.Replace(MessageTemplatePlaceholder, Base64.Encode(message)),
                 headers: headers,
                 contentType: XMLMediaType);
 
-            if (!result.IsSuccess)
-            {
-                return new OperationResult<string>(result);
-            }
-
-            return new OperationResult<string>(result.Result);
+            return !result.IsSuccess ? new OperationResult<string>(result) : new OperationResult<string>(result.Result);
         }
 
 

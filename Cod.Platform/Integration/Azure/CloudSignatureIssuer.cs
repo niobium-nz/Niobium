@@ -1,17 +1,15 @@
 using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Queue;
 using Microsoft.WindowsAzure.Storage.Table;
 
-namespace Cod.Platform
+namespace Cod.Platform.Integration.Azure
 {
     internal class CloudSignatureIssuer : ISignatureIssuer
     {
         public string Issue(string resource, SharedAccessTablePolicy policy, StorageControl control)
-            => CloudStorage.GetTable(resource).GetSharedAccessSignature(policy, null,
-                control.StartPartitionKey, control.StartRowKey, control.EndPartitionKey, control.EndRowKey,
-                SharedAccessProtocol.HttpsOrHttp, null);
-
-        public string Issue(string resource, SharedAccessQueuePolicy policy)
-            => CloudStorage.GetQueue(resource).GetSharedAccessSignature(policy, null, SharedAccessProtocol.HttpsOrHttp, null);
+        {
+            return CloudStorage.GetTable(resource).GetSharedAccessSignature(policy, null,
+                        control.StartPartitionKey, control.StartRowKey, control.EndPartitionKey, control.EndRowKey,
+                        SharedAccessProtocol.HttpsOrHttp, null);
+        }
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Cod.Platform.Integration.Azure;
 using Microsoft.Extensions.Configuration;
 
 namespace Cod.Platform

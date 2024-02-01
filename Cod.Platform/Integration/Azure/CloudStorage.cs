@@ -1,42 +1,42 @@
 using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Queue;
 using Microsoft.WindowsAzure.Storage.Table;
 
-namespace Cod.Platform
+namespace Cod.Platform.Integration.Azure
 {
     internal static class CloudStorage
     {
         public static CloudStorageAccount GetStorageAccount(string connectionString)
-            => CloudStorageAccount.Parse(connectionString);
+        {
+            return CloudStorageAccount.Parse(connectionString);
+        }
 
         public static CloudStorageAccount GetStorageAccount()
         {
-            var conn = ConfigurationProvider.GetSetting(Constant.BLOB_ENDPOINT);
+            string conn = ConfigurationProvider.GetSetting(Constant.BLOB_ENDPOINT);
             conn ??= ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME);
             return GetStorageAccount(conn);
         }
 
         public static CloudTable GetTable<T>(string connectionString) where T : ITableEntity
-            => GetTable(typeof(T).Name, connectionString);
+        {
+            return GetTable(typeof(T).Name, connectionString);
+        }
 
         public static CloudTable GetTable<T>() where T : ITableEntity
-            => GetTable(typeof(T).Name);
+        {
+            return GetTable(typeof(T).Name);
+        }
 
         public static CloudTable GetTable(string tableName, string connectionString)
-            => GetStorageAccount(connectionString).CreateCloudTableClient().GetTableReference(tableName);
+        {
+            return GetStorageAccount(connectionString).CreateCloudTableClient().GetTableReference(tableName);
+        }
 
         public static CloudTable GetTable(string tableName)
         {
-            var conn = ConfigurationProvider.GetSetting(Constant.TABLE_ENDPOINT);
+            string conn = ConfigurationProvider.GetSetting(Constant.TABLE_ENDPOINT);
             conn ??= ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME);
             return GetStorageAccount(conn).CreateCloudTableClient().GetTableReference(tableName);
-        }
-
-        public static CloudQueue GetQueue(string queueName)
-        {
-            var conn = ConfigurationProvider.GetSetting(Constant.QUEUE_ENDPOINT);
-            conn ??= ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME);
-            return GetStorageAccount(conn).CreateCloudQueueClient().GetQueueReference(queueName.Trim().ToLowerInvariant());
         }
     }
 }
