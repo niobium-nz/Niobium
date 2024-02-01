@@ -5,32 +5,18 @@ using System.Runtime.CompilerServices;
 
 namespace Cod.Platform.Integration.Azure
 {
-    public class CloudBlobRepository : IBlobRepository
+    internal class CloudBlobRepository : IBlobRepository
     {
         protected BlobServiceClient Client { get; private set; }
-        protected bool CreateIfNotExist { get; private set; }
-        protected string ContainerName { get; private set; }
 
         public CloudBlobRepository(BlobServiceClient client)
         {
-            this.Client = client ?? throw new ArgumentNullException(nameof(client));
+            Client = client ?? throw new ArgumentNullException(nameof(client));
         }
 
-        public IBlobRepository Initialize(string containerName, bool createIfNotExist = true)
+        public async IAsyncEnumerable<string> ListAsync(string containerName, string prefix, bool createIfNotExist = true, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(containerName))
-            {
-                throw new ArgumentException($"'{nameof(containerName)}' cannot be null or empty.", nameof(containerName));
-            }
-
-            this.ContainerName = containerName;
-            this.CreateIfNotExist = createIfNotExist;
-            return this;
-        }
-
-        public async IAsyncEnumerable<string> ListAsync(string prefix, [EnumeratorCancellation] CancellationToken cancellationToken = default)
-        {
-            BlobContainerClient container = await GetBlobContainerAsync(cancellationToken);
+            BlobContainerClient container = await GetBlobContainerAsync(containerName, createIfNotExist, cancellationToken);
 
             AsyncPageable<BlobItem> blobs = container.GetBlobsAsync(prefix: prefix, cancellationToken: cancellationToken);
             await foreach (BlobItem blob in blobs)
@@ -39,21 +25,21 @@ namespace Cod.Platform.Integration.Azure
             }
         }
 
-        public async Task GetAsync(string blobName, Stream destination, CancellationToken cancellationToken = default)
+        public async Task GetAsync(string containerName, string blobName, Stream destination, bool createIfNotExist = true, CancellationToken cancellationToken = default)
         {
-            BlobContainerClient container = await GetBlobContainerAsync(cancellationToken);
+            BlobContainerClient container = await GetBlobContainerAsync(containerName, createIfNotExist, cancellationToken);
             BlobClient blob = container.GetBlobClient(blobName);
             await blob.DownloadToAsync(destination, cancellationToken: cancellationToken);
         }
 
-        public async Task PutAsync(string blobName, Stream stream, bool replaceIfExist = false, IDictionary<string, string> tags = null, CancellationToken cancellationToken = default)
+        public async Task PutAsync(string containerName, string blobName, Stream stream, bool replaceIfExist = false, IDictionary<string, string> tags = null, bool createIfNotExist = true, CancellationToken cancellationToken = default)
         {
             if (stream.CanSeek)
             {
                 stream.Seek(0, SeekOrigin.Begin);
             }
 
-            BlobContainerClient container = await GetBlobContainerAsync(cancellationToken);
+            BlobContainerClient container = await GetBlobContainerAsync(containerName, createIfNotExist, cancellationToken);
             BlobClient blob = container.GetBlobClient(blobName);
             if (replaceIfExist)
             {
@@ -65,9 +51,9 @@ namespace Cod.Platform.Integration.Azure
             }
         }
 
-        public async Task DeleteAsync(IEnumerable<string> blobNames, bool ignoreIfNotExist = true, CancellationToken cancellationToken = default)
+        public async Task DeleteAsync(string containerName, IEnumerable<string> blobNames, bool ignoreIfNotExist = true, bool createIfNotExist = true, CancellationToken cancellationToken = default)
         {
-            BlobContainerClient container = await GetBlobContainerAsync(cancellationToken);
+            BlobContainerClient container = await GetBlobContainerAsync(containerName, createIfNotExist, cancellationToken);
             foreach (string blobName in blobNames)
             {
                 if (ignoreIfNotExist)
@@ -81,10 +67,10 @@ namespace Cod.Platform.Integration.Azure
             }
         }
 
-        protected async Task<BlobContainerClient> GetBlobContainerAsync(CancellationToken cancellationToken)
+        protected async Task<BlobContainerClient> GetBlobContainerAsync(string containerName, bool createIfNotExist, CancellationToken cancellationToken)
         {
-            BlobContainerClient container = Client.GetBlobContainerClient(ContainerName);
-            if (CreateIfNotExist)
+            BlobContainerClient container = Client.GetBlobContainerClient(containerName);
+            if (createIfNotExist)
             {
                 await container.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
             }

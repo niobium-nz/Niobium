@@ -30,6 +30,7 @@ namespace Cod.Platform
             });
             services.AddTransient<ISignatureIssuer, CloudSignatureIssuer>();
             services.AddTransient<IBlobSignatureIssuer, AzureBlobSignatureIssuer>();
+            services.AddTransient<IBlobRepository, CloudBlobRepository>();
 
             services.AddTransient<IConfigurationProvider, ConfigurationProvider>();
             services.AddTransient<IQueue, PlatformQueue>();
