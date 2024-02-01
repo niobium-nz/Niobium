@@ -41,13 +41,10 @@ namespace Cod.Platform.Integration.Azure
 
             BlobContainerClient container = await GetBlobContainerAsync(containerName, createIfNotExist, cancellationToken);
             BlobClient blob = container.GetBlobClient(blobName);
-            if (replaceIfExist)
+            await blob.UploadAsync(stream, overwrite: replaceIfExist, cancellationToken: cancellationToken);
+            if (tags != null)
             {
-                await blob.UploadAsync(stream, overwrite: replaceIfExist, cancellationToken: cancellationToken);
-                if (tags != null)
-                {
-                    await blob.SetTagsAsync(tags, cancellationToken: cancellationToken);
-                }
+                await blob.SetTagsAsync(tags, cancellationToken: cancellationToken);
             }
         }
 
