@@ -33,7 +33,7 @@ namespace Cod.Platform
             {
                 var conn = ConfigurationProvider.GetSetting(Constant.QUEUE_ENDPOINT);
                 conn ??= ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME);
-                return new QueueServiceClient(conn);
+                return new QueueServiceClient(conn, new QueueClientOptions { MessageEncoding = QueueMessageEncoding.Base64 });
             });
 
             services.AddTransient<ISignatureIssuer, CloudSignatureIssuer>();
