@@ -17,7 +17,7 @@ namespace Cod.Platform.Integration.Azure
         {
             QueueClient q = await GetQueueAsync(queueName, createIfNotExist, cancellationToken);
             global::Azure.Response<global::Azure.Storage.Queues.Models.QueueMessage> msg = await q.ReceiveMessageAsync(cancellationToken: cancellationToken);
-            return msg != null
+            return msg != null && msg.Value != null
                 ? new DisposableQueueMessage(
                     () => q.DeleteMessageAsync(msg.Value.MessageId, msg.Value.PopReceipt))
                 {
@@ -50,7 +50,6 @@ namespace Cod.Platform.Integration.Azure
             return result;
         }
 
-
         public virtual async Task EnqueueAsync(IEnumerable<QueueMessage> entities, bool createIfNotExist = true, CancellationToken cancellationToken = default)
         {
             foreach (QueueMessage item in entities)
@@ -64,7 +63,7 @@ namespace Cod.Platform.Integration.Azure
         public virtual async Task<IEnumerable<QueueMessage>> PeekAsync(string queueName, int? limit, bool createIfNotExist = true, CancellationToken cancellationToken = default)
         {
             QueueClient q = await GetQueueAsync(queueName, createIfNotExist, cancellationToken);
-            global::Azure.Response<global::Azure.Storage.Queues.Models.PeekedMessage[]> msgs = await q.PeekMessagesAsync(maxMessages: limit, cancellationToken: cancellationToken);
+            Response<global::Azure.Storage.Queues.Models.PeekedMessage[]> msgs = await q.PeekMessagesAsync(maxMessages: limit, cancellationToken: cancellationToken);
             return msgs.Value.Select(m => new QueueMessage
             {
                 Body = m.MessageText,
