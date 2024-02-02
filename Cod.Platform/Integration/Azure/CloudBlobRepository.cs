@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace Cod.Platform.Integration.Azure
 {
-    internal class CloudBlobRepository : IBlobRepository
+    public class CloudBlobRepository : IBlobRepository
     {
         protected BlobServiceClient Client { get; private set; }
 
@@ -14,7 +14,16 @@ namespace Cod.Platform.Integration.Azure
             Client = client ?? throw new ArgumentNullException(nameof(client));
         }
 
-        public async IAsyncEnumerable<string> ListAsync(string containerName, string prefix, bool createIfNotExist = true, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public async IAsyncEnumerable<string> GetContainersAsync(string prefix = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            var containers = this.Client.GetBlobContainersAsync(prefix: prefix, cancellationToken: cancellationToken);
+            await foreach (var container in containers) 
+            {
+                yield return container.Name;
+            }
+        }
+
+        public async IAsyncEnumerable<string> ListAsync(string containerName, string prefix = null, bool createIfNotExist = true, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             BlobContainerClient container = await GetBlobContainerAsync(containerName, createIfNotExist, cancellationToken);
 
@@ -46,6 +55,23 @@ namespace Cod.Platform.Integration.Azure
             {
                 await blob.SetTagsAsync(tags, cancellationToken: cancellationToken);
             }
+        }
+
+        public async Task TagAsync(string containerName, string blobName, IDictionary<string, string> tags, CancellationToken cancellationToken = default)
+        {
+            if (tags.Any())
+            {
+                BlobContainerClient container = await GetBlobContainerAsync(containerName, false, cancellationToken);
+                if (await container.ExistsAsync(cancellationToken))
+                {
+                    BlobClient blob = container.GetBlobClient(blobName);
+                    if (await blob.ExistsAsync(cancellationToken))
+                    {
+                        await blob.SetTagsAsync(tags, cancellationToken: cancellationToken);
+                    }
+                }
+            }
+            
         }
 
         public async Task DeleteAsync(string containerName, IEnumerable<string> blobNames, bool ignoreIfNotExist = true, bool createIfNotExist = true, CancellationToken cancellationToken = default)
