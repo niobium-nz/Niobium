@@ -10,7 +10,7 @@ namespace Cod.Model
 
         public string ETag { get; set; }
 
-        public DateTimeOffset Timestamp { get; set; }
+        public DateTimeOffset? Timestamp { get; set; }
 
         public DateTimeOffset? Created { get; set; }
 
@@ -31,10 +31,7 @@ namespace Cod.Model
 
         public static string BuildPartitionKey(int kind, string app)
         {
-            if (app is null)
-            {
-                app = String.Empty;
-            }
+            app ??= String.Empty;
             return $"{kind}|{app.Trim()}";
         }
 

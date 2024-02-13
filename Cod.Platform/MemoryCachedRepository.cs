@@ -1,9 +1,11 @@
+using Cod.Platform.Integration.Azure;
+using System.Runtime.CompilerServices;
+
 namespace Cod.Platform
 {
     public class MemoryCachedRepository<T> : IRepository<T>, IDisposable
         where T : IEntity
     {
-        private static readonly T[] EmptyCache = Array.Empty<T>();
         private readonly IRepository<T> repository;
         private readonly SemaphoreSlim locker = new(1, 1);
         private bool disposed;
@@ -15,71 +17,94 @@ namespace Cod.Platform
 
         protected TimeSpan CacheRefreshInterval { get; set; } = TimeSpan.FromMinutes(10);
 
-        public async Task<TableQueryResult<T>> GetAsync(int limit = -1, IList<string> fields = null)
+        public Task<TableQueryResult<T>> GetAsync(int limit, string continuationToken = null, IList<string> fields = null, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException($"Does not support paged query over memory-cached repository.");
+        }
+
+        public Task<TableQueryResult<T>> GetAsync(string partitionKey, int limit, string continuationToken = null, IList<string> fields = null, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException($"Does not support paged query over memory-cached repository.");
+        }
+
+        public IAsyncEnumerable<T> GetAsync(IList<string> fields = null, CancellationToken cancellationToken = default)
         {
             if (fields != null)
             {
                 throw new NotSupportedException($"{typeof(MemoryCachedRepository<T>).Name} does not support query with explicit fields.");
             }
 
-            await this.BuildCache();
-
-            IList<T> result;
-            var cacheCopy = this.Cache.Count == 0 ? EmptyCache : this.Cache.ToArray();
-            result = limit > 0 && cacheCopy.Length >= limit ? cacheCopy.Take(limit).ToArray() : (IList<T>)cacheCopy;
-
-            return new TableQueryResult<T>(result, null);
+            return this.BuildCache(cancellationToken);
         }
 
-        public async Task<TableQueryResult<T>> GetAsync(string partitionKey, int limit = -1, IList<string> fields = null)
+        public async IAsyncEnumerable<T> GetAsync(string partitionKey, IList<string> fields = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             if (fields != null)
             {
                 throw new NotSupportedException($"{typeof(MemoryCachedRepository<T>).Name} does not support query with explicit fields.");
             }
 
-            await this.BuildCache();
-
-            var cacheCopy = this.Cache.Count == 0 ? EmptyCache : this.Cache.ToArray();
-            IList<T> result = cacheCopy.Where(c => c.PartitionKey == partitionKey).ToArray();
-            if (limit > 0 && result.Count >= limit)
+            var result = this.BuildCache(cancellationToken);
+            await foreach (var item in result)
             {
-                result = result.Take(limit).ToArray();
+                if (item.PartitionKey == partitionKey)
+                {
+                    yield return item;
+                }
+            }
+        }
+
+        public async Task<T> RetrieveAsync(string partitionKey, string rowKey, IList<string> fields = null, CancellationToken cancellationToken = default)
+        {
+            if (fields != null)
+            {
+                throw new NotSupportedException($"{typeof(MemoryCachedRepository<T>).Name} does not support query with explicit fields.");
             }
 
-            return new TableQueryResult<T>(result, null);
+            var result = this.BuildCache(cancellationToken);
+            await foreach (var item in result)
+            {
+                if (item.PartitionKey == partitionKey && item.RowKey == rowKey)
+                {
+                    return item;
+                }
+            }
+
+            return default;
         }
 
-        public async Task<T> GetAsync(string partitionKey, string rowKey)
+        public async Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist, DateTimeOffset? expiry, CancellationToken cancellationToken = default)
+            => await this.repository.CreateAsync(entities, replaceIfExist, expiry: expiry, cancellationToken: cancellationToken);
+
+        public async Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities, bool preconditionCheck = true, bool successIfNotExist = false, CancellationToken cancellationToken = default)
+            => await this.repository.DeleteAsync(entities, preconditionCheck: preconditionCheck, successIfNotExist: successIfNotExist, cancellationToken: cancellationToken);
+
+        public async Task<IEnumerable<T>> UpdateAsync(IEnumerable<T> entities, bool preconditionCheck = true, CancellationToken cancellationToken = default)
+            => await this.repository.UpdateAsync(entities, preconditionCheck: preconditionCheck, cancellationToken: cancellationToken);
+
+        private async IAsyncEnumerable<T> BuildCache([EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            await this.BuildCache();
-            var cacheCopy = this.Cache.Count == 0 ? EmptyCache : this.Cache.ToArray();
-            return cacheCopy.SingleOrDefault(c => c.PartitionKey == partitionKey && c.RowKey == rowKey);
-        }
-
-        public async Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist)
-            => await this.repository.CreateAsync(entities, replaceIfExist);
-
-        public async Task<IEnumerable<T>> CreateOrUpdateAsync(IEnumerable<T> entities)
-            => await this.repository.CreateOrUpdateAsync(entities);
-
-        public async Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities, bool successIfNotExist = false)
-            => await this.repository.DeleteAsync(entities, successIfNotExist);
-
-        public async Task<IEnumerable<T>> UpdateAsync(IEnumerable<T> entities)
-            => await this.repository.UpdateAsync(entities);
-
-        private async Task BuildCache()
-        {
-            await this.locker.WaitAsync();
+            await this.locker.WaitAsync(cancellationToken);
             try
             {
                 if (DateTimeOffset.UtcNow - this.lastCached > this.CacheRefreshInterval)
                 {
-                    var templates = await this.repository.GetAsync();
                     this.Cache.Clear();
-                    this.Cache.AddRange(templates);
                     this.lastCached = DateTimeOffset.UtcNow;
+
+                    var templates = this.repository.GetAsync(cancellationToken: cancellationToken);
+                    await foreach (var template in templates)
+                    {
+                        this.Cache.Add(template);
+                        yield return template;
+                    }
+                }
+                else
+                {
+                    foreach (var template in this.Cache)
+                    {
+                        yield return template;
+                    }
                 }
             }
             finally

@@ -11,7 +11,5 @@ namespace Cod.Platform
         public string Category { get; set; }
 
         public string ImpedementID { get; set; }
-
-        public ILogger Logger { get; set; }
     }
 }

@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {
@@ -8,12 +7,12 @@ namespace Cod.Platform
         public bool Grantable(StorageType type, string resource) =>
             type == StorageType.Table && resource.ToLowerInvariant() == typeof(Impediment).Name.ToLowerInvariant();
 
-        public Task<StorageControl> GrantAsync(ClaimsPrincipal principal, StorageType type, string resource, string partition, string row)
+        public Task<StorageControl> GrantAsync(ClaimsPrincipal principal, StorageType type, string resource, string partition, string row, CancellationToken cancellationToken = default)
         {
             var sid = principal.GetClaim<Guid>(ClaimTypes.Sid);
             if (partition.StartsWith(sid.ToKey(), StringComparison.InvariantCultureIgnoreCase))
             {
-                return Task.FromResult(new StorageControl((int)SharedAccessTablePermissions.Query, typeof(Impediment).Name)
+                return Task.FromResult(new StorageControl((int)TablePermissions.Query, typeof(Impediment).Name)
                 {
                     StartPartitionKey = partition,
                     EndPartitionKey = partition

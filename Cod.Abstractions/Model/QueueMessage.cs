@@ -18,7 +18,7 @@ namespace Cod.Model
 
         public DateTimeOffset? Created { get; set; }
 
-        public DateTimeOffset Timestamp { get; set; }
+        public DateTimeOffset? Timestamp { get; set; }
 
         public object Clone() => new QueueMessage
         {

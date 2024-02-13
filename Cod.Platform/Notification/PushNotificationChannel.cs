@@ -29,7 +29,8 @@ namespace Cod.Platform
             else if (user != Guid.Empty)
             {
                 // TODO (5he11) 根据 context 决定 app 下边的查询可以更高效
-                var openid = await this.openIDManager.Value.GetChannelsAsync(user, level);
+                // TODO (5he11) 传递 IAsyncEnumerable 到下游
+                var openid = await this.openIDManager.Value.GetChannelsAsync(user, level).ToListAsync();
                 targets = openid.Select(i => new NotificationContext(level, i.GetApp(), i.GetUser(), i.Identity));
             }
 

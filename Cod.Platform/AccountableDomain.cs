@@ -1,23 +1,46 @@
-using Cod.Platform.Integration.Azure;
+using Cod.Platform.Entity;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {
-    public static class IAccountableExtensions
+    public abstract class AccountableDomain<T> : PlatformDomain<T>, IAccountable
+        where T : IEntity
     {
-        private const string FROZEN_KEY = "frozen";
-        private const string DELTA_KEY = "delta";
+        private const string FrozenKey = "frozen";
+        private const string DeltaKey = "delta";
+        private readonly Lazy<IQueryableRepository<Transaction>> transactionRepo;
+        private readonly Lazy<IQueryableRepository<Accounting>> accountingRepo;
+        private readonly Lazy<IEnumerable<IAccountingAuditor>> auditors;
+        private readonly Lazy<ICacheStore> cacheStore;
+        private readonly ILogger logger;
 
-        public static async Task MakeAccountingAsync(this IAccountable accountable, IEnumerable<IAccountingAuditor> auditors)
+        public AccountableDomain(
+            Lazy<IRepository<T>> repo,
+            Lazy<IQueryableRepository<Transaction>> transactionRepo,
+            Lazy<IQueryableRepository<Accounting>> accountingRepo,
+            Lazy<IEnumerable<IAccountingAuditor>> auditors,
+            Lazy<ICacheStore> cacheStore,
+            ILogger logger)
+            : base(repo)
+        {
+            this.transactionRepo = transactionRepo;
+            this.accountingRepo = accountingRepo;
+            this.auditors = auditors;
+            this.cacheStore = cacheStore;
+            this.logger = logger;
+        }
+
+        public abstract string AccountingPrincipal { get; }
+
+        public async Task MakeAccountingAsync()
         {
             //REMARK (5he11) 取以当前时间为基础的昨天的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
             var targetTime = new DateTimeOffset(DateTimeOffset.UtcNow.UtcDateTime.Date.ToUniversalTime()).AddMilliseconds(-1);
-            var latest = await accountable.GetLatestAccountingAsync(targetTime);
+            var latest = await this.GetLatestAccountingAsync(targetTime);
             if (latest.ETag == null)
             {
                 //REMARK (5he11) ETag为空指示系统中未找到任何数据，即新账号，仅生成昨天的记录即可
-                await accountable.MakeAccountingAsync(targetTime, 0, auditors);
+                await this.MakeAccountingAsync(targetTime, 0);
             }
             else
             {
@@ -27,7 +50,7 @@ namespace Cod.Platform
                 {
                     //REMARK (5he11) 数据层存储的都是记账日当天最后一刻的时间，所以加1毫秒就是新的要创建账务的日期
                     var buildTarget = pos.AddMilliseconds(1);
-                    var accounting = await accountable.MakeAccountingAsync(buildTarget, previousBalance, auditors);
+                    var accounting = await this.MakeAccountingAsync(buildTarget, previousBalance);
                     if (accounting == null)
                     {
                         break;
@@ -38,95 +61,81 @@ namespace Cod.Platform
             }
         }
 
-        public static async Task<IEnumerable<Transaction>> GetTransactionsAsync(this IAccountable accountable, DateTimeOffset fromInclusive, DateTimeOffset toInclusive)
-          => await CloudStorage.GetTable<Transaction>().WhereAsync<Transaction>(TableQuery.CombineFilters(
-                TableQuery.GenerateFilterCondition(nameof(Transaction.PartitionKey), QueryComparisons.Equal, Transaction.BuildPartitionKey(await accountable.GetAccountingPrincipalAsync())),
-                TableOperators.And,
-                TableQuery.CombineFilters(TableQuery.GenerateFilterCondition(nameof(Transaction.RowKey), QueryComparisons.LessThanOrEqual, Transaction.BuildRowKey(fromInclusive)),
-                TableOperators.And,
-                TableQuery.GenerateFilterCondition(nameof(Transaction.RowKey), QueryComparisons.GreaterThanOrEqual, Transaction.BuildRowKey(toInclusive)))));
-
-        public static async Task<double> GetFrozenAsync(this IAccountable accountable)
+        public IAsyncEnumerable<Transaction> GetTransactionsAsync(DateTimeOffset fromInclusive, DateTimeOffset toInclusive)
         {
-            var pk = FROZEN_KEY;
-            var rk = await accountable.GetAccountingPrincipalAsync();
-            var result = await accountable.CacheStore.GetAsync<double>(pk, rk);
+            var principal = this.AccountingPrincipal;
+            return transactionRepo.Value.QueryAsync(
+                      Transaction.BuildPartitionKey(principal),
+                      Transaction.BuildRowKey(toInclusive),
+                      Transaction.BuildRowKey(fromInclusive));
+        }
+
+        public async Task<double> GetFrozenAsync()
+        {
+            var pk = FrozenKey;
+            var rk = this.AccountingPrincipal;
+            var result = await this.cacheStore.Value.GetAsync<double>(pk, rk);
             return result;
         }
 
-        public static async Task<double> FreezeAsync(this IAccountable accountable, double amount)
+        public async Task<double> FreezeAsync(double amount)
         {
             amount = amount.ChineseRound();
             if (amount < 0)
             {
                 throw new ArgumentException("金额不应为负值", nameof(amount));
             }
-            var pk = FROZEN_KEY;
-            var rk = await accountable.GetAccountingPrincipalAsync();
-            var currentValue = await accountable.CacheStore.GetAsync<double>(pk, rk);
+            var pk = FrozenKey;
+            var rk = this.AccountingPrincipal;
+            var currentValue = await this.cacheStore.Value.GetAsync<double>(pk, rk);
             var result = currentValue + amount;
-            await accountable.CacheStore.SetAsync(pk, rk, result, false);
+            await this.cacheStore.Value.SetAsync(pk, rk, result, false);
             return result;
         }
 
-        public static async Task<double> UnfreezeAsync(this IAccountable accountable)
+        public async Task<double> UnfreezeAsync()
         {
-            var pk = FROZEN_KEY;
-            var rk = await accountable.GetAccountingPrincipalAsync();
-            await accountable.CacheStore.DeleteAsync(pk, rk);
+            var pk = FrozenKey;
+            var rk = this.AccountingPrincipal;
+            await this.cacheStore.Value.DeleteAsync(pk, rk);
             return 0;
         }
 
-        public static async Task<double> UnfreezeAsync(this IAccountable accountable, double amount)
+        public async Task<double> UnfreezeAsync(double amount)
         {
             amount = amount.ChineseRound();
             if (amount < 0)
             {
                 throw new ArgumentException("金额不应为负值", nameof(amount));
             }
-            var pk = FROZEN_KEY;
-            var rk = await accountable.GetAccountingPrincipalAsync();
-            var currentValue = await accountable.CacheStore.GetAsync<double>(pk, rk);
+            var pk = FrozenKey;
+            var rk = this.AccountingPrincipal;
+            var currentValue = await this.cacheStore.Value.GetAsync<double>(pk, rk);
             var result = currentValue - amount;
-            await accountable.CacheStore.SetAsync(pk, rk, result, false);
+            await this.cacheStore.Value.SetAsync(pk, rk, result, false);
             return result;
         }
 
-        public static async Task<double> GetDeltaAsync(this IAccountable accountable, DateTimeOffset input)
-        {
-            var pk = $"{DELTA_KEY}-{input.ToSixDigitsDate()}";
-            var rk = await accountable.GetAccountingPrincipalAsync();
-            var result = await accountable.CacheStore.GetAsync<double>(pk, rk);
-            return result.ChineseRound();
-        }
-
-        public static async Task ClearDeltaAsync(this IAccountable accountable, DateTimeOffset input)
-        {
-            var pk = $"{DELTA_KEY}-{input.ToSixDigitsDate()}";
-            var rk = await accountable.GetAccountingPrincipalAsync();
-            await accountable.CacheStore.DeleteAsync(pk, rk);
-        }
-
-        public static async Task<TransactionRequest> BuildTransactionAsync(this IAccountable accountable,
+        public Task<TransactionRequest> BuildTransactionAsync(
             double delta, int reason, string remark, string reference, string id = null, string corelation = null)
-            => new TransactionRequest(await accountable.GetAccountingPrincipalAsync(), delta)
+            => Task.FromResult(new TransactionRequest(this.AccountingPrincipal, delta)
             {
                 Reason = reason,
                 ID = id,
                 Reference = reference,
                 Remark = remark,
                 Corelation = corelation,
-            };
+            });
 
-        public static async Task<IEnumerable<Transaction>> MakeTransactionAsync(this IAccountable accountable,
-            double delta, int reason, string remark, string reference, string id = null, string corelation = null, IRepository<Transaction> repository = null)
-            => await MakeTransactionAsync(new[] { await accountable.BuildTransactionAsync(delta, reason, remark, reference, id, corelation) }, accountable.CacheStore, repository);
+        public async Task<IEnumerable<Transaction>> MakeTransactionAsync(
+            double delta, int reason, string remark, string reference, string id = null, string corelation = null)
+            => await MakeTransactionAsync(new[] { await this.BuildTransactionAsync(delta, reason, remark, reference, id, corelation) });
 
-        public static async Task<IEnumerable<Transaction>> MakeTransactionAsync(TransactionRequest request, ICacheStore cacheStore, IRepository<Transaction> repository = null)
-          => await MakeTransactionAsync(new[] { request }, cacheStore, repository);
+        public async Task<IEnumerable<Transaction>> MakeTransactionAsync(TransactionRequest request)
+          => await MakeTransactionAsync(new[] { request });
 
         //TODO (5he11) 此方法要加锁并且实现事务
-        public static async Task<IEnumerable<Transaction>> MakeTransactionAsync(IEnumerable<TransactionRequest> requests, ICacheStore cacheStore, IRepository<Transaction> repository = null)
+        public async Task<IEnumerable<Transaction>> MakeTransactionAsync(IEnumerable<TransactionRequest> requests)
         {
             var transactions = new List<Transaction>();
             var count = 0;
@@ -137,10 +146,7 @@ namespace Cod.Platform
                     throw new ArgumentNullException(nameof(requests));
                 }
 
-                if (request.ID == null)
-                {
-                    request.ID = Transaction.BuildRowKey(DateTimeOffset.UtcNow);
-                }
+                request.ID ??= Transaction.BuildRowKey(DateTimeOffset.UtcNow);
                 request.Delta = request.Delta.ChineseRound();
                 request.Target = request.Target.Trim();
 
@@ -157,39 +163,32 @@ namespace Cod.Platform
                 transactions.Add(transaction);
                 count++;
             }
-            if (repository == null)
-            {
-                await CloudStorage.GetTable<Transaction>().InsertAsync(transactions);
-            }
-            else
-            {
-                await repository.CreateAsync(transactions);
-            }
 
+            await transactionRepo.Value.CreateAsync(transactions);
             var now = DateTimeOffset.UtcNow.ToSixDigitsDate();
             foreach (var transaction in transactions)
             {
-                var pk = $"{DELTA_KEY}-{now}";
+                var pk = $"{DeltaKey}-{now}";
                 var rk = transaction.GetOwner();
-                var currentValue = await cacheStore.GetAsync<double>(pk, rk);
+                var currentValue = await cacheStore.Value.GetAsync<double>(pk, rk);
                 var result = (currentValue + transaction.Delta).ChineseRound();
-                await cacheStore.SetAsync(pk, rk, result, false);
+                await cacheStore.Value.SetAsync(pk, rk, result, false);
             }
             return transactions;
         }
 
-        public static async Task<Transaction> GetTransactionAsync(this IAccountable accountable, DateTimeOffset id)
+        public async Task<Transaction> GetTransactionAsync(DateTimeOffset id)
         {
-            var target = await accountable.GetAccountingPrincipalAsync();
-            var transaction = await CloudStorage.GetTable<Transaction>().RetrieveAsync<Transaction>(target, Transaction.BuildRowKey(id));
+            var target = this.AccountingPrincipal;
+            var transaction = await transactionRepo.Value.RetrieveAsync(target, Transaction.BuildRowKey(id));
             return transaction;
         }
 
-        public static async Task<AccountBalance> GetBalanceAsync(this IAccountable accountable, DateTimeOffset input)
+        public async Task<AccountBalance> GetBalanceAsync(DateTimeOffset input)
         {
             //REMARK (5he11) 将输入限制为仅取其日期的当日的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
             input = new DateTimeOffset(input.UtcDateTime.Date.ToUniversalTime()).AddDays(1).AddMilliseconds(-1);
-            var frozen = await accountable.GetFrozenAsync();
+            var frozen = await this.GetFrozenAsync();
             frozen = frozen.ChineseRound();
             bool queryCache;
             var lastAccountDate = input;
@@ -206,13 +205,12 @@ namespace Cod.Platform
             }
 
             double balance;
-            var principal = await accountable.GetAccountingPrincipalAsync();
-            var accounting = await CloudStorage.GetTable<Accounting>().RetrieveAsync<Accounting>(
-                Accounting.BuildPartitionKey(principal), Accounting.BuildRowKey(lastAccountDate));
+            var principal = this.AccountingPrincipal;
+            var accounting = await accountingRepo.Value.RetrieveAsync(Accounting.BuildPartitionKey(principal), Accounting.BuildRowKey(lastAccountDate));
             if (accounting == null)
             {
                 //REMARK (5he11) 若无法高效命中则使用慢速范围查询
-                accounting = await accountable.GetLatestAccountingAsync(lastAccountDate);
+                accounting = await this.GetLatestAccountingAsync(lastAccountDate);
                 queryCache = true;
             }
             balance = accounting.Balance;
@@ -224,7 +222,7 @@ namespace Cod.Platform
                 var pos = accounting.ETag == null ? input.AddMilliseconds(-1).AddDays(-3) : accounting.GetEnd().AddMilliseconds(1);
                 while (pos < input)
                 {
-                    var delta = await accountable.GetDeltaAsync(pos);
+                    var delta = await this.GetDeltaAsync(pos);
                     balance += delta;
                     pos = pos.AddDays(1);
                 }
@@ -240,8 +238,22 @@ namespace Cod.Platform
             };
         }
 
-        private static async Task<Accounting> MakeAccountingAsync(this IAccountable accountable, DateTimeOffset input, double previousBalance,
-            IEnumerable<IAccountingAuditor> auditors)
+        private async Task<double> GetDeltaAsync(DateTimeOffset input)
+        {
+            var pk = $"{DeltaKey}-{input.ToSixDigitsDate()}";
+            var rk = this.AccountingPrincipal;
+            var result = await this.cacheStore.Value.GetAsync<double>(pk, rk);
+            return result.ChineseRound();
+        }
+
+        private async Task ClearDeltaAsync(DateTimeOffset input)
+        {
+            var pk = $"{DeltaKey}-{input.ToSixDigitsDate()}";
+            var rk = this.AccountingPrincipal;
+            await this.cacheStore.Value.DeleteAsync(pk, rk);
+        }
+
+        private async Task<Accounting> MakeAccountingAsync(DateTimeOffset input, double previousBalance)
         {
             //REMARK (5he11) 将输入限制为仅取其日期的当日的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
             input = new DateTimeOffset(input.UtcDateTime.Date.ToUniversalTime()).AddDays(1).AddMilliseconds(-1);
@@ -253,17 +265,15 @@ namespace Cod.Platform
 
             //REMARK (5he11) 取其日期的当日的第一刻并转化为UTC时间，规范后的值如：2018-08-08 00:00:00.000 +00:00
             var transactionSearchFrom = new DateTimeOffset(input.UtcDateTime.Date.ToUniversalTime());
-            var transactions = await accountable.GetTransactionsAsync(transactionSearchFrom, input);
+            var transactions = await this.GetTransactionsAsync(transactionSearchFrom, input).ToListAsync();
+
             var credits = transactions.Where(t => t.Delta > 0).Select(t => t.Delta).DefaultIfEmpty().Sum();
             var debits = transactions.Where(t => t.Delta < 0).Select(t => t.Delta).DefaultIfEmpty().Sum();
-            var delta = await accountable.GetDeltaAsync(input);
+            var delta = await this.GetDeltaAsync(input);
             var diff = credits + debits - delta;
             var b = (previousBalance + credits + debits).ChineseRound();
-            var principal = await accountable.GetAccountingPrincipalAsync();
-            if (accountable is ILoggerSite ls)
-            {
-                ls.Logger.LogInformation($"账务主体 {principal} 从 {transactionSearchFrom} 开始，截止到 {input} 为止的账务变化为 {credits}/{debits} 与该日缓存相差 {diff} 截止此时余额为 {b}");
-            }
+            var principal = this.AccountingPrincipal;
+            this.logger.LogInformation($"账务主体 {principal} 从 {transactionSearchFrom} 开始，截止到 {input} 为止的账务变化为 {credits}/{debits} 与该日缓存相差 {diff} 截止此时余额为 {b}");
 
             //if (Math.Abs(diff) > 1)
             //{
@@ -281,32 +291,27 @@ namespace Cod.Platform
             accounting.SetPrincipal(principal);
             accounting.SetEnd(input);
 
-            if (auditors != null)
+            foreach (var auditor in auditors.Value)
             {
-                foreach (var auditor in auditors)
-                {
-                    await auditor.AuditAsync(accounting, transactions);
-                }
+                await auditor.AuditAsync(accounting, transactions);
             }
 
-            await CloudStorage.GetTable<Accounting>().InsertAsync(new[] { accounting });
-            await accountable.ClearDeltaAsync(input);
+            await accountingRepo.Value.CreateAsync(accounting);
+            await this.ClearDeltaAsync(input);
             return accounting;
         }
 
-        private static async Task<Accounting> GetLatestAccountingAsync(this IAccountable accountable, DateTimeOffset input)
+        private async Task<Accounting> GetLatestAccountingAsync(DateTimeOffset input)
         {
             //REMARK (5he11) 将输入限制为仅取其日期的当日的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
             input = new DateTimeOffset(input.UtcDateTime.Date.ToUniversalTime()).AddDays(1).AddMilliseconds(-1);
-            var principal = await accountable.GetAccountingPrincipalAsync();
+            var principal = this.AccountingPrincipal;
             var searchFrom = input.AddDays(-30);
-            var accountings = await CloudStorage.GetTable<Accounting>().WhereAsync<Accounting>(TableQuery.CombineFilters(
-                TableQuery.GenerateFilterCondition(nameof(Accounting.PartitionKey), QueryComparisons.Equal, Accounting.BuildPartitionKey(principal)),
-                TableOperators.And,
-                TableQuery.CombineFilters(
-                TableQuery.GenerateFilterCondition(nameof(Accounting.RowKey), QueryComparisons.LessThanOrEqual, Accounting.BuildRowKey(searchFrom)),
-                TableOperators.And,
-                TableQuery.GenerateFilterCondition(nameof(Accounting.RowKey), QueryComparisons.GreaterThanOrEqual, Accounting.BuildRowKey(input)))));
+            var accountings = await accountingRepo.Value.QueryAsync(
+                                    Accounting.BuildPartitionKey(principal),
+                                    Accounting.BuildRowKey(input),
+                                    Accounting.BuildRowKey(searchFrom))
+                                .ToListAsync();
             var latest = accountings.OrderByDescending(a => a.GetEnd()).FirstOrDefault();
             if (latest != null)
             {

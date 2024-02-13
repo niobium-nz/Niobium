@@ -1,65 +1,71 @@
-using Cod.Platform.Integration.Azure;
 using System.Collections.Concurrent;
 using System.Globalization;
 
-namespace Cod.Platform
+namespace Cod.Platform.Integration.Azure
 {
     public class TableCacheStore : ICacheStore
     {
         private readonly ConcurrentDictionary<string, object> memoryCache = new();
         private readonly ConcurrentDictionary<string, DateTimeOffset> memoryCacheExpiry = new();
+        private readonly IRepository<Cache> cacheRepo;
 
-        public async Task DeleteAsync(string partitionKey, string rowKey)
+        public TableCacheStore(IRepository<Cache> cacheRepo)
         {
-            var memkey = $"{partitionKey}@{rowKey}";
-            this.memoryCache.TryRemove(memkey, out _);
-            this.memoryCacheExpiry.TryRemove(memkey, out _);
+            this.cacheRepo = cacheRepo;
+        }
 
-            var cache = await CloudStorage.GetTable<Cache>().RetrieveAsync<Cache>(partitionKey, rowKey);
+        public async Task DeleteAsync(string partitionKey, string rowKey, CancellationToken cancellationToken = default)
+        {
+            string memkey = $"{partitionKey}@{rowKey}";
+            memoryCache.TryRemove(memkey, out _);
+            memoryCacheExpiry.TryRemove(memkey, out _);
+
+            Cache cache = await cacheRepo.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
             if (cache != null)
             {
-                await CloudStorage.GetTable<Cache>().RemoveAsync(new[] { cache }, successIfNotExist: true);
+                await cacheRepo.DeleteAsync(cache, preconditionCheck: false, successIfNotExist: true, cancellationToken: cancellationToken);
             }
         }
 
-        public async Task<T> GetAsync<T>(string partitionKey, string rowKey) where T : IConvertible
+        public async Task<T> GetAsync<T>(string partitionKey, string rowKey, CancellationToken cancellationToken = default) where T : IConvertible
         {
-            if (String.IsNullOrWhiteSpace(partitionKey) || String.IsNullOrWhiteSpace(rowKey))
+            if (string.IsNullOrWhiteSpace(partitionKey) || string.IsNullOrWhiteSpace(rowKey))
             {
                 return default;
             }
             partitionKey = partitionKey.Trim();
             rowKey = rowKey.Trim();
-            var memkey = $"{partitionKey}@{rowKey}";
-            if (this.memoryCache.ContainsKey(memkey))
+            string memkey = $"{partitionKey}@{rowKey}";
+            if (memoryCache.ContainsKey(memkey))
             {
-                if (this.memoryCacheExpiry.TryGetValue(memkey, out var value) && value < DateTimeOffset.UtcNow)
+                if (memoryCacheExpiry.TryGetValue(memkey, out DateTimeOffset value) && value < DateTimeOffset.UtcNow)
                 {
-                    this.memoryCache.TryRemove(memkey, out _);
-                    this.memoryCacheExpiry.TryRemove(memkey, out _);
-                    var expiredcache = await CloudStorage.GetTable<Cache>().RetrieveAsync<Cache>(partitionKey, rowKey);
+                    memoryCache.TryRemove(memkey, out _);
+                    memoryCacheExpiry.TryRemove(memkey, out _);
+                    Cache expiredcache = await cacheRepo.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
                     if (expiredcache != null)
                     {
-                        await CloudStorage.GetTable<Cache>().RemoveAsync(new[] { expiredcache }, successIfNotExist: true);
+                        await cacheRepo.DeleteAsync(expiredcache, preconditionCheck: false, successIfNotExist: true, cancellationToken: cancellationToken);
                     }
                     return default;
                 }
-                return (T)this.memoryCache[memkey];
+                return (T)memoryCache[memkey];
             }
-            var cache = await CloudStorage.GetTable<Cache>().RetrieveAsync<Cache>(partitionKey, rowKey);
+
+            Cache cache = await cacheRepo.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
             if (cache != null)
             {
                 if (cache.Expiry < DateTimeOffset.UtcNow)
                 {
-                    await CloudStorage.GetTable<Cache>().RemoveAsync(new[] { cache }, successIfNotExist: true);
+                    await cacheRepo.DeleteAsync(cache, preconditionCheck: false, successIfNotExist: true, cancellationToken: cancellationToken);
                     return default;
                 }
                 else
                 {
                     if (cache.InMemory)
                     {
-                        this.memoryCache.AddOrUpdate(memkey, cache.Value, (a, b) => cache.Value);
-                        this.memoryCacheExpiry.AddOrUpdate(memkey, cache.Expiry, (a, b) => cache.Expiry);
+                        memoryCache.AddOrUpdate(memkey, cache.Value, (a, b) => cache.Value);
+                        memoryCacheExpiry.AddOrUpdate(memkey, cache.Expiry, (a, b) => cache.Expiry);
                     }
 
                     return (T)Convert.ChangeType(cache.Value, typeof(T), CultureInfo.InvariantCulture);
@@ -68,33 +74,36 @@ namespace Cod.Platform
             return default;
         }
 
-        public async Task SetAsync<T>(string partitionKey, string rowKey, T value, bool memoryCached, DateTimeOffset? expiry = null) where T : IConvertible
+        public async Task SetAsync<T>(string partitionKey, string rowKey, T value, bool memoryCached, DateTimeOffset? expiry = null, CancellationToken cancellationToken = default) where T : IConvertible
         {
-            if (String.IsNullOrWhiteSpace(partitionKey) || String.IsNullOrWhiteSpace(rowKey))
+            if (string.IsNullOrWhiteSpace(partitionKey) || string.IsNullOrWhiteSpace(rowKey))
             {
                 return;
             }
             partitionKey = partitionKey.Trim();
             rowKey = rowKey.Trim();
-            var memkey = $"{partitionKey}@{rowKey}";
+            string memkey = $"{partitionKey}@{rowKey}";
 
             if (memoryCached)
             {
-                this.memoryCache.AddOrUpdate(memkey, value, (a, b) => value);
+                memoryCache.AddOrUpdate(memkey, value, (a, b) => value);
                 if (expiry.HasValue)
                 {
-                    this.memoryCacheExpiry.AddOrUpdate(memkey, expiry.Value, (a, b) => expiry.Value);
+                    memoryCacheExpiry.AddOrUpdate(memkey, expiry.Value, (a, b) => expiry.Value);
                 }
             }
 
-            await CloudStorage.GetTable<Cache>().InsertOrReplaceAsync(new[] { new Cache
+            await cacheRepo.CreateAsync(new Cache
             {
                 PartitionKey = partitionKey,
                 RowKey = rowKey,
                 Value = value.ToString(),
                 InMemory = memoryCached,
                 Expiry = expiry ?? DateTimeOffset.Parse("2100-01-01T00:00:00Z", CultureInfo.InvariantCulture)
-            } });
+            },
+            replaceIfExist: true,
+            expiry ?? DateTimeOffset.UtcNow.AddMonths(1),
+            cancellationToken: cancellationToken);
         }
     }
 }

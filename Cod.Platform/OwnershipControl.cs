@@ -1,6 +1,5 @@
-﻿using System.Security.Claims;
-using Cod.Platform.Integration.Azure;
-using Microsoft.WindowsAzure.Storage.Table;
+﻿using Azure.Data.Tables;
+using System.Security.Claims;
 
 namespace Cod.Platform
 {
@@ -8,35 +7,45 @@ namespace Cod.Platform
         where TResource : IEntity
         where TOwnership : ITableEntity, new()
     {
-        public bool Grantable(StorageType type, string resource) =>
-            type == StorageType.Table && resource.ToLowerInvariant() == typeof(TResource).Name.ToLowerInvariant();
+        private readonly Lazy<IRepository<TOwnership>> repo;
 
-        public async Task<StorageControl> GrantAsync(ClaimsPrincipal principal, StorageType type, string resource, string partition, string row)
+        public OwnershipControl(Lazy<IRepository<TOwnership>> repo)
         {
-            var grant = await this.HasPermission(principal, partition);
-            if (grant)
-            {
-                return new StorageControl((int)SharedAccessTablePermissions.Query, typeof(TResource).Name)
+            this.repo = repo;
+        }
+
+        public bool Grantable(StorageType type, string resource)
+        {
+            return type == StorageType.Table && resource.ToLowerInvariant() == typeof(TResource).Name.ToLowerInvariant();
+        }
+
+        public async Task<StorageControl> GrantAsync(ClaimsPrincipal principal, StorageType type, string resource, string partition, string row, CancellationToken cancellationToken = default)
+        {
+            bool grant = await HasPermission(principal, partition, cancellationToken);
+            return grant
+                ? new StorageControl((int)TablePermissions.Query, typeof(TResource).Name)
                 {
                     StartPartitionKey = partition,
                     EndPartitionKey = partition
-                };
-            }
-            return null;
+                }
+                : null;
         }
 
-        protected virtual async Task<bool> HasPermission(ClaimsPrincipal principal, string partition)
+        protected virtual async Task<bool> HasPermission(ClaimsPrincipal principal, string partition, CancellationToken cancellationToken)
         {
-            var owner = this.GetOwnerID(principal);
-            return await this.ExistAsync<TOwnership>(owner, partition);
+            string owner = GetOwnerID(principal);
+            return await ExistAsync(owner, partition, cancellationToken);
         }
 
-        protected virtual async Task<bool> ExistAsync<TEntity>(string partitionKey, string rowKey) where TEntity : ITableEntity, new()
+        protected virtual async Task<bool> ExistAsync(string partitionKey, string rowKey, CancellationToken cancellationToken)
         {
-            var entity = await CloudStorage.GetTable<TEntity>().RetrieveAsync<TEntity>(partitionKey, rowKey);
+            TOwnership entity = await repo.Value.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
             return entity != null;
         }
 
-        protected virtual string GetOwnerID(ClaimsPrincipal principal) => principal.GetClaim<string>(ClaimTypes.NameIdentifier);
+        protected virtual string GetOwnerID(ClaimsPrincipal principal)
+        {
+            return principal.GetClaim<string>(ClaimTypes.NameIdentifier);
+        }
     }
 }

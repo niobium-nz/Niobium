@@ -8,7 +8,7 @@ namespace Cod.Model
 
         public string RowKey { get; set; }
 
-        public DateTimeOffset Timestamp { get; set; }
+        public DateTimeOffset? Timestamp { get; set; }
 
         public string ETag { get; set; }
 

@@ -33,7 +33,7 @@ namespace Cod.Platform
                     return OperationResult.NotAllowed;
                 }
 
-                var channels = await this.openIDManager.Value.GetChannelsAsync(user, (int)OpenIDKind.SMS);
+                var channels = await this.openIDManager.Value.GetChannelsAsync(user, (int)OpenIDKind.SMS).ToListAsync();
                 if (!channels.Any())
                 {
                     return OperationResult.NotAllowed;

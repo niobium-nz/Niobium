@@ -6,16 +6,13 @@ namespace Cod.Platform
 
         public OpenIDManager(Lazy<IQueryableRepository<OpenID>> repository) => this.repository = repository;
 
-        public async Task<IEnumerable<OpenID>> GetChannelsAsync(Guid user)
-            => await this.repository.Value.GetAsync(OpenID.BuildPartitionKey(user));
+        public IAsyncEnumerable<OpenID> GetChannelsAsync(Guid user, CancellationToken cancellationToken = default)
+            => this.repository.Value.GetAsync(OpenID.BuildPartitionKey(user), cancellationToken: cancellationToken);
 
-        public async Task<IEnumerable<OpenID>> GetChannelsAsync(Guid user, int kind)
-            => await this.repository.Value.GetAsync(
-                OpenID.BuildPartitionKey(user),
-                OpenID.BuildRowKeyStart(kind),
-                OpenID.BuildRowKeyEnd(kind));
+        public IAsyncEnumerable<OpenID> GetChannelsAsync(Guid user, int kind, CancellationToken cancellationToken = default)
+            => this.repository.Value.QueryAsync(OpenID.BuildPartitionKey(user), OpenID.BuildRowKeyStart(kind), OpenID.BuildRowKeyEnd(kind), cancellationToken: cancellationToken);
 
-        public async Task RegisterAsync(IEnumerable<OpenIDRegistration> registrations)
+        public async Task RegisterAsync(IEnumerable<OpenIDRegistration> registrations, CancellationToken cancellationToken = default)
         {
             // TODO (5he11) poor performance, better to use batch operation
             foreach (var registration in registrations)
@@ -31,11 +28,11 @@ namespace Cod.Platform
                     RowKey = OpenID.BuildRowKey(registration.Kind, registration.App, registration.OffsetPrefix),
                     Identity = registration.Identity,
                 };
-                await this.RetryRegistration(entity, registration.App, 0, registration.ForceOffset0, registration.OffsetPrefix);
+                await this.RetryRegistration(entity, registration.App, 0, registration.ForceOffset0, registration.OffsetPrefix, cancellationToken);
             }
         }
 
-        private async Task RetryRegistration(OpenID entity, string app, int retryCount, bool forceOffset0, string offsetPrefix)
+        private async Task RetryRegistration(OpenID entity, string app, int retryCount, bool forceOffset0, string offsetPrefix, CancellationToken cancellationToken)
         {
             var kind = entity.GetKind();
             if (String.IsNullOrWhiteSpace(app))
@@ -63,14 +60,14 @@ namespace Cod.Platform
 
             if (forceOffset0)
             {
-                await this.repository.Value.CreateAsync(entity, true);
+                await this.repository.Value.CreateAsync(entity, replaceIfExist: true, cancellationToken: cancellationToken);
             }
             else
             {
-                var existing = await this.repository.Value.GetAsync(entity.PartitionKey, entity.RowKey);
+                var existing = await this.repository.Value.RetrieveAsync(entity.PartitionKey, entity.RowKey, cancellationToken: cancellationToken);
                 if (existing == null)
                 {
-                    await this.repository.Value.CreateAsync(entity, true);
+                    await this.repository.Value.CreateAsync(entity, replaceIfExist: true, cancellationToken: cancellationToken);
                 }
                 else
                 {
@@ -81,7 +78,7 @@ namespace Cod.Platform
                     }
                     else
                     {
-                        await this.RetryRegistration(entity, app, ++retryCount, forceOffset0, offsetPrefix);
+                        await this.RetryRegistration(entity, app, ++retryCount, forceOffset0, offsetPrefix, cancellationToken);
                     }
                 }
             }

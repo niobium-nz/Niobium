@@ -1,31 +1,34 @@
-﻿namespace Cod.Platform
+﻿using Cod.Platform.Entity;
+using Microsoft.Extensions.Logging;
+
+namespace Cod.Platform
 {
-    public class BusinessDomain : PlatformDomain<Business>, IAccountable
+    public class BusinessDomain : AccountableDomain<Business>
     {
         public const int CompensationTransactionReason = 11;
         private readonly Lazy<IRepository<Interest>> interestRepository;
-        private readonly Lazy<ICacheStore> cache;
 
         public BusinessDomain(
             Lazy<IRepository<Business>> repository,
             Lazy<IRepository<Interest>> interestRepository,
-            Lazy<ICacheStore> cache)
-            : base(repository)
+            Lazy<IQueryableRepository<Transaction>> transactionRepo,
+            Lazy<IQueryableRepository<Accounting>> accountingRepo,
+            Lazy<IEnumerable<IAccountingAuditor>> auditors,
+            Lazy<ICacheStore> cache,
+            ILogger logger)
+            : base(repository, transactionRepo, accountingRepo, auditors, cache, logger)
         {
             this.interestRepository = interestRepository;
-            this.cache = cache;
         }
 
-        public ICacheStore CacheStore => this.cache.Value;
-
-        public Task<string> GetAccountingPrincipalAsync() => Task.FromResult(this.RowKey);
+        public override string AccountingPrincipal => RowKey;
 
         public async Task MakeCompensationAsync(DateTimeOffset fromInclusive, DateTimeOffset toInclusive)
         {
-            var interests = await this.interestRepository.Value.GetAsync(Interest.BuildPartitionKey(Guid.Parse(this.RowKey)));
-            var validInterests = interests.Where(i => i.Agreement > 0);
-            var groups = validInterests.GroupBy(t => t.Target);
-            foreach (var group in groups)
+            var interests = await interestRepository.Value.GetAsync(Interest.BuildPartitionKey(Guid.Parse(RowKey))).ToListAsync();
+            IEnumerable<Interest> validInterests = interests.Where(i => i.Agreement > 0);
+            IEnumerable<IGrouping<string, Interest>> groups = validInterests.GroupBy(t => t.Target);
+            foreach (IGrouping<string, Interest> group in groups)
             {
                 if (group.Count() > 1)
                 {
@@ -33,38 +36,42 @@
                 }
             }
 
-            var transactions = await this.GetTransactionsAsync(fromInclusive, toInclusive);
-            foreach (var interest in validInterests)
+            var transactions = await GetTransactionsAsync(fromInclusive, toInclusive).ToListAsync();
+            foreach (Interest interest in validInterests)
             {
-                var relatedTransactions = transactions.Where(t => t.Reference == interest.Target);
-                var income = this.FigureIncome(relatedTransactions);
+                IEnumerable<Transaction> relatedTransactions = transactions.Where(t => t.Reference == interest.Target);
+                int income = FigureIncome(relatedTransactions);
                 if (income < interest.Agreement)
                 {
-                    var compensation = interest.Agreement - income;
+                    int compensation = interest.Agreement - income;
 
                     if (!interest.Percentage)
                     {
                         throw new NotImplementedException();
                     }
 
-                    var costOnCompensation = (int)Math.Floor(compensation * (1 - (interest.Value / 10000m)));
+                    int costOnCompensation = (int)Math.Floor(compensation * (1 - (interest.Value / 10000m)));
                     if (costOnCompensation < 0)
                     {
                         throw new NotSupportedException();
                     }
 
-                    var remark = await this.MakeCompensationTransactionRemarkAsync(interest.Target);
-                    var id = relatedTransactions.Max(t => t.GetCreated());
-                    await this.MakeTransactionAsync(compensation / 100d, CompensationTransactionReason, remark, interest.Target, id: id.AddMilliseconds(1).ToReverseUnixTimestamp());
-                    await this.MakeTransactionAsync(-costOnCompensation / 100d, CompensationTransactionReason, remark, interest.Target, id: id.AddMilliseconds(2).ToReverseUnixTimestamp());
+                    string remark = await MakeCompensationTransactionRemarkAsync(interest.Target);
+                    DateTimeOffset id = relatedTransactions.Max(t => t.GetCreated());
+                    await MakeTransactionAsync(compensation / 100d, CompensationTransactionReason, remark, interest.Target, id: id.AddMilliseconds(1).ToReverseUnixTimestamp());
+                    await MakeTransactionAsync(-costOnCompensation / 100d, CompensationTransactionReason, remark, interest.Target, id: id.AddMilliseconds(2).ToReverseUnixTimestamp());
                 }
             }
         }
 
         protected virtual int FigureIncome(IEnumerable<Transaction> input)
-            => input.Where(t => t.Delta > 0).Select(t => t.Delta).DefaultIfEmpty().Sum(t => (int)(t * 100));
+        {
+            return input.Where(t => t.Delta > 0).Select(t => t.Delta).DefaultIfEmpty().Sum(t => (int)(t * 100));
+        }
 
         protected virtual Task<string> MakeCompensationTransactionRemarkAsync(string reference)
-            => Task.FromResult(reference);
+        {
+            return Task.FromResult(reference);
+        }
     }
 }

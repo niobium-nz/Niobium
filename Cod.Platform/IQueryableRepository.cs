@@ -1,17 +1,19 @@
+using Cod.Platform.Integration.Azure;
+
 namespace Cod.Platform
 {
     public interface IQueryableRepository<T> : IRepository<T>
     {
-        Task<TableQueryResult<T>> GetAsync(string partitionKey, IList<string> fields, int limit = -1);
+        Task<TableQueryResult<T>> QueryAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, int limit, IList<string> fields = null, string continuationToken = null, CancellationToken cancellationToken = default);
 
-        Task<TableQueryResult<T>> GetAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, int limit = -1);
+        Task<TableQueryResult<T>> QueryAsync(string partitionKeyStart, string partitionKeyEnd, int limit, IList<string> fields = null, string continuationToken = null, CancellationToken cancellationToken = default);
 
-        Task<TableQueryResult<T>> GetAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, IList<string> fields, int limit = -1);
+        Task<TableQueryResult<T>> QueryAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int limit, IList<string> fields = null, string continuationToken = null, CancellationToken cancellationToken = default);
 
-        Task<TableQueryResult<T>> GetAsync(string partitionKeyStart, string partitionKeyEnd, IList<string> fields, int limit = -1);
+        IAsyncEnumerable<T> QueryAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, IList<string> fields = null, CancellationToken cancellationToken = default);
 
-        Task<TableQueryResult<T>> GetAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int limit = -1);
+        IAsyncEnumerable<T> QueryAsync(string partitionKeyStart, string partitionKeyEnd, IList<string> fields = null, CancellationToken cancellationToken = default);
 
-        Task<TableQueryResult<T>> GetAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, IList<string> fields, int limit = -1);
+        IAsyncEnumerable<T> QueryAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, IList<string> fields = null, CancellationToken cancellationToken = default);
     }
 }

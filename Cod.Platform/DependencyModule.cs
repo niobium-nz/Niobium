@@ -1,7 +1,8 @@
+using Azure.Data.Tables;
 using Azure.Storage.Blobs;
 using Azure.Storage.Queues;
+using Cod.Platform.Entity;
 using Cod.Platform.Integration.Azure;
-using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Cod.Platform
@@ -25,6 +26,12 @@ namespace Cod.Platform
 
             services.AddTransient(sp =>
             {
+                var conn = ConfigurationProvider.GetSetting(Constant.TABLE_ENDPOINT);
+                conn ??= ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME);
+                return new TableServiceClient(conn);
+            });
+            services.AddTransient(sp =>
+            {
                 var conn = ConfigurationProvider.GetSetting(Constant.BLOB_ENDPOINT);
                 conn ??= ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME);
                 return new BlobServiceClient(conn);
@@ -36,7 +43,7 @@ namespace Cod.Platform
                 return new QueueServiceClient(conn, new QueueClientOptions { MessageEncoding = QueueMessageEncoding.Base64 });
             });
 
-            services.AddTransient<ISignatureIssuer, CloudSignatureIssuer>();
+            services.AddTransient<ITableSignatureIssuer, AzureTableSignatureIssuer>();
             services.AddTransient<IBlobSignatureIssuer, AzureBlobSignatureIssuer>();
             services.AddTransient<IQueueSignatureIssuer, AzureQueueSignatureIssuer>();
             services.AddTransient<IBlobRepository, CloudBlobRepository>();
@@ -59,6 +66,8 @@ namespace Cod.Platform
                     true
                 ));
 
+            services.AddTransient<IRepository<Cache>, CloudTableRepository<Cache>>();
+            
             services.AddTransient<IQueryableRepository<Impediment>, CloudTableRepository<Impediment>>();
             services.AddTransient<IRepository<Impediment>, CloudTableRepository<Impediment>>();
 

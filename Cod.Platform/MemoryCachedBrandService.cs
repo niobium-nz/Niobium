@@ -10,16 +10,12 @@
         public async Task<BrandingInfo> GetAsync(string name)
         {
             name = name.Trim().ToUpperInvariant();
-
-            if (cache == null)
-            {
-                cache = await this.repository.Value.GetAsync();
-            }
+            cache ??= await this.repository.Value.GetAsync().ToListAsync();
 
             var result = cache.SingleOrDefault(b => b.PartitionKey == name);
             if (result == null)
             {
-                cache = await this.repository.Value.GetAsync();
+                cache = await this.repository.Value.GetAsync().ToListAsync();
             }
 
             return cache.SingleOrDefault(b => b.PartitionKey == name);
@@ -34,15 +30,11 @@
                 throw new NotSupportedException();
             }
 
-            if (cache == null)
-            {
-                cache = await this.repository.Value.GetAsync();
-            }
-
+            cache ??= await this.repository.Value.GetAsync().ToListAsync();
             var result = cache.SingleOrDefault(b => b.WechatAppID == app);
             if (result == null)
             {
-                cache = await this.repository.Value.GetAsync();
+                cache = await this.repository.Value.GetAsync().ToListAsync();
             }
 
             return cache.SingleOrDefault(b => b.WechatAppID == app);

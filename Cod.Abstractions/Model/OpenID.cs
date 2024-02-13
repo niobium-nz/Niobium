@@ -10,7 +10,7 @@ namespace Cod.Model
 
         public string ETag { get; set; }
 
-        public DateTimeOffset Timestamp { get; set; }
+        public DateTimeOffset? Timestamp { get; set; }
 
         public DateTimeOffset? Created { get; set; }
 
@@ -24,10 +24,7 @@ namespace Cod.Model
 
         public static string BuildRowKey(int kind, string identifier = null)
         {
-            if (identifier is null)
-            {
-                identifier = String.Empty;
-            }
+            identifier ??= String.Empty;
 
             return $"{BuildRowKeyStart(kind)}|{identifier.Trim()}";
         }
@@ -37,16 +34,8 @@ namespace Cod.Model
 
         public static string BuildRowKey(int kind, string app, string identifier = null)
         {
-            if (identifier is null)
-            {
-                identifier = String.Empty;
-            }
-
-            if (app is null)
-            {
-                app = String.Empty;
-            }
-
+            identifier ??= String.Empty;
+            app ??= String.Empty;
             return $"{BuildRowKeyStart(kind, app)}{identifier.Trim()}";
         }
 

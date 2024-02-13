@@ -1,19 +1,23 @@
+using Cod.Platform.Integration.Azure;
+
 namespace Cod.Platform
 {
     public interface IRepository<T>
     {
-        Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist);
+        Task<T> RetrieveAsync(string partitionKey, string rowKey, IList<string> fields = null, CancellationToken cancellationToken = default);
+        
+        Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist = false, DateTimeOffset? expiry = null, CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<T>> UpdateAsync(IEnumerable<T> entities);
+        Task<IEnumerable<T>> UpdateAsync(IEnumerable<T> entities, bool preconditionCheck = true, CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<T>> CreateOrUpdateAsync(IEnumerable<T> entities);
+        Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities, bool preconditionCheck = true, bool successIfNotExist = false, CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities, bool successIfNotExist = false);
+        Task<TableQueryResult<T>> GetAsync(int limit, string continuationToken = null, IList<string> fields = null, CancellationToken cancellationToken = default);
 
-        Task<TableQueryResult<T>> GetAsync(int limit = -1, IList<string> fields = null);
+        Task<TableQueryResult<T>> GetAsync(string partitionKey, int limit, string continuationToken = null, IList<string> fields = null, CancellationToken cancellationToken = default);
 
-        Task<TableQueryResult<T>> GetAsync(string partitionKey, int limit = -1, IList<string> fields = null);
+        IAsyncEnumerable<T> GetAsync(IList<string> fields = null, CancellationToken cancellationToken = default);
 
-        Task<T> GetAsync(string partitionKey, string rowKey);
+        IAsyncEnumerable<T> GetAsync(string partitionKey, IList<string> fields = null, CancellationToken cancellationToken = default);
     }
 }

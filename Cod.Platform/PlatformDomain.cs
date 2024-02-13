@@ -18,10 +18,7 @@ namespace Cod.Platform
 
         public async Task<T> GetEntityAsync()
         {
-            if (this.cache == null)
-            {
-                this.cache = await this.getEntity();
-            }
+            this.cache ??= await this.getEntity();
             return this.cache;
         }
 
@@ -29,7 +26,7 @@ namespace Cod.Platform
         {
             if (!this.Initialized)
             {
-                this.getEntity = async () => await this.Repository.GetAsync(partitionKey, rowKey);
+                this.getEntity = async () => await this.Repository.RetrieveAsync(partitionKey, rowKey);
                 this.partitionKey = partitionKey;
                 this.rowKey = rowKey;
             }
@@ -43,7 +40,7 @@ namespace Cod.Platform
             {
                 throw new NotSupportedException();
             }
-            this.cache = await this.Repository.GetAsync(this.partitionKey, this.rowKey);
+            this.cache = await this.Repository.RetrieveAsync(this.partitionKey, this.rowKey);
             return this;
         }
 
@@ -61,7 +58,7 @@ namespace Cod.Platform
         protected async Task SaveEntityAsync(bool force = false)
             => await this.SaveEntityAsync(new[] { await this.GetEntityAsync() }, force);
 
-        protected async Task SaveEntityAsync(IEnumerable<T> model, bool force = false)
+        protected async Task SaveEntityAsync(IEnumerable<T> model, bool force = false, CancellationToken cancellationToken = default)
         {
             if (model == null || !model.Any())
             {
@@ -69,7 +66,7 @@ namespace Cod.Platform
             }
             if (force)
             {
-                await this.Repository.CreateOrUpdateAsync(model);
+                await this.Repository.CreateAsync(model, replaceIfExist: true, cancellationToken: cancellationToken);
             }
             else
             {
@@ -79,11 +76,11 @@ namespace Cod.Platform
                 {
                     if (group.Key)
                     {
-                        await this.Repository.CreateAsync(group);
+                        await this.Repository.CreateAsync(group, cancellationToken: cancellationToken);
                     }
                     else
                     {
-                        await this.Repository.UpdateAsync(group);
+                        await this.Repository.UpdateAsync(group, cancellationToken: cancellationToken);
                     }
                 }
             }

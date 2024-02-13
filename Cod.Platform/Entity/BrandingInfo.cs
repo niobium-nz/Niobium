@@ -1,9 +1,20 @@
-using Microsoft.WindowsAzure.Storage.Table;
+using Azure;
+using Azure.Data.Tables;
 
 namespace Cod.Platform
 {
-    public class BrandingInfo : TableEntity, IEntity
+    public class BrandingInfo : IEntity, ITableEntity
     {
+        public string PartitionKey { get; set; }
+
+        public string RowKey { get; set; }
+
+        public DateTimeOffset? Timestamp { get; set; }
+
+        public string ETag { get; set; }
+
+        public DateTimeOffset? Created { get; set; }
+
         public string Name { get; set; }
 
         public string ApiUri { get; set; }
@@ -28,8 +39,8 @@ namespace Cod.Platform
 
         public string WechatMerchantSignature { get; set; }
 
-        public DateTimeOffset? Created { get; set; }
-
         public static string BuildPartitionKey(string brand) => brand.Trim().ToUpperInvariant();
+
+        ETag ITableEntity.ETag { get => new(this.ETag); set => this.ETag = value.ToString(); }
     }
 }

@@ -1,12 +1,10 @@
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Table;
+using Azure;
+using Azure.Data.Tables;
 
 namespace Cod.Platform
 {
     public class OpenID : Cod.Model.OpenID, ITableEntity
     {
-        public void ReadEntity(IDictionary<string, EntityProperty> properties, OperationContext operationContext) => TableEntityHelper.ReflectionRead(this, properties, operationContext);
-
-        public IDictionary<string, EntityProperty> WriteEntity(OperationContext operationContext) => TableEntityHelper.ReflectionWrite(this, operationContext);
+        ETag ITableEntity.ETag { get => new(ETag); set => ETag = value.ToString(); }
     }
 }

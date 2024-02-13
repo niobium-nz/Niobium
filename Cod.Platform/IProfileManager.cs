@@ -1,5 +1,5 @@
+using Azure.Data.Tables;
 using Cod.Model;
-using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {

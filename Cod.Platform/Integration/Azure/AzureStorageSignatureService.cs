@@ -1,22 +1,21 @@
 using System.Security.Claims;
-using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {
     internal class AzureStorageSignatureService : ISignatureService
     {
-        private readonly Lazy<ISignatureIssuer> signatureIssuer;
+        private readonly ITableSignatureIssuer tableSignatureIssuer;
         private readonly IBlobSignatureIssuer blobSignatureIssuer;
         private readonly IQueueSignatureIssuer queueSignatureIssuer;
         private readonly Lazy<IEnumerable<IStorageControl>> storageControls;
 
         public AzureStorageSignatureService(
-            Lazy<ISignatureIssuer> signatureIssuer,
+            ITableSignatureIssuer tableSignatureIssuer,
             IBlobSignatureIssuer blobSignatureIssuer,
             IQueueSignatureIssuer queueSignatureIssuer,
             Lazy<IEnumerable<IStorageControl>> storageControls)
         {
-            this.signatureIssuer = signatureIssuer;
+            this.tableSignatureIssuer = tableSignatureIssuer;
             this.blobSignatureIssuer = blobSignatureIssuer;
             this.queueSignatureIssuer = queueSignatureIssuer;
             this.storageControls = storageControls;
@@ -54,28 +53,14 @@ namespace Cod.Platform
                 return new OperationResult<StorageSignature>(InternalError.Forbidden);
             }
 
-            string signature;
+            Uri signatureUri;
             try
             {
-                signature = storageType switch
+                signatureUri = storageType switch
                 {
-                    StorageType.Table => this.signatureIssuer.Value.Issue(
-                                            cred.Resource,
-                                            new SharedAccessTablePolicy
-                                            {
-                                                Permissions = (SharedAccessTablePermissions)cred.Permission,
-                                                SharedAccessStartTime = start,
-                                                SharedAccessExpiryTime = expiry,
-                                            },
-                                            cred),
-                    StorageType.Queue => (await this.queueSignatureIssuer.IssueAsync(
-                                            cred.Resource,
-                                            expiry,
-                                            (QueuePermissions)cred.Permission)).Query,
-                    StorageType.Blob => (await this.blobSignatureIssuer.IssueAsync(
-                                            cred.Resource,
-                                            expiry,
-                                            (BlobPermissions)cred.Permission)).Query,
+                    StorageType.Table => await this.tableSignatureIssuer.IssueAsync(expiry, cred),
+                    StorageType.Queue => await this.queueSignatureIssuer.IssueAsync(cred.Resource, expiry, (QueuePermissions)cred.Permission),
+                    StorageType.Blob => await this.blobSignatureIssuer.IssueAsync(cred.Resource, expiry, (BlobPermissions)cred.Permission),
                     StorageType.File => throw new NotImplementedException(),
                     _ => throw new NotImplementedException(),
                 };
@@ -87,7 +72,7 @@ namespace Cod.Platform
 
             return new OperationResult<StorageSignature>(new StorageSignature
             {
-                Signature = signature,
+                Signature = signatureUri.Query,
                 Expiry = expiry.ToUnixTimeSeconds(),
                 Control = cred,
             });

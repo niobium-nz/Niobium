@@ -2,12 +2,12 @@
 {
     public interface IImpedimentPolicy
     {
-        Task<bool> SupportAsync(IImpedimentContext context);
+        Task<bool> SupportAsync(IImpedimentContext context, CancellationToken cancellationToken = default);
 
-        Task<bool> ImpedeAsync(IImpedimentContext context);
+        Task<bool> ImpedeAsync(IImpedimentContext context, CancellationToken cancellationToken = default);
 
-        Task<bool> UnimpedeAsync(IImpedimentContext context);
+        Task<bool> UnimpedeAsync(IImpedimentContext context, CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<Impediment>> GetImpedimentsAsync(IImpedimentContext context);
+        IAsyncEnumerable<Impediment> GetImpedimentsAsync(IImpedimentContext context, CancellationToken cancellationToken = default);
     }
 }

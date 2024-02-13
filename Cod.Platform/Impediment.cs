@@ -1,13 +1,22 @@
+using Azure;
+using Azure.Data.Tables;
 using System.Globalization;
-using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Cod.Platform
 {
-    public class Impediment : TableEntity, IEntity
+    public class Impediment : IEntity, ITableEntity
     {
-        public string Policy { get; set; }
+        public string PartitionKey { get; set; }
+
+        public string RowKey { get; set; }
+
+        public string ETag { get; set; }
+
+        public DateTimeOffset? Timestamp { get; set; }
 
         public DateTimeOffset? Created { get; set; }
+
+        public string Policy { get; set; }
 
         public string GetCategory() => this.PartitionKey.Split('-')[1];
 
@@ -16,5 +25,7 @@ namespace Cod.Platform
         public static string BuildPartitionKey(string id, string category) => FormattableString.Invariant($"{id}-{category}");
 
         public static string BuildRowKey(int cause) => cause.ToString(CultureInfo.InvariantCulture);
+
+        ETag ITableEntity.ETag { get => new(ETag); set => ETag = value.ToString(); }
     }
 }

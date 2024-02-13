@@ -1,4 +1,6 @@
-﻿namespace Cod.Platform
+﻿using Cod.Platform.Entity;
+
+namespace Cod.Platform
 {
     public interface IAccountingAuditor
     {

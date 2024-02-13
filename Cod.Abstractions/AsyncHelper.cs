@@ -65,9 +65,8 @@ namespace Cod
             private bool done;
             public Exception InnerException { get; set; }
 
-            private readonly AutoResetEvent workItemsWaiting = new AutoResetEvent(false);
-            private readonly Queue<Tuple<SendOrPostCallback, object>> items =
-                new Queue<Tuple<SendOrPostCallback, object>>();
+            private readonly AutoResetEvent workItemsWaiting = new(false);
+            private readonly Queue<Tuple<SendOrPostCallback, object>> items = new();
 
             public override void Send(SendOrPostCallback d, object state)
                 => throw new NotSupportedException("We cannot send to our same thread");

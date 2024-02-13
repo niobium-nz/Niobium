@@ -1,5 +1,4 @@
-using Cod.Platform.Integration.Azure;
-using Microsoft.WindowsAzure.Storage.Table;
+using System.Runtime.CompilerServices;
 
 namespace Cod.Platform
 {
@@ -9,33 +8,43 @@ namespace Cod.Platform
 
         public DefaultImpedimentPolicy(Lazy<IRepository<Impediment>> repository) => this.repository = repository;
 
-        public async Task<IEnumerable<Impediment>> GetImpedimentsAsync(IImpedimentContext context)
+        public async IAsyncEnumerable<Impediment> GetImpedimentsAsync(IImpedimentContext context, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            if (await this.SupportAsync(context))
+            if (await this.SupportAsync(context, cancellationToken))
             {
-                var table = CloudStorage.GetTable<Impediment>();
-                var filter = TableQuery.GenerateFilterCondition(nameof(Impediment.PartitionKey),
-                    QueryComparisons.Equal, Impediment.BuildPartitionKey(context.ImpedementID, context.Category));
-
                 if (context.Cause != 0)
                 {
-                    filter = TableQuery.CombineFilters(filter, TableOperators.And, TableQuery.GenerateFilterCondition(nameof(Impediment.RowKey),
-                    QueryComparisons.Equal, Impediment.BuildRowKey(context.Cause)));
-                }
+                    var entity = await this.repository.Value.RetrieveAsync(
+                        Impediment.BuildPartitionKey(context.ImpedementID, context.Category),
+                        Impediment.BuildRowKey(context.Cause),
+                        cancellationToken: cancellationToken);
 
-                return await table.WhereAsync<Impediment>(filter);
+                    if (entity != null)
+                    {
+                        yield return entity;
+                    }
+                }
+                else
+                {
+                    var results = this.repository.Value.GetAsync(
+                        Impediment.BuildPartitionKey(context.ImpedementID, context.Category),
+                        cancellationToken: cancellationToken);
+                    await foreach (var item in results)
+                    {
+                        yield return item;
+                    }
+                }
             }
-            return Enumerable.Empty<Impediment>();
         }
 
-        public async Task<bool> ImpedeAsync(IImpedimentContext context)
+        public async Task<bool> ImpedeAsync(IImpedimentContext context, CancellationToken cancellationToken = default)
         {
-            if (await this.SupportAsync(context))
+            if (await this.SupportAsync(context, cancellationToken))
             {
                 var pk = Impediment.BuildPartitionKey(context.ImpedementID, context.Category);
                 var rk = Impediment.BuildRowKey(context.Cause);
 
-                var existing = await this.repository.Value.GetAsync(pk, rk);
+                var existing = await this.repository.Value.RetrieveAsync(pk, rk, cancellationToken: cancellationToken);
                 if (existing == null)
                 {
                     await this.repository.Value.CreateAsync(new Impediment
@@ -43,12 +52,14 @@ namespace Cod.Platform
                         PartitionKey = pk,
                         RowKey = rk,
                         Policy = context.PolicyInput,
-                    }, true);
+                    }, 
+                    replaceIfExist: true,
+                    cancellationToken: cancellationToken);
                 }
                 else if (!existing.Policy.Contains(context.PolicyInput))
                 {
                     existing.Policy += $",{context.PolicyInput}";
-                    await this.repository.Value.UpdateAsync(existing);
+                    await this.repository.Value.UpdateAsync(existing, cancellationToken: cancellationToken);
                 }
 
                 return true;
@@ -56,18 +67,21 @@ namespace Cod.Platform
             return false;
         }
 
-        public abstract Task<bool> SupportAsync(IImpedimentContext context);
+        public abstract Task<bool> SupportAsync(IImpedimentContext context, CancellationToken cancellationToken = default);
 
-        public async Task<bool> UnimpedeAsync(IImpedimentContext context)
+        public async Task<bool> UnimpedeAsync(IImpedimentContext context, CancellationToken cancellationToken = default)
         {
-            if (await this.SupportAsync(context))
+            if (await this.SupportAsync(context, cancellationToken))
             {
-                var existing = await this.repository.Value.GetAsync(Impediment.BuildPartitionKey(context.ImpedementID, context.Category), Impediment.BuildRowKey(context.Cause));
+                var existing = await this.repository.Value.RetrieveAsync(
+                    Impediment.BuildPartitionKey(context.ImpedementID, context.Category),
+                    Impediment.BuildRowKey(context.Cause), 
+                    cancellationToken: cancellationToken);
                 if (existing != null)
                 {
                     if (existing.Policy == context.PolicyInput)
                     {
-                        await this.repository.Value.DeleteAsync(existing);
+                        await this.repository.Value.DeleteAsync(existing, preconditionCheck: false, successIfNotExist: true, cancellationToken: cancellationToken);
                     }
                     else
                     {
@@ -77,12 +91,12 @@ namespace Cod.Platform
                             policies.Remove(context.PolicyInput);
                             if (policies.Count == 0)
                             {
-                                await this.repository.Value.DeleteAsync(existing);
+                                await this.repository.Value.DeleteAsync(existing, preconditionCheck: false, successIfNotExist: true, cancellationToken: cancellationToken);
                             }
                             else
                             {
                                 existing.Policy = String.Join(",", policies);
-                                await this.repository.Value.UpdateAsync(existing);
+                                await this.repository.Value.UpdateAsync(existing, cancellationToken: cancellationToken);
                             }
                         }
                     }

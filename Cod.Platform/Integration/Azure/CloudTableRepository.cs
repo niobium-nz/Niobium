@@ -1,143 +1,376 @@
-using Cod.Platform.Integration.Azure;
-using Microsoft.WindowsAzure.Storage.Table;
+using Azure;
+using Azure.Data.Tables;
+using Microsoft.Extensions.Logging;
+using System.Net;
 
-namespace Cod.Platform
+namespace Cod.Platform.Integration.Azure
 {
-    public class CloudTableRepository<T> : IRepository<T>, IQueryableRepository<T> where T : ITableEntity, IEntity, new()
+    public class CloudTableRepository<T> : IRepository<T>, IQueryableRepository<T> where T : class, ITableEntity, IEntity, new()
     {
-        private readonly string tableName;
-        private readonly string connectionString;
+        private const string And = " and ";
+        private const string Equal = "eq";
+        private const string GreaterThanOrEqual = "ge";
+        private const string LessThanOrEqual = "le";
+        private static readonly List<T> emptyList = new();
+        private static readonly TableQueryResult<T> emptyResult = new(emptyList, null);
+        private readonly ILogger logger;
 
-        public CloudTableRepository()
+        public string TableName { get; set; }
+
+        protected TableServiceClient Client { get; }
+
+        public CloudTableRepository(TableServiceClient client, ILogger logger)
         {
+            Client = client;
+            this.logger = logger;
         }
 
-        public CloudTableRepository(string tableName, string connectionString = null)
+        public async Task<T> RetrieveAsync(string partitionKey, string rowKey, IList<string> fields = null, CancellationToken cancellationToken = default)
         {
-            this.tableName = tableName;
-            this.connectionString = connectionString;
+            try
+            {
+                Response<T> response = await GetTable().GetEntityAsync<T>(partitionKey, rowKey, select: fields, cancellationToken: cancellationToken);
+                return response.Value;
+            }
+            catch (RequestFailedException e)
+            {
+                if (e.Status != (int)HttpStatusCode.NotFound)
+                {
+                    string errorMessage = $"An Error occurred with status code {e.Status} while retrieving entity {partitionKey} -> {rowKey}: {e.Message}";
+                    logger?.LogWarning(errorMessage);
+                    throw new HttpRequestException(errorMessage, inner: e, statusCode: (HttpStatusCode)e.Status);
+                }
+
+                return null;
+            }
         }
 
-        public async Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist)
+        public async Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist = false, DateTimeOffset? expiry = null, CancellationToken cancellationToken = default)
         {
-            foreach (var entity in entities)
+            if (entities is null)
+            {
+                throw new ArgumentNullException(nameof(entities));
+            }
+
+            if (!entities.Any())
+            {
+                return entities;
+            }
+
+            if (expiry.HasValue)
+            {
+                throw new NotSupportedException($"Setting of '{nameof(expiry)}' is not supported on Azure Storage Table.");
+            }
+
+            var now = DateTimeOffset.UtcNow;
+            foreach (T entity in entities)
             {
                 if (!entity.Created.HasValue)
                 {
-                    entity.Created = DateTimeOffset.UtcNow;
+                    entity.Created = now;
                 }
             }
 
+            TableClient table = GetTable();
             if (replaceIfExist)
             {
-                return await this.GetTable().InsertOrReplaceAsync(entities);
+                await ExecuteBatchWithRetryAsync(
+                    entities,
+                    async (entity, token) => await table.UpsertEntityAsync(entity, cancellationToken: cancellationToken),
+                    entity => new TableTransactionAction(TableTransactionActionType.UpsertReplace, entity),
+                    cancellationToken: cancellationToken);
+
             }
             else
             {
-                return await this.GetTable().InsertAsync(entities);
+                await ExecuteBatchWithRetryAsync(
+                    entities,
+                    async (entity, token) => await table.AddEntityAsync(entity, cancellationToken: cancellationToken),
+                    entity => new TableTransactionAction(TableTransactionActionType.Add, entity),
+                    cancellationToken: cancellationToken);
+            }
+
+            return entities;
+        }
+
+        public async Task<IEnumerable<T>> UpdateAsync(IEnumerable<T> entities, bool preconditionCheck = true, CancellationToken cancellationToken = default)
+        {
+            if (entities is null)
+            {
+                throw new ArgumentNullException(nameof(entities));
+            }
+
+            if (!entities.Any())
+            {
+                return entities;
+            }
+
+            if (!preconditionCheck)
+            {
+                foreach (var entity in entities)
+                {
+                    ((ITableEntity)entity).ETag = ETag.All;
+                }
+            }
+
+            TableClient table = GetTable();
+            await ExecuteBatchWithRetryAsync(
+                entities,
+                async (entity, token) => await table.UpdateEntityAsync(
+                    entity,
+                    ifMatch: ((ITableEntity)entity).ETag,
+                    mode: TableUpdateMode.Replace,
+                    cancellationToken: cancellationToken),
+                entity => new TableTransactionAction(
+                    TableTransactionActionType.UpdateReplace,
+                    entity,
+                    etag: ((ITableEntity)entity).ETag),
+                cancellationToken: cancellationToken);
+            return entities;
+        }
+
+        public async Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities, bool preconditionCheck = true, bool successIfNotExist = false, CancellationToken cancellationToken = default)
+        {
+            if (entities is null)
+            {
+                throw new ArgumentNullException(nameof(entities));
+            }
+
+            if (!entities.Any())
+            {
+                return entities;
+            }
+
+            if (!preconditionCheck)
+            {
+                foreach (var entity in entities)
+                {
+                    ((ITableEntity)entity).ETag = ETag.All;
+                }
+            }
+
+            TableClient table = GetTable();
+            await ExecuteBatchWithRetryAsync(
+                entities,
+                async (entity, token) => await table.DeleteEntityAsync(
+                    ((IEntity)entity).PartitionKey,
+                    ((IEntity)entity).RowKey,
+                    ifMatch: ((ITableEntity)entity).ETag,
+                    cancellationToken: cancellationToken),
+                entity => new TableTransactionAction(
+                    TableTransactionActionType.Delete,
+                    entity,
+                    etag: ((ITableEntity)entity).ETag),
+                errorSuppressed: successIfNotExist ? new[] { HttpStatusCode.NotFound } : null,
+                cancellationToken: cancellationToken);
+            return entities;
+        }
+
+        public async Task<TableQueryResult<T>> GetAsync(int limit, string continuationToken = null, IList<string> fields = null, CancellationToken cancellationToken = default)
+        {
+            return await QueryAsync(null, fields: fields, limit: limit, continuationToken: continuationToken, cancellationToken: cancellationToken);
+        }
+
+        public async Task<TableQueryResult<T>> GetAsync(string partitionKey, int limit, string continuationToken = null, IList<string> fields = null, CancellationToken cancellationToken = default)
+        {
+            return await QueryAsync(filter: $"{nameof(ITableEntity.PartitionKey)} {Equal} '{partitionKey}'", limit: limit, fields: fields, continuationToken: continuationToken, cancellationToken: cancellationToken);
+        }
+
+        public IAsyncEnumerable<T> GetAsync(IList<string> fields = null, CancellationToken cancellationToken = default)
+        {
+            return QueryAsync(null, fields: fields, cancellationToken: cancellationToken);
+        }
+
+        public IAsyncEnumerable<T> GetAsync(string partitionKey, IList<string> fields = null, CancellationToken cancellationToken = default)
+        {
+            return QueryAsync(filter: $"{nameof(ITableEntity.PartitionKey)} {Equal} '{partitionKey}'", fields: fields, cancellationToken: cancellationToken);
+        }
+
+        public async Task<TableQueryResult<T>> QueryAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, int limit, IList<string> fields = null, string continuationToken = null, CancellationToken cancellationToken = default)
+        {
+            return await QueryAsync(filter: string.Join(And, new[]
+                      {
+                  $"{nameof(ITableEntity.PartitionKey)} {Equal} '{partitionKey}'",
+                  $"{nameof(ITableEntity.RowKey)} {GreaterThanOrEqual} '{rowKeyStart}'",
+                  $"{nameof(ITableEntity.RowKey)} {LessThanOrEqual} '{rowKeyEnd}'",
+              }), fields: fields, limit: limit, continuationToken: continuationToken, cancellationToken: cancellationToken);
+        }
+
+        public async Task<TableQueryResult<T>> QueryAsync(string partitionKeyStart, string partitionKeyEnd, int limit, IList<string> fields = null, string continuationToken = null, CancellationToken cancellationToken = default)
+        {
+            return await QueryAsync(filter: string.Join(And, new[]
+                      {
+                  $"{nameof(ITableEntity.PartitionKey)} {GreaterThanOrEqual} '{partitionKeyStart}'",
+                  $"{nameof(ITableEntity.PartitionKey)} {LessThanOrEqual} '{partitionKeyEnd}'",
+              }), fields: fields, limit: limit, continuationToken: continuationToken, cancellationToken: cancellationToken);
+        }
+
+        public async Task<TableQueryResult<T>> QueryAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int limit, IList<string> fields = null, string continuationToken = null, CancellationToken cancellationToken = default)
+        {
+            return await QueryAsync(filter: string.Join(And, new[]
+                      {
+                  $"{nameof(ITableEntity.PartitionKey)} {GreaterThanOrEqual} '{partitionKeyStart}'",
+                  $"{nameof(ITableEntity.PartitionKey)} {LessThanOrEqual} '{partitionKeyEnd}'",
+                  $"{nameof(ITableEntity.RowKey)} {GreaterThanOrEqual} '{rowKeyStart}'",
+                  $"{nameof(ITableEntity.RowKey)} {LessThanOrEqual} '{rowKeyEnd}'",
+              }), fields: fields, limit: limit, continuationToken: continuationToken, cancellationToken: cancellationToken);
+        }
+
+        public IAsyncEnumerable<T> QueryAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, IList<string> fields = null, CancellationToken cancellationToken = default)
+        {
+            return QueryAsync(filter: string.Join(And, new[]
+                      {
+                  $"{nameof(ITableEntity.PartitionKey)} {Equal} '{partitionKey}'",
+                  $"{nameof(ITableEntity.RowKey)} {GreaterThanOrEqual} '{rowKeyStart}'",
+                  $"{nameof(ITableEntity.RowKey)} {LessThanOrEqual} '{rowKeyEnd}'",
+              }), fields: fields, cancellationToken: cancellationToken);
+        }
+
+        public IAsyncEnumerable<T> QueryAsync(string partitionKeyStart, string partitionKeyEnd, IList<string> fields = null, CancellationToken cancellationToken = default)
+        {
+            return QueryAsync(filter: string.Join(And, new[]
+                      {
+                  $"{nameof(ITableEntity.PartitionKey)} {GreaterThanOrEqual} '{partitionKeyStart}'",
+                  $"{nameof(ITableEntity.PartitionKey)} {LessThanOrEqual} '{partitionKeyEnd}'",
+              }), fields: fields, cancellationToken: cancellationToken);
+        }
+
+        public IAsyncEnumerable<T> QueryAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, IList<string> fields = null, CancellationToken cancellationToken = default)
+        {
+            return QueryAsync(filter: string.Join(And, new[]
+                      {
+                  $"{nameof(ITableEntity.PartitionKey)} {GreaterThanOrEqual} '{partitionKeyStart}'",
+                  $"{nameof(ITableEntity.PartitionKey)} {LessThanOrEqual} '{partitionKeyEnd}'",
+                  $"{nameof(ITableEntity.RowKey)} {GreaterThanOrEqual} '{rowKeyStart}'",
+                  $"{nameof(ITableEntity.RowKey)} {LessThanOrEqual} '{rowKeyEnd}'",
+              }), fields: fields, cancellationToken: cancellationToken);
+        }
+
+        protected virtual async Task<TableQueryResult<T>> QueryAsync(string filter, int limit, IList<string> fields = null, string continuationToken = null, CancellationToken cancellationToken = default)
+        {
+            var maxPerPage = this.FigureMaxQueryPageSize(limit);
+            IAsyncEnumerable<Page<T>> pages = GetTable().QueryAsync<T>(
+                    filter: filter,
+                    maxPerPage: maxPerPage,
+                    select: fields,
+                    cancellationToken: cancellationToken)
+                .AsPages(continuationToken: continuationToken, pageSizeHint: maxPerPage);
+
+            await using IAsyncEnumerator<Page<T>> enumerator = pages.GetAsyncEnumerator(cancellationToken);
+            Page<T> firstPage = await enumerator.MoveNextAsync() ? enumerator.Current : default;
+            return firstPage == null || firstPage.Values.Count == 0 ? emptyResult : new TableQueryResult<T>(firstPage.Values, firstPage.ContinuationToken);
+        }
+
+        protected virtual IAsyncEnumerable<T> QueryAsync(string filter, IList<string> fields = null, CancellationToken cancellationToken = default)
+        {
+            return GetTable().QueryAsync<T>(
+                    filter: filter,
+                    select: fields,
+                    cancellationToken: cancellationToken);
+        }
+
+        protected virtual async Task ExecuteBatchWithRetryAsync(IEnumerable<T> entities, Func<T, CancellationToken, Task<Response>> singleOperation, Func<T, TableTransactionAction> batchOperation, IEnumerable<HttpStatusCode> errorSuppressed = null, CancellationToken cancellationToken = default)
+        {
+            _ = entities ?? throw new ArgumentNullException(nameof(entities));
+            int count = entities.Count();
+
+            List<Response> responses;
+
+            if (count == 1)
+            {
+                T entity = entities.Single();
+                Response response = await singleOperation(entity, cancellationToken);
+                responses = new List<Response>() { response };
+            }
+            else
+            {
+                responses = count > 1
+                    ? await ExecuteBatchAsync(entities, batchOperation, cancellationToken: cancellationToken)
+                    : throw new ArgumentNullException(nameof(entities));
+            }
+
+            List<HttpRequestException> exceptions = null;
+            foreach (Response response in responses)
+            {
+                if (response.IsError)
+                {
+                    HttpStatusCode errorCode = (HttpStatusCode)response.Status;
+                    if (errorSuppressed == null || !errorSuppressed.Contains(errorCode))
+                    {
+                        string errorMessage = $"An Error occurred with status code {response.Status} while making changes to storage: {response.Content}";
+                        logger?.LogError(errorMessage);
+                        exceptions ??= new();
+                        exceptions.Add(new HttpRequestException(errorMessage, inner: null, statusCode: errorCode));
+                    }
+                }
+            }
+
+            if (exceptions != null)
+            {
+                if (exceptions.Count == 1)
+                {
+                    throw exceptions.Single();
+                }
+                else if (exceptions.Count > 1)
+                {
+                    throw new AggregateException($"Error(s) occurred while executing transaction(s) on table: {typeof(T).Name}.", exceptions);
+                }
             }
         }
 
-        public async Task<IEnumerable<T>> UpdateAsync(IEnumerable<T> entities)
-            => await this.GetTable().ReplaceAsync(entities);
-
-        public async Task<IEnumerable<T>> CreateOrUpdateAsync(IEnumerable<T> entities)
-            => await this.GetTable().InsertOrReplaceAsync(entities);
-
-        public async Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities, bool successIfNotExist = false)
-            => await this.GetTable().RemoveAsync(entities, successIfNotExist: successIfNotExist);
-
-        public async Task<TableQueryResult<T>> GetAsync(string partitionKey, int limit = -1, IList<string> fields = null)
-            => await this.GetTable().WhereAsync<T>(
-                TableQuery.GenerateFilterCondition(nameof(ITableEntity.PartitionKey), QueryComparisons.Equal, partitionKey),
-                takeCount: limit,
-                fields: fields);
-
-        public async Task<T> GetAsync(string partitionKey, string rowKey)
-            => await this.GetTable().RetrieveAsync<T>(partitionKey, rowKey);
-
-        public async Task<TableQueryResult<T>> GetAsync(int limit = -1, IList<string> fields = null)
-            => await this.GetTable().WhereAsync<T>(takeCount: limit, fields: fields);
-
-        public async Task<TableQueryResult<T>> GetAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, int limit = -1)
-            => await this.GetTable().WhereAsync<T>(
-                TableQuery.CombineFilters(
-                    TableQuery.GenerateFilterCondition(nameof(ITableEntity.PartitionKey), QueryComparisons.Equal, partitionKey),
-                TableOperators.And,
-                    TableQuery.CombineFilters(
-                        TableQuery.GenerateFilterCondition(nameof(ITableEntity.RowKey), QueryComparisons.GreaterThanOrEqual, rowKeyStart),
-                    TableOperators.And,
-                        TableQuery.GenerateFilterCondition(nameof(ITableEntity.RowKey), QueryComparisons.LessThanOrEqual, rowKeyEnd))),
-                takeCount: limit);
-
-        public async Task<TableQueryResult<T>> GetAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, IList<string> fields, int limit = -1)
-            => await this.GetTable().WhereAsync<T>(
-                TableQuery.CombineFilters(
-                    TableQuery.GenerateFilterCondition(nameof(ITableEntity.PartitionKey), QueryComparisons.Equal, partitionKey),
-                TableOperators.And,
-                    TableQuery.CombineFilters(
-                        TableQuery.GenerateFilterCondition(nameof(ITableEntity.RowKey), QueryComparisons.GreaterThanOrEqual, rowKeyStart),
-                    TableOperators.And,
-                        TableQuery.GenerateFilterCondition(nameof(ITableEntity.RowKey), QueryComparisons.LessThanOrEqual, rowKeyEnd))),
-                fields: fields,
-                takeCount: limit);
-
-        public async Task<TableQueryResult<T>> GetAsync(string partitionKey, IList<string> fields, int limit = -1)
-            => await this.GetTable().WhereAsync<T>(
-                TableQuery.GenerateFilterCondition(nameof(ITableEntity.PartitionKey), QueryComparisons.Equal, partitionKey),
-                takeCount: limit, fields: fields);
-
-        public async Task<TableQueryResult<T>> GetAsync(string partitionKeyStart, string partitionKeyEnd, IList<string> fields, int limit = -1)
-          => await this.GetTable().WhereAsync<T>(
-                    TableQuery.CombineFilters(
-                        TableQuery.GenerateFilterCondition(nameof(ITableEntity.PartitionKey), QueryComparisons.GreaterThanOrEqual, partitionKeyStart),
-                    TableOperators.And,
-                        TableQuery.GenerateFilterCondition(nameof(ITableEntity.PartitionKey), QueryComparisons.LessThanOrEqual, partitionKeyEnd)),
-                fields: fields,
-                takeCount: limit);
-
-        public async Task<TableQueryResult<T>> GetAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int limit = -1)
-            => await this.GetAsync(partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, null, limit: limit);
-
-        public async Task<TableQueryResult<T>> GetAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, IList<string> fields, int limit = -1)
-          => await this.GetTable().WhereAsync<T>(
-                TableQuery.CombineFilters(
-                    TableQuery.CombineFilters(
-                        TableQuery.GenerateFilterCondition(nameof(ITableEntity.PartitionKey), QueryComparisons.GreaterThanOrEqual, partitionKeyStart),
-                    TableOperators.And,
-                        TableQuery.GenerateFilterCondition(nameof(ITableEntity.PartitionKey), QueryComparisons.LessThanOrEqual, partitionKeyEnd)),
-                TableOperators.And,
-                    TableQuery.CombineFilters(
-                        TableQuery.GenerateFilterCondition(nameof(ITableEntity.RowKey), QueryComparisons.GreaterThanOrEqual, rowKeyStart),
-                    TableOperators.And,
-                        TableQuery.GenerateFilterCondition(nameof(ITableEntity.RowKey), QueryComparisons.LessThanOrEqual, rowKeyEnd))),
-                fields: fields,
-                takeCount: limit);
-
-        private CloudTable GetTable()
+        protected virtual async Task<List<Response>> ExecuteBatchAsync(IEnumerable<T> entities, Func<T, TableTransactionAction> createOperation, CancellationToken cancellationToken = default)
         {
-            if (String.IsNullOrEmpty(this.tableName))
+            List<List<TableTransactionAction>> batchOperationGroups = new();
+            IEnumerable<IGrouping<string, T>> groups = entities.GroupBy(r => ((IEntity)r).PartitionKey);
+            foreach (IGrouping<string, T> group in groups)
             {
-                if (this.connectionString == null)
+                List<TableTransactionAction> batchOperations = new();
+
+                foreach (T entity in group)
                 {
-                    return CloudStorage.GetTable<T>();
+                    TableTransactionAction batchOperation = createOperation(entity);
+                    batchOperations.Add(batchOperation);
+
+                    if (batchOperations.Count >= 100)
+                    {
+                        batchOperationGroups.Add(batchOperations);
+                        batchOperations = new List<TableTransactionAction>();
+                    }
                 }
-                else
+
+                if (batchOperations.Any())
                 {
-                    return CloudStorage.GetTable<T>(this.connectionString);
+                    batchOperationGroups.Add(batchOperations);
                 }
             }
-            else
+
+            TableClient table = GetTable();
+            List<Response> result = new();
+            foreach (List<TableTransactionAction> batchOperations in batchOperationGroups)
             {
-                if (this.connectionString == null)
+                if (batchOperations.Count > 0)
                 {
-                    return CloudStorage.GetTable(this.tableName);
-                }
-                else 
-                {
-                    return CloudStorage.GetTable(this.tableName, this.connectionString);
+                    Response<IReadOnlyList<Response>> response = await table.SubmitTransactionAsync(batchOperations, cancellationToken: cancellationToken);
+                    result.AddRange(response.Value);
                 }
             }
+
+            return result;
+        }
+
+        protected virtual int? FigureMaxQueryPageSize(int limitRequested)
+        {
+            return limitRequested <= 0 ? 1000 : limitRequested;
+        }
+
+        protected virtual TableClient GetTable()
+        {
+            if (string.IsNullOrEmpty(TableName))
+            {
+                TableName = typeof(T).Name;
+            }
+
+            return Client.GetTableClient(TableName);
         }
     }
 }

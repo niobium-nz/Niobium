@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 
 namespace Cod.Platform
 {
@@ -20,9 +21,9 @@ namespace Cod.Platform
             this.repository = repository;
         }
 
-        public Task<TDomain> GetAsync(TEntity entity) => this.GetAsync(entity, true);
+        public Task<TDomain> GetAsync(TEntity entity, CancellationToken cancellationToken = default) => this.GetAsync(entity, true, cancellationToken);
 
-        public Task<TDomain> GetAsync(string partitionKey, string rowKey)
+        public Task<TDomain> GetAsync(string partitionKey, string rowKey, CancellationToken cancellationToken = default)
             => Task.FromResult(this.instanceCache.GetOrAdd(
                 new StorageKey { PartitionKey = partitionKey, RowKey = rowKey },
                 key =>
@@ -41,7 +42,7 @@ namespace Cod.Platform
                     return domain;
                 }));
 
-        public async Task<IEnumerable<TDomain>> GetAsync(string partitionKey)
+        public async IAsyncEnumerable<TDomain> GetAsync(string partitionKey, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             var stub = new List<TDomain>();
 
@@ -49,46 +50,39 @@ namespace Cod.Platform
 
             if (stub.GetHashCode() == result.GetHashCode())
             {
-                var entities = await this.repository.Value.GetAsync(partitionKey);
-
-                for (var i = 0; i < entities.Count; i++)
+                var entities = this.repository.Value.GetAsync(partitionKey, cancellationToken: cancellationToken);
+                await foreach (var entity in entities)
                 {
-                    var d = await this.GetAsync(entities[i], false);
+                    var d = await this.GetAsync(entity, false, cancellationToken);
                     stub.Add(d);
+                    yield return d;
                 }
             }
-
-            return result;
+            else
+            {
+                foreach (var item in result)
+                {
+                    yield return item;
+                }
+            }
         }
 
-        public async Task<IEnumerable<TDomain>> GetAsync()
+        public async IAsyncEnumerable<TDomain> GetAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var entities = await this.repository.Value.GetAsync();
-            var result = new TDomain[entities.Count];
-
-            for (var i = 0; i < entities.Count; i++)
+            var entities = this.repository.Value.GetAsync(cancellationToken: cancellationToken);
+            await foreach (var entity in entities)
             {
-                result[i] = await this.GetAsync(entities[i]);
-            }
-
-            var partitions = result.GroupBy(d => d.PartitionKey);
-            foreach (var partition in partitions)
-            {
+                var domain = await this.GetAsync(entity, cancellationToken);
                 this.partitionCache.AddOrUpdate(
-                    partition.Key,
-                    partition.ToList(),
+                    domain.PartitionKey,
+                    new List<TDomain> { domain },
                     (key, existing) =>
                     {
-                        existing.Clear();
-                        foreach (var item in partition)
-                        {
-                            existing.Add(item);
-                        }
+                        existing.Add(domain);
                         return existing;
                     });
+                yield return domain;
             }
-
-            return result;
         }
 
         public void Dispose()
@@ -103,7 +97,7 @@ namespace Cod.Platform
             GC.SuppressFinalize(this);
         }
 
-        protected Task<TDomain> GetAsync(TEntity entity, bool clearPartitionCache)
+        protected Task<TDomain> GetAsync(TEntity entity, bool clearPartitionCache, CancellationToken cancellationToken)
         {
             var domain = this.createDomain();
             domain.Initialize(entity);

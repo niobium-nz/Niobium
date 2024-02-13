@@ -1,3 +1,4 @@
+using Cod.Platform.Integration.Azure;
 using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
@@ -17,18 +18,20 @@ namespace Cod.Platform
             this.logger = logger;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1725:Parameter names should match base declaration", Justification = "Meaningful")]
-        public async Task<WechatEntity> GetAsync(string appID, string feature)
+        public async Task<WechatEntity> RetrieveAsync(string partitionKey, string rowKey, IList<string> fields = null, CancellationToken cancellationToken = default)
         {
-            if (String.IsNullOrWhiteSpace(appID))
+            if (String.IsNullOrWhiteSpace(partitionKey))
             {
-                throw new ArgumentNullException(nameof(appID));
+                throw new ArgumentNullException(nameof(partitionKey));
             }
 
-            if (String.IsNullOrWhiteSpace(feature))
+            if (String.IsNullOrWhiteSpace(rowKey))
             {
-                throw new ArgumentNullException(nameof(feature));
+                throw new ArgumentNullException(nameof(rowKey));
             }
+            
+            var appID = partitionKey;
+            var feature = rowKey;
 
             var branding = await this.brandService.Value.GetAsync(OpenIDKind.Wechat, appID);
             if (branding == null)
@@ -75,16 +78,39 @@ namespace Cod.Platform
             }
         }
 
-        public Task<IEnumerable<WechatEntity>> CreateAsync(IEnumerable<WechatEntity> entities, bool replaceIfExist) => throw new NotImplementedException();
+        public Task<IEnumerable<WechatEntity>> CreateAsync(IEnumerable<WechatEntity> entities, bool replaceIfExist = false, DateTimeOffset? expiry = null, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
 
-        public Task<TableQueryResult<WechatEntity>> GetAsync(int limit = -1, IList<string> fields = null) => throw new NotImplementedException();
+        public Task<IEnumerable<WechatEntity>> DeleteAsync(IEnumerable<WechatEntity> entities, bool preconditionCheck = true, bool successIfNotExist = false, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
 
-        public Task<TableQueryResult<WechatEntity>> GetAsync(string partitionKey, int limit = -1, IList<string> fields = null) => throw new NotImplementedException();
+        public Task<TableQueryResult<WechatEntity>> GetAsync(int limit, string continuationToken = null, IList<string> fields = null, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
 
-        public Task<IEnumerable<WechatEntity>> UpdateAsync(IEnumerable<WechatEntity> entities) => throw new NotImplementedException();
+        public Task<TableQueryResult<WechatEntity>> GetAsync(string partitionKey, int limit, string continuationToken = null, IList<string> fields = null, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
 
-        public Task<IEnumerable<WechatEntity>> DeleteAsync(IEnumerable<WechatEntity> entities, bool successIfNotExist = false) => throw new NotImplementedException();
+        public Task<IEnumerable<WechatEntity>> UpdateAsync(IEnumerable<WechatEntity> entities, bool preconditionCheck = true, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
 
-        public Task<IEnumerable<WechatEntity>> CreateOrUpdateAsync(IEnumerable<WechatEntity> entities) => throw new NotImplementedException();
+        public IAsyncEnumerable<WechatEntity> GetAsync(IList<string> fields = null, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IAsyncEnumerable<WechatEntity> GetAsync(string partitionKey, IList<string> fields = null, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

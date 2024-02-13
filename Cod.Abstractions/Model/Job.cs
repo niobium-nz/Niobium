@@ -10,7 +10,7 @@ namespace Cod.Model
 
         public string ETag { get; set; }
 
-        public DateTimeOffset Timestamp { get; set; }
+        public DateTimeOffset? Timestamp { get; set; }
 
         public DateTimeOffset? Created { get; set; }
 

@@ -1,25 +1,26 @@
-﻿using Cod.Platform.Integration.Azure;
-using Microsoft.WindowsAzure.Storage.Table;
-
-namespace Cod.Platform
+﻿namespace Cod.Platform
 {
     internal class ImpedementPolicyScanProvider : IImpedimentPolicy
     {
-        public async Task<IEnumerable<Impediment>> GetImpedimentsAsync(IImpedimentContext context)
+        private readonly Lazy<IQueryableRepository<Impediment>> repo;
+
+        public ImpedementPolicyScanProvider(Lazy<IQueryableRepository<Impediment>> repo)
         {
-            var table = CloudStorage.GetTable<Impediment>();
-            var filter = TableQuery.CombineFilters(TableQuery.GenerateFilterCondition(nameof(Impediment.PartitionKey),
-                    QueryComparisons.GreaterThan, Impediment.BuildPartitionKey(context.ImpedementID, "0")),
-                    TableOperators.And,
-                    TableQuery.GenerateFilterCondition(nameof(Impediment.PartitionKey),
-                    QueryComparisons.LessThan, Impediment.BuildPartitionKey(context.ImpedementID, "Z")));
-            return await table.WhereAsync<Impediment>(filter);
+            this.repo = repo;
         }
 
-        public Task<bool> ImpedeAsync(IImpedimentContext context) => Task.FromResult(false);
+        public IAsyncEnumerable<Impediment> GetImpedimentsAsync(IImpedimentContext context, CancellationToken cancellationToken = default)
+        {
+            return this.repo.Value.QueryAsync(
+                Impediment.BuildPartitionKey(context.ImpedementID, "0"),
+                Impediment.BuildPartitionKey(context.ImpedementID, "Z"),
+                cancellationToken: cancellationToken);
+        }
 
-        public Task<bool> SupportAsync(IImpedimentContext context) => Task.FromResult(context != null && String.IsNullOrEmpty(context.Category));
+        public Task<bool> ImpedeAsync(IImpedimentContext context, CancellationToken cancellationToken = default) => Task.FromResult(false);
 
-        public Task<bool> UnimpedeAsync(IImpedimentContext context) => Task.FromResult(false);
+        public Task<bool> SupportAsync(IImpedimentContext context, CancellationToken cancellationToken = default) => Task.FromResult(context != null && String.IsNullOrEmpty(context.Category));
+
+        public Task<bool> UnimpedeAsync(IImpedimentContext context, CancellationToken cancellationToken = default) => Task.FromResult(false);
     }
 }

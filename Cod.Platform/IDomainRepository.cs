@@ -4,12 +4,12 @@
         where TEntity : IEntity
         where TDomain : class, IDomain<TEntity>
     {
-        Task<TDomain> GetAsync(string partitionKey, string rowKey);
+        Task<TDomain> GetAsync(string partitionKey, string rowKey, CancellationToken cancellationToken = default);
 
-        Task<TDomain> GetAsync(TEntity entity);
+        Task<TDomain> GetAsync(TEntity entity, CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<TDomain>> GetAsync(string partitionKey);
+        IAsyncEnumerable<TDomain> GetAsync(string partitionKey, CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<TDomain>> GetAsync();
+        IAsyncEnumerable<TDomain> GetAsync(CancellationToken cancellationToken = default);
     }
 }

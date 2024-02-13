@@ -227,7 +227,7 @@ namespace Cod.Platform
                 var timestamp = new DateTimeOffset(charge.Created);
                 var tpk = Transaction.BuildPartitionKey(user.ToKey());
                 var trk = Transaction.BuildRowKey(timestamp);
-                var transaction = await this.transactionRepo.Value.GetAsync(tpk, trk);
+                var transaction = await this.transactionRepo.Value.RetrieveAsync(tpk, trk);
 
                 if (transaction == null)
                 {
@@ -274,7 +274,7 @@ namespace Cod.Platform
                 var timestamp = new DateTimeOffset(refund.Created);
                 var tpk = Transaction.BuildPartitionKey(user.ToKey());
                 var trk = Transaction.BuildRowKey(timestamp);
-                var transaction = await this.transactionRepo.Value.GetAsync(tpk, trk);
+                var transaction = await this.transactionRepo.Value.RetrieveAsync(tpk, trk);
 
                 if (transaction == null)
                 {

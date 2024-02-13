@@ -9,15 +9,12 @@
 
         public async Task<Business> GetAsync(Guid id)
         {
-            if (cache == null)
-            {
-                cache = await this.repository.Value.GetAsync();
-            }
+            cache ??= await this.repository.Value.GetAsync().ToListAsync();
 
             var result = cache.SingleOrDefault(b => b.GetID() == id);
             if (result == null)
             {
-                cache = await this.repository.Value.GetAsync();
+                cache = await this.repository.Value.GetAsync().ToListAsync();
             }
 
             return cache.SingleOrDefault(b => b.GetID() == id);

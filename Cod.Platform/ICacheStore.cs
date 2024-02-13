@@ -2,10 +2,10 @@
 {
     public interface ICacheStore
     {
-        Task<T> GetAsync<T>(string partitionKey, string rowKey) where T : IConvertible;
+        Task<T> GetAsync<T>(string partitionKey, string rowKey, CancellationToken cancellationToken = default) where T : IConvertible;
 
-        Task DeleteAsync(string partitionKey, string rowKey);
+        Task DeleteAsync(string partitionKey, string rowKey, CancellationToken cancellationToken = default);
 
-        Task SetAsync<T>(string partitionKey, string rowKey, T value, bool memoryCached, DateTimeOffset? expiry = null) where T : IConvertible;
+        Task SetAsync<T>(string partitionKey, string rowKey, T value, bool memoryCached, DateTimeOffset? expiry = null, CancellationToken cancellationToken = default) where T : IConvertible;
     }
 }

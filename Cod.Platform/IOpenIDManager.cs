@@ -2,10 +2,10 @@ namespace Cod.Platform
 {
     public interface IOpenIDManager
     {
-        Task RegisterAsync(IEnumerable<OpenIDRegistration> registrations);
+        Task RegisterAsync(IEnumerable<OpenIDRegistration> registrations, CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<OpenID>> GetChannelsAsync(Guid user);
+        IAsyncEnumerable<OpenID> GetChannelsAsync(Guid user, CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<OpenID>> GetChannelsAsync(Guid user, int kind);
+        IAsyncEnumerable<OpenID> GetChannelsAsync(Guid user, int kind, CancellationToken cancellationToken = default);
     }
 }
