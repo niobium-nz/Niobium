@@ -8,32 +8,34 @@ namespace Cod
     {
         public static string Encrypt(string plainText, string key)
         {
-            var plainBytes = Encoding.UTF8.GetBytes(plainText);
-            using (var rijndaelManaged = GetRijndaelManaged(key))
-            {
-                return Encrypt(plainBytes, rijndaelManaged).ToHex();
-            }
+            byte[] plainBytes = Encoding.UTF8.GetBytes(plainText);
+            using RijndaelManaged rijndaelManaged = GetRijndaelManaged(key);
+            return Encrypt(plainBytes, rijndaelManaged).ToHex();
         }
 
         public static string Decrypt(string encryptedText, string key)
         {
-            var encryptedBytes = encryptedText.FromHex();
-            using (var rijndaelManaged = GetRijndaelManaged(key))
-            {
-                return Encoding.UTF8.GetString(Decrypt(encryptedBytes, rijndaelManaged));
-            }
+            byte[] encryptedBytes = encryptedText.FromHex();
+            using RijndaelManaged rijndaelManaged = GetRijndaelManaged(key);
+            return Encoding.UTF8.GetString(Decrypt(encryptedBytes, rijndaelManaged));
         }
 
-        private static byte[] Encrypt(byte[] plainBytes, RijndaelManaged rijndaelManaged) => rijndaelManaged.CreateEncryptor()
+        private static byte[] Encrypt(byte[] plainBytes, RijndaelManaged rijndaelManaged)
+        {
+            return rijndaelManaged.CreateEncryptor()
                 .TransformFinalBlock(plainBytes, 0, plainBytes.Length);
+        }
 
-        private static byte[] Decrypt(byte[] encryptedData, RijndaelManaged rijndaelManaged) => rijndaelManaged.CreateDecryptor()
+        private static byte[] Decrypt(byte[] encryptedData, RijndaelManaged rijndaelManaged)
+        {
+            return rijndaelManaged.CreateDecryptor()
                 .TransformFinalBlock(encryptedData, 0, encryptedData.Length);
+        }
 
         private static RijndaelManaged GetRijndaelManaged(string secretKey)
         {
-            var keyBytes = new byte[16];
-            var secretKeyBytes = Encoding.UTF8.GetBytes(secretKey);
+            byte[] keyBytes = new byte[16];
+            byte[] secretKeyBytes = Encoding.UTF8.GetBytes(secretKey);
             Array.Copy(secretKeyBytes, keyBytes, Math.Min(keyBytes.Length, secretKeyBytes.Length));
             return new RijndaelManaged
             {

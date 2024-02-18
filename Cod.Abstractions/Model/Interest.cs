@@ -26,8 +26,14 @@ namespace Cod.Model
 
         public string Target { get; set; }
 
-        public static string BuildPartitionKey(Guid ownerBusiness) => ownerBusiness.ToKey();
+        public static string BuildPartitionKey(Guid ownerBusiness)
+        {
+            return ownerBusiness.ToKey();
+        }
 
-        public static string BuildRowKey() => DateTimeOffset.UtcNow.ToReverseUnixTimestamp();
+        public static string BuildRowKey()
+        {
+            return DateTimeOffset.UtcNow.ToReverseUnixTimestamp();
+        }
     }
 }

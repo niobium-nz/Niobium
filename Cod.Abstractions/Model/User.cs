@@ -24,17 +24,30 @@ namespace Cod.Model
 
         public string Roles { get; set; }
 
-        public static string BuildPartitionKey(Guid value) => value.ToString("N").ToUpperInvariant().Substring(0, 8);
+        public static string BuildPartitionKey(Guid value)
+        {
+            return value.ToString("N").ToUpperInvariant().Substring(0, 8);
+        }
 
-        public static string BuildRowKey(Guid value) => value.ToString("N").ToUpperInvariant();
+        public static string BuildRowKey(Guid value)
+        {
+            return value.ToString("N").ToUpperInvariant();
+        }
 
         public Guid GetID()
-            => Guid.Parse(this.RowKey);
+        {
+            return Guid.Parse(RowKey);
+        }
 
-        public void SetID(Guid value) => this.RowKey = BuildRowKey(value);
+        public void SetID(Guid value)
+        {
+            RowKey = BuildRowKey(value);
+        }
 
         public IEnumerable<string> GetRoles()
-            => this.Roles == null ? Enumerable.Empty<string>() : this.Roles.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries);
+        {
+            return Roles == null ? Enumerable.Empty<string>() : Roles.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries);
+        }
 
         public bool AddRole(string role)
         {
@@ -44,18 +57,18 @@ namespace Cod.Model
             }
 
             role = role.Trim().ToUpperInvariant();
-            if (String.IsNullOrEmpty(this.Roles))
+            if (string.IsNullOrEmpty(Roles))
             {
-                this.Roles = role;
+                Roles = role;
                 return true;
             }
             else
             {
-                var roles = this.GetRoles().ToList();
+                List<string> roles = GetRoles().ToList();
                 if (!roles.Contains(role))
                 {
                     roles.Add(role);
-                    this.Roles = String.Join(",", roles);
+                    Roles = string.Join(",", roles);
                     return true;
                 }
             }
@@ -71,21 +84,24 @@ namespace Cod.Model
             }
 
             role = role.Trim().ToUpperInvariant();
-            if (String.IsNullOrEmpty(this.Roles))
+            if (string.IsNullOrEmpty(Roles))
             {
                 return;
             }
             else
             {
-                var roles = this.GetRoles().ToList();
+                List<string> roles = GetRoles().ToList();
                 if (roles.Contains(role))
                 {
                     roles.Remove(role);
-                    this.Roles = String.Join(",", roles);
+                    Roles = string.Join(",", roles);
                 }
             }
         }
 
-        public static string GetImpedementID(StorageKey key) => key.RowKey;
+        public static string GetImpedementID(StorageKey key)
+        {
+            return key.RowKey;
+        }
     }
 }

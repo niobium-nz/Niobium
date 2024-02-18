@@ -1,13 +1,14 @@
+using Azure.Core.Serialization;
+using Cod.Platform.Tenants;
+using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
-using Azure.Core.Serialization;
-using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Cod.Platform
 {
@@ -24,7 +25,7 @@ namespace Cod.Platform
         public static void Register(this HttpRequestData request, ILogger logger)
         {
             Logger.Register(logger);
-            if (request != null && request.Headers.TryGetValues("Accept-Language", out var values))
+            if (request != null && request.Headers.TryGetValues("Accept-Language", out IEnumerable<string> values))
             {
                 if (values.Any())
                 {
@@ -49,7 +50,7 @@ namespace Cod.Platform
                 code = statusCode.Value;
             }
 
-            var result = request.CreateResponse(code ?? HttpStatusCode.OK);
+            HttpResponseData result = request.CreateResponse(code ?? HttpStatusCode.OK);
             if (payload == null)
             {
                 return result;
@@ -62,7 +63,7 @@ namespace Cod.Platform
             }
             else
             {
-                if (String.IsNullOrWhiteSpace(contentType))
+                if (string.IsNullOrWhiteSpace(contentType))
                 {
                     contentType = JsonMediaType;
                 }
@@ -80,11 +81,14 @@ namespace Cod.Platform
             return result;
         }
 
-        public static IEnumerable<string> GetRemoteIP(this HttpRequestData request) => request.Headers.TryGetValues("X-Forwarded-For", out var values)
-                ? values.Where(v => !String.IsNullOrWhiteSpace(v))
+        public static IEnumerable<string> GetRemoteIP(this HttpRequestData request)
+        {
+            return request.Headers.TryGetValues("X-Forwarded-For", out IEnumerable<string> values)
+                ? values.Where(v => !string.IsNullOrWhiteSpace(v))
                        .SelectMany(v => v.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries))
                        .Select(v => v.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries).First())
                 : Enumerable.Empty<string>();
+        }
 
         public static HttpResponseData CreateResponseWithAuthenticationToken(this HttpRequestData request, string token, string scheme)
         {
@@ -93,7 +97,7 @@ namespace Cod.Platform
                 throw new ArgumentNullException(nameof(token));
             }
 
-            var response = request.CreateResponse();
+            HttpResponseData response = request.CreateResponse();
             response.Headers.Add(AuthorizationResponseHeaderKey, new AuthenticationHeaderValue(scheme, token).ToString());
             response.Headers.Add(HeaderCORSKey, AuthorizationResponseHeaderKey);
             return response;
@@ -101,33 +105,35 @@ namespace Cod.Platform
 
         public static bool TryGetClientID(this HttpRequestData request, out string clientID)
         {
-            clientID = String.Empty;
+            clientID = string.Empty;
 
-            if (request.Headers.TryGetValues(ClientIDRequestHeaderKey, out var val))
+            if (request.Headers.TryGetValues(ClientIDRequestHeaderKey, out IEnumerable<string> val))
             {
                 clientID = val.SingleOrDefault();
-                return !String.IsNullOrWhiteSpace(clientID);
+                return !string.IsNullOrWhiteSpace(clientID);
             }
 
             return false;
         }
 
         public static async Task<T> ParseAsync<T>(this HttpRequestData request)
-            => Parse<T>(await new StreamReader(request.Body).ReadToEndAsync());
+        {
+            return Parse<T>(await new StreamReader(request.Body).ReadToEndAsync());
+        }
 
         public static bool TryGetAuthorizationCredentials(this HttpRequestData request, out string scheme, out string identity, out string credential)
         {
             identity = null;
             credential = null;
 
-            if (!request.TryParseAuthorizationHeader(out scheme, out var parameter))
+            if (!request.TryParseAuthorizationHeader(out scheme, out string parameter))
             {
                 return false;
             }
 
             scheme = scheme.ToLowerInvariant();
-            var base64EncodedBytes = Convert.FromBase64String(parameter);
-            var credentials = Encoding.UTF8.GetString(base64EncodedBytes).Split(':');
+            byte[] base64EncodedBytes = Convert.FromBase64String(parameter);
+            string[] credentials = Encoding.UTF8.GetString(base64EncodedBytes).Split(':');
             identity = credentials[0];
             if (credentials.Length >= 2)
             {
@@ -141,18 +147,18 @@ namespace Cod.Platform
             parameter = null;
             scheme = null;
 
-            if (!request.Headers.TryGetValues(AuthorizationRequestHeaderKey, out var header))
+            if (!request.Headers.TryGetValues(AuthorizationRequestHeaderKey, out IEnumerable<string> header))
             {
                 return false;
             }
 
-            var auth = header.SingleOrDefault();
-            if (String.IsNullOrWhiteSpace(auth))
+            string auth = header.SingleOrDefault();
+            if (string.IsNullOrWhiteSpace(auth))
             {
                 return false;
             }
 
-            var parts = auth.Split(' ');
+            string[] parts = auth.Split(' ');
             if (parts.Length < 2)
             {
                 return false;
@@ -165,17 +171,13 @@ namespace Cod.Platform
 
         public static async Task<ClaimsPrincipal> HasClaimAsync<T>(this HttpRequestData request, string claim, T value)
         {
-            var principal = await TryParsePrincipalAsync(request);
-            if (principal == null)
-            {
-                return null;
-            }
-            return !principal.TryGetClaim<T>(claim, out var result) ? null : result.Equals(value) ? principal : null;
+            ClaimsPrincipal principal = await TryParsePrincipalAsync(request);
+            return principal == null ? null : !principal.TryGetClaim<T>(claim, out T result) ? null : result.Equals(value) ? principal : null;
         }
 
         public static async Task<ClaimsPrincipal> TryParsePrincipalAsync(this HttpRequestData request, string scheme = "Bearer")
         {
-            if (!request.TryParseAuthorizationHeader(out var inputScheme, out var parameter)
+            if (!request.TryParseAuthorizationHeader(out string inputScheme, out string parameter)
                 || inputScheme.ToUpperInvariant() != scheme.ToUpperInvariant())
             {
                 return null;
@@ -193,22 +195,22 @@ namespace Cod.Platform
 
         public static async Task<OperationResult<T>> ValidateSignatureAndParseAsync<T>(this HttpRequestData req, string secret, byte[] tenant = null)
         {
-            var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            if (String.IsNullOrWhiteSpace(requestBody))
+            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            if (string.IsNullOrWhiteSpace(requestBody))
             {
                 return new OperationResult<T>(InternalError.BadRequest);
             }
 
-            var model = JsonSerializer.DeserializeObject<T>(requestBody);
-            _ = ValidationHelper.TryValidate(model, out var validation);
+            T model = JsonSerializer.DeserializeObject<T>(requestBody);
+            _ = ValidationHelper.TryValidate(model, out ValidationState validation);
 
             string requestSignature = null;
-            if (req.Headers.TryGetValues("ETag", out var etag))
+            if (req.Headers.TryGetValues("ETag", out IEnumerable<string> etag))
             {
                 requestSignature = etag.SingleOrDefault();
             }
 
-            if (String.IsNullOrWhiteSpace(requestSignature))
+            if (string.IsNullOrWhiteSpace(requestSignature))
             {
                 validation.AddError("ETag", Localization.SignatureMissing);
             }
@@ -228,9 +230,9 @@ namespace Cod.Platform
                 throw new NotSupportedException();
             }
 
-            var stringToSign = $"{req.Url.AbsolutePath}?{requestBody}";
-            var tenantSecret = Cod.Platform.SignatureHelper.GetTenantSecret(tenant, secret);
-            var signature = Cod.SignatureHelper.GetSignature(stringToSign, tenantSecret);
+            string stringToSign = $"{req.Url.AbsolutePath}?{requestBody}";
+            string tenantSecret = Tenants.Wechat.SignatureHelper.GetTenantSecret(tenant, secret);
+            string signature = Cod.SignatureHelper.GetSignature(stringToSign, tenantSecret);
             return signature.ToUpperInvariant() != requestSignature.ToUpperInvariant()
                 ? new OperationResult<T>(InternalError.AuthenticationRequired)
                 : new OperationResult<T>(model);
@@ -238,9 +240,9 @@ namespace Cod.Platform
 
         private static Task<ClaimsPrincipal> ValidateAndDecodeAsync(string token)
         {
-            var secret = ConfigurationProvider.GetSetting(Constant.AUTH_SECRET_NAME);
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
-            var validationParameters = new TokenValidationParameters
+            string secret = ConfigurationProvider.GetSetting(Constant.AUTH_SECRET_NAME);
+            SymmetricSecurityKey key = new(Encoding.UTF8.GetBytes(secret));
+            TokenValidationParameters validationParameters = new()
             {
                 ClockSkew = TimeSpan.FromMinutes(5),
                 IssuerSigningKeys = new[] { key },
@@ -255,8 +257,8 @@ namespace Cod.Platform
 
             try
             {
-                var claimsPrincipal = new JwtSecurityTokenHandler()
-                    .ValidateToken(token, validationParameters, out var rawValidatedToken);
+                ClaimsPrincipal claimsPrincipal = new JwtSecurityTokenHandler()
+                    .ValidateToken(token, validationParameters, out SecurityToken rawValidatedToken);
 
                 return Task.FromResult(claimsPrincipal);
             }
@@ -270,6 +272,9 @@ namespace Cod.Platform
             }
         }
 
-        private static T Parse<T>(string body) => JsonSerializer.DeserializeObject<T>(body);
+        private static T Parse<T>(string body)
+        {
+            return JsonSerializer.DeserializeObject<T>(body);
+        }
     }
 }

@@ -4,8 +4,8 @@
     {
         public StorageControl(int permission, string resource)
         {
-            this.Permission = permission;
-            this.Resource = resource;
+            Permission = permission;
+            Resource = resource;
         }
 
         public string StartPartitionKey { get; set; }

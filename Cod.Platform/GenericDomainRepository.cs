@@ -1,3 +1,4 @@
+using Cod.Platform.Database;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 
@@ -15,52 +16,57 @@ namespace Cod.Platform
 
         public GenericDomainRepository(Func<TDomain> createDomain, Lazy<IRepository<TEntity>> repository)
         {
-            this.instanceCache = new ConcurrentDictionary<StorageKey, TDomain>();
-            this.partitionCache = new ConcurrentDictionary<string, IList<TDomain>>();
+            instanceCache = new ConcurrentDictionary<StorageKey, TDomain>();
+            partitionCache = new ConcurrentDictionary<string, IList<TDomain>>();
             this.createDomain = createDomain;
             this.repository = repository;
         }
 
-        public Task<TDomain> GetAsync(TEntity entity, CancellationToken cancellationToken = default) => this.GetAsync(entity, true, cancellationToken);
+        public Task<TDomain> GetAsync(TEntity entity, CancellationToken cancellationToken = default)
+        {
+            return GetAsync(entity, true, cancellationToken);
+        }
 
         public Task<TDomain> GetAsync(string partitionKey, string rowKey, CancellationToken cancellationToken = default)
-            => Task.FromResult(this.instanceCache.GetOrAdd(
-                new StorageKey { PartitionKey = partitionKey, RowKey = rowKey },
-                key =>
-                {
-                    if (this.partitionCache.TryGetValue(key.PartitionKey, out var partition))
-                    {
-                        var c = partition.SingleOrDefault(d => d.RowKey == key.RowKey);
-                        if (c != null)
+        {
+            return Task.FromResult(instanceCache.GetOrAdd(
+                        new StorageKey { PartitionKey = partitionKey, RowKey = rowKey },
+                        key =>
                         {
-                            return c;
-                        }
-                    }
+                            if (partitionCache.TryGetValue(key.PartitionKey, out IList<TDomain> partition))
+                            {
+                                TDomain c = partition.SingleOrDefault(d => d.RowKey == key.RowKey);
+                                if (c != null)
+                                {
+                                    return c;
+                                }
+                            }
 
-                    var domain = this.createDomain();
-                    domain.Initialize(key.PartitionKey, key.RowKey);
-                    return domain;
-                }));
+                            TDomain domain = createDomain();
+                            domain.Initialize(key.PartitionKey, key.RowKey);
+                            return domain;
+                        }));
+        }
 
         public async IAsyncEnumerable<TDomain> GetAsync(string partitionKey, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var stub = new List<TDomain>();
+            List<TDomain> stub = new();
 
-            var result = this.partitionCache.GetOrAdd(partitionKey, key => stub);
+            IList<TDomain> result = partitionCache.GetOrAdd(partitionKey, key => stub);
 
             if (stub.GetHashCode() == result.GetHashCode())
             {
-                var entities = this.repository.Value.GetAsync(partitionKey, cancellationToken: cancellationToken);
-                await foreach (var entity in entities)
+                IAsyncEnumerable<TEntity> entities = repository.Value.GetAsync(partitionKey, cancellationToken: cancellationToken);
+                await foreach (TEntity entity in entities)
                 {
-                    var d = await this.GetAsync(entity, false, cancellationToken);
+                    TDomain d = await GetAsync(entity, false, cancellationToken);
                     stub.Add(d);
                     yield return d;
                 }
             }
             else
             {
-                foreach (var item in result)
+                foreach (TDomain item in result)
                 {
                     yield return item;
                 }
@@ -69,11 +75,11 @@ namespace Cod.Platform
 
         public async IAsyncEnumerable<TDomain> GetAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var entities = this.repository.Value.GetAsync(cancellationToken: cancellationToken);
-            await foreach (var entity in entities)
+            IAsyncEnumerable<TEntity> entities = repository.Value.GetAsync(cancellationToken: cancellationToken);
+            await foreach (TEntity entity in entities)
             {
-                var domain = await this.GetAsync(entity, cancellationToken);
-                this.partitionCache.AddOrUpdate(
+                TDomain domain = await GetAsync(entity, cancellationToken);
+                partitionCache.AddOrUpdate(
                     domain.PartitionKey,
                     new List<TDomain> { domain },
                     (key, existing) =>
@@ -87,30 +93,30 @@ namespace Cod.Platform
 
         public void Dispose()
         {
-            if (!this.disposed)
+            if (!disposed)
             {
-                this.instanceCache.Clear();
-                this.partitionCache.Clear();
+                instanceCache.Clear();
+                partitionCache.Clear();
             }
 
-            this.disposed = true;
+            disposed = true;
             GC.SuppressFinalize(this);
         }
 
         protected Task<TDomain> GetAsync(TEntity entity, bool clearPartitionCache, CancellationToken cancellationToken)
         {
-            var domain = this.createDomain();
+            TDomain domain = createDomain();
             domain.Initialize(entity);
 
             // REMARK (5he11) 可能存在一种情况是接口使用者仅仅为了拿到一个空白的Domain Object所以仅仅传入一个无用的new Entity()，此时这个entity的GetKey返回null
             if (entity.PartitionKey != null && entity.RowKey != null)
             {
-                this.instanceCache.AddOrUpdate(entity.GetKey(), domain, (key, existing) => domain);
+                instanceCache.AddOrUpdate(entity.GetKey(), domain, (key, existing) => domain);
             }
 
             if (clearPartitionCache && entity.PartitionKey != null)
             {
-                this.partitionCache.TryRemove(entity.PartitionKey, out _);
+                partitionCache.TryRemove(entity.PartitionKey, out _);
             }
 
             return Task.FromResult(domain);

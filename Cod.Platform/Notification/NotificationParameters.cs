@@ -1,4 +1,4 @@
-﻿namespace Cod.Platform
+﻿namespace Cod.Platform.Notification
 {
     public abstract class NotificationParameters
     {

@@ -6,38 +6,38 @@ namespace Cod
     public class OperationResult
     {
         public const int SuccessCode = 0;
-        public static readonly OperationResult Success = new OperationResult();
-        public static readonly OperationResult BadRequest = new OperationResult(InternalError.BadRequest);
-        public static readonly OperationResult AuthenticationRequired = new OperationResult(InternalError.AuthenticationRequired);
-        public static readonly OperationResult PaymentRequired = new OperationResult(InternalError.PaymentRequired);
-        public static readonly OperationResult Forbidden = new OperationResult(InternalError.Forbidden);
-        public static readonly OperationResult NotFound = new OperationResult(InternalError.NotFound);
-        public static readonly OperationResult NotAllowed = new OperationResult(InternalError.NotAllowed);
-        public static readonly OperationResult NotAcceptable = new OperationResult(InternalError.NotAcceptable);
-        public static readonly OperationResult RequestTimeout = new OperationResult(InternalError.RequestTimeout);
-        public static readonly OperationResult Conflict = new OperationResult(InternalError.Conflict);
-        public static readonly OperationResult PreconditionFailed = new OperationResult(InternalError.PreconditionFailed);
-        public static readonly OperationResult Locked = new OperationResult(InternalError.Locked);
-        public static readonly OperationResult UpgradeRequired = new OperationResult(InternalError.UpgradeRequired);
-        public static readonly OperationResult TooManyRequests = new OperationResult(InternalError.TooManyRequests);
+        public static readonly OperationResult Success = new();
+        public static readonly OperationResult BadRequest = new(InternalError.BadRequest);
+        public static readonly OperationResult AuthenticationRequired = new(InternalError.AuthenticationRequired);
+        public static readonly OperationResult PaymentRequired = new(InternalError.PaymentRequired);
+        public static readonly OperationResult Forbidden = new(InternalError.Forbidden);
+        public static readonly OperationResult NotFound = new(InternalError.NotFound);
+        public static readonly OperationResult NotAllowed = new(InternalError.NotAllowed);
+        public static readonly OperationResult NotAcceptable = new(InternalError.NotAcceptable);
+        public static readonly OperationResult RequestTimeout = new(InternalError.RequestTimeout);
+        public static readonly OperationResult Conflict = new(InternalError.Conflict);
+        public static readonly OperationResult PreconditionFailed = new(InternalError.PreconditionFailed);
+        public static readonly OperationResult Locked = new(InternalError.Locked);
+        public static readonly OperationResult UpgradeRequired = new(InternalError.UpgradeRequired);
+        public static readonly OperationResult TooManyRequests = new(InternalError.TooManyRequests);
 
-        public static readonly OperationResult InternalServerError = new OperationResult(InternalError.InternalServerError);
-        public static readonly OperationResult ServiceUnavailable = new OperationResult(InternalError.ServiceUnavailable);
-        public static readonly OperationResult GatewayTimeout = new OperationResult(InternalError.GatewayTimeout);
+        public static readonly OperationResult InternalServerError = new(InternalError.InternalServerError);
+        public static readonly OperationResult ServiceUnavailable = new(InternalError.ServiceUnavailable);
+        public static readonly OperationResult GatewayTimeout = new(InternalError.GatewayTimeout);
 
-        public static readonly OperationResult NetworkFailure = new OperationResult(InternalError.NetworkFailure);
+        public static readonly OperationResult NetworkFailure = new(InternalError.NetworkFailure);
 
-        public static readonly OperationResult Unknown = new OperationResult(InternalError.Unknown);
+        public static readonly OperationResult Unknown = new(InternalError.Unknown);
 
         private readonly Func<string> getMessage;
 
         public int Code { get; set; }
 
-        public string Message => this.getMessage();
+        public string Message => getMessage();
 
         public object Reference { get; set; }
 
-        public bool IsSuccess => this.Code == SuccessCode;
+        public bool IsSuccess => Code == SuccessCode;
 
         public OperationResult() : this(SuccessCode)
         {
@@ -45,11 +45,11 @@ namespace Cod
 
         public OperationResult(int code, string description = null)
         {
-            this.Code = code;
-            this.getMessage = () =>
+            Code = code;
+            getMessage = () =>
             {
-                var msg = new StringBuilder();
-                if (InternalError.TryGet(code, out var val))
+                StringBuilder msg = new();
+                if (InternalError.TryGet(code, out string val))
                 {
                     msg.Append(val);
                 }
@@ -80,30 +80,20 @@ namespace Cod
 
         public OperationResult(OperationResult result) : this(result.Code)
         {
-            this.getMessage = () => result.Message;
-            this.Reference = result.Reference;
+            getMessage = () => result.Message;
+            Reference = result.Reference;
         }
 
         public bool HasResult()
         {
-            var type = this.GetType();
-            if (!type.IsGenericType)
-            {
-                return false;
-            }
-
-            return type.GetGenericTypeDefinition() == typeof(OperationResult<>);
+            Type type = GetType();
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(OperationResult<>);
         }
 
         public T GetResult<T>()
         {
-            var hasResult = this.HasResult();
-            if (hasResult && this is OperationResult<T> result)
-            {
-                return result.Result;
-            }
-
-            return default;
+            bool hasResult = HasResult();
+            return hasResult && this is OperationResult<T> result ? result.Result : default;
         }
     }
 
@@ -113,13 +103,19 @@ namespace Cod
         {
         }
 
-        public OperationResult(T result) : this() => this.Result = result;
+        public OperationResult(T result) : this()
+        {
+            Result = result;
+        }
 
         public OperationResult(int code, string description = null) : base(code, description)
         {
         }
 
-        public OperationResult(int code, T result, string description = null) : this(code, description) => this.Result = result;
+        public OperationResult(int code, T result, string description = null) : this(code, description)
+        {
+            Result = result;
+        }
 
         public OperationResult(OperationResult result) : base(result)
         {

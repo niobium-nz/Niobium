@@ -5,7 +5,7 @@ namespace Cod
 {
     public struct Country : IEquatable<Country>
     {
-        private static readonly Dictionary<string, string> alpha2 = new Dictionary<string, string>
+        private static readonly Dictionary<string, string> alpha2 = new()
         {
             {"Albania", "AL" },
             {"Algeria", "DZ" },
@@ -197,7 +197,7 @@ namespace Cod
             {"Zimbabwe", "ZW" }
         };
 
-        private static readonly Dictionary<string, string> alpha3 = new Dictionary<string, string>
+        private static readonly Dictionary<string, string> alpha3 = new()
         {
             {"Albania", "ALB" },
             {"Algeria", "DZA" },
@@ -391,14 +391,14 @@ namespace Cod
 
         public string Fullname { get; private set; }
 
-        public string Alpha2 => alpha2[this.Fullname];
+        public string Alpha2 => alpha2[Fullname];
 
-        public string Alpha3 => alpha3[this.Fullname];
+        public string Alpha3 => alpha3[Fullname];
 
         public static bool TryParse(string nameOrCode, out Country result)
         {
             result = default;
-            if (String.IsNullOrWhiteSpace(nameOrCode))
+            if (string.IsNullOrWhiteSpace(nameOrCode))
             {
                 return false;
             }
@@ -411,7 +411,7 @@ namespace Cod
 
             if (result == default)
             {
-                foreach (var key in alpha2.Keys)
+                foreach (string key in alpha2.Keys)
                 {
                     if (alpha2[key] == nameOrCode)
                     {
@@ -421,7 +421,7 @@ namespace Cod
             }
             if (result == default)
             {
-                foreach (var key in alpha3.Keys)
+                foreach (string key in alpha3.Keys)
                 {
                     if (alpha3[key] == nameOrCode)
                     {
@@ -434,23 +434,37 @@ namespace Cod
 
         public static Country Parse(string nameOrCode)
         {
-            if (!TryParse(nameOrCode, out var result))
-            {
-                throw new ArgumentOutOfRangeException(nameof(nameOrCode));
-            }
-            return result;
+            return !TryParse(nameOrCode, out Country result) ? throw new ArgumentOutOfRangeException(nameof(nameOrCode)) : result;
         }
 
-        public override bool Equals(object obj) => obj is Country country && this.Equals(country);
+        public override bool Equals(object obj)
+        {
+            return obj is Country country && Equals(country);
+        }
 
-        public bool Equals(Country other) => this.Fullname == other.Fullname;
+        public bool Equals(Country other)
+        {
+            return Fullname == other.Fullname;
+        }
 
-        public override int GetHashCode() => 558414575 + EqualityComparer<string>.Default.GetHashCode(this.Fullname);
+        public override int GetHashCode()
+        {
+            return 558414575 + EqualityComparer<string>.Default.GetHashCode(Fullname);
+        }
 
-        public override string ToString() => this.Fullname;
+        public override string ToString()
+        {
+            return Fullname;
+        }
 
-        public static bool operator ==(Country left, Country right) => left.Equals(right);
+        public static bool operator ==(Country left, Country right)
+        {
+            return left.Equals(right);
+        }
 
-        public static bool operator !=(Country left, Country right) => !(left == right);
+        public static bool operator !=(Country left, Country right)
+        {
+            return !(left == right);
+        }
     }
 }

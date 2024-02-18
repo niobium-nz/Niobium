@@ -19,7 +19,9 @@ namespace Cod.Model
         public DateTimeOffset? Created { get; set; }
 
         public static string BuildPartitionKey(Guid business, Guid user)
-            => $"{business.ToKey()}|{user.ToKey()}";
+        {
+            return $"{business.ToKey()}|{user.ToKey()}";
+        }
 
         public static bool TryParse(string partitionKey, out Guid business, out Guid user)
         {
@@ -30,33 +32,18 @@ namespace Cod.Model
                 throw new ArgumentNullException(nameof(partitionKey));
             }
 
-            var splited = partitionKey.Split('|');
-            if (splited.Length == 2)
-            {
-                return Guid.TryParse(splited[0], out business) && Guid.TryParse(splited[1], out user);
-            }
-
-            return false;
+            string[] splited = partitionKey.Split('|');
+            return splited.Length == 2 && Guid.TryParse(splited[0], out business) && Guid.TryParse(splited[1], out user);
         }
 
         public Guid GetBusiness()
         {
-            if (Profile.TryParse(this.PartitionKey, out var business, out var _))
-            {
-                return business;
-            }
-
-            throw new NotSupportedException();
+            return Profile.TryParse(PartitionKey, out Guid business, out Guid _) ? business : throw new NotSupportedException();
         }
 
         public Guid GetUser()
         {
-            if (Profile.TryParse(this.PartitionKey, out var _, out var user))
-            {
-                return user;
-            }
-
-            throw new NotSupportedException();
+            return Profile.TryParse(PartitionKey, out Guid _, out Guid user) ? user : throw new NotSupportedException();
         }
     }
 }

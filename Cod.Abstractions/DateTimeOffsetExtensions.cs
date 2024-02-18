@@ -19,13 +19,19 @@ namespace Cod
         public static DateTimeOffset MinValueForTableStorage { get; private set; } = DateTimeOffset.Parse("2008-01-01T00:00:00Z");
 
         public static long ToReverseUnixTimeMilliseconds(this DateTimeOffset input)
-            => reverseUnixTimestampAnchor - input.ToUnixTimeMilliseconds();
+        {
+            return reverseUnixTimestampAnchor - input.ToUnixTimeMilliseconds();
+        }
 
         public static string ToReverseUnixTimestamp(this DateTimeOffset input)
-            => input.ToReverseUnixTimeMilliseconds().ToString().PadLeft(12, '0');
+        {
+            return input.ToReverseUnixTimeMilliseconds().ToString().PadLeft(12, '0');
+        }
 
         public static DateTimeOffset FromReverseUnixTimeMilliseconds(long reverseUnixTimestamp)
-            => DateTimeOffset.FromUnixTimeMilliseconds(reverseUnixTimestampAnchor - reverseUnixTimestamp);
+        {
+            return DateTimeOffset.FromUnixTimeMilliseconds(reverseUnixTimestampAnchor - reverseUnixTimestamp);
+        }
 
         public static string ToISO8601(this DateTimeOffset input, CultureInfo culture)
         {
@@ -94,37 +100,35 @@ namespace Cod
         }
 
         public static string ToSixDigitsDate(this DateTimeOffset input)
-            => input.ToString("yyyyMMdd");
+        {
+            return input.ToString("yyyyMMdd");
+        }
 
         public static string ToDisplayCST(this DateTimeOffset input)
-            => input.ToOffset(ChinaTimeOffset).ToString("yyyy-MM-dd HH:mm:ss");
+        {
+            return input.ToOffset(ChinaTimeOffset).ToString("yyyy-MM-dd HH:mm:ss");
+        }
 
         public static string ToDisplayCSTShort(this DateTimeOffset input)
-            => input.ToOffset(ChinaTimeOffset).ToString("MM-dd");
+        {
+            return input.ToOffset(ChinaTimeOffset).ToString("MM-dd");
+        }
 
         public static DateTimeOffset? ParseDate(this string dateString)
         {
-            if (String.IsNullOrWhiteSpace(dateString) || dateString.Length != 8)
+            if (string.IsNullOrWhiteSpace(dateString) || dateString.Length != 8)
             {
                 return null;
             }
 
-            if (!Int32.TryParse(dateString.Substring(0, 4), out var year))
+            if (!int.TryParse(dateString.Substring(0, 4), out int year))
             {
                 return null;
             }
 
-            if (!Int32.TryParse(dateString.Substring(4, 2), out var month))
-            {
-                return null;
-            }
-
-            if (!Int32.TryParse(dateString.Substring(6, 2), out var day))
-            {
-                return null;
-            }
-
-            return new DateTimeOffset(year, month, day, 0, 0, 0, TimeSpan.Zero);
+            return !int.TryParse(dateString.Substring(4, 2), out int month)
+                ? null
+                : !int.TryParse(dateString.Substring(6, 2), out int day) ? null : new DateTimeOffset(year, month, day, 0, 0, 0, TimeSpan.Zero);
         }
 
         public static DateTimeOffset ToLocal(this DateTimeOffset dateTimeOffset, TimeZoneInfo timeZoneInfo)
@@ -133,9 +137,15 @@ namespace Cod
             return TimeZoneInfo.ConvertTime(dateTimeOffset, timeZoneInfo);
         }
 
-        public static string ToDisplayLocalShortDate(this DateTimeOffset dateTimeOffset, TimeZoneInfo timeZoneInfo) => dateTimeOffset.ToLocal(timeZoneInfo).DateTime.ToShortDateString();
+        public static string ToDisplayLocalShortDate(this DateTimeOffset dateTimeOffset, TimeZoneInfo timeZoneInfo)
+        {
+            return dateTimeOffset.ToLocal(timeZoneInfo).DateTime.ToShortDateString();
+        }
 
-        public static string ToDisplayLocalLongDate(this DateTimeOffset dateTimeOffset, TimeZoneInfo timeZoneInfo) => dateTimeOffset.ToLocal(timeZoneInfo).DateTime.ToLongDateString();
+        public static string ToDisplayLocalLongDate(this DateTimeOffset dateTimeOffset, TimeZoneInfo timeZoneInfo)
+        {
+            return dateTimeOffset.ToLocal(timeZoneInfo).DateTime.ToLongDateString();
+        }
 
         public static string ToDisplayLocal(this DateTimeOffset dateTimeOffset, TimeZoneInfo timeZoneInfo)
         {
@@ -143,11 +153,14 @@ namespace Cod
             return dateTimeOffset.ToLocal(timeZoneInfo).DateTime.ToString();
         }
 
-        public static int GetWeekOfYear(this DateTimeOffset offset) => GetWeekOfYear(offset.UtcDateTime);
+        public static int GetWeekOfYear(this DateTimeOffset offset)
+        {
+            return GetWeekOfYear(offset.UtcDateTime);
+        }
 
         public static int GetWeekOfYear(this DateTime date)
         {
-            var week = GetWeekNumber(date);
+            int week = GetWeekNumber(date);
 
             if (week < MinWeek)
             {
@@ -168,33 +181,31 @@ namespace Cod
 
         public static int GetWeeksInYear(int year)
         {
-            if (year < 1000 || year >= 3000)
+            if (year is < 1000 or >= 3000)
             {
                 throw new ArgumentOutOfRangeException(nameof(year));
             }
 
-            static int P(int y) => (y + (y / 4) - (y / 100) + (y / 400)) % 7;
-
-            if (P(year) == 4 || P(year - 1) == 3)
+            static int P(int y)
             {
-                return WeeksInLongYear;
+                return (y + (y / 4) - (y / 100) + (y / 400)) % 7;
             }
 
-            return WeeksInShortYear;
+            return P(year) == 4 || P(year - 1) == 3 ? WeeksInLongYear : WeeksInShortYear;
         }
 
         public static DateTimeOffset GetFirstDateOfWeek(int year, int weekOfYear)
         {
-            var jan1 = new DateTime(year, 1, 1);
-            var daysOffset = DayOfWeek.Thursday - jan1.DayOfWeek;
+            DateTime jan1 = new(year, 1, 1);
+            int daysOffset = DayOfWeek.Thursday - jan1.DayOfWeek;
 
             // Use first Thursday in January to get first week of the year as
             // it will never be in Week 52/53
-            var firstThursday = jan1.AddDays(daysOffset);
-            var cal = CultureInfo.CurrentCulture.Calendar;
-            var firstWeek = cal.GetWeekOfYear(firstThursday, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+            DateTime firstThursday = jan1.AddDays(daysOffset);
+            Calendar cal = CultureInfo.CurrentCulture.Calendar;
+            int firstWeek = cal.GetWeekOfYear(firstThursday, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
 
-            var weekNum = weekOfYear;
+            int weekNum = weekOfYear;
             // As we're adding days to a date in Week 1,
             // we need to subtract 1 in order to get the right date for week #1
             if (firstWeek == 1)
@@ -204,14 +215,20 @@ namespace Cod
 
             // Using the first Thursday as starting week ensures that we are starting in the right year
             // then we add number of weeks multiplied with days
-            var result = firstThursday.AddDays(weekNum * 7);
+            DateTime result = firstThursday.AddDays(weekNum * 7);
 
             // Subtract 3 days from Thursday to get Monday, which is the first weekday in ISO8601
             return new DateTimeOffset(result.AddDays(-3), TimeSpan.Zero);
         }
 
-        private static int GetWeekNumber(DateTime date) => (date.DayOfYear - GetWeekday(date.DayOfWeek) + 10) / 7;
+        private static int GetWeekNumber(DateTime date)
+        {
+            return (date.DayOfYear - GetWeekday(date.DayOfWeek) + 10) / 7;
+        }
 
-        private static int GetWeekday(DayOfWeek dayOfWeek) => dayOfWeek == DayOfWeek.Sunday ? 7 : (int)dayOfWeek;
+        private static int GetWeekday(DayOfWeek dayOfWeek)
+        {
+            return dayOfWeek == DayOfWeek.Sunday ? 7 : (int)dayOfWeek;
+        }
     }
 }

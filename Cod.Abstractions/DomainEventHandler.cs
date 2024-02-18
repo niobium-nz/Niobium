@@ -8,7 +8,7 @@ namespace Cod
         {
             if (e is TEventArgs args)
             {
-                await this.CoreHandleAsync(sender, args);
+                await CoreHandleAsync(sender, args);
             }
         }
 
@@ -17,7 +17,10 @@ namespace Cod
 
     public abstract class DomainEventHandler<TDomain> : IEventHandler<TDomain>
     {
-        public async Task HandleAsync(TDomain sender, object e) => await this.CoreHandleAsync(sender, e);
+        public async Task HandleAsync(TDomain sender, object e)
+        {
+            await CoreHandleAsync(sender, e);
+        }
 
         protected abstract Task CoreHandleAsync(TDomain sender, object e);
     }

@@ -33,23 +33,15 @@ namespace Cod
 
         public const int Unknown = 999;
 
-        static InternalError() => errorRetrievers = new List<IErrorRetriever>
+        static InternalError()
+        {
+            errorRetrievers = new List<IErrorRetriever>
         {
             new InternalErrorRetriever(),
         };
-
-        public static string UnknownErrorMessage
-        {
-            get
-            {
-                if (TryGet(Unknown, out var val))
-                {
-                    return val;
-                }
-
-                throw new NotImplementedException();
-            }
         }
+
+        public static string UnknownErrorMessage => TryGet(Unknown, out string val) ? val : throw new NotImplementedException();
 
         public static void Register(IErrorRetriever retriever)
         {
@@ -61,7 +53,7 @@ namespace Cod
 
         public static bool TryGet(int code, out string value)
         {
-            foreach (var errorRetriever in errorRetrievers)
+            foreach (IErrorRetriever errorRetriever in errorRetrievers)
             {
                 if (errorRetriever.TryGet($"{KeyPrefix}{code}", out value))
                 {
@@ -75,12 +67,7 @@ namespace Cod
 
         public static string Get(int code)
         {
-            if (TryGet(code, out var val))
-            {
-                return val;
-            }
-
-            throw new KeyNotFoundException();
+            return TryGet(code, out string val) ? val : throw new KeyNotFoundException();
         }
     }
 }

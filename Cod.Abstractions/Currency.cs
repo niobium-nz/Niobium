@@ -203,41 +203,51 @@ namespace Cod
             _ = code ?? throw new ArgumentNullException(nameof(code));
 
             code = code.Trim().ToUpper();
-            if (!codes.Contains(code))
-            {
-                throw new NotSupportedException();
-            }
-
-            return new Currency { Code = code };
+            return !codes.Contains(code) ? throw new NotSupportedException() : new Currency { Code = code };
         }
 
-        public static CultureInfo GetCulture(Currency currency) => GetCulture(currency.Code);
+        public static CultureInfo GetCulture(Currency currency)
+        {
+            return GetCulture(currency.Code);
+        }
 
         public static CultureInfo GetCulture(string code)
         {
-            if (String.IsNullOrWhiteSpace(code))
-            {
-                throw new ArgumentNullException(nameof(code));
-            }
-            if (!cultures.ContainsKey(code))
-            {
-                throw new NotSupportedException();
-            }
-            return cultures[code];
+            return string.IsNullOrWhiteSpace(code)
+                ? throw new ArgumentNullException(nameof(code))
+                : !cultures.ContainsKey(code) ? throw new NotSupportedException() : cultures[code];
         }
 
         public string Code { get; private set; }
 
-        public override bool Equals(object obj) => obj is Currency currency && this.Equals(currency);
+        public override bool Equals(object obj)
+        {
+            return obj is Currency currency && Equals(currency);
+        }
 
-        public bool Equals(Currency other) => this.Code == other.Code;
+        public bool Equals(Currency other)
+        {
+            return Code == other.Code;
+        }
 
-        public override int GetHashCode() => -434485196 + EqualityComparer<string>.Default.GetHashCode(this.Code);
+        public override int GetHashCode()
+        {
+            return -434485196 + EqualityComparer<string>.Default.GetHashCode(Code);
+        }
 
-        public override string ToString() => this.Code;
+        public override string ToString()
+        {
+            return Code;
+        }
 
-        public static bool operator ==(Currency left, Currency right) => left.Equals(right);
+        public static bool operator ==(Currency left, Currency right)
+        {
+            return left.Equals(right);
+        }
 
-        public static bool operator !=(Currency left, Currency right) => !(left == right);
+        public static bool operator !=(Currency left, Currency right)
+        {
+            return !(left == right);
+        }
     }
 }

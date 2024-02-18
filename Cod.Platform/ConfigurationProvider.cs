@@ -1,6 +1,5 @@
-using System.Collections.Concurrent;
-using Cod.Platform.Integration.Azure;
 using Microsoft.Extensions.Configuration;
+using System.Collections.Concurrent;
 
 namespace Cod.Platform
 {
@@ -18,17 +17,20 @@ namespace Cod.Platform
                 {
                     builder = CustomConfig(builder);
                 }
-                var root = builder.AddEnvironmentVariables().Build();
+                IConfigurationRoot root = builder.AddEnvironmentVariables().Build();
                 return root;
             }, LazyThreadSafetyMode.ExecutionAndPublication);
 
         public static IConfiguration Configuration => config.Value;
 
-        public static void Configure(Func<IConfigurationBuilder, IConfigurationBuilder> func) => CustomConfig = func;
+        public static void Configure(Func<IConfigurationBuilder, IConfigurationBuilder> func)
+        {
+            CustomConfig = func;
+        }
 
         public static void EnableKeyValueSupport(string keyVaultUrl)
         {
-            if (String.IsNullOrWhiteSpace(keyVaultUrl))
+            if (string.IsNullOrWhiteSpace(keyVaultUrl))
             {
                 throw new ArgumentException($"'{nameof(keyVaultUrl)}' cannot be null or whitespace.", nameof(keyVaultUrl));
             }
@@ -46,8 +48,8 @@ namespace Cod.Platform
                 }
             }
 
-            var v = GetSetting(key);
-            if (!String.IsNullOrWhiteSpace(KeyVaultUrl) && v == null && Uri.TryCreate(KeyVaultUrl, UriKind.Absolute, out var uri))
+            string v = GetSetting(key);
+            if (!string.IsNullOrWhiteSpace(KeyVaultUrl) && v == null && Uri.TryCreate(KeyVaultUrl, UriKind.Absolute, out Uri uri))
             {
                 v = await SecureVault.GetSecretAsync(uri, key);
             }
@@ -66,7 +68,10 @@ namespace Cod.Platform
             return v;
         }
 
-        public string GetSettingAsString(string key, bool cache = true) => GetSetting(key, cache);
+        public string GetSettingAsString(string key, bool cache = true)
+        {
+            return GetSetting(key, cache);
+        }
 
         public static string GetSetting(string key, bool cache = true)
         {
@@ -78,7 +83,7 @@ namespace Cod.Platform
                 }
             }
 
-            var v = config.Value[key];
+            string v = config.Value[key];
             v ??= config.Value[$"Values:{key}"];
 
             if (cache && v != null)

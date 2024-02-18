@@ -1,4 +1,4 @@
-namespace Cod.Platform
+namespace Cod.Platform.Notification
 {
     public interface INotificationChannel
     {

@@ -1,6 +1,9 @@
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
+using Cod.Platform.Database;
+using Cod.Platform.Identities;
+using Cod.Platform.Notification;
 using Jose;
 using Microsoft.Extensions.Logging;
 

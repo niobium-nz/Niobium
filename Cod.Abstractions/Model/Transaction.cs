@@ -30,18 +30,39 @@ namespace Cod.Model
 
         public DateTimeOffset? Created { get; set; }
 
-        public void SetOwner(string value) => this.PartitionKey = BuildPartitionKey(value);
+        public void SetOwner(string value)
+        {
+            PartitionKey = BuildPartitionKey(value);
+        }
 
-        public string GetOwner() => this.PartitionKey;
+        public string GetOwner()
+        {
+            return PartitionKey;
+        }
 
-        public DateTimeOffset GetCreated() => ParseRowKey(this.RowKey);
+        public DateTimeOffset GetCreated()
+        {
+            return ParseRowKey(RowKey);
+        }
 
-        public static string BuildPartitionKey(string owner) => owner.Trim();
+        public static string BuildPartitionKey(string owner)
+        {
+            return owner.Trim();
+        }
 
-        public static string BuildRowKey(DateTimeOffset created) => created.ToReverseUnixTimestamp();
+        public static string BuildRowKey(DateTimeOffset created)
+        {
+            return created.ToReverseUnixTimestamp();
+        }
 
-        public static string BuildRowKey(long created) => DateTimeOffsetExtensions.FromReverseUnixTimeMilliseconds(created).ToReverseUnixTimestamp();
+        public static string BuildRowKey(long created)
+        {
+            return DateTimeOffsetExtensions.FromReverseUnixTimeMilliseconds(created).ToReverseUnixTimestamp();
+        }
 
-        public static DateTimeOffset ParseRowKey(string input) => DateTimeOffsetExtensions.FromReverseUnixTimeMilliseconds(Int64.Parse(input));
+        public static DateTimeOffset ParseRowKey(string input)
+        {
+            return DateTimeOffsetExtensions.FromReverseUnixTimeMilliseconds(long.Parse(input));
+        }
     }
 }

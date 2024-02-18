@@ -1,0 +1,113 @@
+using Cod.Platform.Database;
+using System.Runtime.CompilerServices;
+
+namespace Cod.Platform.Locking
+{
+    public abstract class DefaultImpedimentPolicy : IImpedimentPolicy
+    {
+        private readonly Lazy<IRepository<Impediment>> repository;
+
+        public DefaultImpedimentPolicy(Lazy<IRepository<Impediment>> repository)
+        {
+            this.repository = repository;
+        }
+
+        public async IAsyncEnumerable<Impediment> GetImpedimentsAsync(IImpedimentContext context, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (await SupportAsync(context, cancellationToken))
+            {
+                if (context.Cause != 0)
+                {
+                    Impediment entity = await repository.Value.RetrieveAsync(
+                        Impediment.BuildPartitionKey(context.ImpedementID, context.Category),
+                        Impediment.BuildRowKey(context.Cause),
+                        cancellationToken: cancellationToken);
+
+                    if (entity != null)
+                    {
+                        yield return entity;
+                    }
+                }
+                else
+                {
+                    IAsyncEnumerable<Impediment> results = repository.Value.GetAsync(
+                        Impediment.BuildPartitionKey(context.ImpedementID, context.Category),
+                        cancellationToken: cancellationToken);
+                    await foreach (Impediment item in results)
+                    {
+                        yield return item;
+                    }
+                }
+            }
+        }
+
+        public async Task<bool> ImpedeAsync(IImpedimentContext context, CancellationToken cancellationToken = default)
+        {
+            if (await SupportAsync(context, cancellationToken))
+            {
+                string pk = Impediment.BuildPartitionKey(context.ImpedementID, context.Category);
+                string rk = Impediment.BuildRowKey(context.Cause);
+
+                Impediment existing = await repository.Value.RetrieveAsync(pk, rk, cancellationToken: cancellationToken);
+                if (existing == null)
+                {
+                    await repository.Value.CreateAsync(new Impediment
+                    {
+                        PartitionKey = pk,
+                        RowKey = rk,
+                        Policy = context.PolicyInput,
+                    },
+                    replaceIfExist: true,
+                    cancellationToken: cancellationToken);
+                }
+                else if (!existing.Policy.Contains(context.PolicyInput))
+                {
+                    existing.Policy += $",{context.PolicyInput}";
+                    await repository.Value.UpdateAsync(existing, cancellationToken: cancellationToken);
+                }
+
+                return true;
+            }
+            return false;
+        }
+
+        public abstract Task<bool> SupportAsync(IImpedimentContext context, CancellationToken cancellationToken = default);
+
+        public async Task<bool> UnimpedeAsync(IImpedimentContext context, CancellationToken cancellationToken = default)
+        {
+            if (await SupportAsync(context, cancellationToken))
+            {
+                Impediment existing = await repository.Value.RetrieveAsync(
+                    Impediment.BuildPartitionKey(context.ImpedementID, context.Category),
+                    Impediment.BuildRowKey(context.Cause),
+                    cancellationToken: cancellationToken);
+                if (existing != null)
+                {
+                    if (existing.Policy == context.PolicyInput)
+                    {
+                        await repository.Value.DeleteAsync(existing, preconditionCheck: false, successIfNotExist: true, cancellationToken: cancellationToken);
+                    }
+                    else
+                    {
+                        List<string> policies = existing.Policy.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                        if (policies.Contains(context.PolicyInput))
+                        {
+                            policies.Remove(context.PolicyInput);
+                            if (policies.Count == 0)
+                            {
+                                await repository.Value.DeleteAsync(existing, preconditionCheck: false, successIfNotExist: true, cancellationToken: cancellationToken);
+                            }
+                            else
+                            {
+                                existing.Policy = string.Join(",", policies);
+                                await repository.Value.UpdateAsync(existing, cancellationToken: cancellationToken);
+                            }
+                        }
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+}

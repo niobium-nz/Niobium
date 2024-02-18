@@ -21,36 +21,49 @@ namespace Cod.Model
         public Guid Business { get; set; }
 
         public static string BuildPartitionKey(OpenIDKind kind)
-            => BuildPartitionKey((int)kind);
+        {
+            return BuildPartitionKey((int)kind);
+        }
 
         public static string BuildPartitionKey(int kind)
-            => BuildPartitionKey(kind, default);
+        {
+            return BuildPartitionKey(kind, default);
+        }
 
         public static string BuildPartitionKey(OpenIDKind kind, string app)
-            => BuildPartitionKey((int)kind, app);
+        {
+            return BuildPartitionKey((int)kind, app);
+        }
 
         public static string BuildPartitionKey(int kind, string app)
         {
-            app ??= String.Empty;
+            app ??= string.Empty;
             return $"{kind}|{app.Trim()}";
         }
 
         public static string BuildRowKey(string identity)
         {
-            if (identity is null)
-            {
-                throw new ArgumentNullException(nameof(identity));
-            }
-
-            return identity.Trim();
+            return identity is null ? throw new ArgumentNullException(nameof(identity)) : identity.Trim();
         }
 
-        public string GetIdentity() => this.RowKey.Trim();
+        public string GetIdentity()
+        {
+            return RowKey.Trim();
+        }
 
-        public int GetKind() => Int32.Parse(this.PartitionKey.Split('|')[0]);
+        public int GetKind()
+        {
+            return int.Parse(PartitionKey.Split('|')[0]);
+        }
 
-        public bool IsKindOf(OpenIDKind type) => this.IsKindOf((int)type);
+        public bool IsKindOf(OpenIDKind type)
+        {
+            return IsKindOf((int)type);
+        }
 
-        public bool IsKindOf(int type) => this.GetKind() == type;
+        public bool IsKindOf(int type)
+        {
+            return GetKind() == type;
+        }
     }
 }

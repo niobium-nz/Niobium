@@ -8,11 +8,9 @@ namespace Cod
         public static string ToTitleCase(this CultureInfo cultureInfo, string input)
         {
             _ = cultureInfo ?? throw new ArgumentNullException(nameof(cultureInfo));
-            if (String.IsNullOrWhiteSpace(input))
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
-            return cultureInfo.TextInfo.ToTitleCase(input.Trim().ToLowerInvariant());
+            return string.IsNullOrWhiteSpace(input)
+                ? throw new ArgumentNullException(nameof(input))
+                : cultureInfo.TextInfo.ToTitleCase(input.Trim().ToLowerInvariant());
         }
     }
 }

@@ -1,3 +1,5 @@
+using Cod.Platform.Database;
+using Cod.Platform.Finance;
 using Microsoft.Extensions.Logging;
 using Stripe;
 
@@ -7,14 +9,14 @@ namespace Cod.Platform
     {
         private static readonly TimeSpan ValidTransactionMaxDelay = TimeSpan.FromMinutes(5);
         public const string PaymentInfoSpliter = "|";
-        private readonly Lazy<IRepository<PaymentMethod>> paymentRepo;
+        private readonly Lazy<IRepository<Finance.PaymentMethod>> paymentRepo;
         private readonly Lazy<IRepository<Transaction>> transactionRepo;
         private readonly Lazy<IConfigurationProvider> configuration;
         private readonly Lazy<StripeIntegration> stripeIntegration;
         private readonly ILogger logger;
 
         public StripePaymentProcessor(
-            Lazy<IRepository<PaymentMethod>> paymentRepo,
+            Lazy<IRepository<Finance.PaymentMethod>> paymentRepo,
             Lazy<IRepository<Transaction>> transactionRepo,
             Lazy<IConfigurationProvider> configuration,
             Lazy<StripeIntegration> stripeIntegration,
@@ -186,13 +188,13 @@ namespace Cod.Platform
                     return new OperationResult<ChargeResult>(InternalError.PreconditionFailed);
                 }
 
-                var user = Guid.Parse(setup.Metadata[nameof(User)]);
+                var user = Guid.Parse(setup.Metadata[nameof(Identities.User)]);
                 var pm = await this.stripeIntegration.Value.RetrivePaymentMethodAsync(setup.PaymentMethodId);
                 var pmkey = $"{setup.CustomerId}{PaymentInfoSpliter}{setup.PaymentMethodId}";
-                await this.paymentRepo.Value.CreateAsync(new PaymentMethod
+                await this.paymentRepo.Value.CreateAsync(new Finance.PaymentMethod
                 {
-                    PartitionKey = PaymentMethod.BuildPartitionKey(user),
-                    RowKey = PaymentMethod.BuildRowKey(pmkey),
+                    PartitionKey = Finance.PaymentMethod.BuildPartitionKey(user),
+                    RowKey = Finance.PaymentMethod.BuildRowKey(pmkey),
                     Channel = (int)PaymentChannels.Cards,
                     Expires = DateTimeOffset.Parse($"{pm.Card.ExpYear}-{pm.Card.ExpMonth}-28T23:59:59.000Z"),
                     Extra = pm.BillingDetails.Name,

@@ -10,11 +10,11 @@
 
         public IDomain<T> Initialize(T entity)
         {
-            if (!this.Initialized)
+            if (!Initialized)
             {
-                this.OnInitialize(entity);
+                OnInitialize(entity);
             }
-            this.Initialized = true;
+            Initialized = true;
             return this;
         }
 

@@ -16,21 +16,31 @@ namespace Cod.Model
 
         public DateTimeOffset? Created { get; set; }
 
-        public static string BuildPartitionKey(Guid user) => user.ToKey();
+        public static string BuildPartitionKey(Guid user)
+        {
+            return user.ToKey();
+        }
 
-        public static string BuildRowKey(string entitlement) => $"{Entitlements.CategoryNamingPrefix}{entitlement.Trim().ToUpperInvariant()}";
+        public static string BuildRowKey(string entitlement)
+        {
+            return $"{Entitlements.CategoryNamingPrefix}{entitlement.Trim().ToUpperInvariant()}";
+        }
 
         public static string BuildRowKey(string entitlement, ushort offset)
         {
-            if (offset <= 0)
-            {
-                throw new NotSupportedException();
-            }
-            return $"{Entitlements.CategoryNamingPrefix}{entitlement.Trim().ToUpperInvariant()}-{offset}";
+            return offset <= 0
+                ? throw new NotSupportedException()
+                : $"{Entitlements.CategoryNamingPrefix}{entitlement.Trim().ToUpperInvariant()}-{offset}";
         }
 
-        public Guid GetUser() => Guid.Parse(this.PartitionKey);
+        public Guid GetUser()
+        {
+            return Guid.Parse(PartitionKey);
+        }
 
-        public string GetKey() => this.RowKey.Trim();
+        public string GetKey()
+        {
+            return RowKey.Trim();
+        }
     }
 }

@@ -10,6 +10,6 @@ namespace Cod
 
         public long Expiry { get; set; }
 
-        public DateTimeOffset Expires => DateTimeOffset.FromUnixTimeSeconds(this.Expiry);
+        public DateTimeOffset Expires => DateTimeOffset.FromUnixTimeSeconds(Expiry);
     }
 }

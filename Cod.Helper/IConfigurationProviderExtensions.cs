@@ -6,17 +6,13 @@ namespace Cod
     {
         public static T GetSetting<T>(this IConfigurationProvider configuration, string key, bool cache = true)
         {
-            var str = configuration.GetSettingAsString(key, cache);
-            if (str == null)
-            {
-                return default;
-            }
-            return TypeConverter.Convert<T>(str);
+            string str = configuration.GetSettingAsString(key, cache);
+            return str == null ? default : TypeConverter.Convert<T>(str);
         }
 
         public static async Task<T> GetSettingAsync<T>(this IConfigurationProvider configuration, string key, bool cache = true)
         {
-            var str = await configuration.GetSettingAsStringAsync(key, cache);
+            string str = await configuration.GetSettingAsStringAsync(key, cache);
             return TypeConverter.Convert<T>(str);
         }
     }

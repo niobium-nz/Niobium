@@ -18,11 +18,14 @@ namespace Cod.Model
 
         public string Reference { get; set; }
 
-        public static string BuildPartitionKey(ushort kind, ReportPeriod period, string group, ushort year, ushort sequence) => $"{kind.ToString().PadLeft(2, '0')}|{(int)period}|{group.Trim()}|{year}|{sequence.ToString().PadLeft(4, '0')}";
+        public static string BuildPartitionKey(ushort kind, ReportPeriod period, string group, ushort year, ushort sequence)
+        {
+            return $"{kind.ToString().PadLeft(2, '0')}|{(int)period}|{group.Trim()}|{year}|{sequence.ToString().PadLeft(4, '0')}";
+        }
 
         public static string BuildPartitionKey(ushort kind, ReportPeriod period, string group, ushort year, DateTimeOffset time)
         {
-            var sequence = period switch
+            int sequence = period switch
             {
                 ReportPeriod.Undefined => 0,
                 ReportPeriod.Hourly => (time.DayOfYear * 24) + time.Hour,
@@ -39,24 +42,37 @@ namespace Cod.Model
 
         public static string BuildRowKey(string id)
         {
-            if (id is null)
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            return id.Trim();
+            return id is null ? throw new ArgumentNullException(nameof(id)) : id.Trim();
         }
 
-        public int GetYear() => Int32.Parse(this.PartitionKey.Substring(this.PartitionKey.Length - 9, 4));
+        public int GetYear()
+        {
+            return int.Parse(PartitionKey.Substring(PartitionKey.Length - 9, 4));
+        }
 
-        public ReportPeriod GetPeriod() => (ReportPeriod)Int32.Parse(this.PartitionKey.Substring(3, 1));
+        public ReportPeriod GetPeriod()
+        {
+            return (ReportPeriod)int.Parse(PartitionKey.Substring(3, 1));
+        }
 
-        public ushort GetSequence() => UInt16.Parse(this.PartitionKey.Substring(this.PartitionKey.Length - 4, 4));
+        public ushort GetSequence()
+        {
+            return ushort.Parse(PartitionKey.Substring(PartitionKey.Length - 4, 4));
+        }
 
-        public ushort GetKind() => UInt16.Parse(this.PartitionKey.Substring(0, 2));
+        public ushort GetKind()
+        {
+            return ushort.Parse(PartitionKey.Substring(0, 2));
+        }
 
-        public string GetGroup() => this.PartitionKey.Substring(5, this.PartitionKey.Length - 3 - 2 - 5 - 5);
+        public string GetGroup()
+        {
+            return PartitionKey.Substring(5, PartitionKey.Length - 3 - 2 - 5 - 5);
+        }
 
-        public string GetID() => this.RowKey.Trim();
+        public string GetID()
+        {
+            return RowKey.Trim();
+        }
     }
 }

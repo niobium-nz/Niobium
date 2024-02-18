@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using Newtonsoft.Json;
 
 namespace Cod
 {
@@ -11,22 +11,25 @@ namespace Cod
     {
         private static readonly Type[] ConvertibleTypes = new[] { typeof(Guid), typeof(DateTime), typeof(DateTimeOffset), typeof(TimeSpan), };
 
-        public static T Convert<T>(string input) => (T)Convert(input, typeof(T));
+        public static T Convert<T>(string input)
+        {
+            return (T)Convert(input, typeof(T));
+        }
 
         public static object Convert(string input, Type targetType)
         {
             object obj;
             if (targetType != typeof(string) && typeof(IEnumerable).IsAssignableFrom(targetType))
             {
-                var genericArgs = targetType.GetGenericArguments();
+                Type[] genericArgs = targetType.GetGenericArguments();
                 if (genericArgs.Length != 1)
                 {
                     throw new NotSupportedException();
                 }
 
-                var parts = input.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries);
-                var result = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(genericArgs));
-                foreach (var part in parts)
+                string[] parts = input.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries);
+                IList result = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(genericArgs));
+                foreach (string part in parts)
                 {
                     obj = Convert(part, genericArgs[0]);
                     result.Add(obj);
@@ -35,7 +38,7 @@ namespace Cod
             }
             else if (typeof(IConvertible).IsAssignableFrom(targetType) || ConvertibleTypes.Contains(targetType))
             {
-                var converter = TypeDescriptor.GetConverter(targetType);
+                System.ComponentModel.TypeConverter converter = TypeDescriptor.GetConverter(targetType);
                 obj = converter.ConvertFrom(input);
             }
             else

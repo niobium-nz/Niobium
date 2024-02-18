@@ -20,8 +20,14 @@ namespace Cod.Model
 
         public DateTimeOffset? Created { get; set; }
 
-        public static string BuildPartitionKey(string mobile) => mobile.Trim().Substring(0, 2);
+        public static string BuildPartitionKey(string mobile)
+        {
+            return mobile.Trim().Substring(0, 2);
+        }
 
-        public static string BuildRowKey(string mobile) => mobile.Trim().Substring(2, 5);
+        public static string BuildRowKey(string mobile)
+        {
+            return mobile.Trim().Substring(2, 5);
+        }
     }
 }

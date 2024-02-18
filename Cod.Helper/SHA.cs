@@ -9,7 +9,7 @@ namespace Cod
         public static string SHA384Hash(string data, int maxLength = -1)
         {
             using SHA384 sha = new SHA384Managed();
-            var hash = sha.ComputeHash(Encoding.UTF8.GetBytes(data)).ToHex();
+            string hash = sha.ComputeHash(Encoding.UTF8.GetBytes(data)).ToHex();
             if (maxLength > 0 && hash.Length > maxLength)
             {
                 hash = hash.Substring(0, maxLength);
@@ -19,8 +19,8 @@ namespace Cod
 
         public static string SHA256Hash(string data, int maxLength = -1)
         {
-            using var hmac = new HMACSHA256();
-            var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(data)).ToHex();
+            using HMACSHA256 hmac = new();
+            string hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(data)).ToHex();
             if (maxLength > 0 && hash.Length > maxLength)
             {
                 hash = hash.Substring(0, maxLength);
@@ -30,8 +30,8 @@ namespace Cod
 
         public static string SHA256Hash(string data, string key, int maxLength = -1)
         {
-            using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(key));
-            var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(data)).ToHex();
+            using HMACSHA256 hmac = new(Encoding.UTF8.GetBytes(key));
+            string hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(data)).ToHex();
             if (maxLength > 0 && hash.Length > maxLength)
             {
                 hash = hash.Substring(0, maxLength);
@@ -41,14 +41,14 @@ namespace Cod
 
         public static byte[] SHA256HashBytes(string data, string key)
         {
-            using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(key));
+            using HMACSHA256 hmac = new(Encoding.UTF8.GetBytes(key));
             return hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
         }
 
         public static string SHA1Base64(string data, string key)
         {
-            using var hmac = new HMACSHA1(Encoding.UTF8.GetBytes(key));
-            var hashValue = hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
+            using HMACSHA1 hmac = new(Encoding.UTF8.GetBytes(key));
+            byte[] hashValue = hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
             return Convert.ToBase64String(hashValue);
         }
     }

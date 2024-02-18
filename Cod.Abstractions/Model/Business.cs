@@ -22,14 +22,29 @@ namespace Cod.Model
 
         public Guid Settler { get; set; }
 
-        public static string BuildKey(Guid value) => value.ToString("N").ToUpperInvariant();
+        public static string BuildKey(Guid value)
+        {
+            return value.ToString("N").ToUpperInvariant();
+        }
 
-        public Guid GetParent() => Guid.Parse(this.PartitionKey);
+        public Guid GetParent()
+        {
+            return Guid.Parse(PartitionKey);
+        }
 
-        public void SetParent(Guid value) => this.PartitionKey = BuildKey(value);
+        public void SetParent(Guid value)
+        {
+            PartitionKey = BuildKey(value);
+        }
 
-        public Guid GetID() => Guid.Parse(this.RowKey);
+        public Guid GetID()
+        {
+            return Guid.Parse(RowKey);
+        }
 
-        public void SetID(Guid value) => this.RowKey = BuildKey(value);
+        public void SetID(Guid value)
+        {
+            RowKey = BuildKey(value);
+        }
     }
 }

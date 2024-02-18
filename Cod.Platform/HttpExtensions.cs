@@ -14,8 +14,8 @@ namespace Cod.Platform
                 throw new ArgumentNullException(nameof(validationState));
             }
 
-            var result = new HttpResponseMessage(HttpStatusCode.BadRequest);
-            var json = JsonSerializer.SerializeObject(validationState.ToDictionary());
+            HttpResponseMessage result = new(HttpStatusCode.BadRequest);
+            string json = JsonSerializer.SerializeObject(validationState.ToDictionary());
             result.Content = new StringContent(json, Encoding.UTF8, JsonMediaType);
             return Task.FromResult(result);
         }

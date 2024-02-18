@@ -1,8 +1,21 @@
 using Azure.Data.Tables;
 using Azure.Storage.Blobs;
 using Azure.Storage.Queues;
-using Cod.Platform.Entity;
-using Cod.Platform.Integration.Azure;
+using Cod.Platform.Analytics;
+using Cod.Platform.Authentication;
+using Cod.Platform.Authorization;
+using Cod.Platform.Database;
+using Cod.Platform.Finance;
+using Cod.Platform.Finance.WechatPay;
+using Cod.Platform.Identities;
+using Cod.Platform.Locking;
+using Cod.Platform.Messaging;
+using Cod.Platform.Notification;
+using Cod.Platform.OCR.Azure;
+using Cod.Platform.OCR.Baidu;
+using Cod.Platform.Stoarge;
+using Cod.Platform.Tenants;
+using Cod.Platform.Tenants.Wechat;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Cod.Platform
@@ -26,19 +39,19 @@ namespace Cod.Platform
 
             services.AddTransient(sp =>
             {
-                var conn = ConfigurationProvider.GetSetting(Constant.TABLE_ENDPOINT);
+                string conn = ConfigurationProvider.GetSetting(Constant.TABLE_ENDPOINT);
                 conn ??= ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME);
                 return new TableServiceClient(conn);
             });
             services.AddTransient(sp =>
             {
-                var conn = ConfigurationProvider.GetSetting(Constant.BLOB_ENDPOINT);
+                string conn = ConfigurationProvider.GetSetting(Constant.BLOB_ENDPOINT);
                 conn ??= ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME);
                 return new BlobServiceClient(conn);
             });
             services.AddTransient(sp =>
             {
-                var conn = ConfigurationProvider.GetSetting(Constant.QUEUE_ENDPOINT);
+                string conn = ConfigurationProvider.GetSetting(Constant.QUEUE_ENDPOINT);
                 conn ??= ConfigurationProvider.GetSetting(Constant.STORAGE_CONNECTION_NAME);
                 return new QueueServiceClient(conn, new QueueClientOptions { MessageEncoding = QueueMessageEncoding.Base64 });
             });
@@ -67,7 +80,7 @@ namespace Cod.Platform
                 ));
 
             services.AddTransient<IRepository<Cache>, CloudTableRepository<Cache>>();
-            
+
             services.AddTransient<IQueryableRepository<Impediment>, CloudTableRepository<Impediment>>();
             services.AddTransient<IRepository<Impediment>, CloudTableRepository<Impediment>>();
 

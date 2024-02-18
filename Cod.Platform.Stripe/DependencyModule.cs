@@ -1,3 +1,4 @@
+using Cod.Platform.Finance;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Cod.Platform

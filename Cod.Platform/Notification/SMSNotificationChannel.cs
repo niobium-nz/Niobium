@@ -1,10 +1,15 @@
-namespace Cod.Platform
+using Cod.Platform.Identities;
+
+namespace Cod.Platform.Notification
 {
     public abstract class SMSNotificationChannel : INotificationChannel
     {
         private readonly Lazy<IOpenIDManager> openIDManager;
 
-        public SMSNotificationChannel(Lazy<IOpenIDManager> openIDManager) => this.openIDManager = openIDManager;
+        public SMSNotificationChannel(Lazy<IOpenIDManager> openIDManager)
+        {
+            this.openIDManager = openIDManager;
+        }
 
         public async Task<OperationResult> SendAsync(
             string brand,
@@ -33,7 +38,7 @@ namespace Cod.Platform
                     return OperationResult.NotAllowed;
                 }
 
-                var channels = await this.openIDManager.Value.GetChannelsAsync(user, (int)OpenIDKind.SMS).ToListAsync();
+                List<Authentication.OpenID> channels = await openIDManager.Value.GetChannelsAsync(user, (int)OpenIDKind.SMS).ToListAsync();
                 if (!channels.Any())
                 {
                     return OperationResult.NotAllowed;
@@ -43,27 +48,27 @@ namespace Cod.Platform
                 mobile = channels.First().Identity;
             }
 
-            if (String.IsNullOrWhiteSpace(mobile))
+            if (string.IsNullOrWhiteSpace(mobile))
             {
                 return OperationResult.NotAllowed;
             }
 
-            mobile = mobile.Replace("-", String.Empty).Replace(" ", String.Empty);
-            if (String.IsNullOrWhiteSpace(mobile))
+            mobile = mobile.Replace("-", string.Empty).Replace(" ", string.Empty);
+            if (string.IsNullOrWhiteSpace(mobile))
             {
                 return OperationResult.NotAllowed;
             }
 
-            if (mobile[0] == '+' && !mobile[1..].All(Char.IsDigit))
+            if (mobile[0] == '+' && !mobile[1..].All(char.IsDigit))
             {
                 return OperationResult.NotAllowed;
             }
-            else if (!mobile.All(Char.IsDigit))
+            else if (!mobile.All(char.IsDigit))
             {
                 return OperationResult.NotAllowed;
             }
 
-            return await this.SendSMSAsync(brand, mobile, templateID, parameters);
+            return await SendSMSAsync(brand, mobile, templateID, parameters);
         }
 
         protected abstract Task<OperationResult> SendSMSAsync(

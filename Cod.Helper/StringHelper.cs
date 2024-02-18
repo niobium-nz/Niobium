@@ -16,16 +16,16 @@ namespace Cod
                 throw new NotSupportedException();
             }
 
-            var arrCN = encoding.GetBytes(cnChar);
+            byte[] arrCN = encoding.GetBytes(cnChar);
             if (arrCN.Length > 1)
             {
                 int area = arrCN[0];
                 int pos = arrCN[1];
-                var code = (area << 8) + pos;
+                int code = (area << 8) + pos;
 
-                for (var i = 0; i < 26; i++)
+                for (int i = 0; i < 26; i++)
                 {
-                    var max = 55290;
+                    int max = 55290;
 
                     if (i != 25)
                     {
@@ -46,18 +46,30 @@ namespace Cod
             }
         }
 
-        public static bool IsNumberCharacter(char input) => Char.GetUnicodeCategory(input) == UnicodeCategory.DecimalDigitNumber;
+        public static bool IsNumberCharacter(char input)
+        {
+            return char.GetUnicodeCategory(input) == UnicodeCategory.DecimalDigitNumber;
+        }
 
-        public static bool IsEnglishCharacter(char input) =>
-            Char.GetUnicodeCategory(input) == UnicodeCategory.LowercaseLetter
-            || Char.GetUnicodeCategory(input) == UnicodeCategory.UppercaseLetter;
+        public static bool IsEnglishCharacter(char input)
+        {
+            return char.GetUnicodeCategory(input) is UnicodeCategory.LowercaseLetter
+            or UnicodeCategory.UppercaseLetter;
+        }
 
-        public static bool IsChineseCharacter(char input) => Char.GetUnicodeCategory(input) == UnicodeCategory.OtherLetter;
+        public static bool IsChineseCharacter(char input)
+        {
+            return char.GetUnicodeCategory(input) == UnicodeCategory.OtherLetter;
+        }
 
-        public static bool IsChineseOrEnglishCharacter(char input) => IsEnglishCharacter(input) || IsChineseCharacter(input);
+        public static bool IsChineseOrEnglishCharacter(char input)
+        {
+            return IsEnglishCharacter(input) || IsChineseCharacter(input);
+        }
 
-        public static bool IsChineseOrEnglishOrNumberCharacter(char input) =>
-            IsChineseOrEnglishCharacter(input) || IsNumberCharacter(input);
-
+        public static bool IsChineseOrEnglishOrNumberCharacter(char input)
+        {
+            return IsChineseOrEnglishCharacter(input) || IsNumberCharacter(input);
+        }
     }
 }

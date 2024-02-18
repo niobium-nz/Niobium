@@ -17,8 +17,8 @@ namespace Cod
             }
 
             byte[] data;
-            var buffer = new byte[16 * 1024];
-            using (var ms = new MemoryStream())
+            byte[] buffer = new byte[16 * 1024];
+            using (MemoryStream ms = new())
             {
                 int read;
                 while ((read = input.Read(buffer, 0, buffer.Length)) > 0)

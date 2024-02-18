@@ -1,4 +1,4 @@
-﻿namespace Cod.Platform
+﻿namespace Cod.Platform.Notification
 {
     public class NotificationContext
     {
@@ -8,10 +8,10 @@
             Guid user,
             string identity)
         {
-            this.Kind = kind;
-            this.App = app;
-            this.User = user;
-            this.Identity = identity;
+            Kind = kind;
+            App = app;
+            User = user;
+            Identity = identity;
         }
 
         public int Kind { get; private set; }

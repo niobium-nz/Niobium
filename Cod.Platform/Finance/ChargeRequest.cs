@@ -1,0 +1,31 @@
+﻿namespace Cod.Platform.Finance
+{
+    public class ChargeRequest
+    {
+        public ChargeTargetKind TargetKind { get; set; }
+
+        public string Target { get; set; }
+
+        public PaymentChannels Channel { get; set; }
+
+        public PaymentKind PaymentKind { get; set; }
+
+        public string Source { get; set; }
+
+        public string Order { get; set; }
+
+        public string Reference { get; set; }
+
+        public object Account { get; set; }
+
+        public int Amount { get; set; }
+
+        public Currency Currency { get; set; }
+
+        public string Description { get; set; }
+
+        public string ReturnUri { get; set; }
+
+        public string IP { get; set; }
+    }
+}

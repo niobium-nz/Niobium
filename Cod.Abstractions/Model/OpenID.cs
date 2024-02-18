@@ -17,56 +17,98 @@ namespace Cod.Model
         public string Identity { get; set; }
 
         public static string BuildPartitionKey(Guid user)
-            => user.ToString("N").ToUpperInvariant();
+        {
+            return user.ToString("N").ToUpperInvariant();
+        }
 
         public static string BuildRowKey(OpenIDKind kind, string identifier = null)
-            => BuildRowKey((int)kind, identifier);
+        {
+            return BuildRowKey((int)kind, identifier);
+        }
 
         public static string BuildRowKey(int kind, string identifier = null)
         {
-            identifier ??= String.Empty;
+            identifier ??= string.Empty;
 
             return $"{BuildRowKeyStart(kind)}|{identifier.Trim()}";
         }
 
         public static string BuildRowKey(OpenIDKind kind, string app, string identifier = null)
-            => BuildRowKey((int)kind, app, identifier);
+        {
+            return BuildRowKey((int)kind, app, identifier);
+        }
 
         public static string BuildRowKey(int kind, string app, string identifier = null)
         {
-            identifier ??= String.Empty;
-            app ??= String.Empty;
+            identifier ??= string.Empty;
+            app ??= string.Empty;
             return $"{BuildRowKeyStart(kind, app)}{identifier.Trim()}";
         }
 
-        public static string BuildRowKeyStart(OpenIDKind kind) => BuildRowKeyStart((int)kind);
+        public static string BuildRowKeyStart(OpenIDKind kind)
+        {
+            return BuildRowKeyStart((int)kind);
+        }
 
-        public static string BuildRowKeyEnd(OpenIDKind kind) => $"{BuildRowKeyStart(kind)}~";
+        public static string BuildRowKeyEnd(OpenIDKind kind)
+        {
+            return $"{BuildRowKeyStart(kind)}~";
+        }
 
-        public static string BuildRowKeyStart(int kind) => $"{kind}|";
+        public static string BuildRowKeyStart(int kind)
+        {
+            return $"{kind}|";
+        }
 
-        public static string BuildRowKeyEnd(int kind) => $"{BuildRowKeyStart(kind)}~";
+        public static string BuildRowKeyEnd(int kind)
+        {
+            return $"{BuildRowKeyStart(kind)}~";
+        }
 
-        public static string BuildRowKeyStart(OpenIDKind kind, string app) => BuildRowKeyStart((int)kind, app);
+        public static string BuildRowKeyStart(OpenIDKind kind, string app)
+        {
+            return BuildRowKeyStart((int)kind, app);
+        }
 
-        public static string BuildRowKeyEnd(OpenIDKind kind, string app) => $"{BuildRowKeyStart(kind, app)}~";
+        public static string BuildRowKeyEnd(OpenIDKind kind, string app)
+        {
+            return $"{BuildRowKeyStart(kind, app)}~";
+        }
 
-        public static string BuildRowKeyStart(int kind, string app) => $"{BuildRowKeyStart(kind)}{app.Trim()}|";
+        public static string BuildRowKeyStart(int kind, string app)
+        {
+            return $"{BuildRowKeyStart(kind)}{app.Trim()}|";
+        }
 
-        public static string BuildRowKeyEnd(int kind, string app) => $"{BuildRowKeyStart(kind, app)}~";
+        public static string BuildRowKeyEnd(int kind, string app)
+        {
+            return $"{BuildRowKeyStart(kind, app)}~";
+        }
 
-        public Guid GetUser() => Guid.Parse(this.PartitionKey);
+        public Guid GetUser()
+        {
+            return Guid.Parse(PartitionKey);
+        }
 
         public string GetApp()
         {
-            var parts = this.RowKey.Split('|');
+            string[] parts = RowKey.Split('|');
             return parts.Length == 3 ? parts[1] : null;
         }
 
-        public int GetKind() => Int32.Parse(this.RowKey.Split('|')[0]);
+        public int GetKind()
+        {
+            return int.Parse(RowKey.Split('|')[0]);
+        }
 
-        public bool IsKindOf(OpenIDKind type) => this.IsKindOf((int)type);
+        public bool IsKindOf(OpenIDKind type)
+        {
+            return IsKindOf((int)type);
+        }
 
-        public bool IsKindOf(int type) => this.GetKind() == type;
+        public bool IsKindOf(int type)
+        {
+            return GetKind() == type;
+        }
     }
 }

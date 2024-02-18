@@ -7,10 +7,14 @@ namespace Cod.Platform
         private const int DefaultRetryTimes = 3;
 
         public static async Task<Stream> FetchStreamAsync(this Uri uri)
-            => await FetchStreamAsync(uri, null);
+        {
+            return await FetchStreamAsync(uri, null);
+        }
 
         public static async Task<Stream> FetchStreamAsync(this Uri uri, Func<HttpResponseMessage, Task> onError)
-            => await FetchStreamAsync(uri, onError, DefaultRetryTimes);
+        {
+            return await FetchStreamAsync(uri, onError, DefaultRetryTimes);
+        }
 
         public static async Task<Stream> FetchStreamAsync(this Uri uri, Func<HttpResponseMessage, Task> onError, int retry)
         {
@@ -21,17 +25,17 @@ namespace Cod.Platform
 
             try
             {
-                using var httpclient = new HttpClient(HttpHandler.GetHandler(), false)
+                using HttpClient httpclient = new(HttpHandler.GetHandler(), false)
                 {
 #if !DEBUG
                     Timeout = TimeSpan.FromSeconds(3),
 #endif
                 };
-                var resp = await httpclient.GetAsync(uri);
+                HttpResponseMessage resp = await httpclient.GetAsync(uri);
                 if (resp.IsSuccessStatusCode)
                 {
-                    using var s = await resp.Content.ReadAsStreamAsync();
-                    var responseStream = new MemoryStream((int)s.Length);
+                    using Stream s = await resp.Content.ReadAsStreamAsync();
+                    MemoryStream responseStream = new((int)s.Length);
                     await s.CopyToAsync(responseStream);
                     responseStream.Seek(0, SeekOrigin.Begin);
                     return responseStream;

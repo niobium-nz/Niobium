@@ -2,6 +2,9 @@
 {
     public static class IEntityExtensions
     {
-        public static StorageKey GetKey(this IEntity entity) => new StorageKey { PartitionKey = entity.PartitionKey, RowKey = entity.RowKey };
+        public static StorageKey GetKey(this IEntity entity)
+        {
+            return new StorageKey { PartitionKey = entity.PartitionKey, RowKey = entity.RowKey };
+        }
     }
 }

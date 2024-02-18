@@ -11,7 +11,7 @@ namespace Cod
         {
             try
             {
-                var parameters = new RSAParameters
+                RSAParameters parameters = new()
                 {
                     Modulus = paramsJson.Modulus != null ? Convert.FromBase64String(paramsJson.Modulus) : null,
                     Exponent = paramsJson.Exponent != null ? Convert.FromBase64String(paramsJson.Exponent) : null,
@@ -32,7 +32,7 @@ namespace Cod
 
         internal static RSAParametersJson ToJson(this RSA rsa, bool includePrivateParameters)
         {
-            var parameters = rsa.ExportParameters(includePrivateParameters);
+            RSAParameters parameters = rsa.ExportParameters(includePrivateParameters);
 
             return new RSAParametersJson()
             {
@@ -52,9 +52,9 @@ namespace Cod
 
         public static void FromXmlString(this RSA rsa, string xmlString, string dummy)
         {
-            var parameters = new RSAParameters();
+            RSAParameters parameters = new();
 
-            var xmlDoc = new XmlDocument();
+            XmlDocument xmlDoc = new();
             xmlDoc.LoadXml(xmlString);
 
             if (xmlDoc.DocumentElement.Name.Equals("RSAKeyValue"))
@@ -63,14 +63,14 @@ namespace Cod
                 {
                     switch (node.Name)
                     {
-                        case "Modulus": parameters.Modulus = (String.IsNullOrEmpty(node.InnerText) ? null : Convert.FromBase64String(node.InnerText)); break;
-                        case "Exponent": parameters.Exponent = (String.IsNullOrEmpty(node.InnerText) ? null : Convert.FromBase64String(node.InnerText)); break;
-                        case "P": parameters.P = (String.IsNullOrEmpty(node.InnerText) ? null : Convert.FromBase64String(node.InnerText)); break;
-                        case "Q": parameters.Q = (String.IsNullOrEmpty(node.InnerText) ? null : Convert.FromBase64String(node.InnerText)); break;
-                        case "DP": parameters.DP = (String.IsNullOrEmpty(node.InnerText) ? null : Convert.FromBase64String(node.InnerText)); break;
-                        case "DQ": parameters.DQ = (String.IsNullOrEmpty(node.InnerText) ? null : Convert.FromBase64String(node.InnerText)); break;
-                        case "InverseQ": parameters.InverseQ = (String.IsNullOrEmpty(node.InnerText) ? null : Convert.FromBase64String(node.InnerText)); break;
-                        case "D": parameters.D = (String.IsNullOrEmpty(node.InnerText) ? null : Convert.FromBase64String(node.InnerText)); break;
+                        case "Modulus": parameters.Modulus = string.IsNullOrEmpty(node.InnerText) ? null : Convert.FromBase64String(node.InnerText); break;
+                        case "Exponent": parameters.Exponent = string.IsNullOrEmpty(node.InnerText) ? null : Convert.FromBase64String(node.InnerText); break;
+                        case "P": parameters.P = string.IsNullOrEmpty(node.InnerText) ? null : Convert.FromBase64String(node.InnerText); break;
+                        case "Q": parameters.Q = string.IsNullOrEmpty(node.InnerText) ? null : Convert.FromBase64String(node.InnerText); break;
+                        case "DP": parameters.DP = string.IsNullOrEmpty(node.InnerText) ? null : Convert.FromBase64String(node.InnerText); break;
+                        case "DQ": parameters.DQ = string.IsNullOrEmpty(node.InnerText) ? null : Convert.FromBase64String(node.InnerText); break;
+                        case "InverseQ": parameters.InverseQ = string.IsNullOrEmpty(node.InnerText) ? null : Convert.FromBase64String(node.InnerText); break;
+                        case "D": parameters.D = string.IsNullOrEmpty(node.InnerText) ? null : Convert.FromBase64String(node.InnerText); break;
                     }
                 }
             }
@@ -84,9 +84,9 @@ namespace Cod
 
         public static string ToXmlString(this RSA rsa, bool includePrivateParameters, string dummy)
         {
-            var parameters = rsa.ExportParameters(includePrivateParameters);
+            RSAParameters parameters = rsa.ExportParameters(includePrivateParameters);
 
-            return String.Format("<RSAKeyValue><Modulus>{0}</Modulus><Exponent>{1}</Exponent><P>{2}</P><Q>{3}</Q><DP>{4}</DP><DQ>{5}</DQ><InverseQ>{6}</InverseQ><D>{7}</D></RSAKeyValue>",
+            return string.Format("<RSAKeyValue><Modulus>{0}</Modulus><Exponent>{1}</Exponent><P>{2}</P><Q>{3}</Q><DP>{4}</DP><DQ>{5}</DQ><InverseQ>{6}</InverseQ><D>{7}</D></RSAKeyValue>",
                   parameters.Modulus != null ? Convert.ToBase64String(parameters.Modulus) : null,
                   parameters.Exponent != null ? Convert.ToBase64String(parameters.Exponent) : null,
                   parameters.P != null ? Convert.ToBase64String(parameters.P) : null,

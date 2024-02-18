@@ -10,7 +10,7 @@ namespace Cod
     {
         public static bool ValidateChineseMobileNumber(string input)
         {
-            if (String.IsNullOrWhiteSpace(input))
+            if (string.IsNullOrWhiteSpace(input))
             {
                 return false;
             }
@@ -25,23 +25,20 @@ namespace Cod
                 input = input.Substring(3, input.Length - 3);
             }
 
-            if (input.Length != 11 || !input.All(Char.IsDigit) || input[0] != '1')
-            {
-                return false;
-            }
-
-            return true;
+            return input.Length == 11 && input.All(char.IsDigit) && input[0] == '1';
         }
 
 
         public static bool TryValidate<TEntity>(this TEntity model, out ValidationState result)
-               => TryValidate<TEntity, string>(model, null, out result);
+        {
+            return TryValidate<TEntity, string>(model, null, out result);
+        }
 
         public static bool TryValidate<TEntity, TProperty>(this TEntity model, Expression<Func<TEntity, TProperty>> exp, out ValidationState result)
         {
             result = new ValidationState();
-            var context = new ValidationContext(model);
-            var validationResults = new List<ValidationResult>();
+            ValidationContext context = new(model);
+            List<ValidationResult> validationResults = new();
 
             bool isValid;
             if (exp == null)
@@ -50,25 +47,20 @@ namespace Cod
             }
             else
             {
-                if (exp.Body is MemberExpression mexp && mexp.NodeType == ExpressionType.MemberAccess)
-                {
-                    context.MemberName = mexp.Member.Name;
-                }
-                else
-                {
-                    throw new NotSupportedException($"Validation not supported on: {exp}");
-                }
+                context.MemberName = exp.Body is MemberExpression mexp && mexp.NodeType == ExpressionType.MemberAccess
+                    ? mexp.Member.Name
+                    : throw new NotSupportedException($"Validation not supported on: {exp}");
 
-                var func = exp.Compile();
-                var value = func(model);
+                Func<TEntity, TProperty> func = exp.Compile();
+                TProperty value = func(model);
                 isValid = Validator.TryValidateProperty(value, context, validationResults);
             }
 
             if (!isValid)
             {
-                foreach (var item in validationResults)
+                foreach (ValidationResult item in validationResults)
                 {
-                    foreach (var member in item.MemberNames)
+                    foreach (string member in item.MemberNames)
                     {
                         result.AddError(member, item.ErrorMessage);
                     }

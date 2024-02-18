@@ -8,19 +8,25 @@ namespace Cod.Model
         private bool disposed;
         private readonly Func<Task> asyncDispose;
 
-        public DisposableQueueMessage(Func<Task> asyncDispose) => this.asyncDispose = asyncDispose;
+        public DisposableQueueMessage(Func<Task> asyncDispose)
+        {
+            this.asyncDispose = asyncDispose;
+        }
 
         public async ValueTask DisposeAsync()
         {
-            if (!this.disposed)
+            if (!disposed)
             {
-                await this.DisposeAsyncCore();
+                await DisposeAsyncCore();
             }
 
-            this.disposed = true;
+            disposed = true;
             GC.SuppressFinalize(this);
         }
 
-        protected virtual async ValueTask DisposeAsyncCore() => await this.asyncDispose();
+        protected virtual async ValueTask DisposeAsyncCore()
+        {
+            await asyncDispose();
+        }
     }
 }

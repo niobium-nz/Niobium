@@ -29,12 +29,23 @@ namespace Cod.Model
         public string Extra { get; set; }
 
         public static string BuildPartitionKey(Guid user)
-            => user.ToString("N").ToUpperInvariant();
+        {
+            return user.ToString("N").ToUpperInvariant();
+        }
 
-        public static string BuildRowKey(string id) => id.Trim();
+        public static string BuildRowKey(string id)
+        {
+            return id.Trim();
+        }
 
-        public Guid GetUser() => Guid.Parse(this.PartitionKey);
+        public Guid GetUser()
+        {
+            return Guid.Parse(PartitionKey);
+        }
 
-        public string GetID() => this.RowKey;
+        public string GetID()
+        {
+            return RowKey;
+        }
     }
 }

@@ -20,16 +20,34 @@ namespace Cod.Model
 
         public DateTimeOffset? Created { get; set; }
 
-        public string GetPrincipal() => this.PartitionKey;
+        public string GetPrincipal()
+        {
+            return PartitionKey;
+        }
 
-        public void SetPrincipal(string value) => this.PartitionKey = BuildPartitionKey(value);
+        public void SetPrincipal(string value)
+        {
+            PartitionKey = BuildPartitionKey(value);
+        }
 
-        public DateTimeOffset GetEnd() => DateTimeOffsetExtensions.FromReverseUnixTimeMilliseconds(Int64.Parse(this.RowKey));
+        public DateTimeOffset GetEnd()
+        {
+            return DateTimeOffsetExtensions.FromReverseUnixTimeMilliseconds(long.Parse(RowKey));
+        }
 
-        public void SetEnd(DateTimeOffset value) => this.RowKey = BuildRowKey(value);
+        public void SetEnd(DateTimeOffset value)
+        {
+            RowKey = BuildRowKey(value);
+        }
 
-        public static string BuildPartitionKey(string principal) => principal.Trim();
+        public static string BuildPartitionKey(string principal)
+        {
+            return principal.Trim();
+        }
 
-        public static string BuildRowKey(DateTimeOffset end) => end.ToReverseUnixTimestamp();
+        public static string BuildRowKey(DateTimeOffset end)
+        {
+            return end.ToReverseUnixTimestamp();
+        }
     }
 }

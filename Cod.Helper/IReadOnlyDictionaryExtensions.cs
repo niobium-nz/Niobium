@@ -7,13 +7,13 @@ namespace Cod
     {
         public static bool TryGetValueAsString(this IReadOnlyDictionary<string, object> dic, string key, out string value)
         {
-            value = String.Empty;
+            value = string.Empty;
 
             if (!dic.ContainsKey(key))
             {
                 return false;
             }
-            var v = dic[key];
+            object v = dic[key];
             if (v is string v3)
             {
                 value = v3;
@@ -25,11 +25,7 @@ namespace Cod
 
         public static string GetValueAsString(this IReadOnlyDictionary<string, object> dic, string key)
         {
-            if (!TryGetValueAsString(dic, key, out var v))
-            {
-                throw new InvalidCastException();
-            }
-            return v;
+            return !TryGetValueAsString(dic, key, out string v) ? throw new InvalidCastException() : v;
         }
 
         public static bool TryGetValueAsBoolean(this IReadOnlyDictionary<string, object> dic, string key, out bool value)
@@ -40,7 +36,7 @@ namespace Cod
             {
                 return false;
             }
-            var v = dic[key];
+            object v = dic[key];
             if (v is bool v2)
             {
                 value = v2;
@@ -48,7 +44,7 @@ namespace Cod
             }
             else if (v is string v3)
             {
-                value = Boolean.Parse(v3);
+                value = bool.Parse(v3);
                 return true;
             }
 
@@ -57,11 +53,7 @@ namespace Cod
 
         public static bool GetValueAsBoolean(this IReadOnlyDictionary<string, object> dic, string key)
         {
-            if (!TryGetValueAsBoolean(dic, key, out var v))
-            {
-                throw new InvalidCastException();
-            }
-            return v;
+            return !TryGetValueAsBoolean(dic, key, out bool v) ? throw new InvalidCastException() : v;
         }
 
         public static bool TryGetValueAsInt32(this IReadOnlyDictionary<string, object> dic, string key, out int value)
@@ -72,7 +64,7 @@ namespace Cod
             {
                 return false;
             }
-            var v = dic[key];
+            object v = dic[key];
             if (v is int v2)
             {
                 value = v2;
@@ -80,7 +72,7 @@ namespace Cod
             }
             else if (v is string v3)
             {
-                value = Int32.Parse(v3);
+                value = int.Parse(v3);
                 return true;
             }
 
@@ -89,11 +81,7 @@ namespace Cod
 
         public static int GetValueAsInt32(this IReadOnlyDictionary<string, object> dic, string key)
         {
-            if (!TryGetValueAsInt32(dic, key, out var v))
-            {
-                throw new InvalidCastException();
-            }
-            return v;
+            return !TryGetValueAsInt32(dic, key, out int v) ? throw new InvalidCastException() : v;
         }
 
         public static bool TryGetValueAsInt64(this IReadOnlyDictionary<string, object> dic, string key, out long value)
@@ -104,7 +92,7 @@ namespace Cod
             {
                 return false;
             }
-            var v = dic[key];
+            object v = dic[key];
             if (v is long v2)
             {
                 value = v2;
@@ -112,7 +100,7 @@ namespace Cod
             }
             else if (v is string v3)
             {
-                value = Int64.Parse(v3);
+                value = long.Parse(v3);
                 return true;
             }
 
@@ -121,11 +109,7 @@ namespace Cod
 
         public static long GetValueAsInt64(this IReadOnlyDictionary<string, object> dic, string key)
         {
-            if (!TryGetValueAsInt64(dic, key, out var v))
-            {
-                throw new InvalidCastException();
-            }
-            return v;
+            return !TryGetValueAsInt64(dic, key, out long v) ? throw new InvalidCastException() : v;
         }
     }
 }

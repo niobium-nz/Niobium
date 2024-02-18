@@ -1,7 +1,7 @@
+using Azure.Security.KeyVault.Certificates;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using Azure.Security.KeyVault.Certificates;
 
 namespace Cod.Platform
 {
@@ -12,9 +12,9 @@ namespace Cod.Platform
 
         public static async Task<X509Certificate2> IssueClientCertificateAsync(this CertificateClient certificateClient, string name, string issuer)
         {
-            using var key = RSA.Create(KEY_SIZE);
-            using var cert = await certificateClient.IssueClientCertificateAsync(name, issuer, key.ExportRSAPublicKey());
-            var certWithKey = cert.CopyWithPrivateKey(key);
+            using RSA key = RSA.Create(KEY_SIZE);
+            using X509Certificate2 cert = await certificateClient.IssueClientCertificateAsync(name, issuer, key.ExportRSAPublicKey());
+            X509Certificate2 certWithKey = cert.CopyWithPrivateKey(key);
             try
             {
                 certWithKey.FriendlyName = name;
@@ -28,11 +28,11 @@ namespace Cod.Platform
 
         public static async Task<X509Certificate2> IssueClientCertificateAsync(this CertificateClient certificateClient, string name, string issuer, byte[] publicKey)
         {
-            var distinguishedName = new X500DistinguishedName($"CN={name}");
+            X500DistinguishedName distinguishedName = new($"CN={name}");
 
-            using var rsa = RSA.Create(KEY_SIZE);
+            using RSA rsa = RSA.Create(KEY_SIZE);
             rsa.ImportRSAPublicKey(new ReadOnlySpan<byte>(publicKey), out _);
-            var request = new CertificateRequest(distinguishedName, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            CertificateRequest request = new(distinguishedName, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 
             request.CertificateExtensions.Add(
                 new X509KeyUsageExtension(X509KeyUsageFlags.DataEncipherment | X509KeyUsageFlags.KeyEncipherment | X509KeyUsageFlags.DigitalSignature, false));
@@ -41,10 +41,10 @@ namespace Cod.Platform
                new X509EnhancedKeyUsageExtension(
                    new OidCollection { new Oid("1.3.6.1.5.5.7.3.2") }, false));
 
-            var ca = await certificateClient.DownloadCertificateAsync(issuer);
+            Azure.Response<X509Certificate2> ca = await certificateClient.DownloadCertificateAsync(issuer);
             using (ca.Value)
             {
-                var certificate = request.Create(ca, DateTimeOffset.UtcNow, ca.Value.NotAfter.AddDays(-1), Encoding.UTF8.GetBytes(name));
+                X509Certificate2 certificate = request.Create(ca, DateTimeOffset.UtcNow, ca.Value.NotAfter.AddDays(-1), Encoding.UTF8.GetBytes(name));
                 try
                 {
                     certificate.FriendlyName = name;

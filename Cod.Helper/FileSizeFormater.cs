@@ -6,7 +6,7 @@ namespace Cod
     {
         public static string FormatFileSize(this long size)
         {
-            var result = size / 1d;
+            double result = size / 1d;
             if (result < 1024)
             {
                 return $"{Math.Round(result, 0)} B";

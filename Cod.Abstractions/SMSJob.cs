@@ -4,12 +4,24 @@ namespace Cod
 {
     public class SMSJob : Job
     {
-        public bool Match() => this.PartitionKey.StartsWith(JobKinds.SMS);
+        public bool Match()
+        {
+            return PartitionKey.StartsWith(JobKinds.SMS);
+        }
 
-        public string GetCorrelation() => this.RowKey;
+        public string GetCorrelation()
+        {
+            return RowKey;
+        }
 
-        public static string BuildPartitionKey(string user) => $"{JobKinds.SMS}-{user.ToUpper()}";
+        public static string BuildPartitionKey(string user)
+        {
+            return $"{JobKinds.SMS}-{user.ToUpper()}";
+        }
 
-        public static string BuildRowKey(string correlation) => correlation.Trim();
+        public static string BuildRowKey(string correlation)
+        {
+            return correlation.Trim();
+        }
     }
 }

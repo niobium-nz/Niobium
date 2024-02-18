@@ -20,14 +20,17 @@ namespace Cod.Model
 
         public DateTimeOffset? Timestamp { get; set; }
 
-        public object Clone() => new QueueMessage
+        public object Clone()
         {
-            Body = this.Body,
-            Delay = this.Delay,
-            PartitionKey = this.PartitionKey,
-            RowKey = this.RowKey,
-            ETag = this.ETag,
-            Timestamp = this.Timestamp,
-        };
+            return new QueueMessage
+            {
+                Body = Body,
+                Delay = Delay,
+                PartitionKey = PartitionKey,
+                RowKey = RowKey,
+                ETag = ETag,
+                Timestamp = Timestamp,
+            };
+        }
     }
 }

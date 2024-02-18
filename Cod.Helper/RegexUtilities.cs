@@ -8,7 +8,7 @@ namespace Cod
     {
         public static bool IsValidEmail(string email)
         {
-            if (String.IsNullOrWhiteSpace(email))
+            if (string.IsNullOrWhiteSpace(email))
             {
                 return false;
             }
@@ -20,13 +20,13 @@ namespace Cod
                                       RegexOptions.None, TimeSpan.FromMilliseconds(200));
 
                 // Examines the domain part of the email and normalizes it.
-                string DomainMapper(Match match)
+                static string DomainMapper(Match match)
                 {
                     // Use IdnMapping class to convert Unicode domain names.
-                    var idn = new IdnMapping();
+                    IdnMapping idn = new();
 
                     // Pull out and process domain name (throws ArgumentException on invalid)
-                    var domainName = idn.GetAscii(match.Groups[2].Value);
+                    string domainName = idn.GetAscii(match.Groups[2].Value);
 
                     return match.Groups[1].Value + domainName;
                 }

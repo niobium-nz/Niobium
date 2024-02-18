@@ -6,7 +6,7 @@ namespace Cod.Platform
     {
         public static bool TryGet(string key, out string value)
         {
-            var str = Localization.ResourceManager.GetString(key, CultureInfo.CurrentUICulture);
+            string str = Localization.ResourceManager.GetString(key, CultureInfo.CurrentUICulture);
             if (str != null)
             {
                 value = str;
@@ -19,7 +19,7 @@ namespace Cod.Platform
 
         public static string Get(string key)
         {
-            var str = Localization.ResourceManager.GetString(key, CultureInfo.CurrentUICulture);
+            string str = Localization.ResourceManager.GetString(key, CultureInfo.CurrentUICulture);
             return str ?? key;
         }
     }

@@ -1,3 +1,5 @@
+using Cod.Platform.Database;
+
 namespace Cod.Platform
 {
     public abstract class PlatformDomain<T> : GenericDomain<T>, IPlatformDomain<T> where T : IEntity
@@ -8,55 +10,60 @@ namespace Cod.Platform
         private string partitionKey;
         private string rowKey;
 
-        public PlatformDomain(Lazy<IRepository<T>> repository) => this.repository = repository;
+        public PlatformDomain(Lazy<IRepository<T>> repository)
+        {
+            this.repository = repository;
+        }
 
-        public override string PartitionKey => this.partitionKey;
+        public override string PartitionKey => partitionKey;
 
-        public override string RowKey => this.rowKey;
+        public override string RowKey => rowKey;
 
-        protected IRepository<T> Repository => this.repository.Value;
+        protected IRepository<T> Repository => repository.Value;
 
         public async Task<T> GetEntityAsync()
         {
-            this.cache ??= await this.getEntity();
-            return this.cache;
+            cache ??= await getEntity();
+            return cache;
         }
 
         public IDomain<T> Initialize(string partitionKey, string rowKey)
         {
-            if (!this.Initialized)
+            if (!Initialized)
             {
-                this.getEntity = async () => await this.Repository.RetrieveAsync(partitionKey, rowKey);
+                getEntity = async () => await Repository.RetrieveAsync(partitionKey, rowKey);
                 this.partitionKey = partitionKey;
                 this.rowKey = rowKey;
             }
-            this.Initialized = true;
+            Initialized = true;
             return this;
         }
 
         public async Task<PlatformDomain<T>> ReloadAsync()
         {
-            if (!this.Initialized)
+            if (!Initialized)
             {
                 throw new NotSupportedException();
             }
-            this.cache = await this.Repository.RetrieveAsync(this.partitionKey, this.rowKey);
+            cache = await Repository.RetrieveAsync(partitionKey, rowKey);
             return this;
         }
 
         protected override void OnInitialize(T entity)
         {
-            if (!this.Initialized)
+            if (!Initialized)
             {
-                this.getEntity = () => Task.FromResult(entity);
-                this.partitionKey = entity.PartitionKey;
-                this.rowKey = entity.RowKey;
+                getEntity = () => Task.FromResult(entity);
+                partitionKey = entity.PartitionKey;
+                rowKey = entity.RowKey;
             }
-            this.Initialized = true;
+            Initialized = true;
         }
 
         protected async Task SaveEntityAsync(bool force = false)
-            => await this.SaveEntityAsync(new[] { await this.GetEntityAsync() }, force);
+        {
+            await SaveEntityAsync(new[] { await GetEntityAsync() }, force);
+        }
 
         protected async Task SaveEntityAsync(IEnumerable<T> model, bool force = false, CancellationToken cancellationToken = default)
         {
@@ -66,31 +73,31 @@ namespace Cod.Platform
             }
             if (force)
             {
-                await this.Repository.CreateAsync(model, replaceIfExist: true, cancellationToken: cancellationToken);
+                await Repository.CreateAsync(model, replaceIfExist: true, cancellationToken: cancellationToken);
             }
             else
             {
-                var groups = model.GroupBy(m => m.ETag == null);
+                IEnumerable<IGrouping<bool, T>> groups = model.GroupBy(m => m.ETag == null);
 
-                foreach (var group in groups)
+                foreach (IGrouping<bool, T> group in groups)
                 {
                     if (group.Key)
                     {
-                        await this.Repository.CreateAsync(group, cancellationToken: cancellationToken);
+                        await Repository.CreateAsync(group, cancellationToken: cancellationToken);
                     }
                     else
                     {
-                        await this.Repository.UpdateAsync(group, cancellationToken: cancellationToken);
+                        await Repository.UpdateAsync(group, cancellationToken: cancellationToken);
                     }
                 }
             }
 
-            if (this.Initialized)
+            if (Initialized)
             {
-                var c = model.SingleOrDefault(m => m.PartitionKey == this.PartitionKey && m.RowKey == this.rowKey);
+                T c = model.SingleOrDefault(m => m.PartitionKey == PartitionKey && m.RowKey == rowKey);
                 if (c != null)
                 {
-                    this.cache = c;
+                    cache = c;
                 }
             }
         }

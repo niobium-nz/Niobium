@@ -1,5 +1,5 @@
-﻿using System.Net;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using System.Net;
 
 namespace Cod.Platform
 {
@@ -19,13 +19,9 @@ namespace Cod.Platform
                 code = HttpStatusCode.OK;
                 payload = operationResult.Result;
             }
-            else if (operationResult.Code < 600)
-            {
-                code = (HttpStatusCode)operationResult.Code;
-            }
             else
             {
-                code = HttpStatusCode.InternalServerError;
+                code = operationResult.Code < 600 ? (HttpStatusCode)operationResult.Code : HttpStatusCode.InternalServerError;
             }
 
             return HttpRequestExtensions.MakeResponse(null, statusCode: code, payload: payload, serializationFormat: serializationFormat);
@@ -50,13 +46,9 @@ namespace Cod.Platform
                 code = HttpStatusCode.BadRequest;
                 payload = operationResult.Reference;
             }
-            else if (operationResult.Code < 600)
-            {
-                code = (HttpStatusCode)operationResult.Code;
-            }
             else
             {
-                code = HttpStatusCode.InternalServerError;
+                code = operationResult.Code < 600 ? (HttpStatusCode)operationResult.Code : HttpStatusCode.InternalServerError;
             }
 
             return HttpRequestExtensions.MakeResponse(null, statusCode: code, payload: payload, serializationFormat: serializationFormat);

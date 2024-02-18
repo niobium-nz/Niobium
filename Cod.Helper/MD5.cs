@@ -7,8 +7,8 @@ namespace Cod
     {
         public static string ComputeHashAsBase64String(byte[] input)
         {
-            using var md5 = MD5.Create();
-            var bs = md5.ComputeHash(input);
+            using MD5 md5 = MD5.Create();
+            byte[] bs = md5.ComputeHash(input);
             return Convert.ToBase64String(bs);
         }
     }

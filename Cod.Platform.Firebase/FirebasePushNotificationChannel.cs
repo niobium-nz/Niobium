@@ -1,5 +1,8 @@
 ﻿using System.Net.Http.Headers;
 using System.Text;
+using Cod.Platform.Database;
+using Cod.Platform.Identities;
+using Cod.Platform.Notification;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.Logging;
 

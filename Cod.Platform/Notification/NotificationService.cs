@@ -1,11 +1,14 @@
-namespace Cod.Platform
+namespace Cod.Platform.Notification
 {
     internal class NotificationService : INotificationService
     {
         private static readonly IReadOnlyDictionary<string, object> EmptyParameters = new Dictionary<string, object>();
         private readonly Lazy<IEnumerable<INotificationChannel>> channels;
 
-        public NotificationService(Lazy<IEnumerable<INotificationChannel>> channels) => this.channels = channels;
+        public NotificationService(Lazy<IEnumerable<INotificationChannel>> channels)
+        {
+            this.channels = channels;
+        }
 
         public async Task<OperationResult<int>> SendAsync(
             string brand,
@@ -16,26 +19,23 @@ namespace Cod.Platform
             int startLevel = 1,
             int maxLevel = 100)
         {
-            var level = startLevel;
+            int level = startLevel;
             if (level > maxLevel)
             {
-                return new OperationResult<int>(InternalError.InternalServerError);
+                return new OperationResult<int>(Cod.InternalError.InternalServerError);
             }
 
-            if (parameters == null)
-            {
-                parameters = EmptyParameters;
-            }
+            parameters ??= EmptyParameters;
 
-            foreach (var channel in this.channels.Value)
+            foreach (INotificationChannel channel in channels.Value)
             {
-                var result = await channel.SendAsync(brand, user, context, template, parameters, level);
-                await this.PostSendAsync(result, brand, user, context, template, parameters, level);
+                OperationResult result = await channel.SendAsync(brand, user, context, template, parameters, level);
+                await PostSendAsync(result, brand, user, context, template, parameters, level);
                 if (result.IsSuccess)
                 {
                     return new OperationResult<int>(result) { Result = level };
                 }
-                else if (result.Code == InternalError.NotAllowed)
+                else if (result.Code == Cod.InternalError.NotAllowed)
                 {
                     continue;
                 }
@@ -52,10 +52,12 @@ namespace Cod.Platform
                 }
             }
 
-            return await this.SendAsync(brand, user, context, template, parameters, ++level);
+            return await SendAsync(brand, user, context, template, parameters, ++level);
         }
 
         protected virtual Task PostSendAsync(OperationResult result, string brand, Guid user, NotificationContext context, int template, IReadOnlyDictionary<string, object> parameters, int level)
-            => Task.CompletedTask;
+        {
+            return Task.CompletedTask;
+        }
     }
 }
