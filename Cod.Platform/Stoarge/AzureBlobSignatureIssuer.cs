@@ -48,6 +48,11 @@ namespace Cod.Platform.Stoarge
                 internalPermissions |= BlobContainerSasPermissions.List;
             }
 
+            if (permissions.HasFlag(BlobPermissions.Create))
+            {
+                internalPermissions |= BlobContainerSasPermissions.Create;
+            }
+
             return internalPermissions == 0
                 ? throw new UnauthorizedAccessException("Cannot create SAS without any permission granted.")
                 : Task.FromResult(container.GenerateSasUri(internalPermissions, expires));
