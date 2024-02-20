@@ -44,7 +44,7 @@ namespace Cod.Platform.Database
             builder.RowKeyEnd = control.EndRowKey;
 
             return internalPermissions == 0
-                ? throw new InvalidOperationException("Cannot create SAS without any permission granted.")
+                ? throw new UnauthorizedAccessException("Cannot create SAS without any permission granted.")
                 : Task.FromResult(table.GenerateSasUri(builder));
         }
     }

@@ -49,7 +49,7 @@ namespace Cod.Platform.Stoarge
             }
 
             return internalPermissions == 0
-                ? throw new InvalidOperationException("Cannot create SAS without any permission granted.")
+                ? throw new UnauthorizedAccessException("Cannot create SAS without any permission granted.")
                 : Task.FromResult(container.GenerateSasUri(internalPermissions, expires));
         }
     }
