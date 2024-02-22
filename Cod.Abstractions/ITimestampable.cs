@@ -4,6 +4,6 @@ namespace Cod
 {
     public interface ITimestampable
     {
-        void SetTimestamp(DateTimeOffset stamp);
+        DateTimeOffset Timestamp { get; set; }
     }
 }

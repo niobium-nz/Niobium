@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
@@ -35,6 +36,11 @@ namespace Cod.Channel.Device
         private Task sendingTask;
         private Task ensureConnectivityTask;
         private long lastTwinVersion = Int64.MinValue;
+        private DateTimeOffset lastHeartbeat = DateTimeOffset.MinValue;
+        private DateTimeOffset lastCPR = DateTimeOffset.MinValue;
+        private static readonly TimeSpan heartbeatInterval = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan cprInterval = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan cprEventsThreshold = TimeSpan.FromMinutes(1);
         private bool disposed;
 
         protected ConcurrentQueue<ITimestampable> Events { get; set; } = new ConcurrentQueue<ITimestampable>();
@@ -100,7 +106,7 @@ namespace Cod.Channel.Device
             {
                 while (this.ensureConnectivityTaskCancellation.Token.CanBeCanceled && !this.ensureConnectivityTaskCancellation.Token.IsCancellationRequested)
                 {
-                    if (ShouldClientBeInitialized(this.connectionStatus))
+                    if (this.ShouldClientBeInitialized)
                     {
                         this.logger.LogInformation($"Attempting to initialize the client instance, current status={this.connectionStatus}");
 
@@ -246,68 +252,81 @@ namespace Cod.Channel.Device
         {
             while (!this.sendingTaskCancellation.Token.IsCancellationRequested)
             {
-                if (this.IsDeviceConnected && this.Events.Count > 0)
+                try
                 {
-                    var sending = new List<ITimestampable>();
-
-                    try
+                    if (DateTimeOffset.UtcNow - lastHeartbeat > heartbeatInterval)
                     {
-                        while (this.Events.TryDequeue(out var data))
+                        this.logger.LogInformation($"heartbeat: {this.connectionStatus}");
+                        lastHeartbeat = DateTimeOffset.UtcNow;
+                    }
+
+                    if (this.IsDeviceConnected && this.Events.Count > 0)
+                    {
+                        var sending = new List<ITimestampable>();
+
+                        try
                         {
-                            data.SetTimestamp(DateTimeOffset.UtcNow);
-                            sending.Add(data);
-                        }
-
-                        var json = JsonSerializer.SerializeObject(sending);
-                        using var message = new Message(Encoding.UTF8.GetBytes(json))
-                        {
-                            ContentEncoding = "utf-8",
-                            ContentType = "application/json",
-                        };
-
-                        await this.DeviceClient.SendEventAsync(message, this.sendingTaskCancellation.Token).ConfigureAwait(false);
-                        await this.OnSentAsync(this, sending, this.sendingTaskCancellation.Token).ConfigureAwait(false);
-                        await this.SaveAsync(this.sendingTaskCancellation.Token).ConfigureAwait(false);
-                        sending.Clear();
-                        continue;
-                    }
-                    catch (IotHubException ex) when (ex.IsTransient)
-                    {
-                        // Inspect the exception to figure out if operation should be retried, or if user-input is required.
-                        this.logger.LogWarning($"An IotHubException was caught, but will try to recover and retry: {ex}");
-                    }
-                    catch (Exception ex) when (ExceptionHelper.IsNetworkExceptionChain(ex))
-                    {
-                        this.logger.LogWarning($"A network related exception was caught, but will try to recover and retry: {ex}");
-                    }
-                    catch (Exception ex)
-                    {
-                        this.logger.LogError($"Unexpected error {ex}");
-                    }
-                    finally
-                    {
-                        if (sending.Count > 0)
-                        {
-                            await this.OnSendFailedAsync(this, sending, this.sendingTaskCancellation.Token).ConfigureAwait(false);
-
-                            foreach (var item in sending)
+                            while (this.Events.TryDequeue(out var data))
                             {
-                                this.Events.Enqueue(item);
+                                data.Timestamp = DateTimeOffset.UtcNow;
+                                sending.Add(data);
                             }
-                            sending.Clear();
+
+                            var json = JsonSerializer.SerializeObject(sending);
+                            using var message = new Message(Encoding.UTF8.GetBytes(json))
+                            {
+                                ContentEncoding = "utf-8",
+                                ContentType = "application/json",
+                            };
+
+                            await this.DeviceClient.SendEventAsync(message, this.sendingTaskCancellation.Token).ConfigureAwait(false);
+                            await this.OnSentAsync(this, sending, this.sendingTaskCancellation.Token).ConfigureAwait(false);
                             await this.SaveAsync(this.sendingTaskCancellation.Token).ConfigureAwait(false);
+                            sending.Clear();
+                            continue;
                         }
+                        catch (IotHubException ex) when (ex.IsTransient)
+                        {
+                            // Inspect the exception to figure out if operation should be retried, or if user-input is required.
+                            this.logger.LogWarning($"An IotHubException was caught, but will try to recover and retry: {ex}");
+                        }
+                        catch (Exception ex) when (ExceptionHelper.IsNetworkExceptionChain(ex))
+                        {
+                            this.logger.LogWarning($"A network related exception was caught, but will try to recover and retry: {ex}");
+                        }
+                        catch (Exception ex)
+                        {
+                            this.logger.LogError($"Unexpected error: {ex}");
+                        }
+                        finally
+                        {
+                            if (sending.Count > 0)
+                            {
+                                await this.OnSendFailedAsync(this, sending, this.sendingTaskCancellation.Token).ConfigureAwait(false);
 
-                        // wait and retry
-                        await Task.Delay(busyInterval, this.sendingTaskCancellation.Token).ConfigureAwait(false);
+                                foreach (var item in sending)
+                                {
+                                    this.Events.Enqueue(item);
+                                }
+                                sending.Clear();
+                                await this.SaveAsync(this.sendingTaskCancellation.Token).ConfigureAwait(false);
+                            }
+
+                            // wait and retry
+                            await Task.Delay(busyInterval, this.sendingTaskCancellation.Token).ConfigureAwait(false);
+                        }
                     }
-                }
-                else
-                {
-                    await Task.Delay(idleInterval, this.sendingTaskCancellation.Token).ConfigureAwait(false);
-                }
+                    else
+                    {
+                        await Task.Delay(idleInterval, this.sendingTaskCancellation.Token).ConfigureAwait(false);
+                    }
 
-                await this.LoopAsync(this.sendingTaskCancellation.Token).ConfigureAwait(false);
+                    await this.LoopAsync(this.sendingTaskCancellation.Token).ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    this.logger.LogError($"Unknown error: {e}");
+                }
             }
         }
 
@@ -560,8 +579,25 @@ namespace Cod.Channel.Device
         // If the client reports Disconnected_retrying status, it is trying to recover its connection.
         // If the client reports Disconnected status, you will need to dispose and recreate the client.
         // If the client reports Disabled status, you will need to dispose and recreate the client.
-        private static bool ShouldClientBeInitialized(ConnectionStatus connectionStatus)
-            => connectionStatus == ConnectionStatus.Disconnected || connectionStatus == ConnectionStatus.Disabled;
+        private bool ShouldClientBeInitialized
+        {
+            get
+            {
+                var now = DateTimeOffset.UtcNow;
+                if (this.Events.Count > 0 && now - lastCPR > cprInterval)
+                {
+                    var earliestEventTimestamp = this.Events.Min(e => e.Timestamp);
+                    if (now - earliestEventTimestamp > cprEventsThreshold)
+                    {
+                        // Something went wrong, network connection has disconnected in fact without us getting notified
+                        this.connectionStatus = ConnectionStatus.Disconnected;
+                        lastCPR = DateTimeOffset.UtcNow;
+                    }
+                }
+
+                return this.connectionStatus == ConnectionStatus.Disconnected || this.connectionStatus == ConnectionStatus.Disabled;
+            }
+        }
 
         public async ValueTask DisposeAsync()
         {
