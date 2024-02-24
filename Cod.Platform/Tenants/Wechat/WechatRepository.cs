@@ -83,7 +83,7 @@ namespace Cod.Platform.Tenants.Wechat
             throw new NotImplementedException();
         }
 
-        public Task<IEnumerable<WechatEntity>> DeleteAsync(IEnumerable<WechatEntity> entities, bool preconditionCheck = true, bool successIfNotExist = false, CancellationToken cancellationToken = default)
+        public Task DeleteAsync(IEnumerable<WechatEntity> entities, bool preconditionCheck = true, bool successIfNotExist = false, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }

@@ -2,6 +2,7 @@ using Azure;
 using Azure.Data.Tables;
 using Microsoft.Extensions.Logging;
 using System.Net;
+using System.Text.RegularExpressions;
 
 namespace Cod.Platform.Database
 {
@@ -13,6 +14,7 @@ namespace Cod.Platform.Database
         private const string LessThanOrEqual = "le";
         private static readonly List<T> emptyList = new();
         private static readonly TableQueryResult<T> emptyResult = new(emptyList, null);
+        private static readonly Regex keysRegex = new("(http|https)\\:\\/\\/.*\\(PartitionKey='([^']+)',RowKey='([^']+)'\\)");
         private readonly ILogger logger;
 
         public string TableName { get; set; }
@@ -120,7 +122,7 @@ namespace Cod.Platform.Database
                 cancellationToken: cancellationToken);
         }
 
-        public async Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities, bool preconditionCheck = true, bool successIfNotExist = false, CancellationToken cancellationToken = default)
+        public async Task DeleteAsync(IEnumerable<T> entities, bool preconditionCheck = true, bool successIfNotExist = false, CancellationToken cancellationToken = default)
         {
             if (entities is null)
             {
@@ -129,7 +131,7 @@ namespace Cod.Platform.Database
 
             if (!entities.Any())
             {
-                return entities;
+                return;
             }
 
             if (!preconditionCheck)
@@ -141,7 +143,7 @@ namespace Cod.Platform.Database
             }
 
             TableClient table = GetTable();
-            return await ExecuteBatchWithRetryAsync(
+            await ExecuteBatchWithRetryAsync(
                 entities,
                 async (entity, token) => await table.DeleteEntityAsync(
                     ((IEntity)entity).PartitionKey,
@@ -349,11 +351,12 @@ namespace Cod.Platform.Database
                 {
                     Response<IReadOnlyList<Response>> response = await table.SubmitTransactionAsync(batchOperations, cancellationToken: cancellationToken);
 
-                    var batchedEntities = batchOperations.Select(o => o.Entity);
-                    foreach (var item in response.Value)
+                    var batchedEntities = batchOperations.Select(o => o.Entity).ToList();
+                    for (int i = 0; i < response.Value.Count; i++)
                     {
-                        SetEtagByResponse(item, batchedEntities);
+                        SetEtagByResponse(response.Value[i], i, batchedEntities);
                     }
+
                     result.AddRange(response.Value);
                 }
             }
@@ -376,19 +379,37 @@ namespace Cod.Platform.Database
             return Client.GetTableClient(TableName);
         }
 
-        private static void SetEtagByResponse(Response response, IEnumerable<ITableEntity> entities)
+        private static void SetEtagByResponse(Response response, int responseIndex, List<ITableEntity> entities)
         {
-            if (!response.IsError && response.Headers.ETag.HasValue && response.Headers.TryGetValue("Location", out var location))
+            if (!response.IsError && response.Headers.ETag.HasValue)
             {
-                (var pk, var rk) = ParseKeys(location);
-                var target = entities.Single(e => e.PartitionKey == pk && e.RowKey == rk);
+                ITableEntity target;
+                if (response.Headers.TryGetValue("Location", out var location) && TryParseKeys(location, out var pk, out var rk))
+                {
+                    target = entities.Single(e => e.PartitionKey == pk && e.RowKey == rk);
+                }
+                else
+                {
+                    target = entities[responseIndex];
+                }
+
                 target.ETag = response.Headers.ETag.Value;
             }
         }
 
-        private static (string, string) ParseKeys(string location)
+        private static bool TryParseKeys(string location, out string partitionKey, out string rowKey)
         {
-            return ("", "");
+            var match = keysRegex.Match(location);
+            if (match.Success && match.Groups.Count == 4) 
+            {
+                partitionKey = match.Groups[2].Value;
+                rowKey = match.Groups[3].Value;
+                return true;
+            }
+
+            partitionKey = null;
+            rowKey = null;
+            return false;
         }
     }
 }

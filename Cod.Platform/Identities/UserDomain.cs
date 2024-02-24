@@ -294,7 +294,7 @@ namespace Cod.Platform.Identities
             if (openIDsToRemove.Count > 0)
             {
                 // REMARK (5he11) 这些记录本质上是因为某用户添加绑定，因此“自动”从其他已有用户处“偷”过来的Login，因为其他用户被“偷”Login，所以这些用户被偷的Login的相关OpenID应该删除才对
-                _ = await openIDRepository.Value.DeleteAsync(openIDsToRemove, successIfNotExist: true);
+                await openIDRepository.Value.DeleteAsync(openIDsToRemove, successIfNotExist: true);
             }
 
             if (newUser)

@@ -12,9 +12,9 @@
             return repository.UpdateAsync(new[] { entity }, preconditionCheck: preconditionCheck, cancellationToken: cancellationToken);
         }
 
-        public static Task<IEnumerable<T>> DeleteAsync<T>(this IRepository<T> repository, T entity, bool preconditionCheck = true, bool successIfNotExist = false, CancellationToken cancellationToken = default)
+        public static async Task DeleteAsync<T>(this IRepository<T> repository, T entity, bool preconditionCheck = true, bool successIfNotExist = false, CancellationToken cancellationToken = default)
         {
-            return repository.DeleteAsync(new[] { entity }, preconditionCheck: preconditionCheck, successIfNotExist: successIfNotExist, cancellationToken: cancellationToken);
+            await repository.DeleteAsync(new[] { entity }, preconditionCheck: preconditionCheck, successIfNotExist: successIfNotExist, cancellationToken: cancellationToken);
         }
     }
 }

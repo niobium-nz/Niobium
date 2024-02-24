@@ -44,14 +44,13 @@ namespace Cod.Platform.Database
             return updated;
         }
 
-        public async Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities, bool preconditionCheck = true, bool successIfNotExist = false, CancellationToken cancellationToken = default)
+        public async Task DeleteAsync(IEnumerable<T> entities, bool preconditionCheck = true, bool successIfNotExist = false, CancellationToken cancellationToken = default)
         {
-            IEnumerable<T> deleted = await tableRepository.DeleteAsync(entities, preconditionCheck: preconditionCheck, successIfNotExist: successIfNotExist, cancellationToken: cancellationToken);
-            foreach (T item in deleted)
+            await tableRepository.DeleteAsync(entities, preconditionCheck: preconditionCheck, successIfNotExist: successIfNotExist, cancellationToken: cancellationToken);
+            foreach (T item in entities)
             {
                 await cache.DeleteAsync(item.PartitionKey, item.RowKey, cancellationToken);
             }
-            return deleted;
         }
 
         public async Task<TableQueryResult<T>> GetAsync(int limit, string continuationToken = null, IList<string> fields = null, CancellationToken cancellationToken = default)
