@@ -72,25 +72,17 @@ namespace Cod.Platform.Database
             }
 
             TableClient table = GetTable();
-            if (replaceIfExist)
-            {
-                await ExecuteBatchWithRetryAsync(
+            return replaceIfExist
+                ? await ExecuteBatchWithRetryAsync(
                     entities,
                     async (entity, token) => await table.UpsertEntityAsync(entity, cancellationToken: cancellationToken),
                     entity => new TableTransactionAction(TableTransactionActionType.UpsertReplace, entity),
-                    cancellationToken: cancellationToken);
-
-            }
-            else
-            {
-                await ExecuteBatchWithRetryAsync(
+                    cancellationToken: cancellationToken)
+                : await ExecuteBatchWithRetryAsync(
                     entities,
                     async (entity, token) => await table.AddEntityAsync(entity, cancellationToken: cancellationToken),
                     entity => new TableTransactionAction(TableTransactionActionType.Add, entity),
                     cancellationToken: cancellationToken);
-            }
-
-            return entities;
         }
 
         public async Task<IEnumerable<T>> UpdateAsync(IEnumerable<T> entities, bool preconditionCheck = true, CancellationToken cancellationToken = default)
@@ -114,7 +106,7 @@ namespace Cod.Platform.Database
             }
 
             TableClient table = GetTable();
-            await ExecuteBatchWithRetryAsync(
+            return await ExecuteBatchWithRetryAsync(
                 entities,
                 async (entity, token) => await table.UpdateEntityAsync(
                     entity,
@@ -126,7 +118,6 @@ namespace Cod.Platform.Database
                     entity,
                     etag: ((ITableEntity)entity).ETag),
                 cancellationToken: cancellationToken);
-            return entities;
         }
 
         public async Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities, bool preconditionCheck = true, bool successIfNotExist = false, CancellationToken cancellationToken = default)
@@ -150,7 +141,7 @@ namespace Cod.Platform.Database
             }
 
             TableClient table = GetTable();
-            await ExecuteBatchWithRetryAsync(
+            return await ExecuteBatchWithRetryAsync(
                 entities,
                 async (entity, token) => await table.DeleteEntityAsync(
                     ((IEntity)entity).PartitionKey,
@@ -163,7 +154,6 @@ namespace Cod.Platform.Database
                     etag: ((ITableEntity)entity).ETag),
                 errorSuppressed: successIfNotExist ? new[] { HttpStatusCode.NotFound } : null,
                 cancellationToken: cancellationToken);
-            return entities;
         }
 
         public async Task<TableQueryResult<T>> GetAsync(int limit, string continuationToken = null, IList<string> fields = null, CancellationToken cancellationToken = default)
@@ -269,7 +259,7 @@ namespace Cod.Platform.Database
                     cancellationToken: cancellationToken);
         }
 
-        protected virtual async Task ExecuteBatchWithRetryAsync(IEnumerable<T> entities, Func<T, CancellationToken, Task<Response>> singleOperation, Func<T, TableTransactionAction> batchOperation, IEnumerable<HttpStatusCode> errorSuppressed = null, CancellationToken cancellationToken = default)
+        protected virtual async Task<IEnumerable<T>> ExecuteBatchWithRetryAsync(IEnumerable<T> entities, Func<T, CancellationToken, Task<Response>> singleOperation, Func<T, TableTransactionAction> batchOperation, IEnumerable<HttpStatusCode> errorSuppressed = null, CancellationToken cancellationToken = default)
         {
             _ = entities ?? throw new ArgumentNullException(nameof(entities));
             int count = entities.Count();
@@ -280,6 +270,11 @@ namespace Cod.Platform.Database
             {
                 T entity = entities.Single();
                 Response response = await singleOperation(entity, cancellationToken);
+
+                if (response.Headers.ETag.HasValue)
+                {
+                    ((ITableEntity)entity).ETag = response.Headers.ETag.Value;
+                }
                 responses = new List<Response>() { response };
             }
             else
@@ -316,6 +311,8 @@ namespace Cod.Platform.Database
                     throw new AggregateException($"Error(s) occurred while executing transaction(s) on table: {typeof(T).Name}.", exceptions);
                 }
             }
+
+            return entities;
         }
 
         protected virtual async Task<List<Response>> ExecuteBatchAsync(IEnumerable<T> entities, Func<T, TableTransactionAction> createOperation, CancellationToken cancellationToken = default)
@@ -351,6 +348,12 @@ namespace Cod.Platform.Database
                 if (batchOperations.Count > 0)
                 {
                     Response<IReadOnlyList<Response>> response = await table.SubmitTransactionAsync(batchOperations, cancellationToken: cancellationToken);
+
+                    var batchedEntities = batchOperations.Select(o => o.Entity);
+                    foreach (var item in response.Value)
+                    {
+                        SetEtagByResponse(item, batchedEntities);
+                    }
                     result.AddRange(response.Value);
                 }
             }
@@ -371,6 +374,21 @@ namespace Cod.Platform.Database
             }
 
             return Client.GetTableClient(TableName);
+        }
+
+        private static void SetEtagByResponse(Response response, IEnumerable<ITableEntity> entities)
+        {
+            if (!response.IsError && response.Headers.ETag.HasValue && response.Headers.TryGetValue("Location", out var location))
+            {
+                (var pk, var rk) = ParseKeys(location);
+                var target = entities.Single(e => e.PartitionKey == pk && e.RowKey == rk);
+                target.ETag = response.Headers.ETag.Value;
+            }
+        }
+
+        private static (string, string) ParseKeys(string location)
+        {
+            return ("", "");
         }
     }
 }
