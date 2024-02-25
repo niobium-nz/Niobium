@@ -14,7 +14,7 @@ namespace Cod.Platform.Identities
         Task<IEnumerable<T>> CreateOrUpdateAsync<T>(IEnumerable<T> entities)
             where T : Profile, ITableEntity;
 
-        Task<IEnumerable<T>> DeleteAsync<T>(IEnumerable<T> entities, bool successIfNotExist = false)
+        Task DeleteAsync<T>(IEnumerable<T> entities, bool successIfNotExist = false)
             where T : Profile, ITableEntity;
 
         Task<T> GetAsync<T>(Guid business, Guid user, bool fallbackToDefaultBusiness = true)

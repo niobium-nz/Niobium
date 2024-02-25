@@ -65,41 +65,43 @@ namespace Cod.Platform
             await SaveEntityAsync(new[] { await GetEntityAsync() }, force);
         }
 
-        protected async Task SaveEntityAsync(IEnumerable<T> model, bool force = false, CancellationToken cancellationToken = default)
+        protected async Task<IEnumerable<T>> SaveEntityAsync(IEnumerable<T> model, bool force = false, CancellationToken cancellationToken = default)
         {
+            var results = new List<T>();
             if (model == null || !model.Any())
             {
-                return;
+                return model;
             }
             if (force)
             {
-                await Repository.CreateAsync(model, replaceIfExist: true, cancellationToken: cancellationToken);
+                results.AddRange(await Repository.CreateAsync(model, replaceIfExist: true, cancellationToken: cancellationToken));
             }
             else
             {
                 IEnumerable<IGrouping<bool, T>> groups = model.GroupBy(m => m.ETag == null);
-
                 foreach (IGrouping<bool, T> group in groups)
                 {
                     if (group.Key)
                     {
-                        await Repository.CreateAsync(group, cancellationToken: cancellationToken);
+                        results.AddRange(await Repository.CreateAsync(group, cancellationToken: cancellationToken));
                     }
                     else
                     {
-                        await Repository.UpdateAsync(group, cancellationToken: cancellationToken);
+                        results.AddRange(await Repository.UpdateAsync(group, cancellationToken: cancellationToken));
                     }
                 }
             }
 
             if (Initialized)
             {
-                T c = model.SingleOrDefault(m => m.PartitionKey == PartitionKey && m.RowKey == rowKey);
+                T c = results.SingleOrDefault(m => m.PartitionKey == PartitionKey && m.RowKey == rowKey);
                 if (c != null)
                 {
                     cache = c;
                 }
             }
+
+            return results;
         }
     }
 }
