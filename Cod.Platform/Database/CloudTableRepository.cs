@@ -31,19 +31,14 @@ namespace Cod.Platform.Database
         {
             try
             {
-                Response<T> response = await GetTable().GetEntityAsync<T>(partitionKey, rowKey, select: fields, cancellationToken: cancellationToken);
+                NullableResponse<T> response = await GetTable().GetEntityIfExistsAsync<T>(partitionKey, rowKey, select: fields, cancellationToken: cancellationToken);
                 return response.Value;
             }
             catch (RequestFailedException e)
             {
-                if (e.Status != (int)HttpStatusCode.NotFound)
-                {
-                    string errorMessage = $"An Error occurred with status code {e.Status} while retrieving entity {partitionKey} -> {rowKey}: {e.Message}";
-                    logger?.LogWarning(errorMessage);
-                    throw new HttpRequestException(errorMessage, inner: e, statusCode: (HttpStatusCode)e.Status);
-                }
-
-                return null;
+                string errorMessage = $"An Error occurred with status code {e.Status} while retrieving entity {partitionKey} -> {rowKey}: {e.Message}";
+                logger?.LogWarning(errorMessage);
+                throw new HttpRequestException(errorMessage, inner: e, statusCode: (HttpStatusCode)e.Status);
             }
         }
 
