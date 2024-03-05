@@ -46,7 +46,7 @@ namespace Cod.Platform.Authorization
 
         protected virtual string GetOwnerID(ClaimsPrincipal principal)
         {
-            return principal.GetClaim<string>(ClaimTypes.NameIdentifier);
+            return principal.GetClaim<string>(ClaimTypes.Sid);
         }
     }
 }
