@@ -14,6 +14,8 @@ namespace Cod.Platform.Database
             this.cacheRepo = cacheRepo;
         }
 
+        public bool SupportTTL { get; set; }
+
         public async Task DeleteAsync(string partitionKey, string rowKey, CancellationToken cancellationToken = default)
         {
             string memkey = $"{partitionKey}@{rowKey}";
@@ -102,7 +104,7 @@ namespace Cod.Platform.Database
                 Expiry = expiry ?? DateTimeOffset.Parse("2100-01-01T00:00:00Z", CultureInfo.InvariantCulture)
             },
             replaceIfExist: true,
-            expiry ?? DateTimeOffset.UtcNow.AddMonths(1),
+            expiry: this.SupportTTL ? (expiry ?? DateTimeOffset.UtcNow.AddMonths(1)) : null,
             cancellationToken: cancellationToken);
         }
     }
