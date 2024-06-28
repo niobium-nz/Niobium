@@ -53,14 +53,7 @@ namespace Cod.Platform.Tenants.Wechat
                 return new OperationResult<WechatMediaSource>(url);
             }
 
-            Func<HttpResponseMessage, Exception, Task> onError = (resp, e) =>
-            {
-                var message = $"An error occurred while trying to download media {mediaID} from wechat response StatusCode: {resp.StatusCode}, error: {e?.Message}";
-                Logger.Instance?.LogError(message);
-                return Task.CompletedTask;
-            };
-
-            Stream result = await url.Result.FetchStreamAsync(onError, 1);
+            Stream result = await url.Result.FetchStreamAsync(null, 1);
             if (result == null)
             {
                 return new OperationResult<WechatMediaSource>(Cod.InternalError.GatewayTimeout);
@@ -75,16 +68,19 @@ namespace Cod.Platform.Tenants.Wechat
                 });
             }
 
-            using (StreamReader sr = new(result))
+            using (result)
             {
-                string err = await sr.ReadToEndAsync();
-                if (err.Contains("\"errcode\":40001,"))
+                using (StreamReader sr = new(result))
                 {
-                    await RevokeAccessTokenAsync(appId);
-                    return await GetMediaAsync(appId, secret, mediaID, ++retry);
-                }
+                    string err = await sr.ReadToEndAsync();
+                    if (err.Contains("\"errcode\":40001,"))
+                    {
+                        await RevokeAccessTokenAsync(appId);
+                        return await GetMediaAsync(appId, secret, mediaID, ++retry);
+                    }
 
-                Logger.Instance?.LogError($"An error occurred while trying to download media {mediaID} from Wechat: {err}");
+                    Logger.Instance?.LogError($"An error occurred while trying to download media {mediaID} from Wechat: {err}");
+                }
             }
 
             return new OperationResult<WechatMediaSource>(Cod.InternalError.BadGateway);

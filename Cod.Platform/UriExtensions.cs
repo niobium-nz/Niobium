@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using Microsoft.Extensions.Logging;
+using System.Net.Sockets;
 
 namespace Cod.Platform
 {
@@ -11,27 +12,28 @@ namespace Cod.Platform
             return await FetchStreamAsync(uri, null);
         }
 
-        public static async Task<Stream> FetchStreamAsync(this Uri uri, Func<HttpResponseMessage, Exception, Task> onError)
+        public static async Task<Stream> FetchStreamAsync(this Uri uri, Func<HttpResponseMessage, Task> onError)
         {
             return await FetchStreamAsync(uri, onError, DefaultRetryTimes);
         }
 
-        public static async Task<Stream> FetchStreamAsync(this Uri uri, Func<HttpResponseMessage, Exception, Task> onError, int retry)
+        public static async Task<Stream> FetchStreamAsync(this Uri uri, Func<HttpResponseMessage, Task> onError, int retry)
         {
             if (retry <= 0)
             {
                 return null;
             }
 
-            using HttpClient httpclient = new(HttpHandler.GetHandler(), false)
+
+            try
             {
+                using HttpClient httpclient = new(HttpHandler.GetHandler(), false)
+                {
 #if !DEBUG
                     Timeout = TimeSpan.FromSeconds(10),
 #endif
-            };
-            HttpResponseMessage resp = await httpclient.GetAsync(uri);
-            try
-            {
+                };
+                HttpResponseMessage resp = await httpclient.GetAsync(uri);
                 if (resp.IsSuccessStatusCode)
                 {
                     using Stream s = await resp.Content.ReadAsStreamAsync();
@@ -42,20 +44,20 @@ namespace Cod.Platform
                 }
                 else if (onError != null)
                 {
-                    await onError(resp, null);
+                    await onError(resp);
                 }
             }
             catch (OperationCanceledException e)
             {
-                await onError(resp, e);
+                Logger.Instance?.LogError(e?.Message);
             }
             catch (SocketException e)
             {
-                await onError(resp, e);
+                Logger.Instance?.LogError(e?.Message);
             }
             catch (IOException e)
             {
-                await onError(resp, e);
+                Logger.Instance?.LogError(e?.Message);
             }
 
             return await FetchStreamAsync(uri, onError, --retry);
