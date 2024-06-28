@@ -11,27 +11,27 @@ namespace Cod.Platform
             return await FetchStreamAsync(uri, null);
         }
 
-        public static async Task<Stream> FetchStreamAsync(this Uri uri, Func<HttpResponseMessage, Task> onError)
+        public static async Task<Stream> FetchStreamAsync(this Uri uri, Func<HttpResponseMessage, Exception, Task> onError)
         {
             return await FetchStreamAsync(uri, onError, DefaultRetryTimes);
         }
 
-        public static async Task<Stream> FetchStreamAsync(this Uri uri, Func<HttpResponseMessage, Task> onError, int retry)
+        public static async Task<Stream> FetchStreamAsync(this Uri uri, Func<HttpResponseMessage, Exception, Task> onError, int retry)
         {
             if (retry <= 0)
             {
                 return null;
             }
 
+            using HttpClient httpclient = new(HttpHandler.GetHandler(), false)
+            {
+#if !DEBUG
+                    Timeout = TimeSpan.FromSeconds(10),
+#endif
+            };
+            HttpResponseMessage resp = await httpclient.GetAsync(uri);
             try
             {
-                using HttpClient httpclient = new(HttpHandler.GetHandler(), false)
-                {
-#if !DEBUG
-                    Timeout = TimeSpan.FromSeconds(3),
-#endif
-                };
-                HttpResponseMessage resp = await httpclient.GetAsync(uri);
                 if (resp.IsSuccessStatusCode)
                 {
                     using Stream s = await resp.Content.ReadAsStreamAsync();
@@ -42,17 +42,20 @@ namespace Cod.Platform
                 }
                 else if (onError != null)
                 {
-                    await onError(resp);
+                    await onError(resp, null);
                 }
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException e)
             {
+                await onError(resp, e);
             }
-            catch (SocketException)
+            catch (SocketException e)
             {
+                await onError(resp, e);
             }
-            catch (IOException)
+            catch (IOException e)
             {
+                await onError(resp, e);
             }
 
             return await FetchStreamAsync(uri, onError, --retry);

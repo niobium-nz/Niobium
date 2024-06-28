@@ -53,7 +53,14 @@ namespace Cod.Platform.Tenants.Wechat
                 return new OperationResult<WechatMediaSource>(url);
             }
 
-            Stream result = await url.Result.FetchStreamAsync(null, 1);
+            Func<HttpResponseMessage, Exception, Task> onError = (resp, e) =>
+            {
+                var message = $"An error occurred while trying to download media {mediaID} from wechat response StatusCode: {resp.StatusCode}, error: {e?.Message}";
+                Logger.Instance?.LogError(message);
+                return Task.CompletedTask;
+            };
+
+            Stream result = await url.Result.FetchStreamAsync(onError, 1);
             if (result == null)
             {
                 return new OperationResult<WechatMediaSource>(Cod.InternalError.GatewayTimeout);
