@@ -21,4 +21,3 @@ stages:
   - template: pipelines/jobs/GenericDotnetBuild.yml@devops
     parameters:
       nugetVSTSFeedID: 'cod/cod'
-      projectToPublish: '**/Cod.Abstractions.csproj'
