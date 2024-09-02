@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using Microsoft.Extensions.Logging;
+using System.Net.Sockets;
 
 namespace Cod.Platform
 {
@@ -23,12 +24,13 @@ namespace Cod.Platform
                 return null;
             }
 
+
             try
             {
                 using HttpClient httpclient = new(HttpHandler.GetHandler(), false)
                 {
 #if !DEBUG
-                    Timeout = TimeSpan.FromSeconds(3),
+                    Timeout = TimeSpan.FromSeconds(10),
 #endif
                 };
                 HttpResponseMessage resp = await httpclient.GetAsync(uri);
@@ -45,14 +47,17 @@ namespace Cod.Platform
                     await onError(resp);
                 }
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException e)
             {
+                Logger.Instance?.LogError(e?.Message);
             }
-            catch (SocketException)
+            catch (SocketException e)
             {
+                Logger.Instance?.LogError(e?.Message);
             }
-            catch (IOException)
+            catch (IOException e)
             {
+                Logger.Instance?.LogError(e?.Message);
             }
 
             return await FetchStreamAsync(uri, onError, --retry);
