@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-namespace Cod
+﻿namespace Cod
 {
     public interface IConfigurationProvider
     {

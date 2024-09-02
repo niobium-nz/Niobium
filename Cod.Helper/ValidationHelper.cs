@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Linq.Expressions;
 
 namespace Cod
@@ -67,9 +64,9 @@ namespace Cod
                 }
             }
 
-            if (isValid && model is IFormatable formatable)
+            if (isValid && model is IUserInput formatable)
             {
-                formatable.Format();
+                formatable.Sanitize();
             }
 
             return isValid;

@@ -3,15 +3,15 @@ using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
-    public class LoginNavigationEventHandler : DomainEventHandler<IAuthenticator>
+    public class LoginNavigationEventHandler : IEventHandler<IAuthenticator>
     {
         private readonly INavigator navigator;
 
         public LoginNavigationEventHandler(INavigator navigator) => this.navigator = navigator;
 
-        protected override async Task CoreHandleAsync(IAuthenticator sender, object e)
+        public async Task HandleAsync(object sender, object e)
         {
-            if (!sender.IsAuthenticated())
+            if (e is AuthenticationUpdatedEvent evt && !evt.IsAuthenticated)
             {
                 var queries = this.navigator.GetQueryStrings();
                 var returnUrl = queries.Get("returnUrl");

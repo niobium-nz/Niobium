@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Cod
+﻿namespace Cod
 {
     public static class StorageKeyExtensions
     {

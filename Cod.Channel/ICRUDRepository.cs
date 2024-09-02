@@ -2,17 +2,17 @@
 {
     public interface ICRUDRepository<TDomain, TEntity>
        : IDeletableRepository<TDomain, TEntity>
-       where TDomain : IChannelDomain<TEntity>
-       where TEntity : IEntity
+       where TDomain : IDomain<TEntity>
+       where TEntity : class, new()
     {
     }
 
     public interface ICRUDRepository<TDomain, TEntity, TCreateParams>
        : ICreatableRepository<TDomain, TEntity, TCreateParams>,
        IDeletableRepository<TDomain, TEntity>
-       where TDomain : IChannelDomain<TEntity>
+       where TDomain : IDomain<TEntity>
        where TCreateParams : class
-       where TEntity : IEntity
+       where TEntity : class, new()
     {
     }
 
@@ -20,9 +20,9 @@
         : ICreatableRepository<TDomain, TEntity, TCreateParams>,
         IUpdatableRepository<TDomain, TEntity, TUpdateParams>,
         IDeletableRepository<TDomain, TEntity>
-        where TDomain : IChannelDomain<TEntity>
+        where TDomain : IDomain<TEntity>
         where TCreateParams : class
-        where TEntity : IEntity
+        where TEntity : class, new()
     {
     }
 }

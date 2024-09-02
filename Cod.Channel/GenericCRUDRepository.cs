@@ -7,8 +7,8 @@ namespace Cod.Channel
     public abstract class GenericCRUDRepository<TDomain, TEntity>
         : GenericCRUDRepository<TDomain, TEntity, TEntity>,
         ICRUDRepository<TDomain, TEntity>
-        where TEntity : class, IEntity
-        where TDomain : IChannelDomain<TEntity>
+        where TEntity : class, new()
+        where TDomain : IDomain<TEntity>
     {
         public GenericCRUDRepository(IConfigurationProvider configuration, IHttpClient httpClient, IAuthenticator authenticator, Func<TDomain> createDomain)
             : base(configuration, httpClient, authenticator, createDomain)
@@ -19,8 +19,8 @@ namespace Cod.Channel
     public abstract class GenericCRUDRepository<TDomain, TEntity, TCreateParams>
         : GenericCRUDRepository<TDomain, TEntity, TCreateParams, TCreateParams>,
         ICRUDRepository<TDomain, TEntity, TCreateParams>
-        where TEntity : IEntity
-        where TDomain : IChannelDomain<TEntity>
+        where TEntity : class, new()
+        where TDomain : IDomain<TEntity>
         where TCreateParams : class
     {
         public GenericCRUDRepository(IConfigurationProvider configuration, IHttpClient httpClient, IAuthenticator authenticator, Func<TDomain> createDomain)
@@ -35,8 +35,8 @@ namespace Cod.Channel
         IUpdatableRepository<TDomain, TEntity, TUpdateParams>,
         IDeletableRepository<TDomain, TEntity>,
         ICRUDRepository<TDomain, TEntity, TCreateParams, TUpdateParams>
-        where TEntity : IEntity
-        where TDomain : IChannelDomain<TEntity>
+        where TEntity : class, new()
+        where TDomain : IDomain<TEntity>
         where TCreateParams : class
     {
         public GenericCRUDRepository(
@@ -65,7 +65,8 @@ namespace Cod.Channel
             var domain = this.Data.SingleOrDefault(d => d.PartitionKey == key.PartitionKey && d.RowKey == key.RowKey);
             if (domain != null)
             {
-                var result = await this.DeleteCoreAsync(domain.Entity);
+                var entity = await domain.GetEntityAsync();
+                var result = await this.DeleteCoreAsync(entity);
                 if (result.IsSuccess)
                 {
                     this.Uncache(domain);

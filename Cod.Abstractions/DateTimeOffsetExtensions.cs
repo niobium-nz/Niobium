@@ -1,4 +1,3 @@
-using System;
 using System.Globalization;
 
 namespace Cod
@@ -12,7 +11,7 @@ namespace Cod
         private const int MaxWeek = WeeksInLongYear;
 
         public static readonly TimeSpan ChinaTimeOffset = TimeSpan.FromHours(8);
-        private static readonly long reverseUnixTimestampAnchor = DateTimeOffset.Parse("2050-01-01T00:00:00Z").ToUnixTimeMilliseconds();
+        private static readonly long reverseUnixTimestampAnchor = CodSettings.UseLegacyReverseTimestamp ? DateTimeOffset.Parse("2050-01-01T00:00:00Z").ToUnixTimeMilliseconds() : DateTimeOffset.Parse("2100-01-01T00:00:00Z").ToUnixTimeMilliseconds();
 
         public static DateTimeOffset MaxValueForTableStorage { get; private set; } = DateTimeOffset.Parse("2100-01-01T00:00:00Z");
 
@@ -116,17 +115,11 @@ namespace Cod
 
         public static DateTimeOffset? ParseDate(this string dateString)
         {
-            if (string.IsNullOrWhiteSpace(dateString) || dateString.Length != 8)
-            {
-                return null;
-            }
-
-            if (!int.TryParse(dateString.Substring(0, 4), out int year))
-            {
-                return null;
-            }
-
-            return !int.TryParse(dateString.Substring(4, 2), out int month)
+            return string.IsNullOrWhiteSpace(dateString) || dateString.Length != 8
+                ? null
+                : !int.TryParse(dateString.Substring(0, 4), out int year)
+                ? null
+                : !int.TryParse(dateString.Substring(4, 2), out int month)
                 ? null
                 : !int.TryParse(dateString.Substring(6, 2), out int day) ? null : new DateTimeOffset(year, month, day, 0, 0, 0, TimeSpan.Zero);
         }

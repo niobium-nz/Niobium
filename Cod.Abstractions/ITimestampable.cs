@@ -1,5 +1,3 @@
-using System;
-
 namespace Cod
 {
     public interface ITimestampable

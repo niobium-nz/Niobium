@@ -4,8 +4,8 @@ using System.Threading.Tasks;
 namespace Cod.Channel
 {
     public interface IRepository<TDomain, TEntity>
-        where TDomain : IChannelDomain<TEntity>
-        where TEntity : IEntity
+        where TDomain : IDomain<TEntity>
+        where TEntity : class, new()
     {
         IReadOnlyCollection<TDomain> Data { get; }
 
@@ -26,9 +26,5 @@ namespace Cod.Channel
         void Uncache(TDomain domainObject);
 
         void Uncache(IEnumerable<TDomain> domainObjects);
-
-        void Uncache(TEntity entity);
-
-        void Uncache(IEnumerable<TEntity> entities);
     }
 }

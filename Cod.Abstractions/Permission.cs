@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Cod
+﻿namespace Cod
 {
     public class Permission
     {

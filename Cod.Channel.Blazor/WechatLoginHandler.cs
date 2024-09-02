@@ -37,7 +37,7 @@ namespace Cod.Channel.Blazor
             }
 
             var loginCommand = this.Commander.Get<LoginCommandParameter>(Commands.Login);
-            var parameter = new LoginCommandParameter(Authentication.WechatLoginScheme, this.AppID, code, true);
+            var parameter = new LoginCommandParameter(AuthenticationScheme.WechatLoginScheme, this.AppID, code, true);
             var result = await loginCommand.ExecuteAsync(parameter);
             if (result.Result.IsSuccess)
             {

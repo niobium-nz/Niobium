@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Cod
+﻿namespace Cod
 {
     public abstract class InternalError
     {

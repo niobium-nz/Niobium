@@ -1,5 +1,4 @@
-﻿using System;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 
 namespace Cod
@@ -22,14 +21,12 @@ namespace Cod
 
         private static byte[] Encrypt(byte[] plainBytes, RijndaelManaged rijndaelManaged)
         {
-            return rijndaelManaged.CreateEncryptor()
-                .TransformFinalBlock(plainBytes, 0, plainBytes.Length);
+            return rijndaelManaged.CreateEncryptor().TransformFinalBlock(plainBytes, 0, plainBytes.Length);
         }
 
         private static byte[] Decrypt(byte[] encryptedData, RijndaelManaged rijndaelManaged)
         {
-            return rijndaelManaged.CreateDecryptor()
-                .TransformFinalBlock(encryptedData, 0, encryptedData.Length);
+            return rijndaelManaged.CreateDecryptor().TransformFinalBlock(encryptedData, 0, encryptedData.Length);
         }
 
         private static RijndaelManaged GetRijndaelManaged(string secretKey)

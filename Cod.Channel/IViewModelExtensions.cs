@@ -11,21 +11,37 @@ namespace Cod.Channel
             this IList<TViewModel> existings,
             IEnumerable<TDomain> refreshments,
             Func<TViewModel> createViewModel, TEntity dummy, IUIRefreshable parent = null)
-            where TViewModel : IViewModel<TDomain, TEntity>
-            where TDomain : IChannelDomain<TEntity>
-            where TEntity : IEntity
+            where TViewModel : class, IViewModel<TDomain, TEntity>
+            where TDomain : IDomain<TEntity>
+            where TEntity : class, new()
         {
-            if (existings == null)
-            {
-                existings = new List<TViewModel>();
-            }
+            existings ??= new List<TViewModel>();
 
             foreach (var refreshment in refreshments)
             {
-                var changed = existings.SingleOrDefault(e =>
+                TViewModel changed = null;
+                var changes = existings.Where(e =>
                     e.PartitionKey == refreshment.PartitionKey
-                    && e.RowKey == refreshment.RowKey
-                    && e.ETag != refreshment.Entity.ETag);
+                    && e.RowKey == refreshment.RowKey);
+                var count = changes.Count();
+                if (count == 1)
+                {
+                    changed = changes.Single();
+                }
+                else if (count > 1)
+                {
+                    foreach (var change in changes)
+                    {
+                        var existingETag = await change.GetHashAsync();
+                        var newETag = await refreshment.GetHashAsync();
+                        if (existingETag == newETag)
+                        {
+                            changed = change;
+                            break;
+                        }
+                    }
+                }
+
                 if (changed != null)
                 {
                     await changed.InitializeAsync(domain: refreshment, parent: parent, force: true);

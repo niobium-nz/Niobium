@@ -1,5 +1,3 @@
-using System;
-
 namespace Cod
 {
     public static class TimeSpanExtensions

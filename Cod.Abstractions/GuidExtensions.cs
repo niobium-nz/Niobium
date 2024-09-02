@@ -1,12 +1,10 @@
-﻿using System;
-
-namespace Cod
+﻿namespace Cod
 {
     public static class GuidExtensions
     {
         public static string ToKey(this Guid guid)
         {
-            return guid.ToString("N").ToUpperInvariant();
+            return CodSettings.UseLegacyGuidFormat ? guid.ToString("N").ToUpperInvariant() : guid.ToString();
         }
     }
 }

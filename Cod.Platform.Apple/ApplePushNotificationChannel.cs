@@ -1,11 +1,11 @@
+using Cod.Platform.Notification;
+using Cod.Platform.Tenant;
+using Cod.Storage.Table;
+using Jose;
+using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
-using Cod.Platform.Database;
-using Cod.Platform.Identities;
-using Cod.Platform.Notification;
-using Jose;
-using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform
 {
@@ -15,8 +15,8 @@ namespace Cod.Platform
         private readonly Lazy<ICacheStore> cacheStore;
         private const string AccessTokenCacheKey = "ApplePushAccessToken";
 
-        public ApplePushNotificationChannel(Lazy<IOpenIDManager> openIDManager, Lazy<ICacheStore> cacheStore)
-            : base(openIDManager) => this.cacheStore = cacheStore;
+        public ApplePushNotificationChannel(Lazy<INofiticationChannelRepository> repo, Lazy<ICacheStore> cacheStore)
+            : base(repo) => this.cacheStore = cacheStore;
 
         protected virtual string ApplePushNotificationHost => "api.sandbox.push.apple.com";
 

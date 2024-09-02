@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Cod
+﻿namespace Cod
 {
     public class AccessToken
     {
@@ -8,8 +6,11 @@ namespace Cod
 
         public long Expiry { get; set; }
 
-        public DateTimeOffset Expires => DateTimeOffset.FromUnixTimeSeconds(this.Expiry);
+        public DateTimeOffset Expires => DateTimeOffset.FromUnixTimeSeconds(Expiry);
 
-        public bool Validate() => !String.IsNullOrWhiteSpace(this.Token) && this.Expires > DateTimeOffset.UtcNow;
+        public bool Validate()
+        {
+            return !string.IsNullOrWhiteSpace(Token) && Expires > DateTimeOffset.UtcNow;
+        }
     }
 }

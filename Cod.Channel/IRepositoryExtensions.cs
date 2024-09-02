@@ -11,8 +11,8 @@ namespace Cod.Channel
             int count = -1,
             bool force = false,
             bool continueToLoadMore = false)
-            where TDomain : IChannelDomain<TEntity>
-            where TEntity : IEntity
+            where TDomain : IDomain<TEntity>
+            where TEntity : class, new()
             => await repository.LoadAsync(partitionKeyPrefix, $"{partitionKeyPrefix}~", count, force, continueToLoadMore);
     }
 }

@@ -1,10 +1,10 @@
-﻿using System.Net.Http.Headers;
-using System.Text;
-using Cod.Platform.Database;
-using Cod.Platform.Identities;
-using Cod.Platform.Notification;
+﻿using Cod.Platform.Notification;
+using Cod.Platform.Tenant;
+using Cod.Storage.Table;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.Logging;
+using System.Net.Http.Headers;
+using System.Text;
 
 namespace Cod.Platform
 {
@@ -13,8 +13,8 @@ namespace Cod.Platform
         private readonly Lazy<ICacheStore> cacheStore;
         private const string AccessTokenCacheKey = "GooglePushAccessToken";
 
-        public FirebasePushNotificationChannel(Lazy<IOpenIDManager> openIDManager, Lazy<ICacheStore> cacheStore)
-            : base(openIDManager) => this.cacheStore = cacheStore;
+        public FirebasePushNotificationChannel(Lazy<INofiticationChannelRepository> repo, Lazy<ICacheStore> cacheStore)
+            : base(repo) => this.cacheStore = cacheStore;
 
         public override async Task<OperationResult> SendAsync(string brand,
             Guid user,

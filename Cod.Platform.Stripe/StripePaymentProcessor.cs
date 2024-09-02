@@ -1,4 +1,3 @@
-using Cod.Platform.Database;
 using Cod.Platform.Finance;
 using Microsoft.Extensions.Logging;
 using Stripe;
@@ -188,7 +187,7 @@ namespace Cod.Platform
                     return new OperationResult<ChargeResult>(InternalError.PreconditionFailed);
                 }
 
-                var user = Guid.Parse(setup.Metadata[nameof(Identities.User)]);
+                var user = Guid.Parse(setup.Metadata[Integration.Stripe.Constants.IntentMetadataUserID]);
                 var pm = await this.stripeIntegration.Value.RetrivePaymentMethodAsync(setup.PaymentMethodId);
                 var pmkey = $"{setup.CustomerId}{PaymentInfoSpliter}{setup.PaymentMethodId}";
                 await this.paymentRepo.Value.CreateAsync(new Finance.PaymentMethod
@@ -244,7 +243,7 @@ namespace Cod.Platform
                         Provider = (int)PaymentServiceProvider.Stripe,
                         Reason = (int)TransactionReason.Deposit,
                         Status = (int)TransactionStatus.Completed,
-                        Remark = Constant.TRANSACTION_REASON_DEPOSIT,
+                        Remark = Constants.TRANSACTION_REASON_DEPOSIT,
                     };
 
                     await this.transactionRepo.Value.CreateAsync(transaction);
@@ -291,7 +290,7 @@ namespace Cod.Platform
                         Provider = (int)PaymentServiceProvider.Stripe,
                         Reason = (int)TransactionReason.Refund,
                         Status = (int)TransactionStatus.Refunded,
-                        Remark = Constant.TRANSACTION_REASON_REFUND,
+                        Remark = Constants.TRANSACTION_REASON_REFUND,
                     };
 
                     await this.transactionRepo.Value.CreateAsync(transaction);

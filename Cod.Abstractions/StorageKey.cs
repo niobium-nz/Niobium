@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace Cod
 {
     public struct StorageKey : IEquatable<StorageKey>

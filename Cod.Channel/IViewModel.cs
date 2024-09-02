@@ -3,14 +3,14 @@ using System.Threading.Tasks;
 namespace Cod.Channel
 {
     public interface IViewModel<TDomain, TEntity>
-        where TDomain : IChannelDomain<TEntity>
-        where TEntity : IEntity
+        where TDomain : IDomain<TEntity>
+        where TEntity : class, new()
     {
         string PartitionKey { get; }
 
         string RowKey { get; }
 
-        string ETag { get; }
+        Task<string> GetHashAsync();
 
         IUIRefreshable Parent { get; }
 

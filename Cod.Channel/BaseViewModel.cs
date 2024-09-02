@@ -1,19 +1,14 @@
-using System;
 using System.Threading.Tasks;
 
 namespace Cod.Channel
 {
     public abstract class BaseViewModel<TDomain, TEntity> : IViewModel<TDomain, TEntity>
-            where TDomain : ChannelDomain<TEntity>
-            where TEntity : IEntity
+            where TDomain : IDomain<TEntity>
+            where TEntity : class, new()
     {
-        public string PartitionKey => this.Domain.Entity.PartitionKey;
+        public string PartitionKey => this.Domain.PartitionKey;
 
-        public string RowKey => this.Domain.Entity.RowKey;
-
-        public string ETag => this.Domain.Entity.ETag;
-
-        public DateTimeOffset? Created => this.Domain.Entity.Created;
+        public string RowKey => this.Domain.RowKey;
 
         public IUIRefreshable Parent { get; private set; }
 
@@ -22,6 +17,11 @@ namespace Cod.Channel
         protected TDomain Domain { get; private set; }
 
         protected bool DomainInitialized { get; private set; }
+
+        public async Task<string> GetHashAsync()
+        {
+            return await Domain.GetHashAsync();
+        }
 
         public async Task<IViewModel<TDomain, TEntity>> InitializeAsync(TDomain domain, IUIRefreshable parent = null, bool force = false)
         {

@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 namespace Cod.Channel
 {
     public class GenericRepository<TDomain, TEntity> : IRepository<TDomain, TEntity>
-        where TEntity : IEntity
-        where TDomain : IChannelDomain<TEntity>
+        where TEntity : class, new()
+        where TDomain : IDomain<TEntity>
     {
         private readonly IConfigurationProvider configuration;
         private readonly IHttpClient httpClient;
@@ -128,7 +128,7 @@ namespace Cod.Channel
 
                     if (response.Result.Data.Count > 0)
                     {
-                        result = this.Cache(response.Result.Data);
+                        result = await this.Cache(response.Result.Data);
                     }
                 }
             }
@@ -195,21 +195,23 @@ namespace Cod.Channel
             return await TableStorageHelper.GetAsync<TEntity>(this.httpClient, this.TableAPIBaseUrL, this.TableName, signature.Result.Signature, partitionKeyStart, partitionKeyEnd, rowKeyStart, rowKeyEnd, continuationToken, count);
         }
 
-        protected virtual IReadOnlyCollection<TDomain> Cache(IEnumerable<TEntity> entities)
+        protected virtual async Task<IReadOnlyCollection<TDomain>> Cache(IEnumerable<TEntity> entities)
         {
             var result = new List<TDomain>();
 
             foreach (var entity in entities)
             {
-                var existing = this.CachedData.SingleOrDefault(d => d.PartitionKey == entity.PartitionKey && d.RowKey == entity.RowKey);
+                var domain = this.ToDomain(entity);
+                var existing = this.CachedData.SingleOrDefault(d => d.PartitionKey == domain.PartitionKey && d.RowKey == domain.RowKey);
                 if (existing != null)
                 {
-                    if (existing.Entity.ETag != entity.ETag)
+                    var existingETag = await existing.GetHashAsync();
+                    var currentETag = await domain.GetHashAsync();
+                    if (existingETag != currentETag)
                     {
                         var i = this.CachedData.IndexOf(existing);
-                        var d = this.ToDomain(entity);
-                        this.CachedData[i] = d;
-                        result.Add(d);
+                        this.CachedData[i] = domain;
+                        result.Add(domain);
                     }
                     else
                     {
@@ -218,9 +220,8 @@ namespace Cod.Channel
                 }
                 else
                 {
-                    var d = this.ToDomain(entity);
-                    this.CachedData.Add(d);
-                    result.Add(d);
+                    this.CachedData.Add(domain);
+                    result.Add(domain);
                 }
             }
 
@@ -234,11 +235,6 @@ namespace Cod.Channel
 
         public void Uncache(IEnumerable<TDomain> domainObjects)
             => this.CachedData.RemoveAll(c => domainObjects.Any(dobj => dobj.PartitionKey == c.PartitionKey && dobj.RowKey == c.RowKey));
-
-        public void Uncache(TEntity entity) => this.Uncache(new[] { entity });
-
-        public void Uncache(IEnumerable<TEntity> entities)
-            => this.CachedData.RemoveAll(c => entities.Any(en => en.PartitionKey == c.PartitionKey && en.RowKey == c.RowKey));
 
         protected virtual TDomain ToDomain(TEntity entity) => (TDomain)this.createDomain().Initialize(entity);
 

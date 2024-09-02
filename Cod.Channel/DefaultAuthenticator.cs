@@ -140,10 +140,7 @@ namespace Cod.Channel
         public async Task CleanupAsync()
         {
             await this.CleanupCredentialsAsync();
-            foreach (var eventHandler in this.eventHandlers)
-            {
-                await eventHandler.InvokeAsync(this);
-            }
+            await this.OnAuthenticationUpdated();
         }
 
         public async Task SetTokenAsync(string token)
@@ -169,9 +166,18 @@ namespace Cod.Channel
 
                 // if (remember) 此处应该判断是否保存
                 await this.SaveTokenAsync(token);
+                await this.OnAuthenticationUpdated();
             }
             catch (ArgumentException)
             {
+            }
+        }
+
+        protected async virtual Task OnAuthenticationUpdated()
+        {
+            foreach (var eventHandler in this.eventHandlers)
+            {
+                await eventHandler.HandleAsync(this, new AuthenticationUpdatedEvent(this.IsAuthenticated()));
             }
         }
 

@@ -27,7 +27,7 @@ namespace Cod.Platform
                 Customer = customer.Id,
                 Metadata = new Dictionary<string, string>
                 {
-                    { nameof(Model.User), user.ToString("N") }
+                    { Integration.Stripe.Constants.IntentMetadataUserID, user.ToString("N") }
                 }
             };
             var setupIntentService = new SetupIntentService();

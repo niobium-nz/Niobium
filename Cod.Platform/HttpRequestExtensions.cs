@@ -1,11 +1,10 @@
-using Cod.Platform.Tenants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using System.Globalization;
-using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
@@ -82,7 +81,7 @@ namespace Cod.Platform
             return result;
         }
 
-        public static IEnumerable<string> GetRemoteIP(this HttpRequest request)
+        public static string GetRemoteIP(this HttpRequest request)
         {
             if (!request.Headers.TryGetValue("X-Forwarded-For", out StringValues values))
             {
@@ -90,14 +89,15 @@ namespace Cod.Platform
                 {
                     if (!request.Headers.TryGetValue("CLIENT-IP", out values))
                     {
-                        return Enumerable.Empty<string>();
+                        return null;
                     }
                 }
             }
 
             return values.Where(v => !string.IsNullOrWhiteSpace(v))
                        .SelectMany(v => v.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries))
-                       .Select(v => v.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries).First());
+                       .Select(v => v.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries).First())
+                       .FirstOrDefault();
         }
 
         public static void DeliverAuthenticationToken(this HttpRequest request, string token, string scheme)
@@ -134,31 +134,16 @@ namespace Cod.Platform
             return Parse<T>(await new StreamReader(request.Body).ReadToEndAsync());
         }
 
-        public static bool TryGetAuthorizationCredentials(this HttpRequest request, out string scheme, out string identity, out string credential)
+        public static async Task<ClaimsPrincipal> HasClaimAsync<T>(this HttpRequest request, string claim, T value)
         {
-            identity = null;
-            credential = null;
-
-            if (!request.TryParseAuthorizationHeader(out scheme, out string parameter))
-            {
-                return false;
-            }
-
-            scheme = scheme.ToLowerInvariant();
-            byte[] base64EncodedBytes = Convert.FromBase64String(parameter);
-            string[] credentials = Encoding.UTF8.GetString(base64EncodedBytes).Split(':');
-            identity = credentials[0];
-            if (credentials.Length >= 2)
-            {
-                credential = credentials[1];
-            }
-            return true;
+            ClaimsPrincipal principal = await TryParsePrincipalAsync(request);
+            return principal == null ? null : !principal.TryGetClaim<T>(claim, out T result) ? null : result.Equals(value) ? principal : null;
         }
 
         public static bool TryParseAuthorizationHeader(this HttpRequest request, out string scheme, out string parameter)
         {
-            parameter = null;
-            scheme = null;
+            parameter = string.Empty;
+            scheme = string.Empty;
 
             if (!request.Headers.TryGetValue(AuthorizationRequestHeaderKey, out StringValues header))
             {
@@ -182,12 +167,6 @@ namespace Cod.Platform
             return true;
         }
 
-        public static async Task<ClaimsPrincipal> HasClaimAsync<T>(this HttpRequest request, string claim, T value)
-        {
-            ClaimsPrincipal principal = await TryParsePrincipalAsync(request);
-            return principal == null ? null : !principal.TryGetClaim<T>(claim, out T result) ? null : result.Equals(value) ? principal : null;
-        }
-
         public static async Task<ClaimsPrincipal> TryParsePrincipalAsync(this HttpRequest request, string scheme = "Bearer")
         {
             if (!request.TryParseAuthorizationHeader(out string inputScheme, out string parameter)
@@ -206,54 +185,9 @@ namespace Cod.Platform
             }
         }
 
-        public static async Task<OperationResult<T>> ValidateSignatureAndParseAsync<T>(this HttpRequest req, string secret, byte[] tenant = null)
+        private static async Task<ClaimsPrincipal> ValidateAndDecodeAsync(string token)
         {
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            if (string.IsNullOrWhiteSpace(requestBody))
-            {
-                return new OperationResult<T>(InternalError.BadRequest);
-            }
-
-            T model = JsonSerializer.DeserializeObject<T>(requestBody);
-            _ = ValidationHelper.TryValidate(model, out ValidationState validation);
-
-            string requestSignature = null;
-            if (req.Headers.TryGetValue("ETag", out StringValues etag))
-            {
-                requestSignature = etag.SingleOrDefault();
-            }
-
-            if (string.IsNullOrWhiteSpace(requestSignature))
-            {
-                validation.AddError("ETag", Localization.SignatureMissing);
-            }
-
-            if (!validation.IsValid)
-            {
-                return new OperationResult<T>(validation.ToOperationResult());
-            }
-
-            if (model is ITenantOwned tenantOwned)
-            {
-                tenant = tenantOwned.GetTenantAuthenticationIdentifier();
-            }
-
-            if (tenant == null)
-            {
-                throw new NotSupportedException();
-            }
-
-            string stringToSign = $"{req.Path.Value}?{requestBody}";
-            string tenantSecret = Tenants.Wechat.SignatureHelper.GetTenantSecret(tenant, secret);
-            string signature = Cod.SignatureHelper.GetSignature(stringToSign, tenantSecret);
-            return signature.ToUpperInvariant() != requestSignature.ToUpperInvariant()
-                ? new OperationResult<T>(InternalError.AuthenticationRequired)
-                : new OperationResult<T>(model);
-        }
-
-        private static Task<ClaimsPrincipal> ValidateAndDecodeAsync(string token)
-        {
-            string secret = ConfigurationProvider.GetSetting(Constant.AUTH_SECRET_NAME);
+            string secret = ConfigurationProvider.GetSetting(Constants.AUTH_SECRET_NAME);
             SymmetricSecurityKey key = new(Encoding.UTF8.GetBytes(secret));
             TokenValidationParameters validationParameters = new()
             {
@@ -270,10 +204,8 @@ namespace Cod.Platform
 
             try
             {
-                ClaimsPrincipal claimsPrincipal = new JwtSecurityTokenHandler()
-                    .ValidateToken(token, validationParameters, out SecurityToken rawValidatedToken);
-
-                return Task.FromResult(claimsPrincipal);
+                TokenValidationResult validationResult = await new JsonWebTokenHandler().ValidateTokenAsync(token, validationParameters);
+                return validationResult.IsValid ? null : new ClaimsPrincipal(validationResult.ClaimsIdentity);
             }
             catch (SecurityTokenValidationException stvex)
             {

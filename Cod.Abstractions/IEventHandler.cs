@@ -1,9 +1,7 @@
-﻿using System.Threading.Tasks;
-
-namespace Cod
+﻿namespace Cod
 {
-    public interface IEventHandler<T>
+    public interface IEventHandler<out T>
     {
-        Task HandleAsync(T sender, object e);
+        Task HandleAsync(object sender, object e);
     }
 }

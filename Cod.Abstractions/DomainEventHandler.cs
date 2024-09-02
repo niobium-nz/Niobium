@@ -1,27 +1,17 @@
-﻿using System.Threading.Tasks;
-
-namespace Cod
+﻿namespace Cod
 {
-    public abstract class DomainEventHandler<TDomain, TEventArgs> : IEventHandler<TDomain>
+    public abstract class DomainEventHandler<TDomain, TEventArgs> : IDomainEventHandler<TDomain, TEventArgs>
+        where TDomain : IDomain
+        where TEventArgs : new()
     {
-        public async Task HandleAsync(TDomain sender, object e)
+        public abstract Task HandleAsync(TDomain sender, TEventArgs e);
+
+        public async Task HandleAsync(object sender, object e)
         {
-            if (e is TEventArgs args)
+            if (sender is TDomain s && e is TEventArgs args)
             {
-                await CoreHandleAsync(sender, args);
+                await HandleAsync(s, args);
             }
         }
-
-        protected abstract Task CoreHandleAsync(TDomain sender, TEventArgs e);
-    }
-
-    public abstract class DomainEventHandler<TDomain> : IEventHandler<TDomain>
-    {
-        public async Task HandleAsync(TDomain sender, object e)
-        {
-            await CoreHandleAsync(sender, e);
-        }
-
-        protected abstract Task CoreHandleAsync(TDomain sender, object e);
     }
 }
