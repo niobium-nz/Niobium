@@ -28,8 +28,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Cod.Platform.Finance\Cod.Platform.Finance.csproj" />
-    <ProjectReference Include="..\Cod.Platform.Locking\Cod.Platform.Locking.csproj" />
+    <ProjectReference Include="..\Cod.Platform.Identity.Abstractions\Cod.Platform.Identity.Abstractions.csproj" />
     <ProjectReference Include="..\Cod.Platform\Cod.Platform.csproj" />
     <ProjectReference Include="..\Cod.Storage.Table\Cod.Storage.Table.csproj" />
   </ItemGroup>

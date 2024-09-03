@@ -1,3 +1,4 @@
+using Cod.Platform.Identity;
 using Cod.Platform.Tenant.Wechat;
 using Cod.Storage.Table;
 using Microsoft.Extensions.Configuration;
@@ -24,7 +25,10 @@ namespace Cod.Platform.Tenant
             services.AddTransient<WechatIntegration>();
             services.AddTransient<IBusinessManager, MemoryCachedBusinessManager>();
             services.AddTransient<IBrandService, MemoryCachedBrandService>();
+            services.AddTransient<IOpenIDManager, OpenIDManager>();
 
+            services.AddTransient<IQueryableRepository<OpenID>, CloudTableRepository<OpenID>>();
+            services.AddTransient<IRepository<OpenID>, CloudTableRepository<OpenID>>();
             services.AddTransient<IQueryableRepository<Business>, CloudTableRepository<Business>>();
             services.AddTransient<IRepository<Business>, CloudTableRepository<Business>>();
             services.AddTransient<IQueryableRepository<BrandingInfo>, CloudTableRepository<BrandingInfo>>();
