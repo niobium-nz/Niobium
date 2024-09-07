@@ -35,7 +35,15 @@ namespace Cod.Storage.Table
             try
             {
                 NullableResponse<EntityDictionary> response = await GetTable().GetEntityIfExistsAsync<EntityDictionary>(partitionKey, rowKey, select: fields, cancellationToken: cancellationToken);
-                return response.Value.FromTableEntity<T>();
+
+                if (response.HasValue)
+                {
+                    return response.Value.FromTableEntity<T>();
+                }
+                else
+                {
+                    return null;
+                }
             }
             catch (RequestFailedException e)
             {
