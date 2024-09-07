@@ -23,7 +23,10 @@ namespace Cod.Storage.Table
 
             services.AddAzureClients(clientBuilder =>
             {
-                clientBuilder.AddTableServiceClient(configuration.GetSection("StorageTable")).WithCredential(new DefaultAzureCredential());
+                clientBuilder.AddTableServiceClient(
+                    configuration.GetSection(Constants.AppSettingStorageTable)
+                        .GetValue<string>(Constants.AppSettingStorageTableServiceUri))
+                .WithCredential(new DefaultAzureCredential());
                 clientBuilder.ConfigureDefaults(configuration.GetSection("AzureDefaults"));
             });
 
