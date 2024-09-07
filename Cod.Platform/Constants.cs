@@ -8,7 +8,6 @@ namespace Cod.Platform
         public const string HTTP_PROXY_USERNAME = "PROXY_USERNAME";
         public const string HTTP_PROXY_PASSWORD = "PROXY_PASSWORD";
         public const string AUTH_SECRET_NAME = "AUTH_TOKEN_KEY";
-        public const string ID_TOKEN_PRIVATE_KEY = "ID_TOKEN_PRIVATE_KEY";
         public const string API_URL = "API_URL";
 
         public const string NEW_STORAGE_CONNECTION_NAME = "STORAGE_ACCOUNT";

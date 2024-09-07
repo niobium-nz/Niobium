@@ -94,9 +94,16 @@ namespace Cod.Platform.Identity.Authentication
             }
             else
             {
-                string privateKey = await configuration.Value.GetSettingAsStringAsync(Constants.ID_TOKEN_PRIVATE_KEY);
+                string privateKey = await configuration.Value.GetSettingAsStringAsync(Constants.IDTokenPrivateKey);
+                string privateKeyPasscode = await configuration.Value.GetSettingAsStringAsync(Constants.IDTokenPrivateKeyPasscode);
+                if (string.IsNullOrEmpty(privateKey) || string.IsNullOrEmpty(privateKeyPasscode))
+                {
+                    throw new ApplicationException(InternalError.InternalServerError);
+                }
+
+                var buff = Convert.FromBase64String(privateKey);
                 using var rsa = RSA.Create();
-                rsa.ImportFromPem(privateKey);
+                rsa.ImportEncryptedPkcs8PrivateKey(privateKeyPasscode, buff, out _);
                 creds = new(new RsaSecurityKey(rsa), SecurityAlgorithms.RsaSha256);
             }
             
