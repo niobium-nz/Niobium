@@ -86,11 +86,11 @@ namespace Cod.Platform.Identity.Authentication
             }
 
             SigningCredentials creds;
+            IDisposable key = null;
             string secret = await configuration.Value.GetSettingAsStringAsync(Constants.AUTH_SECRET_NAME);
-            if (secret == null)
+            if (!string.IsNullOrEmpty(secret))
             {
-                SymmetricSecurityKey key = new(Encoding.UTF8.GetBytes(secret));
-                creds = new(key, SecurityAlgorithms.HmacSha256);
+                creds = new(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)), SecurityAlgorithms.HmacSha256);
             }
             else
             {
@@ -102,9 +102,10 @@ namespace Cod.Platform.Identity.Authentication
                 }
 
                 var buff = Convert.FromBase64String(privateKey);
-                using var rsa = RSA.Create();
+                var rsa = RSA.Create();
                 rsa.ImportEncryptedPkcs8PrivateKey(privateKeyPasscode, buff, out _);
                 creds = new(new RsaSecurityKey(rsa), SecurityAlgorithms.RsaSha256);
+                key = rsa;
             }
             
             SecurityTokenDescriptor token = new()
@@ -116,7 +117,9 @@ namespace Cod.Platform.Identity.Authentication
                 SigningCredentials = creds,
             };
 
-            return new JsonWebTokenHandler().CreateToken(token);
+            var result = new JsonWebTokenHandler().CreateToken(token);
+            key?.Dispose();
+            return result;
         }
     }
 }

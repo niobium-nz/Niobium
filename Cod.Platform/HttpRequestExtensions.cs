@@ -102,11 +102,6 @@ namespace Cod.Platform
 
         public static void DeliverAuthenticationToken(this HttpRequest request, string token, string scheme)
         {
-            if (token == null)
-            {
-                throw new ArgumentNullException(nameof(token));
-            }
-
             if (request.HttpContext.Response.Headers.ContainsKey(AuthorizationResponseHeaderKey))
             {
                 request.HttpContext.Response.Headers.Remove(AuthorizationResponseHeaderKey);

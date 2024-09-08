@@ -23,11 +23,14 @@ namespace Cod.Storage.Table
 
             services.AddAzureClients(clientBuilder =>
             {
-                clientBuilder.AddTableServiceClient(
+                var tableClientBuilder = clientBuilder.AddTableServiceClient(
                     new Uri(
                         configuration.GetSection(Constants.AppSettingStorageTable)
-                        .GetValue<string>(Constants.AppSettingStorageTableServiceUri)))
-                .WithCredential(new DefaultAzureCredential());
+                        .GetValue<string>(Constants.AppSettingStorageTableServiceUri)));
+
+                var env = configuration.GetValue<string>(Constants.ServiceEnvironment);
+                tableClientBuilder.WithCredential(new DefaultAzureCredential(includeInteractiveCredentials: env == Constants.DevelopmentEnvironment));
+
                 clientBuilder.ConfigureDefaults(configuration.GetSection("AzureDefaults"));
             });
 
