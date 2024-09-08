@@ -13,12 +13,12 @@ namespace Cod.Storage.Messaging
             this.client = client ?? throw new ArgumentNullException(nameof(client));
         }
 
-        public bool CanIssue(StorageType storageType, StorageControl control)
+        public bool CanIssue(ResourceType storageType, StorageControl control)
         {
-            return storageType == StorageType.Queue;
+            return storageType == ResourceType.AzureStorageQueue;
         }
 
-        public Task<Uri> IssueAsync(StorageType storageType, StorageControl control, DateTimeOffset expires, CancellationToken cancellationToken = default)
+        public Task<Uri> IssueAsync(ResourceType storageType, StorageControl control, DateTimeOffset expires, CancellationToken cancellationToken = default)
         {
             QueueClient queue = client.GetQueueClient(control.Resource);
             if (!queue.CanGenerateSasUri)

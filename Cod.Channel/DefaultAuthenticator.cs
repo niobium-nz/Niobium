@@ -71,7 +71,7 @@ namespace Cod.Channel
             }
         }
 
-        public virtual async Task<OperationResult<StorageSignature>> AquireSignatureAsync(StorageType type, string resource, string partitionKey, string rowKey)
+        public virtual async Task<OperationResult<StorageSignature>> AquireSignatureAsync(ResourceType type, string resource, string partitionKey, string rowKey)
         {
             if (!this.IsAuthenticated())
             {
@@ -191,7 +191,7 @@ namespace Cod.Channel
             await this.SaveSignaturesAsync(this.signatures);
         }
 
-        private static string BuildSignatureCacheKey(string token, StorageType type, string resource, string partitionKey, string rowKey)
+        private static string BuildSignatureCacheKey(string token, ResourceType type, string resource, string partitionKey, string rowKey)
             => $"{token}|{(int)type}|{resource}|{partitionKey}|{rowKey}";
     }
 }

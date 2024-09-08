@@ -2,8 +2,8 @@
 {
     public interface ISignatureIssuer
     {
-        bool CanIssue(StorageType storageType, StorageControl control);
+        bool CanIssue(ResourceType storageType, StorageControl control);
 
-        Task<Uri> IssueAsync(StorageType storageType, StorageControl control, DateTimeOffset expires, CancellationToken cancellationToken = default);
+        Task<Uri> IssueAsync(ResourceType storageType, StorageControl control, DateTimeOffset expires, CancellationToken cancellationToken = default);
     }
 }

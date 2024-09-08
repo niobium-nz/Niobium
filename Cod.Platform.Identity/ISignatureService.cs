@@ -1,12 +1,12 @@
 ﻿using System.Security.Claims;
 
-namespace Cod.Platform.Identity.Authorization
+namespace Cod.Platform.Identity
 {
     public interface ISignatureService
     {
         Task<OperationResult<StorageSignature>> IssueAsync(
             ClaimsPrincipal claims,
-            StorageType type,
+            ResourceType type,
             string resource,
             string partition,
             string row);

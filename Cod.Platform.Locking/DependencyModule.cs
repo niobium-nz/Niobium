@@ -19,7 +19,7 @@ namespace Cod.Platform.Locking
 
             services.AddStorageTable(configuration);
 
-            services.AddTransient<IStorageControl, ImpedimentControl>();
+            services.AddTransient<IResourceControl, ImpedimentControl>();
             services.AddTransient<IImpedimentPolicy, ImpedementPolicyScanProvider>();
 
             return services;

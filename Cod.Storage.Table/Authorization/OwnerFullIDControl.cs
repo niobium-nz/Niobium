@@ -3,14 +3,14 @@ using System.Security.Claims;
 
 namespace Cod.Storage.Table.Authorization
 {
-    public abstract class OwnerFullIDControl<T> : IStorageControl
+    public abstract class OwnerFullIDControl<T> : IResourceControl
     {
-        public bool Grantable(StorageType type, string resource)
+        public bool Grantable(ResourceType type, string resource)
         {
-            return type == StorageType.Table && resource.ToUpperInvariant() == typeof(T).Name.ToUpperInvariant();
+            return type == ResourceType.AzureStorageTable && resource.ToUpperInvariant() == typeof(T).Name.ToUpperInvariant();
         }
 
-        public Task<StorageControl> GrantAsync(ClaimsPrincipal principal, StorageType type, string resource, string partition, string row, CancellationToken cancellationToken = default)
+        public Task<StorageControl> GrantAsync(ClaimsPrincipal principal, ResourceType type, string resource, string partition, string row, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(new StorageControl((int)TablePermissions.Query, typeof(T).Name)
             {

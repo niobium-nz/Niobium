@@ -20,6 +20,32 @@ namespace Cod.Platform
         private const string ClientIDRequestHeaderKey = "ClientID";
         private const string HeaderCORSKey = "Access-Control-Expose-Headers";
         private static readonly CultureInfo DefaultUICulture = new("en-US");
+        private static readonly string[] IPv4ReservedIPPrefix = 
+        {
+            "0.",   //0.0.0.0每0.255.255.255
+            "10.",  //10.0.0.0每10.255.255.255
+            "127.",  //127.0.0.0每127.255.255.255
+            "169.254.",  //169.254.0.0每169.254.255.255
+            "192.168.",  //192.168.0.0每192.168.255.255
+            "198.18.",  //198.18.0.0每198.18.255.255	
+            "198.19.",  //198.19.0.0每198.19.255.255	
+            "172.16.",  //172.16.0.0每172.31.255.255
+            "172.17.",  //172.16.0.0每172.31.255.255
+            "172.18.",  //172.16.0.0每172.31.255.255
+            "172.19.",  //172.16.0.0每172.31.255.255
+            "172.20.",  //172.16.0.0每172.31.255.255
+            "172.21.",  //172.16.0.0每172.31.255.255
+            "172.22.",  //172.16.0.0每172.31.255.255
+            "172.23.",  //172.16.0.0每172.31.255.255
+            "172.24.",  //172.16.0.0每172.31.255.255
+            "172.25.",  //172.16.0.0每172.31.255.255
+            "172.26.",  //172.16.0.0每172.31.255.255
+            "172.27.",  //172.16.0.0每172.31.255.255
+            "172.28.",  //172.16.0.0每172.31.255.255
+            "172.29.",  //172.16.0.0每172.31.255.255
+            "172.30.",  //172.16.0.0每172.31.255.255
+            "172.31.",  //172.16.0.0每172.31.255.255
+        };
 
         public static void Register(this HttpRequest request, ILogger logger)
         {
@@ -94,10 +120,10 @@ namespace Cod.Platform
                 }
             }
 
-            return values.Where(v => !string.IsNullOrWhiteSpace(v))
+            var ips = values.Where(v => !string.IsNullOrWhiteSpace(v))
                        .SelectMany(v => v.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries))
-                       .Select(v => v.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries).First())
-                       .FirstOrDefault();
+                       .Select(v => v.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries).First());
+            return ips.Where(i => IPv4ReservedIPPrefix.All(p => !i.StartsWith(p, StringComparison.InvariantCulture))).FirstOrDefault();
         }
 
         public static void DeliverAuthenticationToken(this HttpRequest request, string token, string scheme)
@@ -182,7 +208,7 @@ namespace Cod.Platform
 
         private static async Task<ClaimsPrincipal> ValidateAndDecodeAsync(string token)
         {
-            string secret = ConfigurationProvider.GetSetting(Constants.AUTH_SECRET_NAME);
+            string secret = ConfigurationProvider.GetSetting(Constants.AccessTokenSecret);
             SymmetricSecurityKey key = new(Encoding.UTF8.GetBytes(secret));
             TokenValidationParameters validationParameters = new()
             {

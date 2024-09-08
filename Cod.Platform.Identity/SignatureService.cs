@@ -1,23 +1,23 @@
 using System.Security.Claims;
 
-namespace Cod.Platform.Identity.Authorization
+namespace Cod.Platform.Identity
 {
-    internal class AzureStorageSignatureService : ISignatureService
+    internal class SignatureService : ISignatureService
     {
         private readonly Lazy<IEnumerable<ISignatureIssuer>> issuers;
-        private readonly Lazy<IEnumerable<IStorageControl>> storageControls;
+        private readonly Lazy<IEnumerable<IResourceControl>> controls;
 
-        public AzureStorageSignatureService(
+        public SignatureService(
             Lazy<IEnumerable<ISignatureIssuer>> issuers,
-            Lazy<IEnumerable<IStorageControl>> storageControls)
+            Lazy<IEnumerable<IResourceControl>> controls)
         {
             this.issuers = issuers;
-            this.storageControls = storageControls;
+            this.controls = controls;
         }
 
         public async Task<OperationResult<StorageSignature>> IssueAsync(
             ClaimsPrincipal claims,
-            StorageType type,
+            ResourceType type,
             string resource,
             string partition,
             string row)
@@ -25,15 +25,15 @@ namespace Cod.Platform.Identity.Authorization
             DateTimeOffset now = DateTimeOffset.UtcNow;
             DateTimeOffset start = now.AddMinutes(-10);
             DateTimeOffset expiry = now.AddDays(1);
-            StorageType storageType = type;
-            IEnumerable<IStorageControl> controls = storageControls.Value.Where(c => c.Grantable(storageType, resource));
-            if (!controls.Any())
+            ResourceType storageType = type;
+            IEnumerable<IResourceControl> suitableControls = controls.Value.Where(c => c.Grantable(storageType, resource));
+            if (!suitableControls.Any())
             {
                 return new OperationResult<StorageSignature>(Cod.InternalError.NotAcceptable);
             }
 
             StorageControl cred = null;
-            foreach (IStorageControl control in controls)
+            foreach (IResourceControl control in suitableControls)
             {
                 cred = await control.GrantAsync(claims, storageType, resource, partition, row);
                 if (cred != null)

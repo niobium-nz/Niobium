@@ -1,5 +1,3 @@
-using Cod.Platform.Identity.Authentication;
-using Cod.Platform.Identity.Authorization;
 using Cod.Storage.Table;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,7 +20,7 @@ namespace Cod.Platform.Identity
             services.AddStorageTable(configuration);
             services.AddCodPlatform();
 
-            services.AddTransient<ISignatureService, AzureStorageSignatureService>();
+            services.AddTransient<ISignatureService, SignatureService>();
             services.AddTransient<ITokenBuilder, BearerTokenBuilder>();
 
             return services;

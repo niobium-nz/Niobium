@@ -3,7 +3,7 @@ using System.Security.Claims;
 
 namespace Cod.Storage.Table.Authorization
 {
-    public abstract class OwnershipControl<TResource, TOwnership> : IStorageControl
+    public abstract class OwnershipControl<TResource, TOwnership> : IResourceControl
     {
         private readonly Lazy<IRepository<TOwnership>> repo;
 
@@ -12,12 +12,12 @@ namespace Cod.Storage.Table.Authorization
             this.repo = repo;
         }
 
-        public bool Grantable(StorageType type, string resource)
+        public bool Grantable(ResourceType type, string resource)
         {
-            return type == StorageType.Table && resource.ToLowerInvariant() == typeof(TResource).Name.ToLowerInvariant();
+            return type == ResourceType.AzureStorageTable && resource.ToLowerInvariant() == typeof(TResource).Name.ToLowerInvariant();
         }
 
-        public async Task<StorageControl> GrantAsync(ClaimsPrincipal principal, StorageType type, string resource, string partition, string row, CancellationToken cancellationToken = default)
+        public async Task<StorageControl> GrantAsync(ClaimsPrincipal principal, ResourceType type, string resource, string partition, string row, CancellationToken cancellationToken = default)
         {
             bool grant = await HasPermission(principal, partition, cancellationToken);
             return grant

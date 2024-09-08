@@ -2,8 +2,6 @@ namespace Cod.Platform.Identity
 {
     public class Profile : ITrackable
     {
-        public const string ProfileBlobContainer = "profile";
-
         [EntityKey(EntityKeyKind.PartitionKey)]
         public string PartitionKey { get; set; }
 
@@ -16,18 +14,16 @@ namespace Cod.Platform.Identity
         [EntityKey(EntityKeyKind.ETag)]
         public string ETag { get; set; }
 
-        public string Phone { get; set; }
-
         public DateTimeOffset? Created { get; set; }
 
-        public static string BuildPartitionKey(Guid business, Guid user)
+        public static string BuildPartitionKey(Guid tenant, Guid user)
         {
-            return $"{business.ToKey()}|{user.ToKey()}";
+            return $"{tenant.ToKey()}|{user.ToKey()}";
         }
 
-        public static bool TryParse(string partitionKey, out Guid business, out Guid user)
+        public static bool TryParse(string partitionKey, out Guid tenant, out Guid user)
         {
-            business = default;
+            tenant = default;
             user = default;
             if (partitionKey is null)
             {
@@ -35,10 +31,10 @@ namespace Cod.Platform.Identity
             }
 
             string[] splited = partitionKey.Split('|');
-            return splited.Length == 2 && Guid.TryParse(splited[0], out business) && Guid.TryParse(splited[1], out user);
+            return splited.Length == 2 && Guid.TryParse(splited[0], out tenant) && Guid.TryParse(splited[1], out user);
         }
 
-        public Guid GetBusiness()
+        public Guid GetTenant()
         {
             return TryParse(PartitionKey, out Guid business, out Guid _) ? business : throw new NotSupportedException();
         }

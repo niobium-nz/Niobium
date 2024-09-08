@@ -186,7 +186,7 @@ namespace Cod.Channel
             }
 
 
-            var signature = await this.authenticator.AquireSignatureAsync(StorageType.Table, this.TableName, pk, rk);
+            var signature = await this.authenticator.AquireSignatureAsync(ResourceType.AzureStorageTable, this.TableName, pk, rk);
             if (!signature.IsSuccess)
             {
                 return new OperationResult<TableQueryResult<TEntity>>(signature);

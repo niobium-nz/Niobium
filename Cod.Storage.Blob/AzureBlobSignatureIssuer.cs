@@ -13,12 +13,12 @@ namespace Cod.Storage.Blob
             this.client = client ?? throw new ArgumentNullException(nameof(client));
         }
 
-        public bool CanIssue(StorageType storageType, StorageControl control)
+        public bool CanIssue(ResourceType storageType, StorageControl control)
         {
-            return storageType == StorageType.Blob;
+            return storageType == ResourceType.AzureStorageBlob;
         }
 
-        public Task<Uri> IssueAsync(StorageType storageType, StorageControl control, DateTimeOffset expires, CancellationToken cancellationToken = default)
+        public Task<Uri> IssueAsync(ResourceType storageType, StorageControl control, DateTimeOffset expires, CancellationToken cancellationToken = default)
         {
             BlobContainerClient container = client.GetBlobContainerClient(control.Resource);
             if (!container.CanGenerateSasUri)

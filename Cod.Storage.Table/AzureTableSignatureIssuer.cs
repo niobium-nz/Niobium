@@ -13,12 +13,12 @@ namespace Cod.Storage.Table
             this.client = client ?? throw new ArgumentNullException(nameof(client));
         }
 
-        public bool CanIssue(StorageType storageType, StorageControl control)
+        public bool CanIssue(ResourceType storageType, StorageControl control)
         {
-            return storageType == StorageType.Table;
+            return storageType == ResourceType.AzureStorageTable;
         }
 
-        public Task<Uri> IssueAsync(StorageType storageType, StorageControl control, DateTimeOffset expires, CancellationToken cancellationToken = default)
+        public Task<Uri> IssueAsync(ResourceType storageType, StorageControl control, DateTimeOffset expires, CancellationToken cancellationToken = default)
         {
             TableClient table = client.GetTableClient(control.Resource);
             TablePermissions permissions = (TablePermissions)control.Permission;
