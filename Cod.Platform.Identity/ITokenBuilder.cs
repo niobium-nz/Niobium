@@ -6,6 +6,7 @@
             string mainIdentity,
             IEnumerable<KeyValuePair<string, string>> entitlements = null,
             ushort validHours = 8,
-            string audience = "cod.client");
+            string audience = "cod.client",
+            string issuer = Constants.IDTokenIssuer);
     }
 }

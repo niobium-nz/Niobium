@@ -188,7 +188,7 @@ namespace Cod.Platform
             return true;
         }
 
-        public static async Task<ClaimsPrincipal> TryParsePrincipalAsync(this HttpRequest request, string scheme = "Bearer")
+        public static async Task<ClaimsPrincipal> TryParsePrincipalAsync(this HttpRequest request, string scheme = "Bearer", string issuer = "cod.platform", string audience = "cod.client")
         {
             if (!request.TryParseAuthorizationHeader(out string inputScheme, out string parameter)
                 || inputScheme.ToUpperInvariant() != scheme.ToUpperInvariant())
@@ -198,7 +198,9 @@ namespace Cod.Platform
 
             try
             {
-                return await ValidateAndDecodeAsync(parameter);
+                string secret = ConfigurationProvider.GetSetting(Constants.AccessTokenSecret);
+                SymmetricSecurityKey key = new(Encoding.UTF8.GetBytes(secret));
+                return await ValidateAndDecodeJWTAsync(parameter, key, issuer, audience);
             }
             catch (Exception)
             {
@@ -206,10 +208,8 @@ namespace Cod.Platform
             }
         }
 
-        private static async Task<ClaimsPrincipal> ValidateAndDecodeAsync(string token)
+        public static async Task<ClaimsPrincipal> ValidateAndDecodeJWTAsync(string jwt, SecurityKey key, string issuer, string audience)
         {
-            string secret = ConfigurationProvider.GetSetting(Constants.AccessTokenSecret);
-            SymmetricSecurityKey key = new(Encoding.UTF8.GetBytes(secret));
             TokenValidationParameters validationParameters = new()
             {
                 ClockSkew = TimeSpan.FromMinutes(5),
@@ -218,14 +218,14 @@ namespace Cod.Platform
                 RequireExpirationTime = true,
                 ValidateLifetime = true,
                 ValidateAudience = true,
-                ValidAudience = "cod.client",
+                ValidAudience = audience,
                 ValidateIssuer = true,
-                ValidIssuer = "cod.platform"
+                ValidIssuer = issuer
             };
 
             try
             {
-                TokenValidationResult validationResult = await new JsonWebTokenHandler().ValidateTokenAsync(token, validationParameters);
+                TokenValidationResult validationResult = await new JsonWebTokenHandler().ValidateTokenAsync(jwt, validationParameters);
                 return validationResult.IsValid ? null : new ClaimsPrincipal(validationResult.ClaimsIdentity);
             }
             catch (SecurityTokenValidationException stvex)

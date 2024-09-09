@@ -20,7 +20,8 @@ namespace Cod.Platform.Identity
             string mainIdentity,
             IEnumerable<KeyValuePair<string, string>> entitlements = null,
             ushort validHours = 8,
-            string audience = "cod.client")
+            string audience = "cod.client",
+            string issuer = Constants.IDTokenIssuer)
         {
             Dictionary<string, object> claims = new()
             {
@@ -38,7 +39,7 @@ namespace Cod.Platform.Identity
 
             SigningCredentials creds;
             IDisposable key = null;
-            string secret = configuration.GetValue<string>(Constants.AccessTokenSecret);
+            string secret = configuration.GetValue<string>(Cod.Platform.Constants.AccessTokenSecret);
             if (!string.IsNullOrEmpty(secret))
             {
                 creds = new(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)), SecurityAlgorithms.HmacSha256);
@@ -52,16 +53,15 @@ namespace Cod.Platform.Identity
                     throw new ApplicationException(Cod.InternalError.InternalServerError);
                 }
 
-                var buff = Convert.FromBase64String(privateKey);
                 var rsa = RSA.Create();
-                rsa.ImportEncryptedPkcs8PrivateKey(privateKeyPasscode, buff, out _);
+                rsa.ImportFromEncryptedPem(privateKey, privateKeyPasscode);
                 creds = new(new RsaSecurityKey(rsa), SecurityAlgorithms.RsaSha256);
                 key = rsa;
             }
 
             SecurityTokenDescriptor token = new()
             {
-                Issuer = "cod.platform",
+                Issuer = issuer,
                 Audience = audience,
                 Claims = claims,
                 Expires = DateTime.UtcNow.AddHours(validHours < 1 ? 8 : validHours),

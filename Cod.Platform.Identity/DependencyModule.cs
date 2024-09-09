@@ -1,6 +1,9 @@
 using Cod.Storage.Table;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Cod.Platform.Identity
 {
@@ -22,8 +25,22 @@ namespace Cod.Platform.Identity
 
             services.AddTransient<ISignatureService, SignatureService>();
             services.AddTransient<ITokenBuilder, BearerTokenBuilder>();
+            services.AddTransient<AccessTokenMiddleware>();
+            services.AddTransient<FunctionMiddlewareAdaptor<AccessTokenMiddleware>>();
 
             return services;
+        }
+
+        public static IFunctionsWorkerApplicationBuilder UsePlatformIdentity(this IFunctionsWorkerApplicationBuilder builder)
+        {
+            builder.UseMiddleware<FunctionMiddlewareAdaptor<AccessTokenMiddleware>>();
+            return builder;
+        }
+
+        public static IApplicationBuilder UsePlatformIdentity(this IApplicationBuilder builder)
+        {
+            builder.UseMiddleware<AccessTokenMiddleware>();
+            return builder;
         }
     }
 }
