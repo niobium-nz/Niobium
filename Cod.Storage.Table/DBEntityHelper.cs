@@ -13,12 +13,15 @@ namespace Cod.Storage.Table
         {
             EntityDictionary dic = new();
             Type type = source.GetType();
-
             IReadOnlyDictionary<string, PropertyInfo> m = EntityMappingHelper.GetMapping(type);
             foreach (string key in m.Keys)
             {
-                object value = m[key].GetValue(source);
-                dic.Add(key, value);
+                if (key != EntityKeyKind.Timestamp.ToString()
+                    && key != EntityKeyKind.ETag.ToString())
+                {
+                    object value = m[key].GetValue(source);
+                    dic.Add(key, value);
+                }
             }
 
             return dic;
