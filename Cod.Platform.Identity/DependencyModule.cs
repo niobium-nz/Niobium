@@ -28,12 +28,32 @@ namespace Cod.Platform.Identity
             services.AddTransient<AccessTokenMiddleware>();
             services.AddTransient<FunctionMiddlewareAdaptor<AccessTokenMiddleware>>();
 
+            services.AddTransient<IRepository<Role>, CloudTableRepository<Role>>();
+            services.AddTransient<IRepository<Entitlement>, CloudTableRepository<Entitlement>>();
+            services.AddTransient<IEntitlementDescriptor, DatabaseEntitlementStore>();
             return services;
         }
 
-        public static IFunctionsWorkerApplicationBuilder UsePlatformIdentity(this IFunctionsWorkerApplicationBuilder builder)
+        public static IFunctionsWorkerApplicationBuilder UsePlatformIdentity(this IFunctionsWorkerApplicationBuilder builder, Action<IdentityServiceOptions>? configureOptions = null)
         {
-            builder.UseMiddleware<FunctionMiddlewareAdaptor<AccessTokenMiddleware>>();
+            var options = new IdentityServiceOptions();
+            if (configureOptions != null)
+            {
+                configureOptions(options);
+                options.Validate();
+            }
+            else
+            {
+                options.EnableAuthenticationEndpoint = false;
+            }
+
+            builder.Services.AddSingleton(options);
+
+            if (options.EnableAuthenticationEndpoint)
+            {
+                builder.UseMiddleware<FunctionMiddlewareAdaptor<AccessTokenMiddleware>>();
+            }
+
             return builder;
         }
 

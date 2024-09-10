@@ -3,16 +3,16 @@ namespace Cod.Platform.Identity
     public class Profile : ITrackable
     {
         [EntityKey(EntityKeyKind.PartitionKey)]
-        public string PartitionKey { get; set; }
+        public string? PartitionKey { get; set; }
 
         [EntityKey(EntityKeyKind.RowKey)]
-        public string RowKey { get; set; }
+        public string? RowKey { get; set; }
 
         [EntityKey(EntityKeyKind.Timestamp)]
         public DateTimeOffset? Timestamp { get; set; }
 
         [EntityKey(EntityKeyKind.ETag)]
-        public string ETag { get; set; }
+        public string? ETag { get; set; }
 
         public DateTimeOffset? Created { get; set; }
 
@@ -21,7 +21,7 @@ namespace Cod.Platform.Identity
             return $"{tenant.ToKey()}|{user.ToKey()}";
         }
 
-        public static bool TryParse(string partitionKey, out Guid tenant, out Guid user)
+        public static bool TryParse(string? partitionKey, out Guid tenant, out Guid user)
         {
             tenant = default;
             user = default;

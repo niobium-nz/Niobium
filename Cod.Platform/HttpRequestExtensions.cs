@@ -226,7 +226,7 @@ namespace Cod.Platform
             try
             {
                 TokenValidationResult validationResult = await new JsonWebTokenHandler().ValidateTokenAsync(jwt, validationParameters);
-                return validationResult.IsValid ? null : new ClaimsPrincipal(validationResult.ClaimsIdentity);
+                return validationResult.IsValid ? new ClaimsPrincipal(validationResult.ClaimsIdentity) : null;
             }
             catch (SecurityTokenValidationException stvex)
             {

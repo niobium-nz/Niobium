@@ -99,8 +99,6 @@ namespace Cod
                 {
                     switch (key.Kind)
                     {
-                        case EntityKeyKind.PartitionKey:
-                        case EntityKeyKind.RowKey:
                         case EntityKeyKind.ETag:
                             if (property.PropertyType != typeof(string))
                             {
@@ -110,7 +108,7 @@ namespace Cod
                         case EntityKeyKind.Timestamp:
                             if (property.PropertyType != typeof(DateTimeOffset) && property.PropertyType != typeof(DateTimeOffset?))
                             {
-                                throw new InvalidDataContractException($"{key.Kind} property '{property.Name}' on '{type.FullName}' must be decleared as DateTimeOffset.");
+                                throw new InvalidDataContractException($"{key.Kind} property '{property.Name}' on '{type.FullName}' must be decleared as System.DateTimeOffset.");
                             }
                             break;
                     }

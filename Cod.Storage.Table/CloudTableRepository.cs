@@ -3,7 +3,6 @@ using Azure.Data.Tables;
 using Cod.Platform;
 using Microsoft.Extensions.Logging;
 using System.Net;
-using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 
 namespace Cod.Storage.Table
@@ -24,7 +23,7 @@ namespace Cod.Storage.Table
 
         protected TableServiceClient Client { get; }
 
-        public CloudTableRepository(TableServiceClient client, ILogger logger)
+        public CloudTableRepository(TableServiceClient client, ILogger<CloudTableRepository<T>> logger)
         {
             Client = client;
             this.logger = logger;
@@ -401,18 +400,9 @@ namespace Cod.Storage.Table
             foreach (T entity in entities)
             {
                 EntityDictionary tableEntity = DBEntityHelper.ToTableEntity(entity);
-                if (!tableEntity.ContainsKey(etagKey))
+                if (!preconditionCheck)
                 {
-                    if (preconditionCheck)
-                    {
-                        throw new InvalidDataContractException($"'{typeof(T).FullName}' must decleare a property marked as '{nameof(EntityKeyAttribute)}({nameof(EntityKeyAttribute.Kind)}={EntityKeyKind.ETag})' to support precondition check.");
-                    }
-
-                    tableEntity.Add(etagKey, ETag.All.ToString());
-                }
-                else if (!preconditionCheck)
-                {
-                    tableEntity[etagKey] = ETag.All.ToString();
+                    tableEntity.ETag = ETag.All;
                 }
 
                 tableEntities.Add(tableEntity);

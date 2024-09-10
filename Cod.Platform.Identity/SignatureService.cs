@@ -2,19 +2,11 @@ using System.Security.Claims;
 
 namespace Cod.Platform.Identity
 {
-    internal class SignatureService : ISignatureService
+    internal class SignatureService(
+        Lazy<IEnumerable<ISignatureIssuer>> issuers,
+        Lazy<IEnumerable<IResourceControl>> controls)
+        : ISignatureService
     {
-        private readonly Lazy<IEnumerable<ISignatureIssuer>> issuers;
-        private readonly Lazy<IEnumerable<IResourceControl>> controls;
-
-        public SignatureService(
-            Lazy<IEnumerable<ISignatureIssuer>> issuers,
-            Lazy<IEnumerable<IResourceControl>> controls)
-        {
-            this.issuers = issuers;
-            this.controls = controls;
-        }
-
         public async Task<OperationResult<StorageSignature>> IssueAsync(
             ClaimsPrincipal claims,
             ResourceType type,
@@ -32,7 +24,7 @@ namespace Cod.Platform.Identity
                 return new OperationResult<StorageSignature>(Cod.InternalError.NotAcceptable);
             }
 
-            StorageControl cred = null;
+            StorageControl? cred = null;
             foreach (IResourceControl control in suitableControls)
             {
                 cred = await control.GrantAsync(claims, storageType, resource, partition, row);
@@ -50,7 +42,7 @@ namespace Cod.Platform.Identity
             Uri signatureUri;
             try
             {
-                ISignatureIssuer issuer = issuers.Value.SingleOrDefault(i => i.CanIssue(storageType, cred));
+                ISignatureIssuer? issuer = issuers.Value.SingleOrDefault(i => i.CanIssue(storageType, cred));
                 if (issuer == null)
                 {
                     return new OperationResult<StorageSignature>(Cod.InternalError.ServiceUnavailable);

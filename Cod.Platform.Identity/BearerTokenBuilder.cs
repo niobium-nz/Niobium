@@ -7,24 +7,19 @@ using System.Text;
 
 namespace Cod.Platform.Identity
 {
-    internal class BearerTokenBuilder : ITokenBuilder
+    internal class BearerTokenBuilder(IConfiguration configuration) : ITokenBuilder
     {
-        private readonly IConfiguration configuration;
-
-        public BearerTokenBuilder(IConfiguration configuration)
-        {
-            this.configuration = configuration;
-        }
-
         public Task<string> BuildAsync(
             string mainIdentity,
-            IEnumerable<KeyValuePair<string, string>> entitlements = null,
+            IEnumerable<KeyValuePair<string, string>>? entitlements = null,
+            string? symmetricSecurityKey = null,
             ushort validHours = 8,
-            string audience = "cod.client",
-            string issuer = Constants.IDTokenIssuer)
+            string audience = Constants.IDTokenDefaultAudience,
+            string issuer = Constants.IDTokenDefaultIssuer)
         {
             Dictionary<string, object> claims = new()
             {
+                { ClaimTypes.NameIdentifier, mainIdentity.Trim() },
                 { ClaimTypes.Sid, mainIdentity.Trim() },
                 { "kid", "0" }, // for security reasons, newer version of JWT library expects the KID claim exist when validating the token.
             };
@@ -38,11 +33,9 @@ namespace Cod.Platform.Identity
             }
 
             SigningCredentials creds;
-            IDisposable key = null;
-            string secret = configuration.GetValue<string>(Cod.Platform.Constants.AccessTokenSecret);
-            if (!string.IsNullOrEmpty(secret))
+            if (!string.IsNullOrEmpty(symmetricSecurityKey))
             {
-                creds = new(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)), SecurityAlgorithms.HmacSha256);
+                creds = new(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(symmetricSecurityKey)), SecurityAlgorithms.HmacSha256);
             }
             else
             {
@@ -56,7 +49,6 @@ namespace Cod.Platform.Identity
                 var rsa = RSA.Create();
                 rsa.ImportFromEncryptedPem(privateKey, privateKeyPasscode);
                 creds = new(new RsaSecurityKey(rsa), SecurityAlgorithms.RsaSha256);
-                key = rsa;
             }
 
             SecurityTokenDescriptor token = new()
@@ -69,7 +61,6 @@ namespace Cod.Platform.Identity
             };
 
             var result = new JsonWebTokenHandler().CreateToken(token);
-            key?.Dispose();
             return Task.FromResult(result);
         }
     }

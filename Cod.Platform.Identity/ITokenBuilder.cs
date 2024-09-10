@@ -4,9 +4,10 @@
     {
         Task<string> BuildAsync(
             string mainIdentity,
-            IEnumerable<KeyValuePair<string, string>> entitlements = null,
+            IEnumerable<KeyValuePair<string, string>>? claims = null,
+            string? symmetricSecurityKey = null,
             ushort validHours = 8,
-            string audience = "cod.client",
-            string issuer = Constants.IDTokenIssuer);
+            string audience = Constants.IDTokenDefaultAudience,
+            string issuer = Constants.IDTokenDefaultIssuer);
     }
 }

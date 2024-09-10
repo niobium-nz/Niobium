@@ -11,7 +11,7 @@ namespace Cod.Storage.Table
 
         public DateTimeOffset? Timestamp { get => Get<DateTimeOffset?>(nameof(Timestamp)); set => Set(nameof(Timestamp), value); }
 
-        public ETag ETag { get => new(Get<string>(nameof(ETag))); set => Set(nameof(ETag), value.ToString()); }
+        public ETag ETag { get; set; }
 
         private T Get<T>(string key)
         {

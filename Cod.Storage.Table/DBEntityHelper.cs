@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using System.Reflection;
 
 namespace Cod.Storage.Table
 {
@@ -16,10 +17,26 @@ namespace Cod.Storage.Table
             IReadOnlyDictionary<string, PropertyInfo> m = EntityMappingHelper.GetMapping(type);
             foreach (string key in m.Keys)
             {
-                if (key != EntityKeyKind.Timestamp.ToString()
-                    && key != EntityKeyKind.ETag.ToString())
+                if (key == EntityKeyKind.Timestamp.ToString())
                 {
-                    object value = m[key].GetValue(source);
+                    continue;
+                }
+
+                object value = m[key].GetValue(source);
+                if (key == EntityKeyKind.PartitionKey.ToString() || key == EntityKeyKind.RowKey.ToString())
+                {
+                    value = value.ToString();
+                }
+
+                if (key == EntityKeyKind.ETag.ToString())
+                {
+                    if (value != null)
+                    {
+                        dic.ETag = new((string)value);
+                    }
+                }
+                else
+                {
                     dic.Add(key, value);
                 }
             }
@@ -48,6 +65,12 @@ namespace Cod.Storage.Table
                     if (keyName == EntityKeyKind.Timestamp.ToString() && itemValue is long epoch)
                     {
                         itemValue = epoch < 9999999999 ? DateTimeOffset.FromUnixTimeSeconds(epoch) : DateTimeOffset.FromUnixTimeMilliseconds(epoch);
+                    }
+
+                    if ((keyName == EntityKeyKind.PartitionKey.ToString() || keyName == EntityKeyKind.RowKey.ToString())
+                        && value.PropertyType != typeof(string))
+                    {
+                        itemValue = TypeConverter.Convert((string)itemValue, value.PropertyType);
                     }
 
                     value.SetValue(obj, itemValue);
