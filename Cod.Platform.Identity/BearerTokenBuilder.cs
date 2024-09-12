@@ -8,7 +8,7 @@ namespace Cod.Platform.Identity
 {
     internal class BearerTokenBuilder(IdentityServiceOptions options) : ITokenBuilder
     {
-        public Task<string> BuildAsync(string mainIdentity, IEnumerable<KeyValuePair<string, string>>? entitlements = null)
+        public Task<string> BuildAsync(string mainIdentity, IEnumerable<KeyValuePair<string, string>>? entitlements = null, string? audience = null)
         {
             Dictionary<string, object> claims = new()
             {
@@ -57,7 +57,7 @@ namespace Cod.Platform.Identity
             SecurityTokenDescriptor token = new()
             {
                 Issuer = options.AccessTokenIssuer,
-                Audience = options.AccessTokenAudience,
+                Audience = audience ?? options.AccessTokenAudience,
                 Claims = claims,
                 Expires = DateTime.UtcNow.Add(options.TokenValidity),
                 SigningCredentials = creds,

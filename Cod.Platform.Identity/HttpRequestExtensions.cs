@@ -14,7 +14,7 @@ namespace Cod.Platform.Identity
         private const string AuthorizationRequestHeaderKey = "Authorization";
         private const string HeaderCORSKey = "Access-Control-Expose-Headers";
 
-        public static void DeliverAuthenticationToken(this HttpRequest request, string token, string scheme)
+        public static void DeliverAuthenticationToken(this HttpRequest request, string? token, string scheme)
         {
             if (request.HttpContext.Response.Headers.ContainsKey(AuthorizationResponseHeaderKey))
             {
