@@ -6,7 +6,7 @@ namespace Cod.Platform
     {
         private static readonly AsyncLocal<ILogger> logger = new();
 
-        internal static void Register(ILogger value)
+        public static void Register(ILogger value)
         {
             logger.Value = value;
         }

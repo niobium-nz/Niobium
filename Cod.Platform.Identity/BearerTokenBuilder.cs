@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.JsonWebTokens;
+﻿using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -7,15 +6,9 @@ using System.Text;
 
 namespace Cod.Platform.Identity
 {
-    internal class BearerTokenBuilder(IConfiguration configuration) : ITokenBuilder
+    internal class BearerTokenBuilder(IdentityServiceOptions options) : ITokenBuilder
     {
-        public Task<string> BuildAsync(
-            string mainIdentity,
-            IEnumerable<KeyValuePair<string, string>>? entitlements = null,
-            string? symmetricSecurityKey = null,
-            ushort validHours = 8,
-            string audience = Constants.IDTokenDefaultAudience,
-            string issuer = Constants.IDTokenDefaultIssuer)
+        public Task<string> BuildAsync(string mainIdentity, IEnumerable<KeyValuePair<string, string>>? entitlements = null)
         {
             Dictionary<string, object> claims = new()
             {
@@ -28,35 +21,45 @@ namespace Cod.Platform.Identity
             {
                 foreach (KeyValuePair<string, string> entitlement in entitlements)
                 {
-                    claims.Add(entitlement.Key, entitlement.Value);
+                    var key = entitlement.Key;
+                    if (!key.StartsWith(Constants.ClaimKeyPrefix, StringComparison.Ordinal))
+                    {
+                        key = $"{Constants.ClaimKeyPrefix}{key}";
+                    }
+                    claims.Add(key, entitlement.Value);
                 }
             }
 
             SigningCredentials creds;
-            if (!string.IsNullOrEmpty(symmetricSecurityKey))
+            if (!string.IsNullOrEmpty(options.AccessTokenSecret))
             {
-                creds = new(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(symmetricSecurityKey)), SecurityAlgorithms.HmacSha256);
+                creds = new(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.AccessTokenSecret)), SecurityAlgorithms.HmacSha256);
             }
             else
             {
-                string privateKey = configuration.GetValue<string>(Constants.IDTokenPrivateKey);
-                string privateKeyPasscode = configuration.GetValue<string>(Constants.IDTokenPrivateKeyPasscode);
-                if (string.IsNullOrEmpty(privateKey) || string.IsNullOrEmpty(privateKeyPasscode))
+                if (string.IsNullOrEmpty(options.IDTokenPrivateKey))
                 {
-                    throw new ApplicationException(Cod.InternalError.InternalServerError);
+                    throw new InvalidOperationException($"Either {nameof(options.AccessTokenSecret)} or {nameof(options.IDTokenPrivateKey)} must be provided.");
                 }
 
                 var rsa = RSA.Create();
-                rsa.ImportFromEncryptedPem(privateKey, privateKeyPasscode);
+                if (string.IsNullOrEmpty(options.IDTokenPrivateKeyPasscode))
+                {
+                    rsa.ImportFromPem(options.IDTokenPrivateKey);
+                }
+                else
+                {
+                    rsa.ImportFromEncryptedPem(options.IDTokenPrivateKey, options.IDTokenPrivateKeyPasscode);
+                }
                 creds = new(new RsaSecurityKey(rsa), SecurityAlgorithms.RsaSha256);
             }
 
             SecurityTokenDescriptor token = new()
             {
-                Issuer = issuer,
-                Audience = audience,
+                Issuer = options.AccessTokenIssuer,
+                Audience = options.AccessTokenAudience,
                 Claims = claims,
-                Expires = DateTime.UtcNow.AddHours(validHours < 1 ? 8 : validHours),
+                Expires = DateTime.UtcNow.Add(options.TokenValidity),
                 SigningCredentials = creds,
             };
 

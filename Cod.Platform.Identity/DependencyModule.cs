@@ -1,7 +1,6 @@
 using Cod.Storage.Table;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -11,7 +10,10 @@ namespace Cod.Platform.Identity
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddPlatformIdentity(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddPlatformIdentity(
+            this IServiceCollection services,
+            IdentityServiceOptions identityOptions,
+            StorageTableOptions tableOptions)
         {
             if (loaded)
             {
@@ -20,12 +22,17 @@ namespace Cod.Platform.Identity
 
             loaded = true;
 
-            services.AddStorageTable(configuration);
+            identityOptions.Validate();
+            services.AddSingleton(identityOptions);
+            IdentityServiceOptions.Instance = identityOptions;
+
+            services.AddStorageTable(tableOptions);
             services.AddCodPlatform();
 
             services.AddTransient<ISignatureService, SignatureService>();
             services.AddTransient<ITokenBuilder, BearerTokenBuilder>();
             services.AddTransient<AccessTokenMiddleware>();
+            services.AddTransient<SignatureMiddleware>();
             services.AddTransient<FunctionMiddlewareAdaptor<AccessTokenMiddleware>>();
 
             services.AddTransient<IRepository<Role>, CloudTableRepository<Role>>();
@@ -34,32 +41,17 @@ namespace Cod.Platform.Identity
             return services;
         }
 
-        public static IFunctionsWorkerApplicationBuilder UsePlatformIdentity(this IFunctionsWorkerApplicationBuilder builder, Action<IdentityServiceOptions>? configureOptions = null)
+        public static IFunctionsWorkerApplicationBuilder UsePlatformIdentity(this IFunctionsWorkerApplicationBuilder builder)
         {
-            var options = new IdentityServiceOptions();
-            if (configureOptions != null)
-            {
-                configureOptions(options);
-                options.Validate();
-            }
-            else
-            {
-                options.EnableAuthenticationEndpoint = false;
-            }
-
-            builder.Services.AddSingleton(options);
-
-            if (options.EnableAuthenticationEndpoint)
-            {
-                builder.UseMiddleware<FunctionMiddlewareAdaptor<AccessTokenMiddleware>>();
-            }
-
+            builder.UseWhen<FunctionMiddlewareAdaptor<AccessTokenMiddleware>>(FunctionMiddlewarePredicates.IsHttp);
+            builder.UseWhen<FunctionMiddlewareAdaptor<SignatureMiddleware>>(FunctionMiddlewarePredicates.IsHttp);
             return builder;
         }
 
         public static IApplicationBuilder UsePlatformIdentity(this IApplicationBuilder builder)
         {
             builder.UseMiddleware<AccessTokenMiddleware>();
+            builder.UseMiddleware<SignatureMiddleware>();
             return builder;
         }
     }

@@ -7,27 +7,26 @@ namespace Cod.Platform.Identity
         Lazy<IEnumerable<IResourceControl>> controls)
         : ISignatureService
     {
-        public async Task<OperationResult<StorageSignature>> IssueAsync(
+        public async Task<StorageSignature> IssueAsync(
             ClaimsPrincipal claims,
             ResourceType type,
             string resource,
             string partition,
-            string row)
+            string id)
         {
             DateTimeOffset now = DateTimeOffset.UtcNow;
             DateTimeOffset start = now.AddMinutes(-10);
             DateTimeOffset expiry = now.AddDays(1);
-            ResourceType storageType = type;
-            IEnumerable<IResourceControl> suitableControls = controls.Value.Where(c => c.Grantable(storageType, resource));
+            IEnumerable<IResourceControl> suitableControls = controls.Value.Where(c => c.Grantable(type, resource));
             if (!suitableControls.Any())
             {
-                return new OperationResult<StorageSignature>(Cod.InternalError.NotAcceptable);
+                throw new ApplicationException(InternalError.NotAcceptable);
             }
 
             StorageControl? cred = null;
             foreach (IResourceControl control in suitableControls)
             {
-                cred = await control.GrantAsync(claims, storageType, resource, partition, row);
+                cred = await control.GrantAsync(claims, type, resource, partition, id);
                 if (cred != null)
                 {
                     break;
@@ -36,31 +35,28 @@ namespace Cod.Platform.Identity
 
             if (cred == null)
             {
-                return new OperationResult<StorageSignature>(Cod.InternalError.Forbidden);
+                throw new ApplicationException(InternalError.Forbidden);
             }
 
-            Uri signatureUri;
+            string signature;
+            DateTimeOffset exp;
             try
             {
-                ISignatureIssuer? issuer = issuers.Value.SingleOrDefault(i => i.CanIssue(storageType, cred));
-                if (issuer == null)
-                {
-                    return new OperationResult<StorageSignature>(Cod.InternalError.ServiceUnavailable);
-                }
-
-                signatureUri = await issuer.IssueAsync(storageType, cred, expiry);
+                ISignatureIssuer? issuer = issuers.Value.SingleOrDefault(i => i.CanIssue(type, cred))
+                    ?? throw new ApplicationException(InternalError.ServiceUnavailable);
+                (signature, exp) = await issuer.IssueAsync(type, cred, expiry);
             }
             catch (UnauthorizedAccessException)
             {
-                return new OperationResult<StorageSignature>(Cod.InternalError.Forbidden);
+                throw new ApplicationException(InternalError.Forbidden);
             }
 
-            return new OperationResult<StorageSignature>(new StorageSignature
+            return new StorageSignature
             {
-                Signature = signatureUri.Query,
-                Expiry = expiry.ToUnixTimeSeconds(),
+                Signature = signature,
+                Expiry = exp.ToUnixTimeSeconds(),
                 Control = cred,
-            });
+            };
         }
     }
 }

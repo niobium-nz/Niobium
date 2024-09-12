@@ -1,7 +1,6 @@
 using Cod.Platform.Identity;
 using Cod.Platform.Tenant.Wechat;
 using Cod.Storage.Table;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Cod.Platform.Tenant
@@ -10,7 +9,7 @@ namespace Cod.Platform.Tenant
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddPlatformTenant(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddPlatformTenant(this IServiceCollection services, StorageTableOptions options)
         {
             if (loaded)
             {
@@ -19,7 +18,7 @@ namespace Cod.Platform.Tenant
 
             loaded = true;
 
-            services.AddStorageTable(configuration);
+            services.AddStorageTable(options);
             services.AddCodPlatform();
 
             services.AddTransient<WechatIntegration>();

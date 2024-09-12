@@ -1,5 +1,4 @@
 using Cod.Storage.Table;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Cod.Platform.Locking
@@ -8,7 +7,7 @@ namespace Cod.Platform.Locking
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddPlatformLocking(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddPlatformLocking(this IServiceCollection services, StorageTableOptions options)
         {
             if (loaded)
             {
@@ -17,7 +16,7 @@ namespace Cod.Platform.Locking
 
             loaded = true;
 
-            services.AddStorageTable(configuration);
+            services.AddStorageTable(options);
 
             services.AddTransient<IResourceControl, ImpedimentControl>();
             services.AddTransient<IImpedimentPolicy, ImpedementPolicyScanProvider>();

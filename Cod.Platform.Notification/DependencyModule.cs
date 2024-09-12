@@ -1,5 +1,5 @@
 using Cod.Platform.Tenant;
-using Microsoft.Extensions.Configuration;
+using Cod.Storage.Table;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Cod.Platform.Notification
@@ -8,7 +8,7 @@ namespace Cod.Platform.Notification
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddPlatformNotification(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddPlatformNotification(this IServiceCollection services, StorageTableOptions options)
         {
             if (loaded)
             {
@@ -18,7 +18,7 @@ namespace Cod.Platform.Notification
             loaded = true;
 
             services.AddCodPlatform();
-            services.AddPlatformTenant(configuration);
+            services.AddPlatformTenant(options);
 
             services.AddTransient<INofiticationChannelRepository, NofiticationChannelRepository>();
             services.AddTransient<INotificationService, NotificationService>();

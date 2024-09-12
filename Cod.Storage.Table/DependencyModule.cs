@@ -1,7 +1,8 @@
+using Azure.Core.Extensions;
+using Azure.Data.Tables;
 using Azure.Identity;
 using Cod.Platform;
 using Microsoft.Extensions.Azure;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Cod.Storage.Table
@@ -10,7 +11,7 @@ namespace Cod.Storage.Table
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddStorageTable(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddStorageTable(this IServiceCollection services, StorageTableOptions options)
         {
             if (loaded)
             {
@@ -19,19 +20,27 @@ namespace Cod.Storage.Table
 
             loaded = true;
 
-            services.AddCodPlatform();
+            options.Validate();
+            services.AddSingleton(options);
 
+            services.AddCodPlatform();
             services.AddAzureClients(clientBuilder =>
             {
-                var tableClientBuilder = clientBuilder.AddTableServiceClient(
-                    new Uri(
-                        configuration.GetSection(Constants.AppSettingStorageTable)
-                        .GetValue<string>(Constants.AppSettingStorageTableServiceUri)));
+                IAzureClientBuilder<TableServiceClient, TableClientOptions> tableClientBuilder;
+                if (Uri.TryCreate(options.ServiceEndpoint, UriKind.Absolute, out var endpointUri))
+                {
+                    tableClientBuilder = clientBuilder.AddTableServiceClient(endpointUri);
+                }
+                else
+                {
+                    tableClientBuilder = clientBuilder.AddTableServiceClient(options.ServiceEndpoint);
+                }
 
-                var env = configuration.GetValue<string>(Constants.ServiceEnvironment);
-                tableClientBuilder.WithCredential(new DefaultAzureCredential(includeInteractiveCredentials: env == Constants.DevelopmentEnvironment));
-
-                clientBuilder.ConfigureDefaults(configuration.GetSection("AzureDefaults"));
+                tableClientBuilder.WithCredential(new DefaultAzureCredential(includeInteractiveCredentials: options.EnableInteractiveIdentity));
+                if (options.AzureStorageTableDefaults != null)
+                {
+                    clientBuilder.ConfigureDefaults(options.AzureStorageTableDefaults);
+                }
             });
 
             services.AddTransient<ISignatureIssuer, AzureTableSignatureIssuer>();

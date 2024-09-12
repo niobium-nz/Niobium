@@ -18,7 +18,7 @@ namespace Cod.Storage.Blob
             return storageType == ResourceType.AzureStorageBlob;
         }
 
-        public Task<Uri> IssueAsync(ResourceType storageType, StorageControl control, DateTimeOffset expires, CancellationToken cancellationToken = default)
+        public Task<(string, DateTimeOffset)> IssueAsync(ResourceType storageType, StorageControl control, DateTimeOffset expires, CancellationToken cancellationToken = default)
         {
             BlobContainerClient container = client.GetBlobContainerClient(control.Resource);
             if (!container.CanGenerateSasUri)
@@ -62,7 +62,7 @@ namespace Cod.Storage.Blob
 
             return internalPermissions == 0
                 ? throw new UnauthorizedAccessException("Cannot create SAS without any permission granted.")
-                : Task.FromResult(container.GenerateSasUri(internalPermissions, expires));
+                : Task.FromResult((container.GenerateSasUri(internalPermissions, expires).ToString(), expires));
         }
     }
 }

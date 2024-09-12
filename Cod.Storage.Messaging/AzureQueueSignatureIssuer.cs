@@ -18,7 +18,7 @@ namespace Cod.Storage.Messaging
             return storageType == ResourceType.AzureStorageQueue;
         }
 
-        public Task<Uri> IssueAsync(ResourceType storageType, StorageControl control, DateTimeOffset expires, CancellationToken cancellationToken = default)
+        public Task<(string, DateTimeOffset)> IssueAsync(ResourceType storageType, StorageControl control, DateTimeOffset expires, CancellationToken cancellationToken = default)
         {
             QueueClient queue = client.GetQueueClient(control.Resource);
             if (!queue.CanGenerateSasUri)
@@ -50,7 +50,7 @@ namespace Cod.Storage.Messaging
 
             return internalPermissions == 0
                 ? throw new UnauthorizedAccessException("Cannot create SAS without any permission granted.")
-                : Task.FromResult(queue.GenerateSasUri(internalPermissions, expires));
+                : Task.FromResult((queue.GenerateSasUri(internalPermissions, expires).ToString(), expires));
         }
     }
 }

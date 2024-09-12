@@ -1,7 +1,6 @@
 using Cod.Platform.Finance.WechatPay;
 using Cod.Platform.Tenant;
 using Cod.Storage.Table;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Cod.Platform.Finance
@@ -10,7 +9,7 @@ namespace Cod.Platform.Finance
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddPlatformFinance(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddPlatformFinance(this IServiceCollection services, StorageTableOptions options)
         {
             if (loaded)
             {
@@ -19,9 +18,9 @@ namespace Cod.Platform.Finance
 
             loaded = true;
 
-            services.AddStorageTable(configuration);
+            services.AddStorageTable(options);
             services.AddCodPlatform();
-            services.AddPlatformTenant(configuration);
+            services.AddPlatformTenant(options);
 
             services.AddTransient<IPaymentService, PaymentService>();
             services.AddTransient<IPaymentProcessor, WechatPaymentProcessor>();

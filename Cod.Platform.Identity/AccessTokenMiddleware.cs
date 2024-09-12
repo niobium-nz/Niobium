@@ -18,20 +18,21 @@ namespace Cod.Platform.Identity
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
             var req = context.Request;
-            if (!req.Path.HasValue || req.Path.Value.Equals(options.AuthenticateEndpoint, StringComparison.OrdinalIgnoreCase))
+            if (!req.Path.HasValue || !req.Path.Value.Equals(options.AuthenticateEndpoint, StringComparison.OrdinalIgnoreCase))
             {
                 await next(context);
                 return;
             }
 
             var authHeader = req.Headers.Authorization.SingleOrDefault();
-            if (!AuthenticationHeaderValue.TryParse(authHeader, out var value))
+            if (!AuthenticationHeaderValue.TryParse(authHeader, out var authenticationHeader))
             {
                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                 return;
             }
 
-            if (value.Scheme != AuthenticationScheme.BearerLoginScheme)
+            if (authenticationHeader.Scheme != AuthenticationScheme.BearerLoginScheme
+                || authenticationHeader.Parameter == null)
             {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 return;
@@ -47,7 +48,7 @@ namespace Cod.Platform.Identity
             var rsa = RSA.Create();
             rsa.ImportFromPem(options.IDTokenPublicKey);
             var key = new RsaSecurityKey(rsa);
-            var principal = await HttpRequestExtensions.ValidateAndDecodeJWTAsync(value.Parameter, key, options.IDTokenIssuer, options.IDTokenAudience);
+            var principal = await HttpRequestExtensions.ValidateAndDecodeJWTAsync(authenticationHeader.Parameter, key, options.IDTokenIssuer, options.IDTokenAudience);
             if (principal == null)
             {
                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
@@ -74,7 +75,7 @@ namespace Cod.Platform.Identity
                 tenant = Guid.Empty;
             }
 
-            List<string> roles = [Constants.DefaultRole];
+            List<string> roles = [options.DefaultRole];
             var entity = await repository.Value.RetrieveAsync(Role.BuildPartitionKey(tenant), Role.BuildRowKey(user));
             if (entity != null)
             {
@@ -118,14 +119,9 @@ namespace Cod.Platform.Identity
                     e.Permission
                 })
                 .GroupBy(e => e.Resource)
-                .Select(e => new KeyValuePair<string, string>(e.Key, string.Join(Entitlements.ValueSplitor[0], e)));
+                .Select(e => new KeyValuePair<string, string>(e.Key, string.Join(Entitlements.ValueSplitor[0], e.Select(x => x.Permission))));
 
-            var token = await tokenBuilder.BuildAsync(
-                user.ToKey(),
-                claims: claims,
-                symmetricSecurityKey: options.AccessTokenSecret,
-                audience: options.IDTokenAudience,
-                issuer: options.IDTokenAudience);
+            var token = await tokenBuilder.BuildAsync(user.ToKey(), claims);
             req.DeliverAuthenticationToken(token, AuthenticationScheme.BearerLoginScheme);
             context.Response.StatusCode = (int)HttpStatusCode.OK;
         }

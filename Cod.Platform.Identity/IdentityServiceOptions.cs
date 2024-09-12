@@ -5,21 +5,37 @@ namespace Cod.Platform.Identity
     [method: SetsRequiredMembers]
     public class IdentityServiceOptions()
     {
-        public required bool EnableAuthenticationEndpoint { get; set; } = true;
+        public static IdentityServiceOptions? Instance { get; set; }
+
+        public required bool EnableIdentityEndpoints { get; set; } = true;
 
         public required string AuthenticateEndpoint { get; set; } = "/auth";
 
-        public string? IDTokenPublicKey { get; set; }
+        public required string ResourceSharedAccessSignatureEndpoint { get; set; } = "/rsas/{type:int}/{resource}/{partition?}/{id?}";
 
         public required string IDTokenAudience { get; set; } = "cod.client";
 
         public required string IDTokenIssuer { get; set; } = "cod.platform";
 
+        public required string AccessTokenAudience { get; set; } = "cod.client";
+
+        public required string AccessTokenIssuer { get; set; } = "cod.platform";
+
+        public required string DefaultRole { get; set; } = "User";
+
         public string? AccessTokenSecret { get; set; }
+
+        public string? IDTokenPublicKey { get; set; }
+
+        public string? IDTokenPrivateKey { get; set; }
+
+        public string? IDTokenPrivateKeyPasscode { get; set; }
+
+        public required TimeSpan TokenValidity { get; set; } = TimeSpan.FromHours(8);
 
         public void Validate()
         {
-            if (EnableAuthenticationEndpoint)
+            if (EnableIdentityEndpoints)
             {
                 ArgumentNullException.ThrowIfNull(IDTokenPublicKey, nameof(IDTokenPublicKey));
                 ArgumentNullException.ThrowIfNull(AccessTokenSecret, nameof(AccessTokenSecret));

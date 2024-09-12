@@ -18,7 +18,7 @@ namespace Cod.Storage.Table
             return storageType == ResourceType.AzureStorageTable;
         }
 
-        public Task<Uri> IssueAsync(ResourceType storageType, StorageControl control, DateTimeOffset expires, CancellationToken cancellationToken = default)
+        public Task<(string, DateTimeOffset)> IssueAsync(ResourceType storageType, StorageControl control, DateTimeOffset expires, CancellationToken cancellationToken = default)
         {
             TableClient table = client.GetTableClient(control.Resource);
             TablePermissions permissions = (TablePermissions)control.Permission;
@@ -51,7 +51,7 @@ namespace Cod.Storage.Table
 
             return internalPermissions == 0
                 ? throw new UnauthorizedAccessException("Cannot create SAS without any permission granted.")
-                : Task.FromResult(table.GenerateSasUri(builder));
+                : Task.FromResult((table.GenerateSasUri(builder).ToString(), expires));
         }
     }
 }
