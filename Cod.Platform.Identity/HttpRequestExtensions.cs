@@ -58,9 +58,9 @@ namespace Cod.Platform.Identity
             return true;
         }
 
-        public static async Task<ClaimsPrincipal> TryParsePrincipalAsync(this HttpRequest request, SecurityKey? key = null)
+        public static async Task<ClaimsPrincipal> TryParsePrincipalAsync(this HttpRequest request, SecurityKey? key = null, string? issuer = null, string? audience = null)
         {
-            if (!request.TryParseAuthorizationHeader(out string inputScheme, out string parameter) || inputScheme != AuthenticationScheme.BasicLoginScheme)
+            if (!request.TryParseAuthorizationHeader(out string inputScheme, out string parameter) || inputScheme != AuthenticationScheme.BearerLoginScheme)
             {
                 throw new ApplicationException(InternalError.AuthenticationRequired);
             }
@@ -78,7 +78,9 @@ namespace Cod.Platform.Identity
             try
             {
                 key ??= new SymmetricSecurityKey(Encoding.UTF8.GetBytes(IdentityServiceOptions.Instance.AccessTokenSecret));
-                return await ValidateAndDecodeJWTAsync(parameter, key, IdentityServiceOptions.Instance.AccessTokenIssuer, IdentityServiceOptions.Instance.AccessTokenAudience);
+                issuer ??= IdentityServiceOptions.Instance.AccessTokenIssuer;
+                audience ??= IdentityServiceOptions.Instance.AccessTokenAudience;
+                return await ValidateAndDecodeJWTAsync(parameter, key, issuer, audience);
             }
             catch (Exception)
             {
@@ -86,7 +88,7 @@ namespace Cod.Platform.Identity
             }
         }
 
-        internal static async Task<ClaimsPrincipal> ValidateAndDecodeJWTAsync(string jwt, SecurityKey key, string issuer, string audience)
+        private static async Task<ClaimsPrincipal> ValidateAndDecodeJWTAsync(string jwt, SecurityKey key, string issuer, string audience)
         {
             TokenValidationParameters validationParameters = new()
             {

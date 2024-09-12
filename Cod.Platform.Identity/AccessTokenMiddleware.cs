@@ -24,31 +24,10 @@ namespace Cod.Platform.Identity
                 return;
             }
 
-            var authHeader = req.Headers.Authorization.SingleOrDefault();
-            if (!AuthenticationHeaderValue.TryParse(authHeader, out var authenticationHeader))
-            {
-                context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                return;
-            }
-
-            if (authenticationHeader.Scheme != AuthenticationScheme.BearerLoginScheme
-                || authenticationHeader.Parameter == null)
-            {
-                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                return;
-            }
-
-            if (string.IsNullOrEmpty(options.IDTokenPublicKey))
-            {
-                logger.LogError("ID token public key must be configured.");
-                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                return;
-            }
-
             var rsa = RSA.Create();
             rsa.ImportFromPem(options.IDTokenPublicKey);
             var key = new RsaSecurityKey(rsa);
-            var principal = await HttpRequestExtensions.ValidateAndDecodeJWTAsync(authenticationHeader.Parameter, key, options.IDTokenIssuer, options.IDTokenAudience);
+            var principal = await req.TryParsePrincipalAsync(key, options.IDTokenIssuer, options.IDTokenAudience);
             if (principal == null)
             {
                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;

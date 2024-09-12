@@ -49,7 +49,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cod.Platform.Locking", "Cod
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cod.Platform.Tenant.Abstractions", "Cod.Platform.Tenant.Abstractions\Cod.Platform.Tenant.Abstractions.csproj", "{2EBC824A-68FB-4DE7-BD30-CD8F2DA87831}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cod.Platform.Identity.Abstractions", "Cod.Platform.Identity.Abstractions\Cod.Platform.Identity.Abstractions.csproj", "{1257F4F1-3C7F-443B-8150-8413120EE8E1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cod.Platform.Identity.Abstractions", "Cod.Platform.Identity.Abstractions\Cod.Platform.Identity.Abstractions.csproj", "{1257F4F1-3C7F-443B-8150-8413120EE8E1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cod.Cloud.Azure.SpeechService", "Cod.Cloud.Azure.SpeechService\Cod.Cloud.Azure.SpeechService.csproj", "{DF6CA7B1-D2CB-4B33-909C-388322D28DC3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -313,6 +315,18 @@ Global
 		{1257F4F1-3C7F-443B-8150-8413120EE8E1}.Release|x64.Build.0 = Release|Any CPU
 		{1257F4F1-3C7F-443B-8150-8413120EE8E1}.Release|x86.ActiveCfg = Release|Any CPU
 		{1257F4F1-3C7F-443B-8150-8413120EE8E1}.Release|x86.Build.0 = Release|Any CPU
+		{DF6CA7B1-D2CB-4B33-909C-388322D28DC3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF6CA7B1-D2CB-4B33-909C-388322D28DC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF6CA7B1-D2CB-4B33-909C-388322D28DC3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DF6CA7B1-D2CB-4B33-909C-388322D28DC3}.Debug|x64.Build.0 = Debug|Any CPU
+		{DF6CA7B1-D2CB-4B33-909C-388322D28DC3}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DF6CA7B1-D2CB-4B33-909C-388322D28DC3}.Debug|x86.Build.0 = Debug|Any CPU
+		{DF6CA7B1-D2CB-4B33-909C-388322D28DC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF6CA7B1-D2CB-4B33-909C-388322D28DC3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF6CA7B1-D2CB-4B33-909C-388322D28DC3}.Release|x64.ActiveCfg = Release|Any CPU
+		{DF6CA7B1-D2CB-4B33-909C-388322D28DC3}.Release|x64.Build.0 = Release|Any CPU
+		{DF6CA7B1-D2CB-4B33-909C-388322D28DC3}.Release|x86.ActiveCfg = Release|Any CPU
+		{DF6CA7B1-D2CB-4B33-909C-388322D28DC3}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

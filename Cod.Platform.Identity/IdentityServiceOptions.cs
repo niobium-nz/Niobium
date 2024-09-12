@@ -7,8 +7,6 @@ namespace Cod.Platform.Identity
     {
         public static IdentityServiceOptions? Instance { get; set; }
 
-        public required bool EnableIdentityEndpoints { get; set; } = true;
-
         public required string AuthenticateEndpoint { get; set; } = "/auth";
 
         public required string ResourceSharedAccessSignatureEndpoint { get; set; } = "/rsas/{type:int}/{resource}/{partition?}/{id?}";
@@ -35,7 +33,7 @@ namespace Cod.Platform.Identity
 
         public void Validate()
         {
-            if (EnableIdentityEndpoints)
+            if (string.IsNullOrEmpty(IDTokenPrivateKey))
             {
                 ArgumentNullException.ThrowIfNull(IDTokenPublicKey, nameof(IDTokenPublicKey));
                 ArgumentNullException.ThrowIfNull(AccessTokenSecret, nameof(AccessTokenSecret));
