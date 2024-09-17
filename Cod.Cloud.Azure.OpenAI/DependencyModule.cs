@@ -1,4 +1,5 @@
-﻿using Cod.Platform;
+using Cod.Platform;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Polly.CircuitBreaker;
@@ -6,13 +7,13 @@ using Polly.Contrib.WaitAndRetry;
 using Polly.Extensions.Http;
 using Polly.Retry;
 
-namespace Cod.Cloud.Azure.SpeechService
+namespace Cod.Cloud.Azure.OpenAI
 {
     public static class DependencyModule
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddSpeechService(this IServiceCollection services, SpeechServiceOptions options)
+        public static IServiceCollection AddPlatformIdentity(this IServiceCollection services, OpenAIServiceOptions options)
         {
             if (loaded)
             {
@@ -26,12 +27,10 @@ namespace Cod.Cloud.Azure.SpeechService
 
             services.AddCodPlatform();
 
-            services.AddTransient<IResourceControl, SpeechServiceControl>();
-            services.AddHttpClient<ISignatureIssuer, SpeechServiceSignatureIssuer>((serviceProvider, httpClient) =>
+            services.AddHttpClient<IOpenAIService, OpenAIService>((serviceProvider, httpClient) =>
             {
-                var options = serviceProvider.GetRequiredService<SpeechServiceOptions>();
-                httpClient.BaseAddress = new Uri($"https://{options.ServiceRegion}.api.cognitive.microsoft.com/");
-                httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", options.AccessKey);
+                httpClient.BaseAddress = new Uri(options.Endpoint);
+                httpClient.DefaultRequestHeaders.Add("api-key", options.Secret);
             })
             .AddPolicyHandler(RetryPolicy())
             .AddPolicyHandler(CircuitBreakerPolicy());
