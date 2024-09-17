@@ -13,7 +13,7 @@ namespace Cod.Cloud.Azure.OpenAI
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddPlatformIdentity(this IServiceCollection services, OpenAIServiceOptions options)
+        public static IServiceCollection AddOpenAI(this IServiceCollection services, OpenAIServiceOptions options)
         {
             if (loaded)
             {
