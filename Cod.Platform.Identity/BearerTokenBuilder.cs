@@ -1,4 +1,5 @@
-﻿using Microsoft.IdentityModel.JsonWebTokens;
+﻿using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -6,9 +7,13 @@ using System.Text;
 
 namespace Cod.Platform.Identity
 {
-    internal class BearerTokenBuilder(IdentityServiceOptions options) : ITokenBuilder
+    internal class BearerTokenBuilder(IOptions<IdentityServiceOptions> options) : ITokenBuilder
     {
-        public Task<string> BuildAsync(string mainIdentity, IEnumerable<KeyValuePair<string, string>>? entitlements = null, string? audience = null)
+        public Task<string> BuildAsync(
+            string mainIdentity,
+            IEnumerable<KeyValuePair<string, string>>? entitlements = null,
+            string? audience = null,
+            IEnumerable<string>? roles = null)
         {
             Dictionary<string, object> claims = new()
             {
@@ -30,36 +35,44 @@ namespace Cod.Platform.Identity
                 }
             }
 
-            SigningCredentials creds;
-            if (!string.IsNullOrEmpty(options.AccessTokenSecret))
+            if (roles != null)
             {
-                creds = new(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.AccessTokenSecret)), SecurityAlgorithms.HmacSha256);
+                foreach (var role in roles)
+                {
+                    claims.Add(ClaimTypes.Role, role);
+                }
+            }
+
+            SigningCredentials creds;
+            if (!string.IsNullOrEmpty(options.Value.AccessTokenSecret))
+            {
+                creds = new(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Value.AccessTokenSecret)), SecurityAlgorithms.HmacSha256);
             }
             else
             {
-                if (string.IsNullOrEmpty(options.IDTokenPrivateKey))
+                if (string.IsNullOrEmpty(options.Value.IDTokenPrivateKey))
                 {
-                    throw new InvalidOperationException($"Either {nameof(options.AccessTokenSecret)} or {nameof(options.IDTokenPrivateKey)} must be provided.");
+                    throw new InvalidOperationException($"Either {nameof(options.Value.AccessTokenSecret)} or {nameof(options.Value.IDTokenPrivateKey)} must be provided.");
                 }
 
                 var rsa = RSA.Create();
-                if (string.IsNullOrEmpty(options.IDTokenPrivateKeyPasscode))
+                if (string.IsNullOrEmpty(options.Value.IDTokenPrivateKeyPasscode))
                 {
-                    rsa.ImportFromPem(options.IDTokenPrivateKey);
+                    rsa.ImportFromPem(options.Value.IDTokenPrivateKey);
                 }
                 else
                 {
-                    rsa.ImportFromEncryptedPem(options.IDTokenPrivateKey, options.IDTokenPrivateKeyPasscode);
+                    rsa.ImportFromEncryptedPem(options.Value.IDTokenPrivateKey, options.Value.IDTokenPrivateKeyPasscode);
                 }
                 creds = new(new RsaSecurityKey(rsa), SecurityAlgorithms.RsaSha256);
             }
 
             SecurityTokenDescriptor token = new()
             {
-                Issuer = options.AccessTokenIssuer,
-                Audience = audience ?? options.AccessTokenAudience,
+                Issuer = options.Value.AccessTokenIssuer,
+                Audience = audience ?? options.Value.AccessTokenAudience,
                 Claims = claims,
-                Expires = DateTime.UtcNow.Add(options.TokenValidity),
+                Expires = DateTime.UtcNow.Add(options.Value.TokenValidity),
                 SigningCredentials = creds,
             };
 

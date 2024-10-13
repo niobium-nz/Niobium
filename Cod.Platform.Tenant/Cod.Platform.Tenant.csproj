@@ -30,7 +30,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Cod.Platform.Tenant.Abstractions\Cod.Platform.Tenant.Abstractions.csproj" />
     <ProjectReference Include="..\Cod.Platform\Cod.Platform.csproj" />
-    <ProjectReference Include="..\Cod.Storage.Table\Cod.Storage.Table.csproj" />
+    <ProjectReference Include="..\Cod.Table\Cod.Table.csproj" />
+    <PackageReference Include="System.Linq.Async" Version="6.0.1" />
   </ItemGroup>
 
   <ItemGroup>

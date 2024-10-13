@@ -1,6 +1,6 @@
 ﻿using Cod.Platform.Notification;
 using Cod.Platform.Tenant;
-using Cod.Storage.Table;
+using Cod.Table;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;

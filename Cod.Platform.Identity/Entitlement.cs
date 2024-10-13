@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Cod.Identity;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Cod.Platform.Identity

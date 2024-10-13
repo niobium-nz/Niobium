@@ -1,6 +1,6 @@
 using Cod.Platform.Notification;
 using Cod.Platform.Tenant;
-using Cod.Storage.Table;
+using Cod.Table;
 using Jose;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;

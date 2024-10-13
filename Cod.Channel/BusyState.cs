@@ -1,29 +1,7 @@
-﻿using System;
-
-namespace Cod.Channel
+﻿namespace Cod.Channel
 {
-    internal class BusyState : IDisposable
+    internal class BusyState(ILoadingStateService service, string group, string name) : IDisposable
     {
-        private ICommander commander;
-        private string group;
-        private string name;
-
-        public BusyState(ICommander commander, string group, string name)
-        {
-            this.commander = commander;
-            this.group = group;
-            this.name = name;
-        }
-
-        public void Dispose()
-        {
-            if (this.commander != null)
-            {
-                this.commander.UnsetBusy(this.group, this.name);
-                this.commander = null;
-                this.group = null;
-                this.name = null;
-            }
-        }
+        public void Dispose() => service.UnsetBusy(group, name);
     }
 }

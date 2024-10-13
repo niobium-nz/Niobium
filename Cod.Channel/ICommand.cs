@@ -1,18 +1,12 @@
-using System.Threading.Tasks;
-
 namespace Cod.Channel
 {
-    public interface ICommand<T> : ICommand
+    public interface ICommand<TParameter, TResult>
     {
-        Task<CommandExecutionEventArgs> ExecuteAsync(T parameter);
+        Task<TResult> ExecuteAsync(TParameter parameter, CancellationToken cancellationToken = default);
     }
 
-    public interface ICommand : System.Windows.Input.ICommand
+    public interface ICommand<TParameter>
     {
-        CommandID ID { get; }
-
-        void Initialize(ICommander commander);
-
-        Task<CommandExecutionEventArgs> ExecuteAsync(object parameter);
+        Task ExecuteAsync(TParameter parameter, CancellationToken cancellationToken = default);
     }
 }

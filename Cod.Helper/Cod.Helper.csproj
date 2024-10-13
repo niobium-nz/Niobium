@@ -18,6 +18,7 @@
   <PropertyGroup>
     <Version Condition=" '$(BUILD_BUILDNUMBER)' == '' ">1.0.0.0-prerelease</Version>
     <Version Condition=" '$(BUILD_BUILDNUMBER)' != '' ">$(BUILD_BUILDNUMBER)</Version>
+    <RootNamespace>Cod</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

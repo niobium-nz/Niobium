@@ -1,4 +1,4 @@
-using Cod.Storage.Table;
+using Cod.Table;
 using Microsoft.Extensions.Logging;
 using System.Collections.Specialized;
 using System.Globalization;

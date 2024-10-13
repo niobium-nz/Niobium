@@ -8,7 +8,7 @@ namespace Cod.Platform.Identity
             ClaimsPrincipal claims,
             ResourceType type,
             string resource,
-            string partition,
-            string id);
+            string? partition,
+            string? id);
     }
 }

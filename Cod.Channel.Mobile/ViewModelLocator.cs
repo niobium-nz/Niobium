@@ -15,27 +15,19 @@ namespace Cod.Channel.Mobile
 
         public static bool GetAutoWireViewModel(BindableObject bindable)
         {
-            if (bindable is null)
-            {
-                throw new ArgumentNullException(nameof(bindable));
-            }
-
+            ArgumentNullException.ThrowIfNull(bindable);
             return (bool)bindable.GetValue(AutoWireViewModelProperty);
         }
 
         public static void SetAutoWireViewModel(BindableObject bindable, bool value)
         {
-            if (bindable is null)
-            {
-                throw new ArgumentNullException(nameof(bindable));
-            }
-
+            ArgumentNullException.ThrowIfNull(bindable);
             bindable.SetValue(AutoWireViewModelProperty, value);
         }
 
         private static void OnAutoWireViewModelChanged(BindableObject bindable, object oldValue, object newValue)
         {
-            if (!(bindable is Element view))
+            if (bindable is not Element view)
             {
                 return;
             }
@@ -45,12 +37,7 @@ namespace Cod.Channel.Mobile
             var viewAssemblyName = viewType.Assembly.FullName;
             var viewModelName = $"{viewName}Model, {viewAssemblyName}";
 
-            var viewModelType = Type.GetType(viewModelName);
-            if (viewModelType == null)
-            {
-                throw new NotImplementedException($"ViewModel {viewModelName} does not exist.");
-            }
-
+            var viewModelType = Type.GetType(viewModelName) ?? throw new NotImplementedException($"ViewModel {viewModelName} does not exist.");
             var viewModel = ServiceLocator.Current.GetInstance(viewModelType);
             view.BindingContext = viewModel;
         }

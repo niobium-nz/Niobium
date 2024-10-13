@@ -1,9 +1,13 @@
 ﻿namespace Cod
 {
-    public interface IDomainEventHandler<TSender, TEventArgs> : IEventHandler<TSender>
-        where TSender : IDomain
-        where TEventArgs : new()
+    public interface IDomainEventHandler<out TDomain, TEventArgs> : IDomainEventHandler<TDomain>
+        where TEventArgs : class, new()
     {
-        Task HandleAsync(TSender sender, TEventArgs e);
+        Task HandleAsync(TEventArgs e, CancellationToken cancellationToken);
+    }
+
+    public interface IDomainEventHandler<out TDomain>
+    {
+        Task HandleAsync(object e, CancellationToken cancellationToken);
     }
 }

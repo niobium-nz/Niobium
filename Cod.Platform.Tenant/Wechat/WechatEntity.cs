@@ -1,4 +1,4 @@
-﻿using Cod.Storage.Table;
+﻿using Cod.Table;
 
 namespace Cod.Platform.Tenant.Wechat
 {

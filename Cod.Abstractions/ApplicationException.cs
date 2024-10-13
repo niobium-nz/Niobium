@@ -13,7 +13,8 @@ namespace Cod
 
         public object Reference { get; set; }
 
-        public ApplicationException(int errorCode, string description = null)
+        public ApplicationException(int errorCode, string internalMessage = null, Exception innerException = null)
+            : base(internalMessage, innerException)
         {
             ErrorCode = errorCode;
 
@@ -26,16 +27,10 @@ namespace Cod
                 }
                 else
                 {
-                    msg.Append(InternalError.Unknown);
-                }
-
-                if (description != null)
-                {
-                    if (msg.Length > 0)
+                    if (internalMessage != null)
                     {
-                        msg.Append(":");
+                        msg.Append(internalMessage);
                     }
-                    msg.Append(description);
                 }
 
                 if (errorCode != SuccessCode)

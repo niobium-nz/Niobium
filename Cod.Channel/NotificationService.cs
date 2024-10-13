@@ -11,7 +11,7 @@ namespace Cod.Channel
 
         public IReadOnlyList<Notification> Notifications => this.notifications;
 
-        public NotificationService() => this.notifications = new List<Notification>();
+        public NotificationService() => this.notifications = [];
 
         public Task NotifyAsync(Notification notification)
         {

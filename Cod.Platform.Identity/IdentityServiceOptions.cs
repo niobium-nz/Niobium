@@ -1,25 +1,24 @@
-﻿using System.Diagnostics.CodeAnalysis;
-
-namespace Cod.Platform.Identity
+﻿namespace Cod.Platform.Identity
 {
-    [method: SetsRequiredMembers]
-    public class IdentityServiceOptions()
+    public class IdentityServiceOptions
     {
         public static IdentityServiceOptions? Instance { get; set; }
 
-        public required string AuthenticateEndpoint { get; set; } = "/auth";
+        public string IDTokenEndpoint { get; set; } = Constants.DefaultIDTokenEndpoint;
 
-        public required string ResourceSharedAccessSignatureEndpoint { get; set; } = "/rsas/{type:int}/{resource}/{partition?}/{id?}";
+        public string AccessTokenEndpoint { get; set; } = Constants.DefaultAccessTokenEndpoint;
 
-        public required string IDTokenAudience { get; set; } = "cod.client";
+        public string ResourceTokenEndpoint { get; set; } = Constants.DefaultResourceTokenEndpoint;
 
-        public required string IDTokenIssuer { get; set; } = "cod.platform";
+        public string IDTokenAudience { get; set; } = Constants.DefaultIDTokenAudience;
 
-        public required string AccessTokenAudience { get; set; } = "cod.client";
+        public string IDTokenIssuer { get; set; } = Constants.DefaultIDTokenIssuer;
 
-        public required string AccessTokenIssuer { get; set; } = "cod.platform";
+        public string AccessTokenAudience { get; set; } = Constants.DefaultAccessTokenAudience;
 
-        public required string DefaultRole { get; set; } = "User";
+        public string AccessTokenIssuer { get; set; } = Constants.DefaultAccessTokenIssuer;
+
+        public string DefaultRole { get; set; } = Constants.DefaultRole;
 
         public string? AccessTokenSecret { get; set; }
 
@@ -29,7 +28,7 @@ namespace Cod.Platform.Identity
 
         public string? IDTokenPrivateKeyPasscode { get; set; }
 
-        public required TimeSpan TokenValidity { get; set; } = TimeSpan.FromHours(8);
+        public TimeSpan TokenValidity { get; set; } = TimeSpan.FromHours(8);
 
         public void Validate()
         {

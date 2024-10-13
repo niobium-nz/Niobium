@@ -1,4 +1,6 @@
-﻿namespace Cod.Platform.Identity
+﻿using Cod.Identity;
+
+namespace Cod.Platform.Identity
 {
     internal class DatabaseEntitlementStore(IRepository<Entitlement> repository) : IEntitlementDescriptor
     {

@@ -1,4 +1,4 @@
-using Cod.Storage.Table;
+using Cod.Table;
 using System.Security.Claims;
 
 namespace Cod.Platform.Locking

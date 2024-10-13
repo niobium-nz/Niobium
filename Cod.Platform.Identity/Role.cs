@@ -58,9 +58,8 @@ namespace Cod.Platform.Identity
             else
             {
                 List<string> roles = GetRoles().ToList();
-                if (roles.Contains(role))
+                if (roles.Remove(role))
                 {
-                    roles.Remove(role);
                     Roles = string.Join(",", roles);
                 }
             }

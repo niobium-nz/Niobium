@@ -1,14 +1,28 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.JSInterop;
 
 namespace Cod.Channel.Blazor
 {
-    public class DependencyModule : IDependencyModule
+    public static class DependencyModule
     {
-        public void Load(IServiceCollection services)
+        private static volatile bool loaded;
+
+        public static IServiceCollection AddChannelBlazor(this IServiceCollection services)
         {
+            if (loaded)
+            {
+                return services;
+            }
+
+            loaded = true;
+
+            services.AddChannel();
+
+
+            services.AddTransient(services => (IJSInProcessRuntime)services.GetRequiredService<IJSRuntime>());
             services.AddSingleton<IBrowser, BlazorBrowser>();
-            services.AddSingleton<IAuthenticator, LocalStorageAuthenticator>();
             services.AddSingleton<INavigator, NavigatorAdaptor>();
+            return services;
         }
     }
 }

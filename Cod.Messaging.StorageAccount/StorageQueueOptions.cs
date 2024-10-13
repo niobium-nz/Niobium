@@ -1,0 +1,15 @@
+﻿namespace Cod.Messaging.StorageAccount
+{
+    public class StorageQueueOptions
+    {
+        public string ServiceEndpoint { get; set; }
+
+        public bool EnableInteractiveIdentity { get; set; }
+
+        public bool Base64MessageEncoding { get; set; }
+
+        public bool CreateQueueIfNotExist { get; set; } = true;
+
+        public bool Validate() => !string.IsNullOrEmpty(ServiceEndpoint);
+    }
+}

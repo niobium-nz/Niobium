@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
+using Microsoft.Net.Http.Headers;
+using System.Net.Http.Headers;
 using System.Net;
 
 namespace Cod.Platform
@@ -88,6 +90,17 @@ namespace Cod.Platform
             }
 
             return result;
+        }
+
+        public static void DeliverAuthenticationToken(this HttpRequest request, string token, string scheme)
+        {
+            if (request.HttpContext.Response.Headers.ContainsKey(HeaderNames.WWWAuthenticate))
+            {
+                request.HttpContext.Response.Headers.Remove(HeaderNames.WWWAuthenticate);
+            }
+
+            request.HttpContext.Response.Headers[HeaderNames.WWWAuthenticate] = new AuthenticationHeaderValue(scheme, token).ToString();
+            request.HttpContext.Response.Headers[HeaderNames.AccessControlExposeHeaders] = HeaderNames.WWWAuthenticate;
         }
     }
 }

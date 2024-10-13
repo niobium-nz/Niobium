@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
+﻿using Cod.Identity;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using System.Data;
 using System.Net;
-using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Security.Cryptography;
 
@@ -12,22 +13,24 @@ namespace Cod.Platform.Identity
         Lazy<IRepository<Role>> repository,
         Lazy<IEnumerable<IEntitlementDescriptor>> descriptors,
         ITokenBuilder tokenBuilder,
-        IdentityServiceOptions options,
-        ILogger<AccessTokenMiddleware> logger) : IMiddleware
+        IOptions<IdentityServiceOptions> options) : IMiddleware
     {
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
             var req = context.Request;
-            if (!req.Path.HasValue || !req.Path.Value.Equals(options.AuthenticateEndpoint, StringComparison.OrdinalIgnoreCase))
+            if (!req.Path.HasValue || !req.Path.Value.Equals($"/{options.Value.AccessTokenEndpoint}", StringComparison.OrdinalIgnoreCase))
             {
                 await next(context);
                 return;
             }
 
             var rsa = RSA.Create();
-            rsa.ImportFromPem(options.IDTokenPublicKey);
-            var key = new RsaSecurityKey(rsa);
-            var principal = await req.TryParsePrincipalAsync(key, options.IDTokenIssuer, options.IDTokenAudience);
+            rsa.ImportFromPem(options.Value.IDTokenPublicKey);
+            var key = new RsaSecurityKey(rsa)
+            {
+                KeyId = "0"
+            };
+            var principal = await req.TryParsePrincipalAsync(key, options.Value.IDTokenIssuer, options.Value.IDTokenAudience);
             if (principal == null)
             {
                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
@@ -54,7 +57,7 @@ namespace Cod.Platform.Identity
                 tenant = Guid.Empty;
             }
 
-            List<string> roles = [options.DefaultRole];
+            List<string> roles = [options.Value.DefaultRole];
             var entity = await repository.Value.RetrieveAsync(Role.BuildPartitionKey(tenant), Role.BuildRowKey(user));
             if (entity != null)
             {
@@ -63,7 +66,6 @@ namespace Cod.Platform.Identity
 
             List<EntitlementDescription> entitlements = [];
             var orderedDescriptors = descriptors.Value.OrderBy(d => d.IsHighOverhead);
-            List<string> describedRoles = [];
 
             foreach (var descriptor in orderedDescriptors)
             {
@@ -73,22 +75,8 @@ namespace Cod.Platform.Identity
                     {
                         var es = await descriptor.DescribeAsync(tenant, user, role);
                         entitlements.AddRange(es);
-                        describedRoles.Add(role);
                     }
                 }
-
-                roles.RemoveAll(describedRoles.Contains);
-                if (roles.Count == 0)
-                {
-                    break;
-                }
-            }
-
-            if (roles.Count != 0)
-            {
-                logger.LogError($"Unknown role(s) found: {string.Join(',', roles)}");
-                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                return;
             }
 
             var claims = entitlements.Select(e =>
@@ -98,10 +86,11 @@ namespace Cod.Platform.Identity
                     e.Permission
                 })
                 .GroupBy(e => e.Resource)
-                .Select(e => new KeyValuePair<string, string>(e.Key, string.Join(Entitlements.ValueSplitor[0], e.Select(x => x.Permission))));
+                .Select(e => new KeyValuePair<string, string>(e.Key, string.Join(Entitlements.ValueSplitor[0], e.Select(x => x.Permission)))).ToList();
 
-            var token = await tokenBuilder.BuildAsync(user.ToKey(), claims);
-            req.DeliverAuthenticationToken(token, AuthenticationScheme.BearerLoginScheme);
+            var sid = user.ToKey();
+            var token = await tokenBuilder.BuildAsync(sid, claims, roles: roles);
+            req.DeliverToken(token, AuthenticationScheme.BearerLoginScheme);
             context.Response.StatusCode = (int)HttpStatusCode.OK;
         }
     }

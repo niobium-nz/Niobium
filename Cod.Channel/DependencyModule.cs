@@ -1,45 +1,38 @@
-using System;
-using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Cod.Channel
 {
-    public class DependencyModule : IDependencyModule
+    public static class DependencyModule
     {
-        public void Load(IServiceCollection services)
+        private static volatile bool loaded;
+
+        public static IServiceCollection AddChannel(this IServiceCollection services)
         {
-            InternalError.Register(new InternalErrorRetriever());
-
-            services.AddTransient(sp =>
+            if (loaded)
             {
-                var client = new HttpClient();
-                if (HttpClientSettings.BaseAddress != null)
-                {
-                    client.BaseAddress = HttpClientSettings.BaseAddress;
-                }
+                return services;
+            }
 
-                if (HttpClientSettings.Timeout.HasValue)
-                {
-                    client.Timeout = HttpClientSettings.Timeout.Value;
-                }
+            loaded = true;
 
-                if (HttpClientSettings.MaxResponseContentBufferSize.HasValue)
-                {
-                    client.MaxResponseContentBufferSize = HttpClientSettings.MaxResponseContentBufferSize.Value;
-                }
-
-                return client;
-            });
-            services.AddTransient<IBootstrapper, AuthenticatorInitializer>();
-            services.AddTransient<LoginCommand>();
-            services.AddTransient<ICommand>(sp => sp.GetService<LoginCommand>());
-            services.AddTransient<ICommand<LoginCommandParameter>>(sp => sp.GetService<LoginCommand>());
-            services.AddTransient<IEventHandler<IAuthenticator>, LoginNavigationEventHandler>();
-            services.AddSingleton<IAuthenticator, DefaultAuthenticator>();
-            services.AddSingleton<ICommander, DefaultCommander>();
+            InternalError.Register(new InternalErrorRetriever());
+            services.AddOptions();
+            services.AddTransient(typeof(Lazy<>), typeof(LazyWrapper<>));
+            services.AddSingleton<ILoadingStateService, DefaultLoadingStateService>();
             services.AddSingleton<INotificationService, NotificationService>();
-            services.AddSingleton<IHttpClient, HttpClientAdapter>();
-            services.AddSingleton(sp => new Lazy<IHttpClient>(() => sp.GetService<IHttpClient>(), true));
+            return services;
+        }
+
+        public async static Task InitializeAsync(this IServiceProvider services)
+        {
+            var bootstrappers = services.GetService<IEnumerable<IBootstrapper>>();
+            if (bootstrappers != null)
+            {
+                foreach (var bootstrapper in bootstrappers)
+                {
+                    await bootstrapper.InitializeAsync();
+                }
+            }
         }
     }
 }

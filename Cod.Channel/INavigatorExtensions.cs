@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web;
@@ -38,6 +39,13 @@ namespace Cod.Channel
             }
 
             return EmptyQueryString;
+        }
+
+        public static bool TryGetQueryString(this INavigator navigator, string key, out string value)
+        {
+            var queries = navigator.GetQueryStrings();
+            value = queries.Get(key);
+            return !String.IsNullOrWhiteSpace(value);
         }
     }
 }

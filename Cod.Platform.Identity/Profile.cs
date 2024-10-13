@@ -25,10 +25,7 @@ namespace Cod.Platform.Identity
         {
             tenant = default;
             user = default;
-            if (partitionKey is null)
-            {
-                throw new ArgumentNullException(nameof(partitionKey));
-            }
+            ArgumentNullException.ThrowIfNull(partitionKey);
 
             string[] splited = partitionKey.Split('|');
             return splited.Length == 2 && Guid.TryParse(splited[0], out tenant) && Guid.TryParse(splited[1], out user);

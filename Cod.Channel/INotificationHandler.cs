@@ -4,6 +4,6 @@ namespace Cod.Channel
 {
     public interface INotificationHandler
     {
-        Task HandleAsync(NotificationHandleOption option);
+        Task HandleAsync(NotificationHandleOption options);
     }
 }

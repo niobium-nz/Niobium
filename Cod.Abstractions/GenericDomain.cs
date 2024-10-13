@@ -26,9 +26,9 @@
 
         protected IRepository<T> Repository => repository.Value;
 
-        protected IEnumerable<IEventHandler<IDomain<T>>> EventHandlers { get; }
+        protected IEnumerable<IDomainEventHandler<IDomain<T>>> EventHandlers { get; }
 
-        protected GenericDomain(Lazy<IRepository<T>> repository, IEnumerable<IEventHandler<IDomain<T>>> eventHandlers)
+        protected GenericDomain(Lazy<IRepository<T>> repository, IEnumerable<IDomainEventHandler<IDomain<T>>> eventHandlers)
         {
             this.repository = repository;
             EventHandlers = eventHandlers;
@@ -119,13 +119,13 @@
             return results;
         }
 
-        protected async Task OnEvent<TEventArgs>(TEventArgs e) where TEventArgs : new()
+        protected async Task OnEvent<TEventArgs>(TEventArgs e, CancellationToken cancellationToken = default) where TEventArgs : class, new()
         {
-            foreach (IEventHandler<IDomain<T>> handler in EventHandlers)
+            foreach (var handler in EventHandlers)
             {
                 if (handler is IDomainEventHandler<IDomain<T>, TEventArgs> h)
                 {
-                    await h.HandleAsync(this, e);
+                    await h.HandleAsync(e, cancellationToken);
                 }
             }
         }

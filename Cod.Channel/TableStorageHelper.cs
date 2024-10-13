@@ -13,10 +13,10 @@ namespace Cod.Channel
         private const string AND_OPERATOR = " and ";
         private static readonly IEnumerable<KeyValuePair<string, string>> TableStorageRequestHeaders = new List<KeyValuePair<string, string>>
         {
-            new KeyValuePair<string, string>("x-ms-version", "2015-12-11"),
-            new KeyValuePair<string, string>("DataServiceVersion", "3.0;NetFx"),
-            new KeyValuePair<string, string>("MaxDataServiceVersion", "3.0;NetFx"),
-            new KeyValuePair<string, string>("Accept", "application/json;odata=minimalmetadata"),
+            new("x-ms-version", "2015-12-11"),
+            new("DataServiceVersion", "3.0;NetFx"),
+            new("MaxDataServiceVersion", "3.0;NetFx"),
+            new("Accept", "application/json;odata=minimalmetadata"),
         };
 
         public static async Task<OperationResult<TableQueryResult<T>>> GetAsync<T>(IHttpClient httpClient,
@@ -24,20 +24,9 @@ namespace Cod.Channel
             string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd,
             ContinuationToken continuationToken = null, int count = -1)
         {
-            if (httpClient is null)
-            {
-                throw new ArgumentNullException(nameof(httpClient));
-            }
-
-            if (baseUrl is null)
-            {
-                throw new ArgumentNullException(nameof(baseUrl));
-            }
-
-            if (connectionString is null)
-            {
-                throw new ArgumentNullException(nameof(connectionString));
-            }
+            ArgumentNullException.ThrowIfNull(httpClient);
+            ArgumentNullException.ThrowIfNull(baseUrl);
+            ArgumentNullException.ThrowIfNull(connectionString);
 
             var filter = new StringBuilder();
             if (!String.IsNullOrWhiteSpace(partitionKeyStart) && !String.IsNullOrWhiteSpace(partitionKeyEnd)
@@ -100,11 +89,11 @@ namespace Cod.Channel
                 resource = typeof(T).Name;
             }
             var url = new StringBuilder(baseUrl);
-            url.Append("/");
+            url.Append('/');
             url.Append(resource);
             if (connectionString[0] != '?')
             {
-                url.Append("?");
+                url.Append('?');
             }
             url.Append(connectionString);
 
@@ -120,7 +109,7 @@ namespace Cod.Channel
 
             var result = new TableQueryResult<T>
             {
-                Data = new List<T>(),
+                Data = [],
             };
 
             while (true)

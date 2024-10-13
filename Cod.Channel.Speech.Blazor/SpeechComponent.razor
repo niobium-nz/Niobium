@@ -1,0 +1,35 @@
+﻿@implements IDisposable
+
+<script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
+
+@code {
+    private bool disposed;
+
+    [Parameter]
+    public required SpeechViewModel ViewModel { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        ViewModel.Changed += ViewModel_Changed;
+        await ViewModel.InitializeAsync();
+    }
+
+    private void ViewModel_Changed(object? sender, EventArgs e)
+    {
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        if (!disposed)
+        {
+            if (ViewModel != null)
+            {
+                ViewModel.Changed -= ViewModel_Changed;
+            }
+            disposed = true;
+        }
+
+        GC.SuppressFinalize(this);
+    }
+}

@@ -1,4 +1,4 @@
-using Cod.Storage.Table;
+using Cod.Table;
 using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform.Finance
@@ -15,7 +15,7 @@ namespace Cod.Platform.Finance
 
         public AccountableDomain(
             Lazy<IRepository<T>> repo,
-            IEnumerable<IEventHandler<IDomain<T>>> eventHandlers,
+            IEnumerable<IDomainEventHandler<IDomain<T>>> eventHandlers,
             Lazy<IQueryableRepository<Transaction>> transactionRepo,
             Lazy<IQueryableRepository<Accounting>> accountingRepo,
             Lazy<IEnumerable<IAccountingAuditor>> auditors,

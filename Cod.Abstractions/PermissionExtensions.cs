@@ -1,4 +1,7 @@
-﻿namespace Cod
+﻿using System.Linq;
+using System.Security.Claims;
+
+namespace Cod
 {
     public static class PermissionExtensions
     {
@@ -10,7 +13,7 @@
             }
 
             string wildcard = permission.IsWildcard ? "*" : string.Empty;
-            return $"{permission.Scope}{wildcard}{Entitlements.ScopeSplitor}{string.Join(Entitlements.ValueSplitor[0], permission.Entitlements)}";
+            return $"{permission.Scope}{wildcard}{Entitlements.ScopeSplitor}{string.Join(Entitlements.ValueSplitor[0].ToString(), permission.Entitlements)}";
         }
 
         public static bool TryGetClaim(this IEnumerable<KeyValuePair<string, string>> claims, string key, out string value)
@@ -88,35 +91,68 @@
                 .Any(p => p.Entitlements.Contains(entitlement));
         }
 
-        public static IEnumerable<Permission> ToPermissions(this IEnumerable<KeyValuePair<string, string>> input)
+        public static IEnumerable<Permission> ToPermissions(this IEnumerable<Claim> input)
         {
-            return input.Where(c => c.Key != null && c.Value != null && c.Key.StartsWith(Entitlements.CategoryNamingPrefix))
-                        .Select(c => new
-                        {
-                            c.Key,
-                            Parts = c.Value.Split(Entitlements.ScopeSplitor, StringSplitOptions.RemoveEmptyEntries),
-                        })
-                        .Where(c => c.Parts.Length == 2)
-                        .Select(c => new
-                        {
-                            c.Key,
-                            Scope = c.Parts[0].Trim(),
-                            Entitlements = c.Parts[1],
-                        })
-                        .Select(c => new
-                        {
-                            c.Key,
-                            IsWildcard = c.Scope.EndsWith("*"),
-                            c.Scope,
-                            Entitlements = c.Entitlements.Split(Entitlements.ValueSplitor, StringSplitOptions.RemoveEmptyEntries),
-                        })
-                        .Select(c => new Permission
-                        {
-                            Category = c.Key,
-                            Entitlements = c.Entitlements.Select(e => e.Trim().ToUpperInvariant()),
-                            IsWildcard = c.IsWildcard,
-                            Scope = c.IsWildcard ? c.Scope.Substring(0, c.Scope.Length == 0 ? 0 : c.Scope.Length - 1) : c.Scope,
-                        });
+            return input.Where(c => c.Type != null && c.Value != null && c.Type.StartsWith(Entitlements.CategoryNamingPrefix))
+                .Select(c => new
+                {
+                    c.Type,
+                    Parts = c.Value.Split(Entitlements.ScopeSplitor, StringSplitOptions.RemoveEmptyEntries),
+                })
+                .Where(c => c.Parts.Length == 2)
+                .Select(c => new
+                {
+                    c.Type,
+                    Scope = c.Parts[0].Trim(),
+                    Entitlements = c.Parts[1],
+                })
+                .Select(c => new
+                {
+                    c.Type,
+                    IsWildcard = c.Scope.EndsWith("*"),
+                    c.Scope,
+                    Entitlements = c.Entitlements.Split(Entitlements.ValueSplitor, StringSplitOptions.RemoveEmptyEntries),
+                })
+                .Select(c => new Permission
+                {
+                    Category = c.Type,
+                    Entitlements = c.Entitlements.Select(e => e.Trim().ToUpperInvariant()),
+                    IsWildcard = c.IsWildcard,
+                    Scope = c.IsWildcard ? c.Scope.Substring(0, c.Scope.Length == 1 ? 1 : c.Scope.Length - 1) : c.Scope,
+                });
+        }
+
+        public static IEnumerable<ResourcePermission> ToResourcePermissions(this IEnumerable<Claim> input)
+        {
+            return input.ToPermissions()
+                .Select(c => new
+                {
+                    Parts = c.Category.Split(Entitlements.ScopeSplitor, StringSplitOptions.RemoveEmptyEntries),
+                    c.Entitlements,
+                    c.IsWildcard,
+                    c.Scope,
+                    c.Category,
+                })
+                .Where(c => c.Parts.Length >= 2)
+                .Select(c => new
+                {
+                    ResourceTypeParts = c.Parts[0].Split(new[] { Entitlements.CategoryNamingPrefix }, StringSplitOptions.RemoveEmptyEntries),
+                    Resource = string.Join(Entitlements.ScopeSplitor[0].ToString(), c.Parts.Skip(1)),
+                    c.Entitlements,
+                    c.IsWildcard,
+                    c.Scope,
+                    c.Category,
+                })
+                .Where(c => c.ResourceTypeParts.Length > 0 && int.TryParse(c.ResourceTypeParts[0], out _))
+                .Select(c => new ResourcePermission
+                {
+                    Type = (ResourceType)int.Parse(c.ResourceTypeParts[0]),
+                    Resource = c.Resource,
+                    Entitlements = c.Entitlements,
+                    IsWildcard = c.IsWildcard,
+                    Scope = c.Scope,
+                    Category = c.Category,
+                });
         }
     }
 }

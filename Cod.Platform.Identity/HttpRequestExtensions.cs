@@ -1,28 +1,24 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
-using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Net.Http.Headers;
 using System.Net.Http.Headers;
 using System.Security.Claims;
-using System.Text;
 
 namespace Cod.Platform.Identity
 {
     public static class HttpRequestExtensions
     {
-        private const string AuthorizationResponseHeaderKey = "WWW-Authenticate";
-        private const string AuthorizationRequestHeaderKey = "Authorization";
-        private const string HeaderCORSKey = "Access-Control-Expose-Headers";
-
-        public static void DeliverAuthenticationToken(this HttpRequest request, string? token, string scheme)
+        public static void DeliverToken(this HttpRequest request, string? token, string scheme)
         {
-            if (request.HttpContext.Response.Headers.ContainsKey(AuthorizationResponseHeaderKey))
-            {
-                request.HttpContext.Response.Headers.Remove(AuthorizationResponseHeaderKey);
-            }
+            request.HttpContext.Response.Headers.Authorization = new AuthenticationHeaderValue(scheme, token).ToString();
+            request.HttpContext.Response.Headers.AccessControlExposeHeaders = HeaderNames.Authorization;
+        }
 
-            request.HttpContext.Response.Headers.Add(AuthorizationResponseHeaderKey, new AuthenticationHeaderValue(scheme, token).ToString());
-            request.HttpContext.Response.Headers.Add(HeaderCORSKey, AuthorizationResponseHeaderKey);
+        public static void DeliverChallenge(this HttpRequest request, string? token, string scheme)
+        {
+            request.HttpContext.Response.Headers.WWWAuthenticate = new AuthenticationHeaderValue(scheme, token).ToString();
+            request.HttpContext.Response.Headers.AccessControlExposeHeaders = HeaderNames.WWWAuthenticate;
         }
 
         public static async Task<ClaimsPrincipal?> HasClaimAsync<T>(this HttpRequest request, string claim, T value)
@@ -36,7 +32,7 @@ namespace Cod.Platform.Identity
             parameter = string.Empty;
             scheme = string.Empty;
 
-            if (!request.Headers.TryGetValue(AuthorizationRequestHeaderKey, out StringValues header))
+            if (!request.Headers.TryGetValue(HeaderNames.Authorization, out StringValues header))
             {
                 return false;
             }
@@ -58,69 +54,14 @@ namespace Cod.Platform.Identity
             return true;
         }
 
-        public static async Task<ClaimsPrincipal> TryParsePrincipalAsync(this HttpRequest request, SecurityKey? key = null, string? issuer = null, string? audience = null)
+        public static async Task<ClaimsPrincipal> TryParsePrincipalAsync(this HttpRequest request, SecurityKey? key = null, string? issuer = null, string? audience = null, CancellationToken cancellationToken = default)
         {
             if (!request.TryParseAuthorizationHeader(out string inputScheme, out string parameter) || inputScheme != AuthenticationScheme.BearerLoginScheme)
             {
                 throw new ApplicationException(InternalError.AuthenticationRequired);
             }
 
-            if (IdentityServiceOptions.Instance == null)
-            {
-                throw new InvalidOperationException($"'{nameof(DependencyModule.AddPlatformIdentity)}' must be called at startup.");
-            }
-
-            if (IdentityServiceOptions.Instance.AccessTokenSecret == null)
-            {
-                throw new InvalidOperationException($"'{nameof(IdentityServiceOptions.AccessTokenSecret)}' must be configured at startup.");
-            }
-
-            try
-            {
-                key ??= new SymmetricSecurityKey(Encoding.UTF8.GetBytes(IdentityServiceOptions.Instance.AccessTokenSecret));
-                issuer ??= IdentityServiceOptions.Instance.AccessTokenIssuer;
-                audience ??= IdentityServiceOptions.Instance.AccessTokenAudience;
-                return await ValidateAndDecodeJWTAsync(parameter, key, issuer, audience);
-            }
-            catch (Exception)
-            {
-                throw new ApplicationException(InternalError.AuthenticationRequired);
-            }
-        }
-
-        private static async Task<ClaimsPrincipal> ValidateAndDecodeJWTAsync(string jwt, SecurityKey key, string issuer, string audience)
-        {
-            TokenValidationParameters validationParameters = new()
-            {
-                ClockSkew = TimeSpan.FromMinutes(5),
-                IssuerSigningKeys = new[] { key },
-                RequireSignedTokens = true,
-                RequireExpirationTime = true,
-                ValidateLifetime = true,
-                ValidateAudience = true,
-                ValidAudience = audience,
-                ValidateIssuer = true,
-                ValidIssuer = issuer
-            };
-
-            try
-            {
-                TokenValidationResult validationResult = await new JsonWebTokenHandler().ValidateTokenAsync(jwt, validationParameters);
-                if (!validationResult.IsValid)
-                {
-                    throw new ApplicationException(InternalError.AuthenticationRequired);
-                }
-
-                return new ClaimsPrincipal(validationResult.ClaimsIdentity);
-            }
-            catch (SecurityTokenValidationException stvex)
-            {
-                throw new InvalidDataException($"Token failed validation: {stvex.Message}");
-            }
-            catch (ArgumentException argex)
-            {
-                throw new ArgumentException($"Token was invalid: {argex.Message}");
-            }
+            return await AccessTokenHelper.TryParsePrincipalAsync(parameter, key, issuer, audience, cancellationToken);
         }
     }
 }

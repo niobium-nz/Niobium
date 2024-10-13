@@ -11,8 +11,8 @@ namespace Cod.Platform.Identity
             ClaimsPrincipal claims,
             ResourceType type,
             string resource,
-            string partition,
-            string id)
+            string? partition,
+            string? id)
         {
             DateTimeOffset now = DateTimeOffset.UtcNow;
             DateTimeOffset start = now.AddMinutes(-10);
