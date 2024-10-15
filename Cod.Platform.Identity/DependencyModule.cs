@@ -29,6 +29,7 @@ namespace Cod.Platform.Identity
 
             services.Configure<IdentityServiceOptions>(o => { identityOptions(o); o.Validate(); IdentityServiceOptions.Instance = o; });
 
+            services.AddTransient<PrincipalParser>();
             services.AddTransient<ISignatureService, SignatureService>();
             services.AddTransient<ITokenBuilder, BearerTokenBuilder>();
             services.AddTransient<AccessTokenMiddleware>();
