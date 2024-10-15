@@ -1,30 +1,44 @@
-﻿using Microsoft.IdentityModel.JsonWebTokens;
+﻿using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Cod.Platform.Identity
 {
-    public static class AccessTokenHelper
+    public class PrincipalParser(IOptions<IdentityServiceOptions> options)
     {
-        public static async Task<ClaimsPrincipal> TryParsePrincipalAsync(string bearerToken, SecurityKey? key = null, string? issuer = null, string? audience = null, CancellationToken cancellationToken = default)
+        public async Task<ClaimsPrincipal> ParseIDPrincipalAsync(string bearerToken, CancellationToken cancellationToken = default)
         {
-            if (IdentityServiceOptions.Instance == null)
-            {
-                throw new InvalidOperationException($"'{nameof(DependencyModule.AddIdentity)}' must be called at startup.");
-            }
-
-            if (IdentityServiceOptions.Instance.AccessTokenSecret == null)
-            {
-                throw new InvalidOperationException($"'{nameof(IdentityServiceOptions.AccessTokenSecret)}' must be configured at startup.");
-            }
-
             try
             {
-                key ??= new SymmetricSecurityKey(Encoding.UTF8.GetBytes(IdentityServiceOptions.Instance.AccessTokenSecret));
-                key.KeyId = "0";
-                issuer ??= IdentityServiceOptions.Instance.AccessTokenIssuer;
-                audience ??= IdentityServiceOptions.Instance.AccessTokenAudience;
+                var rsa = RSA.Create();
+                rsa.ImportFromPem(options.Value.IDTokenPublicKey);
+                var key = new RsaSecurityKey(rsa)
+                {
+                    KeyId = "0"
+                };
+                var issuer = options.Value.IDTokenIssuer;
+                var audience = options.Value.IDTokenAudience;
+                return await ValidateAndDecodeJWTAsync(bearerToken, key, issuer, audience, cancellationToken);
+            }
+            catch (Exception)
+            {
+                throw new ApplicationException(InternalError.AuthenticationRequired);
+            }
+        }
+
+        public async Task<ClaimsPrincipal> ParseAsync(string bearerToken, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Value.AccessTokenSecret!))
+                {
+                    KeyId = "0"
+                };
+                var issuer = options.Value.AccessTokenIssuer;
+                var audience = options.Value.AccessTokenAudience;
                 return await ValidateAndDecodeJWTAsync(bearerToken, key, issuer, audience, cancellationToken);
             }
             catch (Exception)

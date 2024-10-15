@@ -7,6 +7,7 @@ namespace Cod.Platform.Identity
 {
     internal class ResourceTokenMiddleware(
         ISignatureService signatureService,
+        PrincipalParser tokenHelper,
         IOptions<IdentityServiceOptions> options)
         : IMiddleware
     {
@@ -40,7 +41,7 @@ namespace Cod.Platform.Identity
             req.Query.TryGetValue("partition", out var partition);
             req.Query.TryGetValue("id", out var id);
 
-            var principal = await req.TryParsePrincipalAsync();
+            var principal = await tokenHelper.ParseAsync(req, context.RequestAborted);
             if (principal == null)
             {
                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
@@ -49,7 +50,7 @@ namespace Cod.Platform.Identity
 
             var result = await signatureService.IssueAsync(principal, (ResourceType)type, res, partition.SingleOrDefault(), id.SingleOrDefault());
             context.Response.StatusCode = (int)HttpStatusCode.OK;
-            await context.Response.WriteAsJsonAsync(result);
+            await context.Response.WriteAsJsonAsync(result, cancellationToken: context.RequestAborted);
         }
     }
 }

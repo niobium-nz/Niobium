@@ -1,9 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
 using System.Net.Http.Headers;
-using System.Security.Claims;
 
 namespace Cod.Platform.Identity
 {
@@ -21,17 +19,11 @@ namespace Cod.Platform.Identity
             request.HttpContext.Response.Headers.AccessControlExposeHeaders = HeaderNames.WWWAuthenticate;
         }
 
-        public static async Task<ClaimsPrincipal?> HasClaimAsync<T>(this HttpRequest request, string claim, T value)
-        {
-            var principal = await TryParsePrincipalAsync(request);
-            return !principal.TryGetClaim<T>(claim, out T result) ? null : result!.Equals(value) ? principal : null;
-        }
-
         public static bool TryParseAuthorizationHeader(this HttpRequest request, out string scheme, out string parameter)
         {
             parameter = string.Empty;
             scheme = string.Empty;
-
+            
             if (!request.Headers.TryGetValue(HeaderNames.Authorization, out StringValues header))
             {
                 return false;
@@ -52,16 +44,6 @@ namespace Cod.Platform.Identity
             scheme = parts[0];
             parameter = parts[1];
             return true;
-        }
-
-        public static async Task<ClaimsPrincipal> TryParsePrincipalAsync(this HttpRequest request, SecurityKey? key = null, string? issuer = null, string? audience = null, CancellationToken cancellationToken = default)
-        {
-            if (!request.TryParseAuthorizationHeader(out string inputScheme, out string parameter) || inputScheme != AuthenticationScheme.BearerLoginScheme)
-            {
-                throw new ApplicationException(InternalError.AuthenticationRequired);
-            }
-
-            return await AccessTokenHelper.TryParsePrincipalAsync(parameter, key, issuer, audience, cancellationToken);
         }
     }
 }

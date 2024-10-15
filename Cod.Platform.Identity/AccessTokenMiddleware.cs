@@ -1,11 +1,9 @@
 ﻿using Cod.Identity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using System.Data;
 using System.Net;
 using System.Security.Claims;
-using System.Security.Cryptography;
 
 namespace Cod.Platform.Identity
 {
@@ -13,6 +11,7 @@ namespace Cod.Platform.Identity
         Lazy<IRepository<Role>> repository,
         Lazy<IEnumerable<IEntitlementDescriptor>> descriptors,
         ITokenBuilder tokenBuilder,
+        PrincipalParser tokenHelper,
         IOptions<IdentityServiceOptions> options) : IMiddleware
     {
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
@@ -24,13 +23,7 @@ namespace Cod.Platform.Identity
                 return;
             }
 
-            var rsa = RSA.Create();
-            rsa.ImportFromPem(options.Value.IDTokenPublicKey);
-            var key = new RsaSecurityKey(rsa)
-            {
-                KeyId = "0"
-            };
-            var principal = await req.TryParsePrincipalAsync(key, options.Value.IDTokenIssuer, options.Value.IDTokenAudience);
+            var principal = await tokenHelper.ParseIDPrincipalAsync(req, context.RequestAborted);
             if (principal == null)
             {
                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
@@ -58,7 +51,7 @@ namespace Cod.Platform.Identity
             }
 
             List<string> roles = [options.Value.DefaultRole];
-            var entity = await repository.Value.RetrieveAsync(Role.BuildPartitionKey(tenant), Role.BuildRowKey(user));
+            var entity = await repository.Value.RetrieveAsync(Role.BuildPartitionKey(tenant), Role.BuildRowKey(user), cancellationToken: context.RequestAborted);
             if (entity != null)
             {
                 roles.AddRange(entity.GetRoles());
