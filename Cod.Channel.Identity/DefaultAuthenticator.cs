@@ -50,8 +50,11 @@ namespace Cod.Channel.Identity
             {
                 await this.RefreshAccessTokenAsync(IDToken.EncodedToken, true, cancellationToken);
                 now = DateTime.UtcNow;
-                if (AccessToken != null && AccessToken.ValidFrom <= now && AccessToken.ValidTo >= now)
+                if (AccessToken != null && AccessToken.ValidTo >= now)
                 {
+                    // token ValidFrom is not checked intentionally because,
+                    // 1. we believe that the freshly issued token should be valid from now.
+                    // 2. there may be time different on browser side to the accurate time so ValidFrom check may fail.
                     return true;
                 }
             }
@@ -297,13 +300,15 @@ namespace Cod.Channel.Identity
 
             var savedToken = await this.GetSavedAccessTokenAsync();
             var isChanged = savedToken != token;
-
             if (isChanged)
             {
-                await this.SaveAccessTokenAsync(null);
                 if (remember)
                 {
                     await this.SaveAccessTokenAsync(token);
+                }
+                else
+                {
+                    await this.SaveAccessTokenAsync(null);
                 }
 
                 await this.InitializeResourceTokensAsync(emptyResourceToken, false);
@@ -332,7 +337,6 @@ namespace Cod.Channel.Identity
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Authorization = new AuthenticationHeaderValue(AuthenticationScheme.BearerLoginScheme, idToken);
             var response = await httpClient.SendAsync(request, cancellationToken);
-            var authHeader = response.Headers.WwwAuthenticate.SingleOrDefault();
             if (TryGetToken(response, out var token))
             {
                 await this.InitializeAccessTokenAsync(token, remember);
