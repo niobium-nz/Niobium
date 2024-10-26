@@ -1,22 +1,24 @@
 using Cod.File;
 using Cod.File.Blob;
 using Cod.Identity;
+using Cod.Platform.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Cod.Platform.Blob
 {
     public static class DependencyModule
     {
-        public static IServiceCollection AddFile(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddFile(this IServiceCollection services, IConfiguration fileConfiguration)
         {
             services.AddCodPlatform();
-            return services.AddFile(configuration.Bind);
+            return services.AddFile(fileConfiguration.Bind);
         }
 
-        public static IServiceCollection AddBlobResourceTokenSupport(this IServiceCollection services)
+        public static IServiceCollection AddBlobResourceTokenSupport(this IServiceCollection services, Action<IdentityServiceOptions> options)
         {
-            services.AddCodPlatform();
+            services.AddIdentity(options);
             services.AddTransient<ISignatureIssuer, AzureBlobSignatureIssuer>();
             services.AddTransient<IResourceControl, DefaultBlobControl>();
             return services;
@@ -53,6 +55,9 @@ namespace Cod.Platform.Blob
                 return new PersonalizedEntitlementDescriptor(role, permissions, fullyQualifiedDomainName, containerNamePrefix);
             });
         }
+
+        public static IServiceCollection AddBlobResourceTokenSupport(this IServiceCollection services, IConfiguration identityConfiguration)
+            => services.AddBlobResourceTokenSupport(identityConfiguration.Bind);
 
         public static IServiceCollection GrantBlobEntitlementTo(this IServiceCollection services, string role, FilePermissions permissions, string containerName, string fullyQualifiedDomainName)
             => services.GrantBlobEntitlementTo(_ => role, permissions, _ => containerName, _ => fullyQualifiedDomainName);

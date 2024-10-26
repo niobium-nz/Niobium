@@ -1,5 +1,6 @@
 using Cod.Identity;
 using Cod.Platform;
+using Cod.Platform.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,9 +14,9 @@ namespace Cod.Messaging.ServiceBus
             return services.AddMessaging(configuration.Bind);
         }
 
-        public static IServiceCollection AddServiceBusResourceTokenSupport(this IServiceCollection services)
+        public static IServiceCollection AddServiceBusResourceTokenSupport(this IServiceCollection services, Action<IdentityServiceOptions> options)
         {
-            services.AddCodPlatform();
+            services.AddIdentity(options);
             services.AddTransient<ISignatureIssuer, ServiceBusSignatureIssuer>();
             services.AddTransient<IResourceControl, DefaultServiceBusQueueControl>();
             return services;
@@ -36,6 +37,9 @@ namespace Cod.Messaging.ServiceBus
                 return new RoleBasedSendEntitlementDescriptor(role, fullyQualifiedNamespace, queue, permissions);
             });
         }
+
+        public static IServiceCollection AddServiceBusResourceTokenSupport(this IServiceCollection services, IConfiguration identityConfiguration)
+            => services.AddServiceBusResourceTokenSupport(identityConfiguration.Bind);
 
         public static IServiceCollection GrantServiceBusSendEntitlementTo(this IServiceCollection services, string role, string queueName, string fullyQualifiedNamespace, MessagingPermissions permissions)
             => services.GrantServiceBusEntitlementTo(_ => role, _ => queueName, _ => fullyQualifiedNamespace, permissions);
