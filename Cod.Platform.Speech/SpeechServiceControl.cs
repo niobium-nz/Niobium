@@ -6,7 +6,7 @@ namespace Cod.Platform.Speech
     internal class SpeechServiceControl(IOptions<SpeechServiceOptions> options) : IResourceControl
     {
         public bool Grantable(ResourceType type, string resource)
-            => type == ResourceType.AzureSpeechService && resource == options.Value.ServiceEndpoint;
+            => type == ResourceType.AzureSpeechService && resource == options.Value.FullyQualifiedDomainName;
 
         public Task<StorageControl> GrantAsync(ClaimsPrincipal principal, ResourceType type, string resource, string partition, string row, CancellationToken cancellationToken = default)
         {

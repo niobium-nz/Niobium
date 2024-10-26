@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.IO;
+using System.Linq;
 using System.Security.Claims;
 
 namespace Cod
@@ -124,34 +125,27 @@ namespace Cod
 
         public static IEnumerable<ResourcePermission> ToResourcePermissions(this IEnumerable<Claim> input)
         {
-            return input.ToPermissions()
+            return input.Where(c => !string.IsNullOrWhiteSpace(c.Type) && !string.IsNullOrWhiteSpace(c.Value) && c.Type.StartsWith("COD-"))
                 .Select(c => new
                 {
-                    Parts = c.Category.Split(Entitlements.ScopeSplitor, StringSplitOptions.RemoveEmptyEntries),
-                    c.Entitlements,
-                    c.IsWildcard,
-                    c.Scope,
-                    c.Category,
+                    Parts = c.Type.Split(new[] { "://" }, StringSplitOptions.RemoveEmptyEntries),
+                    Entitlements = c.Value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries),
                 })
-                .Where(c => c.Parts.Length >= 2)
+                .Where(c => c.Parts.Length == 2 && c.Parts[0].Length > "COD-".Length)
                 .Select(c => new
                 {
-                    ResourceTypeParts = c.Parts[0].Split(new[] { Entitlements.CategoryNamingPrefix }, StringSplitOptions.RemoveEmptyEntries),
-                    Resource = string.Join(Entitlements.ScopeSplitor[0].ToString(), c.Parts.Skip(1)),
+                    Scheme = c.Parts[0].Substring("COD-".Length),
+                    Parts = c.Parts[1].Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries),
                     c.Entitlements,
-                    c.IsWildcard,
-                    c.Scope,
-                    c.Category,
                 })
-                .Where(c => c.ResourceTypeParts.Length > 0 && int.TryParse(c.ResourceTypeParts[0], out _))
+                .Where(c => c.Parts.Length > 0 && int.TryParse(c.Scheme, out _))
                 .Select(c => new ResourcePermission
                 {
-                    Type = (ResourceType)int.Parse(c.ResourceTypeParts[0]),
-                    Resource = c.Resource,
+                    Type = (ResourceType)int.Parse(c.Scheme),
+                    Resource = c.Parts[0],
+                    Partition = c.Parts.Length > 1 ? c.Parts[1] : null,
+                    Scope = c.Parts.Length > 2 ? c.Parts[2] : null,
                     Entitlements = c.Entitlements,
-                    IsWildcard = c.IsWildcard,
-                    Scope = c.Scope,
-                    Category = c.Category,
                 });
         }
     }

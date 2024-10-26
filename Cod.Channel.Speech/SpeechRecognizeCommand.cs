@@ -1,4 +1,3 @@
-using Cod.Channel.Identity;
 using Cod.Identity;
 
 namespace Cod.Channel.Speech
@@ -13,7 +12,7 @@ namespace Cod.Channel.Speech
         {
             var permissions = await authenticator.GetResourcePermissionsAsync(cancellationToken);
             var resource = permissions.SingleOrDefault(p => p.Type == ResourceType.AzureSpeechService) ?? throw new ApplicationException(InternalError.Forbidden);
-            
+
             var region = ParseAzureSpeechServiceRegion(resource.Resource);
             var token = await authenticator.RetrieveResourceTokenAsync(ResourceType.AzureSpeechService, resource.Resource, cancellationToken: cancellationToken);
 
@@ -34,11 +33,10 @@ namespace Cod.Channel.Speech
                 throw new ArgumentNullException(nameof(azureSpeechServiceEndpoint));
             }
 
-            var parts = azureSpeechServiceEndpoint.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            var parts = azureSpeechServiceEndpoint.Split('.', StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length > 0)
             {
-                var domainName = parts[1];
-                return domainName.Split('.')[0];
+                return parts[0];
             }
             else
             {

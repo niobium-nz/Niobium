@@ -1,4 +1,3 @@
-using Cod.Table;
 using System.Security.Claims;
 
 namespace Cod.Platform.Locking
@@ -14,7 +13,7 @@ namespace Cod.Platform.Locking
         {
             Guid sid = principal.GetClaim<Guid>(ClaimTypes.Sid);
             return partition.StartsWith(sid.ToKey(), StringComparison.InvariantCultureIgnoreCase)
-                ? Task.FromResult(new StorageControl((int)TablePermissions.Query, typeof(Impediment).Name)
+                ? Task.FromResult(new StorageControl((int)DatabasePermissions.Query, typeof(Impediment).Name)
                 {
                     StartPartitionKey = partition,
                     EndPartitionKey = partition

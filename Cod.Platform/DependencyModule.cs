@@ -22,6 +22,7 @@ namespace Cod.Platform
 
             services.AddTransient<AppInsights>();
 
+            services.AddTransient<ICacheStore, DatabaseCacheStore>();
             services.AddTransient<IConfigurationProvider, ConfigurationProvider>();
 
             //services.AddTransient<IQueryableRepository<Impediment>, CloudTableRepository<Impediment>>();

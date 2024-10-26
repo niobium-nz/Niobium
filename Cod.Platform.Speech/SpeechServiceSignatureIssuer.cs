@@ -10,7 +10,7 @@ namespace Cod.Platform.Speech
         private static readonly TimeSpan speechServiceSASValidity = TimeSpan.FromMinutes(10);
 
         public bool CanIssue(ResourceType type, StorageControl control)
-            => type == ResourceType.AzureSpeechService && control.Resource == options.Value.ServiceEndpoint;
+            => type == ResourceType.AzureSpeechService && control.Resource == options.Value.FullyQualifiedDomainName;
 
         public async Task<(string, DateTimeOffset)> IssueAsync(ResourceType type, StorageControl control, DateTimeOffset expires, CancellationToken cancellationToken = default)
         {

@@ -1,5 +1,3 @@
-using Cod.Platform.Finance.WechatPay;
-using Cod.Platform.Tenant;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Cod.Platform.Finance
@@ -18,11 +16,7 @@ namespace Cod.Platform.Finance
             loaded = true;
 
             services.AddCodPlatform();
-            services.AddPlatformTenant();
-
             services.AddTransient<IPaymentService, PaymentService>();
-            services.AddTransient<IPaymentProcessor, WechatPaymentProcessor>();
-
             return services;
         }
     }

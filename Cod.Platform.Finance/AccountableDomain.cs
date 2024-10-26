@@ -1,4 +1,3 @@
-using Cod.Table;
 using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform.Finance

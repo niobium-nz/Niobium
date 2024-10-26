@@ -1,14 +1,12 @@
-using Azure.Storage.Blobs;
-using Cod.Platform;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Cod.Storage.Blob
+namespace Cod.File.Blob
 {
     public static class DependencyModule
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddStorageBlob(this IServiceCollection services)
+        public static IServiceCollection AddFile(this IServiceCollection services, Action<StorageBlobOptions>? options = null)
         {
             if (loaded)
             {
@@ -17,18 +15,9 @@ namespace Cod.Storage.Blob
 
             loaded = true;
 
-            services.AddCodPlatform();
-
-            services.AddTransient(sp =>
-            {
-                string conn = ConfigurationProvider.GetSetting(Constants.BlobEndpoint);
-                conn ??= ConfigurationProvider.GetSetting(Constants.STORAGE_CONNECTION_NAME);
-                return new BlobServiceClient(conn);
-            });
-
-            services.AddTransient<ISignatureIssuer, AzureBlobSignatureIssuer>();
-            services.AddTransient<IBlobRepository, CloudBlobRepository>();
-
+            services.Configure<StorageBlobOptions>(o => options?.Invoke(o));
+            services.AddTransient<AzureBlobClientFactory>();
+            services.AddTransient<IFileService, CloudBlobRepository>();
             return services;
         }
     }

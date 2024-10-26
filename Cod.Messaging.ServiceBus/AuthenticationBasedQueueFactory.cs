@@ -17,7 +17,7 @@ namespace Cod.Messaging.ServiceBus
         private readonly DefaultAzureCredential defaultCredential = new(includeInteractiveCredentials: options.Value.EnableInteractiveIdentity);
         private bool disposed;
 
-        public async Task<ServiceBusSender> CreateQueueAsync(string name, CancellationToken cancellationToken = default)
+        public async Task<ServiceBusSender> CreateQueueAsync(IEnumerable<MessagingPermissions> permissions, string name, CancellationToken cancellationToken = default)
         {
             if (!string.IsNullOrWhiteSpace(options.Value.FullyQualifiedNamespace))
             {
@@ -30,11 +30,11 @@ namespace Cod.Messaging.ServiceBus
             }
             else
             {
-                var permissions = await authenticator.Value.GetResourcePermissionsAsync(cancellationToken)
-                    ?? throw new ApplicationException(InternalError.AuthenticationRequired);
-                var permission = permissions.FirstOrDefault(p => p.Type == ResourceType.AzureServiceBus
-                    && (p.IsWildcard || p.Scope == name)
-                    && p.Entitlements.Contains(Constants.EntitlementMessagingSend))
+                var resourcePermissions = (await authenticator.Value.GetResourcePermissionsAsync(cancellationToken)).ToArray() ?? [];
+                var permission = resourcePermissions.FirstOrDefault(p =>
+                        p.Type == ResourceType.AzureServiceBus
+                        && permissions.All(m => p.Entitlements.Contains(m.ToString().ToUpperInvariant()))
+                        && name.StartsWith(p.Partition))
                     ?? throw new ApplicationException(InternalError.Forbidden);
                 var token = await authenticator.Value.RetrieveResourceTokenAsync(ResourceType.AzureServiceBus, permission.Resource, partition: name, cancellationToken: cancellationToken)
                     ?? throw new ApplicationException(InternalError.Forbidden);

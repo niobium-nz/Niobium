@@ -75,7 +75,7 @@ namespace Cod.Platform.Identity
             var claims = entitlements.Select(e =>
                 new
                 {
-                    Resource = $"{(int)e.Type}{Entitlements.ScopeSplitor[0]}{e.Resource}",
+                    Resource = $"COD-{(int)e.Type}://{e.Resource}",
                     e.Permission
                 })
                 .GroupBy(e => e.Resource)

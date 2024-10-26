@@ -32,7 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Cod.Table\Cod.Table.csproj" />
+    <ProjectReference Include="..\Cod.Platform\Cod.Platform.csproj" />
   </ItemGroup>
 
 </Project>

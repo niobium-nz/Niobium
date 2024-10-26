@@ -1,6 +1,4 @@
-﻿using System.Collections.ObjectModel;
-
-namespace Cod.Messaging.ServiceBus
+﻿namespace Cod.Messaging.ServiceBus
 {
     public class ServiceBusOptions
     {

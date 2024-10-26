@@ -3,29 +3,23 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using System.Runtime.CompilerServices;
 
-namespace Cod.Storage.Blob
+namespace Cod.File.Blob
 {
-    public class CloudBlobRepository : IBlobRepository
+    internal class CloudBlobRepository(AzureBlobClientFactory clientFactory) : IFileService
     {
-        protected BlobServiceClient Client { get; private set; }
-
-        public CloudBlobRepository(BlobServiceClient client)
+        public async IAsyncEnumerable<string> GetPartitionsAsync(string? prefix = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            Client = client ?? throw new ArgumentNullException(nameof(client));
-        }
-
-        public async IAsyncEnumerable<string> GetContainersAsync(string prefix = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
-        {
-            AsyncPageable<BlobContainerItem> containers = Client.GetBlobContainersAsync(prefix: prefix, cancellationToken: cancellationToken);
+            var client = await clientFactory.CreateClientAsync(cancellationToken);
+            AsyncPageable<BlobContainerItem> containers = client.GetBlobContainersAsync(prefix: prefix, cancellationToken: cancellationToken);
             await foreach (BlobContainerItem container in containers)
             {
                 yield return container.Name;
             }
         }
 
-        public async IAsyncEnumerable<string> ListAsync(string containerName, string prefix = null, bool createIfNotExist = true, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public async IAsyncEnumerable<string> ListAsync(string partition, string? prefix = null, bool createIfNotExist = true, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            BlobContainerClient container = await GetBlobContainerAsync(containerName, createIfNotExist, cancellationToken);
+            BlobContainerClient container = await GetBlobContainerAsync(FilePermissions.List, partition, createIfNotExist, cancellationToken);
 
             AsyncPageable<BlobItem> blobs = container.GetBlobsAsync(prefix: prefix, cancellationToken: cancellationToken);
             await foreach (BlobItem blob in blobs)
@@ -34,22 +28,28 @@ namespace Cod.Storage.Blob
             }
         }
 
-        public async Task GetAsync(string containerName, string blobName, Stream destination, bool createIfNotExist = true, CancellationToken cancellationToken = default)
+        public async Task<Stream?> GetAsync(string partition, string filename, bool createIfNotExist = true, CancellationToken cancellationToken = default)
         {
-            BlobContainerClient container = await GetBlobContainerAsync(containerName, createIfNotExist, cancellationToken);
-            BlobClient blob = container.GetBlobClient(blobName);
-            await blob.DownloadToAsync(destination, cancellationToken: cancellationToken);
+            BlobContainerClient container = await GetBlobContainerAsync(FilePermissions.Read, partition, createIfNotExist, cancellationToken);
+            BlobClient blob = container.GetBlobClient(filename);
+            var response = await blob.DownloadStreamingAsync(cancellationToken: cancellationToken);
+            if (!response.HasValue)
+            {
+                return null;
+            }
+
+            return response.Value.Content;
         }
 
-        public async Task PutAsync(string containerName, string blobName, Stream stream, bool replaceIfExist = false, IDictionary<string, string> tags = null, bool createIfNotExist = true, CancellationToken cancellationToken = default)
+        public async Task PutAsync(string partition, string filename, Stream stream, bool replaceIfExist = false, IDictionary<string, string>? tags = null, bool createIfNotExist = true, CancellationToken cancellationToken = default)
         {
             if (stream.CanSeek)
             {
                 stream.Seek(0, SeekOrigin.Begin);
             }
 
-            BlobContainerClient container = await GetBlobContainerAsync(containerName, createIfNotExist, cancellationToken);
-            BlobClient blob = container.GetBlobClient(blobName);
+            BlobContainerClient container = await GetBlobContainerAsync(FilePermissions.Write, partition, createIfNotExist, cancellationToken);
+            BlobClient blob = container.GetBlobClient(filename);
             await blob.UploadAsync(stream, overwrite: replaceIfExist, cancellationToken: cancellationToken);
             if (tags != null)
             {
@@ -57,14 +57,14 @@ namespace Cod.Storage.Blob
             }
         }
 
-        public async Task TagAsync(string containerName, string blobName, IDictionary<string, string> tags, CancellationToken cancellationToken = default)
+        public async Task TagAsync(string partition, string filename, IDictionary<string, string> tags, CancellationToken cancellationToken = default)
         {
             if (tags.Any())
             {
-                BlobContainerClient container = await GetBlobContainerAsync(containerName, false, cancellationToken);
+                BlobContainerClient container = await GetBlobContainerAsync(FilePermissions.Write, partition, false, cancellationToken);
                 if (await container.ExistsAsync(cancellationToken))
                 {
-                    BlobClient blob = container.GetBlobClient(blobName);
+                    BlobClient blob = container.GetBlobClient(filename);
                     if (await blob.ExistsAsync(cancellationToken))
                     {
                         await blob.SetTagsAsync(tags, cancellationToken: cancellationToken);
@@ -74,10 +74,10 @@ namespace Cod.Storage.Blob
 
         }
 
-        public async Task DeleteAsync(string containerName, IEnumerable<string> blobNames, bool ignoreIfNotExist = true, bool createIfNotExist = true, CancellationToken cancellationToken = default)
+        public async Task DeleteAsync(string partition, IEnumerable<string> filename, bool ignoreIfNotExist = true, bool createIfNotExist = true, CancellationToken cancellationToken = default)
         {
-            BlobContainerClient container = await GetBlobContainerAsync(containerName, createIfNotExist, cancellationToken);
-            foreach (string blobName in blobNames)
+            BlobContainerClient container = await GetBlobContainerAsync(FilePermissions.Delete, partition, createIfNotExist, cancellationToken);
+            foreach (string blobName in filename)
             {
                 if (ignoreIfNotExist)
                 {
@@ -90,9 +90,10 @@ namespace Cod.Storage.Blob
             }
         }
 
-        protected async Task<BlobContainerClient> GetBlobContainerAsync(string containerName, bool createIfNotExist, CancellationToken cancellationToken)
+        protected async Task<BlobContainerClient> GetBlobContainerAsync(FilePermissions permission, string partition, bool createIfNotExist, CancellationToken cancellationToken)
         {
-            BlobContainerClient container = Client.GetBlobContainerClient(containerName);
+            var client = await clientFactory.CreateClientAsync([permission], partition, cancellationToken);
+            BlobContainerClient container = client.GetBlobContainerClient(partition);
             if (createIfNotExist)
             {
                 await container.CreateIfNotExistsAsync(cancellationToken: cancellationToken);

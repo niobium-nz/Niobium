@@ -35,8 +35,8 @@
 
         public static async Task DeleteAsync<T>(this IRepository<T> repository, string partitionKey, CancellationToken cancellationToken = default)
         {
-            IAsyncEnumerable<T> entities = repository.GetAsync(partitionKey, cancellationToken: cancellationToken);
             List<T> itemsToDelete = new();
+            IAsyncEnumerable<T> entities = repository.GetAsync(partitionKey, cancellationToken: cancellationToken);
             await foreach (T entity in entities)
             {
                 itemsToDelete.Add(entity);

@@ -15,8 +15,8 @@ namespace Cod.Platform.Speech
             [
                 new()
                 {
-                    Permission = "*:Transcribe",
-                    Resource = options.Value.ServiceEndpoint,
+                    Permission = "TRANSCRIBE",
+                    Resource = options.Value.FullyQualifiedDomainName,
                     Type = ResourceType.AzureSpeechService,
                 }
             ]);

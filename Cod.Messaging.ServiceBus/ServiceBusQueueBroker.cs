@@ -23,7 +23,7 @@ namespace Cod.Messaging.ServiceBus
 
         public virtual async Task EnqueueAsync(IEnumerable<MessagingEntry<T>> messages, CancellationToken cancellationToken = default)
         {
-            var q = await GetSenderAsync(cancellationToken);
+            var q = await GetSenderAsync(MessagingPermissions.Add, cancellationToken);
             foreach (var message in messages)
             {
                 var json = Serialize(message);
@@ -53,10 +53,8 @@ namespace Cod.Messaging.ServiceBus
         }
 
 
-        protected virtual Task<ServiceBusSender> GetSenderAsync(CancellationToken cancellationToken)
-            => factory.CreateQueueAsync(QueueName, cancellationToken);
-
-
+        protected virtual Task<ServiceBusSender> GetSenderAsync(MessagingPermissions permission, CancellationToken cancellationToken)
+            => factory.CreateQueueAsync([permission], QueueName, cancellationToken);
 
         private static string Serialize(object obj)
             => System.Text.Json.JsonSerializer.Serialize(obj, SerializationOptions)!;
