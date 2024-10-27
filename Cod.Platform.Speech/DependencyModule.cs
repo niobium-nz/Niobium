@@ -3,11 +3,6 @@ using Cod.Platform.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Polly;
-using Polly.CircuitBreaker;
-using Polly.Contrib.WaitAndRetry;
-using Polly.Extensions.Http;
-using Polly.Retry;
 
 namespace Cod.Platform.Speech
 {
@@ -40,8 +35,7 @@ namespace Cod.Platform.Speech
                     httpClient.BaseAddress = new Uri($"https://{options.Value.ServiceRegion}.api.cognitive.microsoft.com/");
                     httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", options.Value.AccessKey);
                 })
-                .AddPolicyHandler(RetryPolicy())
-                .AddPolicyHandler(CircuitBreakerPolicy());
+                .AddStandardResilienceHandler();
 
             return services;
         }
@@ -58,17 +52,5 @@ namespace Cod.Platform.Speech
 
         public static IServiceCollection GrantSpeechTranscribeEntitlementTo(this IServiceCollection services, string role)
             => services.AddTransient<IEntitlementDescriptor>(sp => new RoleBasedTranscribeEntitlementDescriptor(role, sp.GetRequiredService<IOptions<SpeechServiceOptions>>()));
-
-        private static AsyncCircuitBreakerPolicy<HttpResponseMessage> CircuitBreakerPolicy()
-          => HttpPolicyExtensions
-            .HandleTransientHttpError()
-            .CircuitBreakerAsync(5, TimeSpan.FromSeconds(30));
-
-        private static AsyncRetryPolicy<HttpResponseMessage> RetryPolicy()
-          => Policy<HttpResponseMessage>
-            .Handle<HttpRequestException>()
-            .WaitAndRetryAsync(Backoff.DecorrelatedJitterBackoffV2(
-                medianFirstRetryDelay: TimeSpan.FromMilliseconds(500),
-                retryCount: 5));
     }
 }

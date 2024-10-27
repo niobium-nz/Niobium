@@ -34,9 +34,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Cod.Identity\Cod.Identity.csproj" />
     <ProjectReference Include="..\Cod.Platform.Identity\Cod.Platform.Identity.csproj" />
-    <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="8.0.10" />
-    <PackageReference Include="Polly" Version="8.4.2" />
-    <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
   </ItemGroup>
 
 </Project>
