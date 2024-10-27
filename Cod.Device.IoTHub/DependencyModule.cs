@@ -17,7 +17,7 @@ namespace Cod.Device.IoTHub
 
             loaded = true;
 
-            services.AddCodPlatform();
+            services.AddPlatform();
             services.AddSingleton<IIoTCommander, AzureIoTHubCommander>();
 
             return services;

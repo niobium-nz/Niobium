@@ -15,7 +15,7 @@ namespace Cod.Platform.Finance
 
             loaded = true;
 
-            services.AddCodPlatform();
+            services.AddPlatform();
             services.AddTransient<IPaymentService, PaymentService>();
             return services;
         }

@@ -74,7 +74,7 @@ namespace Cod.Messaging.StorageAccount
 
             loaded = true;
 
-            services.AddCodPlatform();
+            services.AddPlatform();
 
             services.AddTransient<ISignatureIssuer, StorageQueueSignatureIssuer>();
             services.AddTransient(typeof(IMessagingBroker<>), typeof(StorageAccountQueueBroker<>));

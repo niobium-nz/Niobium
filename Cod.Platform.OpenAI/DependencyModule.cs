@@ -29,7 +29,7 @@ namespace Cod.Platform.OpenAI
 
             loaded = true;
 
-            services.AddCodPlatform();
+            services.AddPlatform();
 
             services.Configure<OpenAIServiceOptions>(o => { options(o); o.Validate(); });
 

@@ -1,5 +1,8 @@
 using Cod.Platform.Analytics;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Cod.Platform
 {
@@ -7,7 +10,7 @@ namespace Cod.Platform
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddCodPlatform(this IServiceCollection services)
+        public static IServiceCollection AddPlatform(this IServiceCollection services)
         {
             if (loaded)
             {
@@ -25,6 +28,10 @@ namespace Cod.Platform
             services.AddTransient<ICacheStore, DatabaseCacheStore>();
             services.AddTransient<IConfigurationProvider, ConfigurationProvider>();
 
+            services.AddTransient<ErrorHandlingMiddleware>();
+            services.AddTransient<FunctionMiddlewareAdaptor<ErrorHandlingMiddleware>>();
+
+
             //services.AddTransient<IQueryableRepository<Impediment>, CloudTableRepository<Impediment>>();
             //services.AddTransient<IRepository<Impediment>, CloudTableRepository<Impediment>>();
 
@@ -41,6 +48,18 @@ namespace Cod.Platform
             //services.AddTransient<IRepository<Report>, CloudTableRepository<Report>>();
 
             return services;
+        }
+
+        public static IFunctionsWorkerApplicationBuilder UsePlatform(this IFunctionsWorkerApplicationBuilder builder)
+        {
+            builder.UseWhen<FunctionMiddlewareAdaptor<ErrorHandlingMiddleware>>(FunctionMiddlewarePredicates.IsHttp);
+            return builder;
+        }
+
+        public static IApplicationBuilder UsePlatform(this IApplicationBuilder builder)
+        {
+            builder.UseMiddleware<ErrorHandlingMiddleware>();
+            return builder;
         }
     }
 }

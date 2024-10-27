@@ -29,7 +29,7 @@ namespace Cod.Platform.Speech
 
             loaded = true;
 
-            services.AddCodPlatform();
+            services.AddPlatform();
 
             services.Configure<SpeechServiceOptions>(o => { options(o); o.Validate(); });
 

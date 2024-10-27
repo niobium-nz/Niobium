@@ -10,7 +10,7 @@ namespace Cod.Messaging.ServiceBus
     {
         public static IServiceCollection AddMessaging(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddCodPlatform();
+            services.AddPlatform();
             return services.AddMessaging(configuration.Bind);
         }
 

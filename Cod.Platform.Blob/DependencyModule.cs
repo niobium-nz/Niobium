@@ -12,7 +12,7 @@ namespace Cod.Platform.Blob
     {
         public static IServiceCollection AddFile(this IServiceCollection services, IConfiguration fileConfiguration)
         {
-            services.AddCodPlatform();
+            services.AddPlatform();
             return services.AddFile(fileConfiguration.Bind);
         }
 

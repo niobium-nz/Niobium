@@ -10,7 +10,7 @@ namespace Cod.Platform.StorageTable
     {
         public static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddCodPlatform();
+            services.AddPlatform();
 
             services.AddTransient(typeof(IQueryableRepository<>), typeof(QueryableCloudTableRepository<>));
             return services.AddDatabase(configuration.Bind);

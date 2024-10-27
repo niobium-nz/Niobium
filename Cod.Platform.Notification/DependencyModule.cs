@@ -15,7 +15,7 @@ namespace Cod.Platform.Notification
 
             loaded = true;
 
-            services.AddCodPlatform();
+            services.AddPlatform();
 
             services.AddTransient<INofiticationChannelRepository, NofiticationChannelRepository>();
             services.AddTransient<INotificationService, NotificationService>();

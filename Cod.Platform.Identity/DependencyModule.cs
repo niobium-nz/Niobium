@@ -25,7 +25,7 @@ namespace Cod.Platform.Identity
 
             loaded = true;
 
-            services.AddCodPlatform();
+            services.AddPlatform();
 
             services.Configure<IdentityServiceOptions>(o => { identityOptions(o); o.Validate(); IdentityServiceOptions.Instance = o; });
 
@@ -41,6 +41,7 @@ namespace Cod.Platform.Identity
 
         public static IFunctionsWorkerApplicationBuilder UsePlatformIdentity(this IFunctionsWorkerApplicationBuilder builder)
         {
+            builder.UsePlatform();
             builder.UseWhen<FunctionMiddlewareAdaptor<AccessTokenMiddleware>>(FunctionMiddlewarePredicates.IsHttp);
             builder.UseWhen<FunctionMiddlewareAdaptor<ResourceTokenMiddleware>>(FunctionMiddlewarePredicates.IsHttp);
             return builder;
@@ -48,6 +49,7 @@ namespace Cod.Platform.Identity
 
         public static IApplicationBuilder UsePlatformIdentity(this IApplicationBuilder builder)
         {
+            builder.UsePlatform();
             builder.UseMiddleware<AccessTokenMiddleware>();
             builder.UseMiddleware<ResourceTokenMiddleware>();
             return builder;
