@@ -8,12 +8,15 @@
 
         ConversationLine? Preview { get; }
 
-        event EventHandler? Changed;
+        Task<IEnumerable<InputSourceDevice>> GetInputSourcesAsync(CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<InputSourceDevice>> GetInputSourcesAsync();
+        Task<bool> StartRecognitionAsync(string token, string region, string? deviceID = null, string? language = "en-US", bool translateIntoEnglish = false, CancellationToken cancellationToken = default);
 
-        Task<bool> StartRecognitionAsync(string token, string region, string? deviceID = null, string? language = "en-US", bool translateIntoEnglish = false);
+        Task StopRecognitionAsync(CancellationToken cancellationToken = default);
+    }
 
-        Task StopRecognitionAsync();
+    public class SpeechRecognizerChangedEventArgs(SpeechRecognizerChangedType type)
+    {
+        public SpeechRecognizerChangedType Type { get; } = type;
     }
 }

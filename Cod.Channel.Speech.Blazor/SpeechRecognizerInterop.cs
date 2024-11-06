@@ -23,24 +23,24 @@ namespace Cod.Channel.Speech.Blazor
                 case "onSessionStarted":
                     DestoryCurrentSession();
                     Instance.IsRunning = true;
-                    Instance.OnChanged();
+                    await Instance.OnChangedAsync(SpeechRecognizerChangedType.SessionStarted);
                     break;
                 case "onSessionStopped":
                     Instance.IsRunning = false;
-                    Instance.OnChanged();
+                    await Instance.OnChangedAsync(SpeechRecognizerChangedType.SessionStopped);
                     break;
                 case "onCanceled":
                     var canceled = Deserialize<SpeechRecognitionCanceledEventArgs>(parameter);
                     CreateNewSession(canceled.SessionID);
                     Instance.Current!.ErrorMessage = canceled.ErrorDetails;
                     Instance.IsRunning = false;
-                    Instance.OnChanged();
+                    await Instance.OnChangedAsync(SpeechRecognizerChangedType.Canceled);
                     break;
                 case "onRecognizing":
                     var recognizing = Deserialize<SpeechRecognitionEventArgs>(parameter);
                     CreateNewSession(recognizing.SessionID);
                     Instance.Preview = ExtractLine(recognizing);
-                    Instance.OnChanged();
+                    await Instance.OnChangedAsync(SpeechRecognizerChangedType.Recognizing);
                     break;
                 case "onRecognized":
                     var recognized = Deserialize<SpeechRecognitionEventArgs>(parameter);
@@ -50,7 +50,7 @@ namespace Cod.Channel.Speech.Blazor
                     if (line != null)
                     {
                         Instance.Current!.Lines.Add(line);
-                        Instance.OnChanged();
+                        await Instance.OnChangedAsync(SpeechRecognizerChangedType.Recognized);
                     }
                     else
                     {
@@ -82,7 +82,7 @@ namespace Cod.Channel.Speech.Blazor
             {
                 Instance.Current.ErrorMessage = "The conversation has timed out due to silence, or there might be an issue with your audio. Please check your audio input settings and start a new conversation.";
                 await Instance.StopRecognitionAsync();
-                Instance.OnChanged();
+                await Instance.OnChangedAsync(SpeechRecognizerChangedType.Recognized);
             }
         }
 

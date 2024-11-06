@@ -7,15 +7,15 @@ namespace Cod.Channel.Identity
         ICommand<TOTPLoginCommandParameter, LoginResult> loginCommand)
         : TOTPLoginViewModel(loadingStateService, loginCommand)
     {
-        public override Task OnLogin()
+        public async override Task OnLogin()
         {
             if (!RegexUtilities.IsValidEmail(UserInput.Username))
             {
                 UserInputValidation.AddError(nameof(UserInput.Username), "Please enter a valid email address.");
-                return Task.CompletedTask;
+                return;
             }
 
-            return base.OnLogin();
+            await base.OnLogin();
         }
     }
 }

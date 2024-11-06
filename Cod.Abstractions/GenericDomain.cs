@@ -119,15 +119,7 @@
             return results;
         }
 
-        protected async Task OnEvent<TEventArgs>(TEventArgs e, CancellationToken cancellationToken = default) where TEventArgs : class, new()
-        {
-            foreach (var handler in EventHandlers)
-            {
-                if (handler is IDomainEventHandler<IDomain<T>, TEventArgs> h)
-                {
-                    await h.HandleAsync(e, cancellationToken);
-                }
-            }
-        }
+        protected async Task OnEvent<TEventArgs>(TEventArgs e, CancellationToken cancellationToken = default) where TEventArgs : class
+            => await EventHandlers.InvokeAsync(e, cancellationToken);
     }
 }

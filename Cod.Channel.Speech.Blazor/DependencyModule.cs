@@ -7,9 +7,7 @@ namespace Cod.Channel.Speech.Blazor
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddSpeechBlazor(
-            this IServiceCollection services,
-            Action<IdentityServiceOptions> identityOptions)
+        public static IServiceCollection AddSpeechBlazor(this IServiceCollection services, Action<IdentityServiceOptions>? identityOptions = null)
         {
             if (loaded)
             {
@@ -18,7 +16,11 @@ namespace Cod.Channel.Speech.Blazor
 
             loaded = true;
 
-            services.AddSpeech(identityOptions);
+            if (identityOptions != null)
+            {
+                services.AddSpeech(identityOptions);
+            }
+
             services.AddSingleton<ISpeechRecognizer, JSSpeechRecognizer>();
             return services;
         }

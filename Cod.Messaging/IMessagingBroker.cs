@@ -6,8 +6,8 @@
 
         Task<IEnumerable<MessagingEntry<T>>> PeekAsync(int? limit, CancellationToken cancellationToken = default);
 
-        Task<MessagingEntry<T>> DequeueAsync(CancellationToken cancellationToken = default);
+        Task<MessagingEntry<T>?> DequeueAsync(TimeSpan? maxWaitTime = default, CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<MessagingEntry<T>>> DequeueAsync(int limit, CancellationToken cancellationToken = default);
+        Task<IEnumerable<MessagingEntry<T>>> DequeueAsync(int limit, TimeSpan? maxWaitTime = default, CancellationToken cancellationToken = default);
     }
 }

@@ -22,7 +22,7 @@ namespace Cod.Messaging.StorageAccount
             QueueName = queueName;
         }
 
-        public virtual async Task<MessagingEntry<T>> DequeueAsync(CancellationToken cancellationToken = default)
+        public virtual async Task<MessagingEntry<T>> DequeueAsync(TimeSpan? maxWaitTime = default, CancellationToken cancellationToken = default)
         {
             QueueClient q = await GetQueueAsync(cancellationToken);
             Response<QueueMessage> msg = await q.ReceiveMessageAsync(cancellationToken: cancellationToken);
@@ -36,7 +36,7 @@ namespace Cod.Messaging.StorageAccount
                 : null;
         }
 
-        public virtual async Task<IEnumerable<MessagingEntry<T>>> DequeueAsync(int limit, CancellationToken cancellationToken = default)
+        public virtual async Task<IEnumerable<MessagingEntry<T>>> DequeueAsync(int limit, TimeSpan? maxWaitTime = default, CancellationToken cancellationToken = default)
         {
             List<MessagingEntry<T>> result = new();
             QueueClient q = await GetQueueAsync(cancellationToken);

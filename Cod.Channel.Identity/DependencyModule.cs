@@ -18,7 +18,7 @@ namespace Cod.Channel.Identity
 
             services.AddChannel();
 
-            services.Configure<IdentityServiceOptions>(o => { options(o); o.Validate(); });
+            services.Configure<IdentityServiceOptions>(o => { options?.Invoke(o); o.Validate(); });
             services.AddHttpClient("default").AddStandardResilienceHandler();
             services.AddTransient<EmailLoginViewModel>();
             services.AddTransient<ICommand<LoginCommandParameter, LoginResult>, LoginCommand>();

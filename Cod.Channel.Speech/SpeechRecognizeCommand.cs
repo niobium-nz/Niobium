@@ -20,9 +20,10 @@ namespace Cod.Channel.Speech
             {
                 return await recognizer.StartRecognitionAsync(
                     token ?? throw new ApplicationException(InternalError.AuthenticationRequired),
-                    region,
-                    deviceID: parameter.InputSource,
-                    language: parameter.InputLanguage);
+                    region, 
+                    deviceID: parameter.InputSource, 
+                    language: parameter.InputLanguage, 
+                    cancellationToken: cancellationToken);
             }
         }
 

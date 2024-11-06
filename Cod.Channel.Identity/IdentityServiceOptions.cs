@@ -28,6 +28,8 @@
 
         public string LoginUri { get; set; } = DefaultLoginUri;
 
+        public TimeSpan MaxClockSkewTolerence { get; set; } = TimeSpan.FromMinutes(5);
+
         public void Validate()
         {
             ArgumentNullException.ThrowIfNull(IDTokenHost, nameof(IDTokenHost));

@@ -28,7 +28,6 @@ namespace Cod.File.Blob
 
             var builder = new BlobUriBuilder(new Uri($"https://{permission.Resource}"))
             {
-                 BlobContainerName = containerName,
                  Query = sas,
             };
             var serviceUri = builder.ToUri();

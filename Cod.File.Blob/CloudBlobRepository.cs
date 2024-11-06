@@ -20,7 +20,6 @@ namespace Cod.File.Blob
         public async IAsyncEnumerable<string> ListAsync(string partition, string? prefix = null, bool createIfNotExist = true, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             BlobContainerClient container = await GetBlobContainerAsync(FilePermissions.List, partition, createIfNotExist, cancellationToken);
-
             AsyncPageable<BlobItem> blobs = container.GetBlobsAsync(prefix: prefix, cancellationToken: cancellationToken);
             await foreach (BlobItem blob in blobs)
             {
@@ -30,8 +29,25 @@ namespace Cod.File.Blob
 
         public async Task<Stream?> GetAsync(string partition, string filename, bool createIfNotExist = true, CancellationToken cancellationToken = default)
         {
-            BlobContainerClient container = await GetBlobContainerAsync(FilePermissions.Read, partition, createIfNotExist, cancellationToken);
+            if (!filename.StartsWith('/'))
+            {
+                filename = $"/{filename}";
+            }
+
+            var permission = FilePermissions.Read;
+            if (createIfNotExist)
+            {
+                permission |= FilePermissions.Create;
+            }
+
+            BlobContainerClient container = await GetBlobContainerAsync(permission, partition, createIfNotExist, cancellationToken);
             BlobClient blob = container.GetBlobClient(filename);
+            var exist = await blob.ExistsAsync(cancellationToken);
+            if (!exist.Value)
+            {
+                return null;
+            }
+
             var response = await blob.DownloadStreamingAsync(cancellationToken: cancellationToken);
             if (!response.HasValue)
             {
@@ -43,6 +59,11 @@ namespace Cod.File.Blob
 
         public async Task PutAsync(string partition, string filename, Stream stream, bool replaceIfExist = false, IDictionary<string, string>? tags = null, bool createIfNotExist = true, CancellationToken cancellationToken = default)
         {
+            if (!filename.StartsWith('/'))
+            {
+                filename = $"/{filename}";
+            }
+
             if (stream.CanSeek)
             {
                 stream.Seek(0, SeekOrigin.Begin);
@@ -59,6 +80,11 @@ namespace Cod.File.Blob
 
         public async Task TagAsync(string partition, string filename, IDictionary<string, string> tags, CancellationToken cancellationToken = default)
         {
+            if (!filename.StartsWith('/'))
+            {
+                filename = $"/{filename}";
+            }
+
             if (tags.Any())
             {
                 BlobContainerClient container = await GetBlobContainerAsync(FilePermissions.Write, partition, false, cancellationToken);
@@ -79,13 +105,20 @@ namespace Cod.File.Blob
             BlobContainerClient container = await GetBlobContainerAsync(FilePermissions.Delete, partition, createIfNotExist, cancellationToken);
             foreach (string blobName in filename)
             {
+                var path = blobName;
+
+                if (!path.StartsWith('/'))
+                {
+                    path = $"/{path}";
+                }
+
                 if (ignoreIfNotExist)
                 {
-                    await container.DeleteBlobIfExistsAsync(blobName, cancellationToken: cancellationToken);
+                    await container.DeleteBlobIfExistsAsync(path, cancellationToken: cancellationToken);
                 }
                 else
                 {
-                    await container.DeleteBlobAsync(blobName, cancellationToken: cancellationToken);
+                    await container.DeleteBlobAsync(path, cancellationToken: cancellationToken);
                 }
             }
         }

@@ -13,24 +13,49 @@ namespace Cod.Messaging.ServiceBus
         : IAsyncDisposable
     {
         private static readonly ConcurrentDictionary<string, ServiceBusClient> clients = [];
-        private static readonly ConcurrentDictionary<string, ServiceBusSender> senders = [];
+        private static readonly Dictionary<string, ServiceBusSender> senders = [];
+        private static readonly Dictionary<string, ServiceBusReceiver> receivers = [];
         private readonly DefaultAzureCredential defaultCredential = new(includeInteractiveCredentials: options.Value.EnableInteractiveIdentity);
         private bool disposed;
 
-        public async Task<ServiceBusSender> CreateQueueAsync(IEnumerable<MessagingPermissions> permissions, string name, CancellationToken cancellationToken = default)
+        public async Task<ServiceBusReceiver> CreateReceiverAsync(IEnumerable<MessagingPermissions> permissions, string name, CancellationToken cancellationToken = default)
+        {
+            if (receivers.TryGetValue(name, out var cache))
+            {
+                return cache; 
+            }
+
+            var client = await CreateClientAsync(permissions, name, cancellationToken);
+            var receiver = client.CreateReceiver(name);
+            receivers.Add(name, receiver);
+            return receiver;
+        }
+
+        public async Task<ServiceBusSender> CreateSenderAsync(IEnumerable<MessagingPermissions> permissions, string name, CancellationToken cancellationToken = default)
+        {
+            if (senders.TryGetValue(name, out var cache))
+            {
+                return cache;
+            }
+
+            var client = await CreateClientAsync(permissions, name, cancellationToken);
+            var sender = client.CreateSender(name);
+            senders.Add(name, sender);
+            return sender;
+        }
+
+        private async Task<ServiceBusClient> CreateClientAsync(IEnumerable<MessagingPermissions> permissions, string name, CancellationToken cancellationToken = default)
         {
             if (!string.IsNullOrWhiteSpace(options.Value.FullyQualifiedNamespace))
             {
-                return senders.GetOrAdd(name, n =>
-                            clients.GetOrAdd(name, new ServiceBusClient(
-                                    options.Value.FullyQualifiedNamespace,
-                                    defaultCredential,
-                                    options: CreateOptions(options.Value)))
-                                .CreateSender(name));
+                return clients.GetOrAdd(name, new ServiceBusClient(
+                    options.Value.FullyQualifiedNamespace,
+                    defaultCredential,
+                    options: CreateOptions(options.Value)));
             }
             else
             {
-                var resourcePermissions = (await authenticator.Value.GetResourcePermissionsAsync(cancellationToken)).ToArray() ?? [];
+                var resourcePermissions = (await authenticator.Value.GetResourcePermissionsAsync(cancellationToken)).ToArray();
                 var permission = resourcePermissions.FirstOrDefault(p =>
                         p.Type == ResourceType.AzureServiceBus
                         && permissions.All(m => p.Entitlements.Contains(m.ToString().ToUpperInvariant()))
@@ -38,12 +63,10 @@ namespace Cod.Messaging.ServiceBus
                     ?? throw new ApplicationException(InternalError.Forbidden);
                 var token = await authenticator.Value.RetrieveResourceTokenAsync(ResourceType.AzureServiceBus, permission.Resource, partition: name, cancellationToken: cancellationToken)
                     ?? throw new ApplicationException(InternalError.Forbidden);
-                return senders.GetOrAdd(name, n =>
-                            clients.GetOrAdd(name, new ServiceBusClient(
-                                    permission.Resource,
-                                    new AzureSasCredential($"SharedAccessSignature {token}"),
-                                    options: CreateOptions(options.Value)))
-                                .CreateSender(name));
+                return clients.GetOrAdd(name, new ServiceBusClient(
+                    permission.Resource,
+                    new AzureSasCredential($"SharedAccessSignature {token}"),
+                    options: CreateOptions(options.Value)));
             }
         }
 
@@ -72,6 +95,12 @@ namespace Cod.Messaging.ServiceBus
         {
             if (disposing)
             {
+                foreach (var receiver in receivers.Keys)
+                {
+                    await receivers[receiver].DisposeAsync();
+                }
+                receivers.Clear();
+
                 foreach (var sender in senders.Keys)
                 {
                     await senders[sender].DisposeAsync();

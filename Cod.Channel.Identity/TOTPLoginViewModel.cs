@@ -16,6 +16,13 @@ namespace Cod.Channel.Identity
 
         public ValidationState UserInputValidation { get; protected set; } = new();
 
+        public void Reset()
+        {
+            IsChallenged = false;
+            IsFailed = false;
+            UserInputValidation.Clear();
+        }
+
         public virtual async Task OnLogin()
         {
             if (!UserInput.TryValidate(out var r))
@@ -32,6 +39,7 @@ namespace Cod.Channel.Identity
                 }
                 else
                 {
+                    UserInputValidation.Clear();
                     var result = await loginCommand.ExecuteAsync(new TOTPLoginCommandParameter(UserInput.Username!));
                     this.IsChallenged = !result.IsSuccess && result.Challenge != null;
                     this.IsFailed = !this.IsChallenged;
@@ -40,7 +48,7 @@ namespace Cod.Channel.Identity
             else
             {
                 var result = await loginCommand.ExecuteAsync(new TOTPLoginCommandParameter(UserInput.Username!, UserInput.Password, true));
-                this.IsChallenged = !result.IsSuccess && result.Challenge != null;
+                this.IsChallenged = !result.IsSuccess;
                 this.IsFailed = !(!this.IsChallenged && result.IsSuccess);
             }
         }

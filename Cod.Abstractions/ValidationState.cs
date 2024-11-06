@@ -42,5 +42,7 @@
         {
             return errors.ToDictionary(kv => kv.Key, kv => kv.Value.AsEnumerable());
         }
+
+        public void Clear() => errors.Clear();
     }
 }

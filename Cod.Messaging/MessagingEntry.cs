@@ -7,7 +7,7 @@ namespace Cod.Messaging
         private static readonly JsonSerializerOptions serializationOptions = new(JsonSerializerDefaults.Web);
         private bool disposed;
 
-        public string Body { get; set; }
+        public string Body { get; set; } = "{}";
 
         public DateTimeOffset? Schedule { get; set; }
 
@@ -17,7 +17,7 @@ namespace Cod.Messaging
 
         public T Value 
         { 
-            get => System.Text.Json.JsonSerializer.Deserialize<T>(Body, serializationOptions); 
+            get => System.Text.Json.JsonSerializer.Deserialize<T>(Body, serializationOptions)!; 
             set => Body = System.Text.Json.JsonSerializer.Serialize(value, serializationOptions); 
         }
 

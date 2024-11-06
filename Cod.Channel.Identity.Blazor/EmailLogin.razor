@@ -3,9 +3,9 @@
 
 <div class="wrapper-container">
     <div class="login-container">
-        <div class="login-form">
+        <div id="login-form">
             <h2>Login</h2>
-            <form id="login-form">
+            <div id="login-form">
                 <div class="form-group">
                     <label for="email">Email address</label>
                     <input type="email" class="form-control" id="email" aria-describedby="emailHelp" placeholder="Enter email" disabled="@IsStep2" @bind="ViewModel.UserInput.Username">
@@ -22,28 +22,28 @@
                         <p class="password-description">We've sent an email to your email address. Please check your inbox for a 6 digit numeric one-time password.</p>
                     </div>
                     <div id="otp-inputs">
-                        <input type="text" maxlength="1" class="form-control otp-input" @bind="a" />
+                        <input type="text" maxlength="1" class="form-control otp-input" @bind="a" @onfocus="OnPasswordFirstDigitFocused" />
                         <input type="text" maxlength="1" class="form-control otp-input" @bind="b" />
                         <input type="text" maxlength="1" class="form-control otp-input" @bind="c" />
                         <input type="text" maxlength="1" class="form-control otp-input" @bind="d" />
                         <input type="text" maxlength="1" class="form-control otp-input" @bind="e" />
-                        <input type="text" maxlength="1" class="form-control otp-input" @bind="f" />
+                        <input type="text" maxlength="1" class="form-control otp-input" @bind="f" @bind:after="OnPasswordLastDigitInput" />
                     </div>
                     @if (ViewModel.IsFailed || ViewModel.UserInputValidation.ContainsKey(nameof(ViewModel.UserInput.Password)))
                     {
-                        <div id="otp-error" class="text-danger">Please enter the valid one-time password</div>
+                        <div id="otp-error" class="text-danger">Please check and enter the correct one-time password</div>
                     }
                 </div>
                 <input id="login-otp-input" type="text" style="display: none;" @bind="ViewModel.UserInput.Password" />
                 <button class="btn btn-primary" disabled="@ViewModel.IsBusy" hidden="@IsStep1" @onclick="OnLogin">Login</button>
-                <div id="go-back" class="back-btn" hidden="@IsStep1"><i class="fas fa-arrow-left"></i></div>
-                <button id="login-next" class="btn btn-primary" @onclick="ViewModel.OnLogin" hidden="@IsStep2" disabled="@ViewModel.IsBusy">Next</button>
+                <div id="go-back" class="back-btn" hidden="@IsStep1" @onclick="GoBack"><i class="fas fa-arrow-left"></i></div>
+                <button id="login-next" class="btn btn-primary" @onclick="OnLogin" hidden="@IsStep2" disabled="@ViewModel.IsBusy">Next</button>
 
                 @if (ViewModel.IsBusy)
                 {
                     <div id="loading" class="loading"><i class="fas fa-spinner fa-spin"></i></div>
                 }
-            </form>
+            </div>
         </div>
     </div>
 </div>
@@ -55,6 +55,8 @@
             if (e.key >= 0 && e.key <= 9) {
                 if (index < otpInputs.length - 1) {
                     otpInputs[index + 1].focus();
+                } else {
+                    otpInputs[index].blur();
                 }
             } else if (e.key === 'Backspace') {
                 if (index > 0) {
@@ -80,5 +82,36 @@
     {
         ViewModel.UserInput.Password = $"{a.Trim()}{b.Trim()}{c.Trim()}{d.Trim()}{e.Trim()}{f.Trim()}";
         await ViewModel.OnLogin();
+    }
+
+    private async Task OnPasswordLastDigitInput()
+    {
+        if (int.TryParse(a, out _)
+            && int.TryParse(b, out _)
+            && int.TryParse(c, out _)
+            && int.TryParse(d, out _)
+            && int.TryParse(e, out _)
+            && int.TryParse(f, out _))
+        {
+            await OnLogin();
+        }
+    }
+
+    private void GoBack()
+    {
+        ViewModel.Reset();
+    }
+
+    private void OnPasswordFirstDigitFocused()
+    {
+        if (!string.IsNullOrWhiteSpace(a)
+            && !string.IsNullOrWhiteSpace(b)
+            && !string.IsNullOrWhiteSpace(c)
+            && !string.IsNullOrWhiteSpace(d)
+            && !string.IsNullOrWhiteSpace(e)
+            && !string.IsNullOrWhiteSpace(f))
+        {
+            a = b = c = d = e = f = "";
+        }
     }
 }

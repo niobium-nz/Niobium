@@ -37,7 +37,8 @@ namespace Cod.Channel.Identity
             var now = DateTime.UtcNow;
             if (AccessToken != null)
             {
-                if (AccessToken.ValidFrom <= now && AccessToken.ValidTo >= now)
+                if (now - AccessToken.ValidFrom > -options.Value.MaxClockSkewTolerence
+                    && AccessToken.ValidTo - now > -options.Value.MaxClockSkewTolerence)
                 {
                     return true;
                 }
@@ -46,15 +47,16 @@ namespace Cod.Channel.Identity
                 tokenRevoked = true;
             }
 
-            if (IDToken != null && IDToken.ValidFrom <= now && IDToken.ValidTo >= now)
+            if (IDToken != null 
+                && now - IDToken.ValidFrom > -options.Value.MaxClockSkewTolerence
+                && IDToken.ValidTo - now > -options.Value.MaxClockSkewTolerence)
             {
                 await this.RefreshAccessTokenAsync(IDToken.EncodedToken, true, cancellationToken);
                 now = DateTime.UtcNow;
-                if (AccessToken != null && AccessToken.ValidTo >= now)
+                if (AccessToken != null
+                    && now - AccessToken.ValidFrom > -options.Value.MaxClockSkewTolerence
+                    && AccessToken.ValidTo - now > -options.Value.MaxClockSkewTolerence)
                 {
-                    // token ValidFrom is not checked intentionally because,
-                    // 1. we believe that the freshly issued token should be valid from now.
-                    // 2. there may be time different on browser side to the accurate time so ValidFrom check may fail.
                     return true;
                 }
             }
@@ -358,13 +360,7 @@ namespace Cod.Channel.Identity
         protected async virtual Task OnAuthenticationUpdated(bool isAuthenticated, CancellationToken cancellationToken)
         {
             var e = new AuthenticationUpdatedEvent { IsAuthenticated = isAuthenticated };
-            foreach (var handler in eventHandlers.Value)
-            {
-                if (handler is IDomainEventHandler<IAuthenticator, AuthenticationUpdatedEvent> h)
-                {
-                    await h.HandleAsync(e, cancellationToken);
-                }
-            }
+            await eventHandlers.Value.InvokeAsync(e, cancellationToken);
         }
 
         private static bool TryGetToken(HttpResponseMessage response, [NotNullWhen(true)] out string? token)
