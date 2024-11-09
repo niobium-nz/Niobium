@@ -14,8 +14,13 @@ namespace Cod.Platform.OpenAI
         private static readonly JsonSerializerOptions SERIALIZATION_OPTIONS = new(JsonSerializerDefaults.Web);
         private const string JSON_CONTENT_TYPE = "application/json";
 
-        public async Task<OpenAIConversationAnalysisResult?> AnalyzeSOAPAsync(string id, string conversation, CancellationToken cancellationToken = default)
+        public async Task<OpenAIConversationAnalysisResult?> AnalyzeSOAPAsync(string id, int kind, string conversation, CancellationToken cancellationToken = default)
         {
+            if (!options.Value.SystemPrompts.TryGetValue(kind, out var systemPrompt))
+            {
+                throw new ApplicationException(InternalError.InternalServerError);
+            }
+
             var userInput = new List<object>();
             var lines = conversation.Split('\n');
             foreach (var line in lines)
@@ -36,7 +41,7 @@ namespace Cod.Platform.OpenAI
                           content = new object[] {
                               new {
                                   type = "text",
-                                  text = options.Value.SystemPrompt,
+                                  text = systemPrompt,
                               }
                           }
                       },

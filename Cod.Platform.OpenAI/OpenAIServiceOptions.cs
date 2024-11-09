@@ -2,14 +2,14 @@
 {
     public class OpenAIServiceOptions
     {
-        public required string SystemPrompt { get; set; }
+        public required Dictionary<int, string> SystemPrompts { get; set; } = [];
 
         public required string Endpoint { get; set; }
 
         public required string Secret { get; set; }
 
         public bool Validate()
-           => !string.IsNullOrWhiteSpace(SystemPrompt)
+           => SystemPrompts.Count > 0
             && !string.IsNullOrWhiteSpace(Endpoint)
             && !string.IsNullOrWhiteSpace(Secret);
     }
