@@ -23,9 +23,7 @@ namespace Cod.File.Blob
                 && permissions.All(m => p.Entitlements.Contains(m.ToString().ToUpperInvariant()))
                 && containerName.StartsWith(p.Partition))
                 ?? throw new ApplicationException(InternalError.Forbidden);
-            var sas = await authenticator.Value.RetrieveResourceTokenAsync(ResourceType.AzureStorageBlob, permission.Resource, partition: containerName, cancellationToken: cancellationToken)
-                ?? throw new ApplicationException(InternalError.Forbidden);
-
+            var sas = await authenticator.Value.RetrieveResourceTokenAsync(ResourceType.AzureStorageBlob, permission.Resource, partition: containerName, cancellationToken: cancellationToken);
             var builder = new BlobUriBuilder(new Uri($"https://{permission.Resource}"))
             {
                  Query = sas,

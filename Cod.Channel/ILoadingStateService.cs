@@ -6,6 +6,8 @@
 
         IDisposable SetBusy(string group, string name);
 
+        void UnsetBusy(string group);
+
         void UnsetBusy(string group, string name);
     }
 }

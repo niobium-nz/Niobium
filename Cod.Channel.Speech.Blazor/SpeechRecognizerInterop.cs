@@ -30,10 +30,10 @@ namespace Cod.Channel.Speech.Blazor
                     await Instance.OnChangedAsync(SpeechRecognizerChangedType.SessionStopped);
                     break;
                 case "onCanceled":
-                    var canceled = Deserialize<SpeechRecognitionCanceledEventArgs>(parameter);
-                    CreateNewSession(canceled.SessionID);
-                    Instance.Current!.ErrorMessage = canceled.ErrorDetails;
                     Instance.IsRunning = false;
+                    var canceled = Deserialize<SpeechRecognitionCanceledEventArgs>(parameter);
+                    Instance.Current!.ErrorMessage = canceled.ErrorDetails;
+                    CreateNewSession(canceled.SessionID);
                     await Instance.OnChangedAsync(SpeechRecognizerChangedType.Canceled);
                     break;
                 case "onRecognizing":
@@ -43,9 +43,9 @@ namespace Cod.Channel.Speech.Blazor
                     await Instance.OnChangedAsync(SpeechRecognizerChangedType.Recognizing);
                     break;
                 case "onRecognized":
+                    Instance.Preview = null;
                     var recognized = Deserialize<SpeechRecognitionEventArgs>(parameter);
                     CreateNewSession(recognized.SessionID);
-                    Instance.Preview = null;
                     ConversationLine? line = ExtractLine(recognized);
                     if (line != null)
                     {

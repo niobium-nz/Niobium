@@ -28,8 +28,7 @@ namespace Cod.Database.StorageTable
                 throw new ApplicationException(InternalError.Forbidden);
             }
 
-            var sasUri = await authenticator.Value.RetrieveResourceTokenAsync(ResourceType.AzureStorageTable, table, partition: partition, cancellationToken: cancellationToken)
-                ?? throw new ApplicationException(InternalError.Forbidden);
+            var sasUri = await authenticator.Value.RetrieveResourceTokenAsync(ResourceType.AzureStorageTable, table, partition: partition, cancellationToken: cancellationToken);
             return clients.GetOrAdd($"{table}//{partition ?? string.Empty}", new TableServiceClient(new Uri(sasUri), options: BuildClientOptions(options)));
         }
 

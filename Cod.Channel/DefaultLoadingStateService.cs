@@ -34,5 +34,10 @@
                 }
             }
         }
+
+        public void UnsetBusy(string group)
+        {
+            state.Remove(group);
+        }
     }
 }

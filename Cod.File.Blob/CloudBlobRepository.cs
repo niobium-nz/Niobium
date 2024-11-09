@@ -54,7 +54,10 @@ namespace Cod.File.Blob
                 return null;
             }
 
-            return response.Value.Content;
+            var ms = new MemoryStream();
+            await response.Value.Content.CopyToAsync(ms, cancellationToken);
+            ms.Seek(0, SeekOrigin.Begin);
+            return ms;
         }
 
         public async Task PutAsync(string partition, string filename, Stream stream, bool replaceIfExist = false, IDictionary<string, string>? tags = null, bool createIfNotExist = true, CancellationToken cancellationToken = default)

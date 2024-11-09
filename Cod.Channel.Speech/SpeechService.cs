@@ -1,19 +1,19 @@
-﻿namespace Cod.Channel.Speech
+﻿using Cod.Identity;
+
+namespace Cod.Channel.Speech
 {
     internal class SpeechService(
         ISpeechRecognizer recognizer,
         ILoadingStateService loadingStateService,
-        ICommand<SpeechRecognizeCommandParameter, bool> command,
+        IAuthenticator authenticator,
         Lazy<IEnumerable<IDomainEventHandler<ISpeechService>>> eventHandlers)
         : DomainEventHandler<ISpeechRecognizer, SpeechRecognizerChangedEventArgs>, ISpeechService
     {
-        public bool IsBusy => loadingStateService.IsBusy(BusyGroups.Speech);
+        public bool IsListening => recognizer.IsRunning;
 
-        public bool IsRunning { get; private set; }
+        public Conversation? Current => recognizer.Current;
 
-        public Conversation? Current { get; private set; }
-
-        public ConversationLine? Preview { get; private set; }
+        public ConversationLine? Preview => recognizer.Preview;
 
         public IEnumerable<InputSourceDevice> InputSources { get; private set; } = [];
 
@@ -25,16 +25,12 @@
 
         public virtual async Task StartAsync(string inputLanguage, string? inputSource, CancellationToken cancellationToken = default)
         {
-            Preview = null;
-            Current = null;
-
-            await command.ExecuteAsync(new SpeechRecognizeCommandParameter
+            using (loadingStateService.SetBusy(BusyGroups.Speech))
             {
-                InputLanguage = inputLanguage,
-                InputSource = inputSource,
-            }, cancellationToken);
-
-            IsRunning = recognizer.IsRunning;
+                await OnUpdateAsync(cancellationToken);
+                (var sas, var region) = await authenticator.GetSpeechSASAndRegionAsync(cancellationToken);
+                await recognizer.StartRecognitionAsync(sas, region, deviceID: inputSource, language: inputLanguage, cancellationToken: cancellationToken);
+            }
             await OnUpdateAsync(cancellationToken);
         }
 
@@ -51,17 +47,12 @@
             }
         }
 
+        public void Reset() => recognizer.Reset();
+
         public override async Task HandleAsync(SpeechRecognizerChangedEventArgs e, CancellationToken cancellationToken)
-        {
-            await OnUpdateAsync(cancellationToken);
-        }
+            => await OnUpdateAsync(cancellationToken);
 
         private async Task OnUpdateAsync(CancellationToken cancellationToken)
-        {
-            IsRunning = recognizer.IsRunning;
-            Preview = recognizer.Preview;
-            Current = recognizer.Current;
-            await eventHandlers.Value.InvokeAsync(new SpeechServiceUpdatedEventArgs(), cancellationToken: cancellationToken);
-        }
+            => await eventHandlers.Value.InvokeAsync(new SpeechServiceUpdatedEventArgs(), cancellationToken: cancellationToken);
     }
 }

@@ -61,8 +61,7 @@ namespace Cod.Messaging.ServiceBus
                         && permissions.All(m => p.Entitlements.Contains(m.ToString().ToUpperInvariant()))
                         && name.StartsWith(p.Partition))
                     ?? throw new ApplicationException(InternalError.Forbidden);
-                var token = await authenticator.Value.RetrieveResourceTokenAsync(ResourceType.AzureServiceBus, permission.Resource, partition: name, cancellationToken: cancellationToken)
-                    ?? throw new ApplicationException(InternalError.Forbidden);
+                var token = await authenticator.Value.RetrieveResourceTokenAsync(ResourceType.AzureServiceBus, permission.Resource, partition: name, cancellationToken: cancellationToken);
                 return clients.GetOrAdd(name, new ServiceBusClient(
                     permission.Resource,
                     new AzureSasCredential($"SharedAccessSignature {token}"),

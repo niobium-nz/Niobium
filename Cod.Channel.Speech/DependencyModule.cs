@@ -20,7 +20,6 @@ namespace Cod.Channel.Speech
             services.AddSingleton<SpeechService>();
             services.AddTransient<ISpeechService>(sp => sp.GetRequiredService<SpeechService>());
             services.AddTransient<IDomainEventHandler<ISpeechRecognizer>>(sp => sp.GetRequiredService<SpeechService>());
-            services.AddTransient<ICommand<SpeechRecognizeCommandParameter, bool>, SpeechRecognizeCommand>();
             return services;
         }
     }

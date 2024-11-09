@@ -17,6 +17,6 @@ namespace Cod.Identity
 
         Task LogoutAsync(CancellationToken cancellationToken = default);
 
-        Task<string?> RetrieveResourceTokenAsync(ResourceType type, string resource, string? partition = null, string? id = null, CancellationToken cancellationToken = default);
+        Task<string> RetrieveResourceTokenAsync(ResourceType type, string resource, string? partition = null, string? id = null, CancellationToken cancellationToken = default);
     }
 }

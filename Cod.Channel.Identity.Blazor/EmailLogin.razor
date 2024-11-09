@@ -36,12 +36,12 @@
                 </div>
                 <input id="login-otp-input" type="text" style="display: none;" @bind="ViewModel.UserInput.Password" />
                 <button class="btn btn-primary" disabled="@ViewModel.IsBusy" hidden="@IsStep1" @onclick="OnLogin">Login</button>
-                <div id="go-back" class="back-btn" hidden="@IsStep1" @onclick="GoBack"><i class="fas fa-arrow-left"></i></div>
+                <div id="go-back" class="back-btn" hidden="@IsStep1" @onclick="GoBack"><i class="fa-solid fa-arrow-left"></i></div>
                 <button id="login-next" class="btn btn-primary" @onclick="OnLogin" hidden="@IsStep2" disabled="@ViewModel.IsBusy">Next</button>
 
                 @if (ViewModel.IsBusy)
                 {
-                    <div id="loading" class="loading"><i class="fas fa-spinner fa-spin"></i></div>
+                    <div id="loading" class="loading"><i class="fa-solid fa-spinner fa-spin"></i></div>
                 }
             </div>
         </div>

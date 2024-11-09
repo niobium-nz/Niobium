@@ -2,9 +2,7 @@
 {
     public interface ISpeechService
     {
-        bool IsBusy { get; }
-
-        bool IsRunning { get; }
+        bool IsListening { get; }
 
         Conversation? Current { get; }
 
@@ -17,6 +15,8 @@
         Task StartAsync(string inputLanguage, string? inputSource, CancellationToken cancellationToken = default);
 
         Task StopAsync(CancellationToken cancellationToken = default);
+
+        void Reset();
     }
 
     public class SpeechServiceRecognizedEventArgs(string id, string conversation)

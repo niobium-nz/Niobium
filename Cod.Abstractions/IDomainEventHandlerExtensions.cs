@@ -11,9 +11,17 @@
                 {
                     await h.HandleAsync(e, cancellationToken);
                 }
-                else if (handler is IDomainEventHandler<IDomain<TDomain>, TEventArgs> h2)
+                else if (handler is IDomainEventHandler<TDomain> h2)
                 {
                     await h2.HandleAsync(e, cancellationToken);
+                }
+                else if (handler is IDomainEventHandler<IDomain<TDomain>, TEventArgs> h3)
+                {
+                    await h3.HandleAsync(e, cancellationToken);
+                }
+                else if (handler is IDomainEventHandler<IDomain<TDomain>> h4)
+                {
+                    await h4.HandleAsync(e, cancellationToken);
                 }
             }
         }

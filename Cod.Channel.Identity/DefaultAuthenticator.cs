@@ -147,13 +147,13 @@ namespace Cod.Channel.Identity
             await this.OnAuthenticationUpdated(false, cancellationToken);
         }
 
-        public virtual async Task<string?> RetrieveResourceTokenAsync(ResourceType type, string resource, string? partition, string? id, CancellationToken cancellationToken)
+        public virtual async Task<string> RetrieveResourceTokenAsync(ResourceType type, string resource, string? partition, string? id, CancellationToken cancellationToken)
         {
             await InitializeAsync();
             var authenticated = await this.GetAuthenticateStatus(cancellationToken);
             if (!authenticated)
             {
-                return null;
+                throw new ApplicationException(InternalError.AuthenticationRequired);
             }
 
             var key = BuildResourceTokenCacheKey(type, resource, partition, id);
@@ -192,12 +192,9 @@ namespace Cod.Channel.Identity
                 {
                     await this.InitializeIDTokenAsync(null, false);
                     await this.OnAuthenticationUpdated(false, cancellationToken);
-                    return null;
                 }
-                else
-                {
-                    throw new ApplicationException((int)response.StatusCode);
-                }
+
+                throw new ApplicationException((int)response.StatusCode);
             }
 
             var result = await response.Content.ReadFromJsonAsync<StorageSignature>(cancellationToken);

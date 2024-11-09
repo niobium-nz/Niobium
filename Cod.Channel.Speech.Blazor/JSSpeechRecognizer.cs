@@ -13,7 +13,7 @@ namespace Cod.Channel.Speech.Blazor
         {
             if (!OperatingSystem.IsBrowser())
             {
-                throw new NotSupportedException();
+                throw new ApplicationException(InternalError.NotAcceptable);
             }
 
             translator = new(() => runtime.InvokeAsync<IJSObjectReference>("import", "./_content/Cod.Channel.Speech.Blazor/speech.js").AsTask());
@@ -30,39 +30,53 @@ namespace Cod.Channel.Speech.Blazor
 
         public async Task<IEnumerable<InputSourceDevice>> GetInputSourcesAsync(CancellationToken cancellationToken = default)
         {
-            var t = await translator.Value;
-            var result = await t.InvokeAsync<string>("getInputSources", cancellationToken: cancellationToken);
-            return Deserialize<InputSourceDevice[]>(result)!;
+            try
+            {
+                var t = await translator.Value;
+                var result = await t.InvokeAsync<string>("getInputSources", cancellationToken: cancellationToken);
+                return Deserialize<InputSourceDevice[]>(result)!;
+            }
+            catch
+            {
+                throw new ApplicationException(InternalError.PreconditionFailed);
+            }
         }
 
         public async Task<bool> StartRecognitionAsync(string token, string region, string? deviceID = null, string? language = "en-US", bool translateIntoEnglish = false, CancellationToken cancellationToken = default)
         {
-            var t = await translator.Value;
-            var result = await t.InvokeAsync<bool>("startRecognition", cancellationToken, [deviceID ?? string.Empty, language, token, region, translateIntoEnglish]);
-            if (result)
+            try
             {
-                IsRunning = true;
+                var t = await translator.Value;
+                IsRunning = await t.InvokeAsync<bool>("startRecognition", cancellationToken, [deviceID ?? string.Empty, language, token, region, translateIntoEnglish]);
+                return IsRunning;
             }
-            else
+            catch
             {
                 IsRunning = false;
-                Current = new Conversation
-                {
-                    CreatedAt = DateTimeOffset.Now,
-                    ID = Guid.NewGuid().ToString("N"),
-                    Lines = [],
-                    ErrorMessage = "Oops! It looks like the conversation couldn't start because of an unsupported browser. Please try again using the latest version of Google Chrome, Microsoft Edge, or Safari."
-                };
-            }
 
-            return IsRunning;
+                //"Oops! It looks like the conversation couldn't start because of an unsupported browser. Please try again using the latest version of Google Chrome, Microsoft Edge, or Safari."
+                throw new ApplicationException(InternalError.PreconditionFailed);
+            }
         }
 
         public async Task StopRecognitionAsync(CancellationToken cancellationToken = default)
         {
-            var t = await translator.Value;
-            await t.InvokeVoidAsync("stopRecognition");
+            try
+            {
+                var t = await translator.Value;
+                await t.InvokeVoidAsync("stopRecognition");
+            }
+            finally
+            {
+                IsRunning = false;
+            }
+        }
+
+        public void Reset()
+        {
             IsRunning = false;
+            Current = null;
+            Preview = null;
         }
 
         internal async Task OnChangedAsync(SpeechRecognizerChangedType type)
