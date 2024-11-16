@@ -162,7 +162,8 @@ namespace Cod.Table.StorageAccount
         protected virtual async Task<EntityBag<T>> QueryAsync(string filter, int limit, IList<string> fields = null, string continuationToken = null, CancellationToken cancellationToken = default)
         {
             int? maxPerPage = FigureMaxQueryPageSize(limit);
-            var table = await GetTableAsync(DatabasePermissions.Query, cancellationToken: cancellationToken);
+            var partition = ParsePartitionKey(filter);
+            var table = await GetTableAsync(DatabasePermissions.Query, partition, cancellationToken: cancellationToken);
             IAsyncEnumerable<Page<EntityDictionary>> pages = table.QueryAsync<EntityDictionary>(
                     filter: filter,
                     maxPerPage: maxPerPage,
@@ -183,7 +184,8 @@ namespace Cod.Table.StorageAccount
 
         protected virtual async IAsyncEnumerable<T> QueryAsync(string filter, IList<string> fields = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var table = await GetTableAsync(DatabasePermissions.Query, cancellationToken: cancellationToken);
+            var partition = ParsePartitionKey(filter);
+            var table = await GetTableAsync(DatabasePermissions.Query, partition, cancellationToken: cancellationToken);
             AsyncPageable<EntityDictionary> result = table.QueryAsync<EntityDictionary>(
                 filter: filter,
                 select: fields,
@@ -368,7 +370,21 @@ namespace Cod.Table.StorageAccount
             return false;
         }
 
+        private static string ParsePartitionKey(string input)
+        {
+            Match match = PartitionKeyRegex().Match(input);
+            if (match.Success && match.Groups.Count == 2)
+            {
+                return match.Groups[1].Value;
+            }
+
+            return null;
+        }
+
         [GeneratedRegex("(http|https)\\:\\/\\/.*\\(PartitionKey='([^']+)',RowKey='([^']+)'\\)")]
         private static partial Regex KeysRegex();
+
+        [GeneratedRegex("PartitionKey\\s+eq\\s+'(.*)'")]
+        private static partial Regex PartitionKeyRegex();
     }
 }

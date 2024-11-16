@@ -18,18 +18,15 @@ namespace Cod.Database.StorageTable
             }
 
             var resourcePermissions = await authenticator.Value.GetResourcePermissionsAsync(cancellationToken) ?? [];
-            var permissionCheck = resourcePermissions.Any(p =>
+            var permission = resourcePermissions.FirstOrDefault(p =>
                 p.Type == ResourceType.AzureStorageTable
-                && p.Resource == table
+                && p.Partition == table
                 && permissions.All(m => p.Entitlements.Contains(m.ToString().ToUpperInvariant()))
-                && (partition == null || partition.StartsWith(p.Partition)));
-            if (!permissionCheck)
-            {
-                throw new ApplicationException(InternalError.Forbidden);
-            }
-
+                && (partition == null || partition.StartsWith(p.Scope)))
+                ?? throw new ApplicationException(InternalError.Forbidden);
             var sasUri = await authenticator.Value.RetrieveResourceTokenAsync(ResourceType.AzureStorageTable, table, partition: partition, cancellationToken: cancellationToken);
-            return clients.GetOrAdd($"{table}//{partition ?? string.Empty}", new TableServiceClient(new Uri(sasUri), options: BuildClientOptions(options)));
+            var endpoint = new Uri($"https://{permission.Resource}/{permission.Partition}?{sasUri}");
+            return clients.GetOrAdd($"{table}//{partition ?? string.Empty}", new TableServiceClient(endpoint, options: BuildClientOptions(options)));
         }
 
         private Task<TableServiceClient> CreateClientAsync(CancellationToken cancellationToken = default)
