@@ -9,6 +9,11 @@ namespace Cod.Channel.Speech
         Lazy<IEnumerable<IDomainEventHandler<ISpeechService>>> eventHandlers)
         : DomainEventHandler<ISpeechRecognizer, SpeechRecognizerChangedEventArgs>, ISpeechService
     {
+        private static readonly TimeSpan[] retryIntervalOnStartFailure = [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30)];
+        
+        private string? lastInputLanguage;
+        private string? lastInputSource;
+
         public bool IsListening => recognizer.IsRunning;
 
         public Conversation? Current => recognizer.Current;
@@ -25,13 +30,59 @@ namespace Cod.Channel.Speech
 
         public virtual async Task StartAsync(string inputLanguage, string? inputSource, CancellationToken cancellationToken = default)
         {
+            await StartAsync(inputLanguage, inputSource, false, cancellationToken);
+        }
+
+        protected virtual async Task StartAsync(string inputLanguage, string? inputSource, bool resumeOnPrevious, CancellationToken cancellationToken = default)
+        {
+            if (IsListening)
+            {
+                return;
+            }
+
+            lastInputLanguage = inputLanguage;
+            lastInputSource = inputSource;
+            var success = false;
+
             using (loadingStateService.SetBusy(BusyGroups.Speech))
             {
                 await OnUpdateAsync(cancellationToken);
                 (var sas, var region) = await authenticator.GetSpeechSASAndRegionAsync(cancellationToken);
-                await recognizer.StartRecognitionAsync(sas, region, deviceID: inputSource, language: inputLanguage, cancellationToken: cancellationToken);
+
+                for (var i = 0; i < retryIntervalOnStartFailure.Length; i++)
+                {
+                    success = await recognizer.StartRecognitionAsync(
+                        sas,
+                        region,
+                        deviceID: inputSource,
+                        language: inputLanguage,
+                        continueOnPrevious: resumeOnPrevious,
+                        cancellationToken: cancellationToken);
+
+                    if (success)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        await Task.Delay(retryIntervalOnStartFailure[i], cancellationToken);
+                    }
+                }
             }
             await OnUpdateAsync(cancellationToken);
+
+            if (!success)
+            {
+                throw new ApplicationException(InternalError.NetworkFailure);
+            }
+        }
+
+        public async Task ResumeAsync(CancellationToken cancellationToken)
+        {
+            if (lastInputLanguage != null)
+            {
+                await StartAsync(lastInputLanguage, lastInputSource, true, cancellationToken);
+            }
         }
 
         public async Task StopAsync(CancellationToken cancellationToken = default)
@@ -50,7 +101,16 @@ namespace Cod.Channel.Speech
         public void Reset() => recognizer.Reset();
 
         public override async Task HandleAsync(SpeechRecognizerChangedEventArgs e, CancellationToken cancellationToken)
-            => await OnUpdateAsync(cancellationToken);
+        {
+            if (e.Type == SpeechRecognizerChangedType.Canceled)
+            {
+                await ResumeAsync(cancellationToken);
+            }
+            else
+            {
+                await OnUpdateAsync(cancellationToken);
+            }
+        }
 
         private async Task OnUpdateAsync(CancellationToken cancellationToken)
             => await eventHandlers.Value.InvokeAsync(new SpeechServiceUpdatedEventArgs(), cancellationToken: cancellationToken);

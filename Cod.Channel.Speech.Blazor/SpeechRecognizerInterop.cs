@@ -23,6 +23,10 @@ namespace Cod.Channel.Speech.Blazor
                 case "onSessionStarted":
                     DestoryCurrentSession();
                     Instance.IsRunning = true;
+                    if (Instance.Current != null)
+                    {
+                        Instance.Current.ErrorMessage = null;
+                    }
                     await Instance.OnChangedAsync(SpeechRecognizerChangedType.SessionStarted);
                     break;
                 case "onSessionStopped":
@@ -32,30 +36,42 @@ namespace Cod.Channel.Speech.Blazor
                 case "onCanceled":
                     Instance.IsRunning = false;
                     var canceled = Deserialize<SpeechRecognitionCanceledEventArgs>(parameter);
-                    Instance.Current!.ErrorMessage = canceled.ErrorDetails;
-                    CreateNewSession(canceled.SessionID);
+                    if (canceled != null)
+                    {
+                        CreateNewSession(canceled.SessionID);
+                        Instance.Current!.ErrorMessage = $"Connection Lost. Reconnecting...";
+                    }
+
                     await Instance.OnChangedAsync(SpeechRecognizerChangedType.Canceled);
                     break;
                 case "onRecognizing":
                     var recognizing = Deserialize<SpeechRecognitionEventArgs>(parameter);
-                    CreateNewSession(recognizing.SessionID);
-                    Instance.Preview = ExtractLine(recognizing);
+                    if (recognizing != null)
+                    {
+                        CreateNewSession(recognizing.SessionID);
+                        Instance.Preview = ExtractLine(recognizing);
+                    }
+                    
                     await Instance.OnChangedAsync(SpeechRecognizerChangedType.Recognizing);
                     break;
                 case "onRecognized":
                     Instance.Preview = null;
                     var recognized = Deserialize<SpeechRecognitionEventArgs>(parameter);
-                    CreateNewSession(recognized.SessionID);
-                    ConversationLine? line = ExtractLine(recognized);
-                    if (line != null)
+                    if (recognized != null)
                     {
-                        Instance.Current!.Lines.Add(line);
-                        await Instance.OnChangedAsync(SpeechRecognizerChangedType.Recognized);
+                        CreateNewSession(recognized.SessionID);
+                        ConversationLine? line = ExtractLine(recognized);
+                        if (line != null)
+                        {
+                            Instance.Current!.Lines.Add(line);
+                            await Instance.OnChangedAsync(SpeechRecognizerChangedType.Recognized);
+                        }
+                        else
+                        {
+                            await StopRecognitionIfExceedSilentTimeoutAsync();
+                        }
                     }
-                    else
-                    {
-                        await StopRecognitionIfExceedSilentTimeoutAsync();
-                    }
+                    
                     break;
             }
         }
@@ -122,6 +138,11 @@ namespace Cod.Channel.Speech.Blazor
                     ID = sessionID,
                     Lines = []
                 };
+
+                if (Instance.ContinueOnPrevious && Instance.Current.ID != sessionID)
+                {
+                    Instance.Current.ID = sessionID;
+                }
             }
         }
 
@@ -129,15 +150,18 @@ namespace Cod.Channel.Speech.Blazor
         {
             if (Instance != null)
             {
-                Instance.Preview = null;
-                Instance.Current = null;
+                if (!Instance.ContinueOnPrevious)
+                {
+                    Instance.Preview = null;
+                    Instance.Current = null;
+                }
             }
 
         }
 
-        private static T Deserialize<T>(string json) where T : class
+        private static T? Deserialize<T>(string json) where T : class
         {
-            return System.Text.Json.JsonSerializer.Deserialize<T>(json, options)!;
+            return System.Text.Json.JsonSerializer.Deserialize<T>(json, options);
         }
     }
 }

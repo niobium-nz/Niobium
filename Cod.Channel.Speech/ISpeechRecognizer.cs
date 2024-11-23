@@ -10,7 +10,7 @@
 
         Task<IEnumerable<InputSourceDevice>> GetInputSourcesAsync(CancellationToken cancellationToken = default);
 
-        Task<bool> StartRecognitionAsync(string token, string region, string? deviceID = null, string? language = "en-US", bool translateIntoEnglish = false, CancellationToken cancellationToken = default);
+        Task<bool> StartRecognitionAsync(string token, string region, string? deviceID = null, string? language = "en-US", bool translateIntoEnglish = false, bool continueOnPrevious = false, CancellationToken cancellationToken = default);
 
         Task StopRecognitionAsync(CancellationToken cancellationToken = default);
 

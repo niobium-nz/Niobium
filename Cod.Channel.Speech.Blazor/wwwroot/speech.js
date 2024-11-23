@@ -106,7 +106,7 @@ function isRunning() {
     }
 }
 
-export function startRecognition(deviceID, language, token, region, translateIntoEnglish) {
+export async function startRecognition(deviceID, language, token, region, translateIntoEnglish) {
     if (!window || !window.SpeechSDK) {
         return false;
     }
@@ -142,8 +142,19 @@ export function startRecognition(deviceID, language, token, region, translateInt
         window.currentRecognizer.canceled = onCanceled;
         window.currentRecognizer.sessionStarted = onSessionStarted;
         window.currentRecognizer.sessionStopped = onSessionStopped;
-        window.currentRecognizer.startContinuousRecognitionAsync();
-        return true;
+
+        var result = false;
+        window.currentRecognizer.startContinuousRecognitionAsync(() => result = true);
+
+        for (var i = 0; i < 20; ++i) {
+            if (result) {
+                return true;
+            } else {
+                await asyncDelay(500);
+            }
+        }
+
+        return false;
     } catch (e) {
         return false;
     }    
@@ -175,4 +186,10 @@ export async function stopRecognition() {
         );
         window.currentRecognizer = undefined;
     }
+}
+
+function asyncDelay(millisec) {
+    return new Promise(resolve => {
+        setTimeout(() => { resolve('') }, millisec);
+    })
 }
