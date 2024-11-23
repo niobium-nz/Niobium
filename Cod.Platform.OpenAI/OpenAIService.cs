@@ -14,11 +14,16 @@ namespace Cod.Platform.OpenAI
         private static readonly JsonSerializerOptions SERIALIZATION_OPTIONS = new(JsonSerializerDefaults.Web);
         private const string JSON_CONTENT_TYPE = "application/json";
 
-        public async Task<OpenAIConversationAnalysisResult?> AnalyzeSOAPAsync(string id, int kind, string conversation, CancellationToken cancellationToken = default)
+        public async Task<OpenAIConversationAnalysisResult?> AnalyzeSOAPAsync(string id, int kind, string conversation, string? outputLanguage, CancellationToken cancellationToken = default)
         {
             if (!options.Value.SystemPrompts.TryGetValue(kind, out var systemPrompt))
             {
                 throw new ApplicationException(InternalError.InternalServerError);
+            }
+
+            if (outputLanguage != null)
+            {
+                systemPrompt = $"{systemPrompt} The output language should in {outputLanguage}.";
             }
 
             var userInput = new List<object>();

@@ -2,6 +2,6 @@
 {
     public interface IOpenAIService
     {
-        Task<OpenAIConversationAnalysisResult?> AnalyzeSOAPAsync(string id, int kind, string conversation, CancellationToken cancellationToken);
+        Task<OpenAIConversationAnalysisResult?> AnalyzeSOAPAsync(string id, int kind, string conversation, string outputLanguage, CancellationToken cancellationToken);
     }
 }
