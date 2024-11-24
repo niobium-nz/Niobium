@@ -38,4 +38,3 @@ namespace Cod.Platform.Notification.Email.Resend
         private static string Serialize(object obj) => System.Text.Json.JsonSerializer.Serialize(obj, SERIALIZATION_OPTIONS);
     }
 }
-}
