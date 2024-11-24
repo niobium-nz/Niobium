@@ -1,0 +1,13 @@
+﻿namespace Cod.Platform.Notification.Email.Resend
+{
+    internal class ResendRequest
+    {
+        public required string From { get; set; }
+
+        public required string[] To { get; set; }
+
+        public required string Subject { get; set; }
+
+        public required string Html { get; set; }
+    }
+}
