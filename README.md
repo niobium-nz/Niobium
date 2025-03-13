@@ -5,24 +5,75 @@ COD is a .NET framework for building modern cloud-based web applications. With C
 
 ## Azure Storage Table as Database Backend
 ```nuget
-Package Manager: Install-Package Cod.Platform.StorageTable -Version 2.2.11
+Package Manager: Install-Package Cod.Platform.StorageTable -Version 2.2.12
 ```
 Example of enabling StorageTable support
 ```csharp
+class User
+{
+    [EntityKey(EntityKeyKind.PartitionKey)]
+    public required string Prefix { get; set; }
 
-Host.CreateDefaultBuilder(args)
+    [EntityKey(EntityKeyKind.RowKey)]
+    public required Guid ID { get; set; }
+
+    // Timestamp is optional
+    [EntityKey(EntityKeyKind.Timestamp)]
+    public DateTimeOffset? Timestamp { get; set; }
+
+    // ETag is optional so it is only required for optimistic concurrency
+    [EntityKey(EntityKeyKind.ETag)]
+    public string? ETag { get; set; }
+
+    public string Name { get; set; }
+
+    public int Age { get; set; }
+
+    public bool Disabled { get; set; }
+}
+
+var host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
     {
-        // Enable interactive authentication to Storage Account in development environment
-        var isDevelopment = context.Configuration.IsDevelopmentEnvironment();
-        services.AddDatabase(context.Configuration.GetRequiredSection(nameof(StorageTableOptions)))
-                .PostConfigure<StorageTableOptions>(opt => opt.EnableInteractiveIdentity = isDevelopment);
+        services.AddDatabase(options =>
+        { 
+            // RBAC should be correctly configured and it is the only supported authentication method
+            options.FullyQualifiedDomainName = "test.table.core.windows.net";
+        })
+
+        // Optionally enable interactive authentication to Storage Account in development environment
+        .PostConfigure<StorageTableOptions>(opt => opt.EnableInteractiveIdentity = context.Configuration.IsDevelopmentEnvironment());
     })
     .UseDefaultServiceProvider((_, options) =>
     {
         options.ValidateScopes = true;
         options.ValidateOnBuild = true;
     })
-    .Build()
-    .Run();
+    .Build();
+
+// Get the repository for User from dependency injection container
+var repo = host.Services.GetRequiredService<IRepository<User>>();
+
+// Create a new user
+var user1 = await repo.CreateAsync(new User 
+{
+    Prefix = "A",
+    ID = Guid.NewGuid(),
+    Name = "Alice",
+    Age = 30,
+    Disabled = false
+});
+
+// Update the user
+user1.Age = 31;
+await repo.UpdateAsync(user1);
+
+// Query the user
+var user2 = await repo.GetAsync("A", user1.ID);
+
+// Delete the user
+await repo.DeleteAsync(user1);
+
+// Don't forget to run your host
+host.Run();
 ```
