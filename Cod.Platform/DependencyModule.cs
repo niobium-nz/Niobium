@@ -50,7 +50,7 @@ namespace Cod.Platform
             return services;
         }
 
-        public static IFunctionsWorkerApplicationBuilder UsePlatform(this IFunctionsWorkerApplicationBuilder builder)
+        public static T UsePlatform<T>(this T builder) where T : IFunctionsWorkerApplicationBuilder
         {
             builder.UseWhen<FunctionMiddlewareAdaptor<ErrorHandlingMiddleware>>(FunctionMiddlewarePredicates.IsHttp);
             return builder;
