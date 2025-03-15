@@ -85,6 +85,12 @@ namespace Cod
             return input.ToString("g", culture);
         }
 
+        public static string ToDateYear(this DateTimeOffset input, CultureInfo culture)
+        {
+            _ = culture ?? throw new ArgumentNullException(nameof(culture));
+            return $"{input.ToString("M", culture)} {input.ToString("yyyy")}";
+        }
+
         public static string ToYearMonthDay(this DateTimeOffset input, CultureInfo culture)
         {
             _ = culture ?? throw new ArgumentNullException(nameof(culture));
@@ -100,7 +106,7 @@ namespace Cod
         public static string ToMonthDay(this DateTimeOffset input, CultureInfo culture)
         {
             _ = culture ?? throw new ArgumentNullException(nameof(culture));
-            return input.ToString("m", culture);
+            return input.ToString("M", culture);
         }
 
         public static string ToSixDigitsDate(this DateTimeOffset input)
