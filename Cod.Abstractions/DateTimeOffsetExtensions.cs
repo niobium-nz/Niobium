@@ -27,6 +27,11 @@ namespace Cod
             return input.ToReverseUnixTimeMilliseconds().ToString().PadLeft(12, '0');
         }
 
+        public static string ToReverseUnixTimestamp(this long input)
+        {
+            return input.ToString().PadLeft(12, '0');
+        }
+
         public static DateTimeOffset FromReverseUnixTimeMilliseconds(long reverseUnixTimestamp)
         {
             return DateTimeOffset.FromUnixTimeMilliseconds(reverseUnixTimestampAnchor - reverseUnixTimestamp);

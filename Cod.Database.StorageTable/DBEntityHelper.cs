@@ -24,7 +24,14 @@ namespace Cod.Database.StorageTable
                 object value = m[key].GetValue(source);
                 if (key == EntityKeyKind.PartitionKey.ToString() || key == EntityKeyKind.RowKey.ToString())
                 {
-                    value = value.ToString();
+                    if (value is DateTimeOffset timeValue)
+                    {
+                        value = DateTimeOffsetExtensions.ToReverseUnixTimestamp(timeValue);
+                    }
+                    else
+                    {
+                        value = value.ToString();
+                    }
                 }
 
                 if (key == EntityKeyKind.ETag.ToString())
@@ -69,7 +76,15 @@ namespace Cod.Database.StorageTable
                     if ((keyName == EntityKeyKind.PartitionKey.ToString() || keyName == EntityKeyKind.RowKey.ToString())
                         && value.PropertyType != typeof(string))
                     {
-                        itemValue = TypeConverter.Convert((string)itemValue, value.PropertyType);
+                        if (value.PropertyType == typeof(DateTimeOffset))
+                        {
+                            var reverseTimestamp = long.Parse((string)itemValue);
+                            itemValue = DateTimeOffsetExtensions.FromReverseUnixTimeMilliseconds(reverseTimestamp);
+                        }
+                        else
+                        {
+                            itemValue = TypeConverter.Convert((string)itemValue, value.PropertyType);
+                        }
                     }
 
                     value.SetValue(obj, itemValue);
