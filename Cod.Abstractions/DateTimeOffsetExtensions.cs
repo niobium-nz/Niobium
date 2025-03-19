@@ -46,7 +46,7 @@ namespace Cod
         public static string ToYearMonth(this DateTimeOffset input, CultureInfo culture)
         {
             _ = culture ?? throw new ArgumentNullException(nameof(culture));
-            return input.ToString("y", culture);
+            return input.ToString("Y", culture);
         }
 
         public static string ToRFC1123(this DateTimeOffset input, CultureInfo culture)
@@ -88,7 +88,7 @@ namespace Cod
         public static string ToDateYear(this DateTimeOffset input, CultureInfo culture)
         {
             _ = culture ?? throw new ArgumentNullException(nameof(culture));
-            return $"{input.ToString("M", culture)} {input.ToString("yyyy")}";
+            return $"{input.ToString("M", culture)} {input:yyyy}";
         }
 
         public static string ToYearMonthDay(this DateTimeOffset input, CultureInfo culture)
