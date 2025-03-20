@@ -5,10 +5,9 @@ using System.Text;
 namespace Cod.Platform.Identity
 {
     [method: SetsRequiredMembers]
-#pragma warning disable CS8618
     internal class Entitlement() : ITrackable
-#pragma warning restore CS8618
     {
+#pragma warning disable CS8618
         [EntityKey(EntityKeyKind.PartitionKey)]
         public required Guid Tenant { get; set; }
 
@@ -24,6 +23,7 @@ namespace Cod.Platform.Identity
         public DateTimeOffset? Created { get; set; }
 
         public required string Entitlements { get; set; }
+#pragma warning restore CS8618
 
         public IEnumerable<EntitlementDescription> GetEntitlements()
         {
