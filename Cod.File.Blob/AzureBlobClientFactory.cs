@@ -1,4 +1,5 @@
-﻿using Azure.Identity;
+﻿using Azure.Core;
+using Azure.Identity;
 using Azure.Storage.Blobs;
 using Cod.Identity;
 using Microsoft.Extensions.Options;
@@ -9,6 +10,7 @@ namespace Cod.File.Blob
     internal class AzureBlobClientFactory(IOptions<StorageBlobOptions> options, Lazy<IAuthenticator> authenticator)
     {
         private static readonly ConcurrentDictionary<string, BlobServiceClient> clients = [];
+        private static readonly ConcurrentDictionary<string, TokenCredential> credentials = [];
 
         public async Task<BlobServiceClient> CreateClientAsync(IEnumerable<FilePermissions> permissions, string containerName, CancellationToken cancellationToken = default)
         {
@@ -42,8 +44,9 @@ namespace Cod.File.Blob
             var client = clients.GetOrAdd(options.Value.FullyQualifiedDomainName, _ =>
             {
                 var opt = BuildClientOptions(options);
+                var credential = credentials.GetOrAdd(options.Value.FullyQualifiedDomainName, _ => new DefaultAzureCredential(includeInteractiveCredentials: options.Value.EnableInteractiveIdentity));
                 return Uri.TryCreate($"https://{options.Value.FullyQualifiedDomainName}", UriKind.Absolute, out var endpointUri)
-                    ? new BlobServiceClient(endpointUri, new DefaultAzureCredential(includeInteractiveCredentials: options.Value.EnableInteractiveIdentity), opt)
+                    ? new BlobServiceClient(endpointUri, credential, opt)
                     : throw new ApplicationException(InternalError.InternalServerError);
             });
             

@@ -1,4 +1,5 @@
-﻿using Azure.Data.Tables;
+﻿using Azure.Core;
+using Azure.Data.Tables;
 using Azure.Identity;
 using Cod.Identity;
 using Microsoft.Extensions.Options;
@@ -9,6 +10,7 @@ namespace Cod.Database.StorageTable
     internal class AzureTableClientFactory(IOptions<StorageTableOptions> options, Lazy<IAuthenticator> authenticator) : IAzureTableClientFactory
     {
         private static readonly ConcurrentDictionary<string, TableServiceClient> clients = [];
+        private static readonly ConcurrentDictionary<string, TokenCredential> credentials = [];
 
         public async Task<TableServiceClient> CreateClientAsync(IEnumerable<DatabasePermissions> permissions, string table, string partition = null, CancellationToken cancellationToken = default)
         {
@@ -39,6 +41,7 @@ namespace Cod.Database.StorageTable
             var client = clients.GetOrAdd(options.Value.FullyQualifiedDomainName, _ =>
             {
                 var opt = BuildClientOptions(options);
+                var credential = credentials.GetOrAdd(options.Value.FullyQualifiedDomainName, _ => new DefaultAzureCredential(includeInteractiveCredentials: options.Value.EnableInteractiveIdentity));
                 return Uri.TryCreate($"https://{options.Value.FullyQualifiedDomainName}", UriKind.Absolute, out var endpointUri)
                     ? new TableServiceClient(endpointUri, new DefaultAzureCredential(includeInteractiveCredentials: options.Value.EnableInteractiveIdentity), opt)
                     : throw new ApplicationException(InternalError.InternalServerError);
