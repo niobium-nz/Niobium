@@ -39,10 +39,14 @@ namespace Cod.File.Blob
                 throw new ApplicationException(InternalError.InternalServerError);
             }
 
-            var opt = BuildClientOptions(options);
-            var client = Uri.TryCreate($"https://{options.Value.FullyQualifiedDomainName}", UriKind.Absolute, out var endpointUri)
-                ? new BlobServiceClient(endpointUri, new DefaultAzureCredential(includeInteractiveCredentials: options.Value.EnableInteractiveIdentity), opt)
-                : throw new ApplicationException(InternalError.InternalServerError);
+            var client = clients.GetOrAdd(options.Value.FullyQualifiedDomainName, _ =>
+            {
+                var opt = BuildClientOptions(options);
+                return Uri.TryCreate($"https://{options.Value.FullyQualifiedDomainName}", UriKind.Absolute, out var endpointUri)
+                    ? new BlobServiceClient(endpointUri, new DefaultAzureCredential(includeInteractiveCredentials: options.Value.EnableInteractiveIdentity), opt)
+                    : throw new ApplicationException(InternalError.InternalServerError);
+            });
+            
             return Task.FromResult(client);
         }
 
