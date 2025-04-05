@@ -5,7 +5,7 @@ COD is a .NET framework for building modern cloud-based web applications. With C
 
 ## Azure Storage Table as Database Backend
 ```nuget
-Package Manager: Install-Package Cod.Platform.StorageTable -Version 2.2.12
+Package Manager: Install-Package Cod.Platform.StorageTable
 ```
 Example of enabling StorageTable support
 ```csharp
@@ -73,6 +73,58 @@ var user2 = await repo.GetAsync("A", user1.ID);
 
 // Delete the user
 await repo.DeleteAsync(user1);
+
+// Don't forget to run your host
+host.Run();
+```
+
+
+## Azure Service Bus as Messaging Backend
+```nuget
+Package Manager: Install-Package Cod.Platform.ServiceBus
+```
+Example of enabling Service Bus support
+```csharp
+class UserCreated
+{
+    public Guid ID { get; set; }
+    public string Name { get; set; }
+    public int Age { get; set; }
+}
+
+var host = Host.CreateDefaultBuilder(args)
+    .ConfigureServices((context, services) =>
+    {
+        services.AddMessaging(options =>
+        { 
+            // RBAC should be correctly configured and it is the only supported authentication method
+            options.FullyQualifiedNamespace = "test.servicebus.windows.net";
+        })
+
+        // Optionally enable interactive authentication to Storage Account in development environment
+        .PostConfigure<ServiceBusOptions>(opt => opt.EnableInteractiveIdentity = context.Configuration.IsDevelopmentEnvironment());
+    })
+    .UseDefaultServiceProvider((_, options) =>
+    {
+        options.ValidateScopes = true;
+        options.ValidateOnBuild = true;
+    })
+    .Build();
+
+// Get the message sender for UserCreated from dependency injection container
+var sender = host.Services.GetRequiredService<IMessagingBroker<UserCreated>>();
+
+// Send a new message
+await sender.EnqueueAsync(new MessagingEntry<UserCreated>
+{
+    ID = Guid.NewGuid(),
+    Value = new UserCreated 
+    {
+        ID = Guid.NewGuid(),
+        Name = "Alice",
+        Age = 30,
+    }
+});
 
 // Don't forget to run your host
 host.Run();
