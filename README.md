@@ -99,6 +99,9 @@ var host = Host.CreateDefaultBuilder(args)
         { 
             // RBAC should be correctly configured and it is the only supported authentication method
             options.FullyQualifiedNamespace = "test.servicebus.windows.net";
+
+            // Use Web Socket transport in case if this is a Blazor.NET app, or it's server environment but you are behind a firewall
+            options.UseWebSocket = true
         })
 
         // Optionally enable interactive authentication to Storage Account in development environment
