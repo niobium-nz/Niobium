@@ -1,11 +1,12 @@
 using Azure.Messaging.ServiceBus;
 using Cod.Identity;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.Net.Http.Headers;
 using System.Text.Json;
 
 namespace Cod.Messaging.ServiceBus
 {
-    internal class ServiceBusQueueBroker<T>(AuthenticationBasedQueueFactory factory, IAuthenticator authenticator) : IMessagingBroker<T> where T : class, new()
+    internal class ServiceBusQueueBroker<T>(AuthenticationBasedQueueFactory factory, Lazy<IAuthenticator> authenticator) : IMessagingBroker<T> where T : class, new()
     {
         private const string MessageContentType = "application/json";
         private static readonly JsonSerializerOptions SerializationOptions = new(JsonSerializerDefaults.Web);
@@ -19,13 +20,13 @@ namespace Cod.Messaging.ServiceBus
             {
                 return null;
             }
-            
+
             var value = msg.Body.ToObjectFromJson<T>(SerializationOptions);
             if (value == null)
             {
                 return null;
             }
-            
+
             return new ServiceBusMessageEntry<T>(msg, async (m) => await q.CompleteMessageAsync(m))
             {
                 ID = msg.MessageId,
@@ -70,9 +71,19 @@ namespace Cod.Messaging.ServiceBus
                     ContentType = MessageContentType,
                 };
 
-                if (authenticator.AccessToken != null)
+                JsonWebToken? accessToken = null;
+                try
                 {
-                    sbmessage.ApplicationProperties.Add(HeaderNames.Authorization, $"{AuthenticationScheme.BearerLoginScheme} {authenticator.AccessToken.EncodedToken}");
+                    accessToken = authenticator.Value.AccessToken;
+                }
+                catch
+                {
+                    // ignore access token in case if authenticator is not available
+                }
+
+                if (accessToken != null)
+                {
+                    sbmessage.ApplicationProperties.Add(HeaderNames.Authorization, $"{AuthenticationScheme.BearerLoginScheme} {accessToken.EncodedToken}");
                 }
 
                 if (message.Schedule.HasValue)
