@@ -4,10 +4,10 @@ using System.Text;
 
 namespace Cod.Platform.Identity
 {
+#pragma warning disable CS8618
     [method: SetsRequiredMembers]
     internal class Entitlement() : ITrackable
     {
-#pragma warning disable CS8618
         [EntityKey(EntityKeyKind.PartitionKey)]
         public required Guid Tenant { get; set; }
 
@@ -23,7 +23,6 @@ namespace Cod.Platform.Identity
         public DateTimeOffset? Created { get; set; }
 
         public required string Entitlements { get; set; }
-#pragma warning restore CS8618
 
         public IEnumerable<EntitlementDescription> GetEntitlements()
         {
@@ -77,4 +76,5 @@ namespace Cod.Platform.Identity
         public static string BuildPartitionKey(Guid tenant) => tenant.ToString();
         public static string BuildRowKey(string role) => role.Trim();
     }
+#pragma warning restore CS8618
 }
