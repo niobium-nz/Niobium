@@ -17,7 +17,7 @@ namespace Cod.Platform.Notification.Email.Resend
 
         protected async override Task<bool> SendCoreAsync(string from, IEnumerable<string> recipients, string subject, string body, CancellationToken cancellationToken = default)
         {
-            var fromDomain = from.Split('@')[1].ToUpperInvariant();
+            var fromDomain = from.Split('@')[1].Trim();
             if (string.IsNullOrWhiteSpace(fromDomain))
             {
                 logger.LogError($"From Email address validation failed: {from}");
