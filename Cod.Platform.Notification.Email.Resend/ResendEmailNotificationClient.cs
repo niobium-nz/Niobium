@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
@@ -6,6 +8,7 @@ namespace Cod.Platform.Notification.Email.Resend
 {
     internal class ResendEmailNotificationClient(
         HttpClient httpClient,
+        IOptions<ResendServiceOptions> config,
         ILogger<ResendEmailNotificationClient> logger,
         ILogger<GenericEmailNotificationClient> baseLogger) : GenericEmailNotificationClient(baseLogger)
     {
@@ -14,6 +17,22 @@ namespace Cod.Platform.Notification.Email.Resend
 
         protected async override Task<bool> SendCoreAsync(string from, IEnumerable<string> recipients, string subject, string body, CancellationToken cancellationToken = default)
         {
+            var fromDomain = from.Split('@')[1].ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(fromDomain))
+            {
+                logger.LogError($"From Email address validation failed: {from}");
+                return false;
+            }
+
+            if (config.Value.DomainScopedAPIKeys.TryGetValue(fromDomain, out string? value))
+            {
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", value);
+            }
+            else
+            {
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", config.Value.GlobalAPIKey);
+            }
+
             var json = Serialize(new ResendRequest
             {
                 From = from,

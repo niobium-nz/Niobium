@@ -2,8 +2,10 @@
 {
     public class ResendServiceOptions
     {
-        public required string APIKey { get; set; }
+        public required string GlobalAPIKey { get; set; }
 
-        public bool Validate() => !string.IsNullOrWhiteSpace(APIKey);
+        public required Dictionary<string, string> DomainScopedAPIKeys { get; set; }
+
+        public bool Validate() => !string.IsNullOrWhiteSpace(GlobalAPIKey) || (DomainScopedAPIKeys != null && DomainScopedAPIKeys.Count > 0);
     }
 }

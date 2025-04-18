@@ -34,7 +34,10 @@ namespace Cod.Platform.Notification.Email.Resend
             {
                 var config = serviceProvider.GetRequiredService<IOptions<ResendServiceOptions>>();
                 httpClient.BaseAddress = new Uri(resendAPIHost);
-                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", config.Value.APIKey);
+                if (!string.IsNullOrWhiteSpace(config.Value.GlobalAPIKey))
+                {
+                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", config.Value.GlobalAPIKey);
+                }
             })
             .AddStandardResilienceHandler();
             return services;
