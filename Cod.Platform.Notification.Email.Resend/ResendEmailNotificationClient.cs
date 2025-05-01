@@ -24,7 +24,7 @@ namespace Cod.Platform.Notification.Email.Resend
                 return false;
             }
 
-            if (config.Value.DomainScopedAPIKeys.TryGetValue(fromDomain, out string? value))
+            if (config.Value.DomainScopedAPIKeys != null && config.Value.DomainScopedAPIKeys.TryGetValue(fromDomain, out string? value))
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", value);
             }

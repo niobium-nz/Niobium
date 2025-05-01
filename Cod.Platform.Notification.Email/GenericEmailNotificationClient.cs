@@ -28,14 +28,14 @@ namespace Cod.Platform.Notification.Email
                 logger.LogError($"Email subject cannot be empty.");
                 return false;
             }
-            subject = subject.Trim().ToLowerInvariant();
+            subject = subject.Trim();
 
             if (string.IsNullOrWhiteSpace(body))
             {
                 logger.LogError($"Email body cannot be empty.");
                 return false;
             }
-            body = body.Trim().ToLowerInvariant();
+            body = body.Trim();
 
             return await SendCoreAsync(from, tos, subject, body, cancellationToken);
         }
