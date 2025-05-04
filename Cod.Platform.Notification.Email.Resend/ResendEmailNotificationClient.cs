@@ -15,9 +15,9 @@ namespace Cod.Platform.Notification.Email.Resend
         private const string JSON_CONTENT_TYPE = "application/json";
         private static readonly JsonSerializerOptions SERIALIZATION_OPTIONS = new(JsonSerializerDefaults.Web);
 
-        protected async override Task<bool> SendCoreAsync(string from, IEnumerable<string> recipients, string subject, string body, CancellationToken cancellationToken = default)
+        protected async override Task<bool> SendCoreAsync(EmailAddress from, IEnumerable<string> recipients, string subject, string body, CancellationToken cancellationToken = default)
         {
-            var fromDomain = from.Split('@')[1].Trim();
+            var fromDomain = from.Address.Split('@')[1].Trim();
             if (string.IsNullOrWhiteSpace(fromDomain))
             {
                 logger.LogError($"From Email address validation failed: {from}");
@@ -35,7 +35,7 @@ namespace Cod.Platform.Notification.Email.Resend
 
             var json = Serialize(new ResendRequest
             {
-                From = from,
+                From = string.IsNullOrWhiteSpace(from.DisplayName) ? from.Address : $"{from.DisplayName.Trim()} <{from.Address}>",
                 Html = body,
                 Subject = subject,
                 To = recipients.ToArray(),
