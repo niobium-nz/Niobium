@@ -11,5 +11,12 @@ namespace Cod
             services.AddTransient<IDomainRepository<TDomain, TEntity>, GenericDomainRepository<TDomain, TEntity>>();
             return services;
         }
+
+        public static IServiceCollection RegisterDomainEventHandler<TEventHandler, TEntity>(this IServiceCollection services)
+            where TEventHandler : class, IDomainEventHandler<IDomain<TEntity>>
+        {
+            services.AddTransient<IDomainEventHandler<IDomain<TEntity>>, TEventHandler>();
+            return services;
+        }
     }
 }
