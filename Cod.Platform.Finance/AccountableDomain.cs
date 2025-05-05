@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform.Finance
 {
-    public abstract class AccountableDomain<T> : GenericDomain<T>, IAccountable
+    public abstract class AccountableDomain<T> : GenericDomain<T>, IAccountable where T : class
     {
         private const string FrozenKey = "frozen";
         private const string DeltaKey = "delta";
