@@ -1,6 +1,6 @@
 ﻿namespace Cod
 {
-    public abstract class GenericDomain<T> : IDomain<T>
+    public abstract class GenericDomain<T> : IDomain<T> where T : class
     {
         private readonly Lazy<IRepository<T>> repository;
         private T cache;
@@ -80,8 +80,7 @@
 
         protected async Task<IEnumerable<T>> SaveAsync(IEnumerable<T> model, bool force = false, CancellationToken cancellationToken = default)
         {
-            List<T> entitiesCreated = new();
-            List<T> entitiesUpdated = new();
+            List<Func<EntityChangedEventArgs<T>>> events = new();
             List<T> results = new();
             if (model == null || !model.Any())
             {
@@ -89,8 +88,9 @@
             }
             if (force)
             {
-                var created = await Repository.CreateAsync(model, replaceIfExist: true, cancellationToken: cancellationToken);
-                entitiesCreated.AddRange(created);
+                var createdOrReplaced = await Repository.CreateAsync(model, replaceIfExist: true, cancellationToken: cancellationToken);
+                results.AddRange(createdOrReplaced);
+                events.AddRange(createdOrReplaced.Select(m => new Func<EntityChangedEventArgs<T>>(() => new EntityChangedEventArgs<T>(null, m))));
             }
             else
             {
@@ -100,18 +100,26 @@
                     if (group.Key)
                     {
                         var created = await Repository.CreateAsync(group, cancellationToken: cancellationToken);
-                        entitiesCreated.AddRange(created);
+                        results.AddRange(created);
+                        events.AddRange(created.Select(m => new Func<EntityChangedEventArgs<T>>(() => new EntityChangedEventArgs<T>(null, m))));
                     }
                     else
                     {
                         var updated = await Repository.UpdateAsync(group, cancellationToken: cancellationToken);
-                        entitiesUpdated.AddRange(updated);
+                        results.AddRange(updated);
+                        foreach (var u in updated)
+                        {
+                            events.Add(new Func<EntityChangedEventArgs<T>>(() =>
+                            {
+                                var previous = updated.FirstOrDefault(m =>
+                                EntityMappingHelper.GetField<string>(m, EntityKeyKind.PartitionKey) == EntityMappingHelper.GetField<string>(u, EntityKeyKind.PartitionKey)
+                                    && EntityMappingHelper.GetField<string>(m, EntityKeyKind.RowKey) == EntityMappingHelper.GetField<string>(u, EntityKeyKind.RowKey));
+                                return new EntityChangedEventArgs<T>(previous, u);
+                            }));
+                        }
                     }
                 }
             }
-
-            results.AddRange(entitiesCreated);
-            results.AddRange(entitiesUpdated);
 
             if (Initialized)
             {
@@ -124,9 +132,9 @@
                 }
             }
 
-            foreach (var entity in entitiesCreated)
+            foreach (var changedEvent in events)
             {
-                await OnEvent(new EntityCreatedEventArgs<T>(entity), cancellationToken);
+                await OnEvent(changedEvent, cancellationToken);
             }
 
             return results;
@@ -134,5 +142,8 @@
 
         protected async Task OnEvent<TEventArgs>(TEventArgs e, CancellationToken cancellationToken = default) where TEventArgs : class
             => await EventHandlers.InvokeAsync(e, cancellationToken);
+
+        protected async Task OnEvent<TEventArgs>(Func<TEventArgs> getEventArgs, CancellationToken cancellationToken = default) where TEventArgs : class
+            => await EventHandlers.InvokeAsync(getEventArgs, cancellationToken);
     }
 }
