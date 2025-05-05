@@ -80,6 +80,8 @@
 
         protected async Task<IEnumerable<T>> SaveAsync(IEnumerable<T> model, bool force = false, CancellationToken cancellationToken = default)
         {
+            List<T> entitiesCreated = new();
+            List<T> entitiesUpdated = new();
             List<T> results = new();
             if (model == null || !model.Any())
             {
@@ -87,7 +89,8 @@
             }
             if (force)
             {
-                results.AddRange(await Repository.CreateAsync(model, replaceIfExist: true, cancellationToken: cancellationToken));
+                var created = await Repository.CreateAsync(model, replaceIfExist: true, cancellationToken: cancellationToken);
+                entitiesCreated.AddRange(created);
             }
             else
             {
@@ -96,14 +99,19 @@
                 {
                     if (group.Key)
                     {
-                        results.AddRange(await Repository.CreateAsync(group, cancellationToken: cancellationToken));
+                        var created = await Repository.CreateAsync(group, cancellationToken: cancellationToken);
+                        entitiesCreated.AddRange(created);
                     }
                     else
                     {
-                        results.AddRange(await Repository.UpdateAsync(group, cancellationToken: cancellationToken));
+                        var updated = await Repository.UpdateAsync(group, cancellationToken: cancellationToken);
+                        entitiesUpdated.AddRange(updated);
                     }
                 }
             }
+
+            results.AddRange(entitiesCreated);
+            results.AddRange(entitiesUpdated);
 
             if (Initialized)
             {
@@ -114,6 +122,11 @@
                 {
                     cache = c;
                 }
+            }
+
+            foreach (var entity in entitiesCreated)
+            {
+                await OnEvent(new EntityCreatedEventArgs<T>(entity), cancellationToken);
             }
 
             return results;
