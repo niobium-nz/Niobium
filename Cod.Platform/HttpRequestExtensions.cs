@@ -37,23 +37,55 @@ namespace Cod.Platform
             "172.31.",  //172.16.0.0¨C172.31.255.255
         };
 
-        public static string GetRemoteIP(this HttpRequest request)
+        public static List<string> GetRemoteIPs(this HttpRequest request)
         {
-            if (!request.Headers.TryGetValue("X-Forwarded-For", out StringValues values))
+            var result = new List<string>();
+
+            if (request.Headers.TryGetValue("X-Forwarded-For", out var values))
             {
-                if (!request.Headers.TryGetValue("x-forwarded-for", out values))
-                {
-                    if (!request.Headers.TryGetValue("CLIENT-IP", out values))
-                    {
-                        return null;
-                    }
-                }
+                result.AddRange(values.Where(v => !string.IsNullOrWhiteSpace(v))
+                    .SelectMany(v => v.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries))
+                    .Select(v => v.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries).First()));
             }
 
-            var ips = values.Where(v => !string.IsNullOrWhiteSpace(v))
-                       .SelectMany(v => v.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries))
-                       .Select(v => v.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries).First());
-            return ips.Where(i => IPv4ReservedIPPrefix.All(p => !i.StartsWith(p, StringComparison.InvariantCulture))).FirstOrDefault();
+            if (request.Headers.TryGetValue("x-forwarded-for", out var values2))
+            {
+                result.AddRange(values2.Where(v => !string.IsNullOrWhiteSpace(v))
+                    .SelectMany(v => v.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries))
+                    .Select(v => v.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries).First()));
+            }
+
+            if (request.Headers.TryGetValue("CLIENT-IP", out var values3))
+            {
+                result.AddRange(values3.Where(v => !string.IsNullOrWhiteSpace(v))
+                    .SelectMany(v => v.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries))
+                    .Select(v => v.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries).First()));
+            }
+
+            if (request.Headers.TryGetValue("client-ip", out var values4))
+            {
+                result.AddRange(values4.Where(v => !string.IsNullOrWhiteSpace(v))
+                    .SelectMany(v => v.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries))
+                    .Select(v => v.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries).First()));
+            }
+
+            result = result.Where(i => IPv4ReservedIPPrefix.All(p => !i.StartsWith(p, StringComparison.InvariantCulture))).ToList();
+            if (request.HttpContext.Connection.RemoteIpAddress != null)
+            {
+                result.Add(request.HttpContext.Connection.RemoteIpAddress.ToString());
+            }
+
+            if (result.Count > 0)
+            {
+                result = result.Distinct().ToList();
+            }
+
+            return result;
+        }
+
+        public static string GetRemoteIP(this HttpRequest request)
+        {
+            return GetRemoteIPs(request).FirstOrDefault();
         }
 
         public static IActionResult MakeResponse(
