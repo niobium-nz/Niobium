@@ -6,7 +6,7 @@ namespace Cod.Database.StorageTable
     {
         private static readonly Dictionary<string, string> AzureTableEntityMapping = new()
         {
-            { "odata.etag", EntityKeyKind.ETag.ToString() },
+            { Constants.AzureTableETagKey, EntityKeyKind.ETag.ToString() },
         };
 
         public static EntityDictionary ToTableEntity(object source)
