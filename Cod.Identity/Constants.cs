@@ -5,6 +5,7 @@
         public const string DefaultIDTokenEndpoint = "auth";
         public const string DefaultAccessTokenEndpoint = "token";
         public const string DefaultResourceTokenEndpoint = "rsas";
+        public const string DefaultProfileEndpoint = "profile";
         public const string DefaultIDTokenAudience = "cod.client";
         public const string DefaultIDTokenIssuer = "cod.platform";
         public const string DefaultAccessTokenAudience = "cod.client";
