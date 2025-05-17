@@ -7,7 +7,7 @@ namespace Cod
     public static class EntityMappingHelper
     {
         private static readonly ConcurrentDictionary<Type, Dictionary<string, PropertyInfo>> mappings = new();
-        private static readonly BindingFlags bindingAttr = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance;
+        private static readonly BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.Instance;
 
         public static IReadOnlyDictionary<string, PropertyInfo> GetMapping(Type type)
         {
