@@ -11,7 +11,7 @@ namespace Cod.Platform.Identity
         Lazy<IRepository<Role>> repository,
         Lazy<IEnumerable<IEntitlementDescriptor>> descriptors,
         ITokenBuilder tokenBuilder,
-        PrincipalParser tokenHelper,
+        PrincipalParser principalParser,
         IOptions<IdentityServiceOptions> options) : IMiddleware
     {
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
@@ -23,7 +23,7 @@ namespace Cod.Platform.Identity
                 return;
             }
 
-            var principal = await tokenHelper.ParseIDPrincipalAsync(req, context.RequestAborted);
+            var principal = await principalParser.ParseIDPrincipalAsync(req, context.RequestAborted);
             if (principal == null)
             {
                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;

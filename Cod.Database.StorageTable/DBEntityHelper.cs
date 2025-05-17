@@ -17,7 +17,17 @@ namespace Cod.Database.StorageTable
             {
                 foreach (var kv in kvs)
                 {
-                    dic.Add(kv.Key, kv.Value);
+                    if (kv.Key == EntityKeyKind.ETag.ToString())
+                    {
+                        if (kv.Value != null)
+                        {
+                            dic.ETag = new((string)kv.Value);
+                        }
+                    }
+                    else
+                    {
+                        dic.Add(kv.Key, kv.Value);
+                    }
                 }
 
                 return dic;
@@ -63,7 +73,7 @@ namespace Cod.Database.StorageTable
 
         public static T FromTableEntity<T>(this IDictionary<string, object> source) where T : class, new()
         {
-            if (typeof(T).GetType() == typeof(Dictionary<string, object>))
+            if (typeof(T) == typeof(Dictionary<string, object>))
             {
                 return new Dictionary<string, object>(source) as T;
             }
