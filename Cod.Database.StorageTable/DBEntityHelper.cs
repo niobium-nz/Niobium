@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-using System.Reflection;
+﻿using System.Reflection;
 
 namespace Cod.Database.StorageTable
 {
@@ -13,7 +12,7 @@ namespace Cod.Database.StorageTable
         public static EntityDictionary ToTableEntity(object source)
         {
             EntityDictionary dic = [];
-            
+
             if (source is IEnumerable<KeyValuePair<string, object>> kvs)
             {
                 foreach (var kv in kvs)
@@ -64,9 +63,9 @@ namespace Cod.Database.StorageTable
 
         public static T FromTableEntity<T>(this IDictionary<string, object> source) where T : class, new()
         {
-            if (typeof(IDictionary<string, object>).IsAssignableFrom(typeof(T).GetType()))
+            if (typeof(T).GetType() == typeof(Dictionary<string, object>))
             {
-                return (T)source;
+                return new Dictionary<string, object>(source) as T;
             }
 
             return source.ToObject<T>(AzureTableEntityMapping);
