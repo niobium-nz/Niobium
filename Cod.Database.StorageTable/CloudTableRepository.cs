@@ -83,7 +83,7 @@ namespace Cod.Table.StorageAccount
             return result.Select(r => r.FromTableEntity<T>());
         }
 
-        public async Task<IEnumerable<T>> UpdateAsync(IEnumerable<T> entities, bool preconditionCheck = true, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<T>> UpdateAsync(IEnumerable<T> entities, bool preconditionCheck = true, bool mergeIfExists = false, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(entities);
 
@@ -98,15 +98,20 @@ namespace Cod.Table.StorageAccount
             IEnumerable<EntityDictionary> result = await ExecuteBatchWithRetryAsync(
                 DatabasePermissions.Update,
                 tableEntities,
-                async (entity, token) => await table.UpdateEntityAsync(
-                    entity,
-                    ifMatch: entity.ETag,
-                    mode: TableUpdateMode.Replace,
-                    cancellationToken: cancellationToken),
-                entity => new TableTransactionAction(
-                    TableTransactionActionType.UpdateReplace,
-                    entity,
-                    etag: entity.ETag),
+                async (entity, token) =>
+                {
+                    return await table.UpdateEntityAsync(
+                        entity,
+                        ifMatch: entity.ETag,
+                        mode: mergeIfExists ? TableUpdateMode.Merge : TableUpdateMode.Replace,
+                        cancellationToken: cancellationToken);
+                },
+                entity => {
+                    return new TableTransactionAction(
+                        mergeIfExists ? TableTransactionActionType.UpdateMerge : TableTransactionActionType.UpdateReplace,
+                        entity,
+                        etag: entity.ETag);
+                },
                 cancellationToken: cancellationToken);
             return result.Select(r => r.FromTableEntity<T>());
         }

@@ -8,9 +8,9 @@
             return result.SingleOrDefault();
         }
 
-        public static async Task<T> UpdateAsync<T>(this IRepository<T> repository, T entity, bool preconditionCheck = true, CancellationToken cancellationToken = default)
+        public static async Task<T> UpdateAsync<T>(this IRepository<T> repository, T entity, bool preconditionCheck = true, bool mergeIfExists = false, CancellationToken cancellationToken = default)
         {
-            IEnumerable<T> result = await repository.UpdateAsync(new[] { entity }, preconditionCheck: preconditionCheck, cancellationToken: cancellationToken);
+            IEnumerable<T> result = await repository.UpdateAsync(new[] { entity }, preconditionCheck: preconditionCheck, mergeIfExists: mergeIfExists, cancellationToken: cancellationToken);
             return result.SingleOrDefault();
         }
 
