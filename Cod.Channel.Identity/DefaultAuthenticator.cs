@@ -1,11 +1,7 @@
 using Cod.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
-using Microsoft.Net.Http.Headers;
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text;
 
@@ -13,7 +9,7 @@ namespace Cod.Channel.Identity
 {
     public class DefaultAuthenticator(
         IOptions<IdentityServiceOptions> options,
-        HttpClient httpClient,
+        IdentityService identityService,
         Lazy<IEnumerable<IDomainEventHandler<IAuthenticator>>> eventHandlers)
         : IAuthenticator, IAsyncDisposable
     {
@@ -47,7 +43,7 @@ namespace Cod.Channel.Identity
                 tokenRevoked = true;
             }
 
-            if (IDToken != null 
+            if (IDToken != null
                 && now - IDToken.ValidFrom > -options.Value.MaxClockSkewTolerence
                 && IDToken.ValidTo - now > -options.Value.MaxClockSkewTolerence)
             {
@@ -81,53 +77,32 @@ namespace Cod.Channel.Identity
 
             try
             {
-                string authValue;
-                if (scheme == AuthenticationScheme.BasicLoginScheme)
+                var result = await identityService.RequestIDTokenAsync(scheme, identity, credential, cancellationToken);
+                if (result.StatusCode == HttpStatusCode.Unauthorized)
                 {
-                    var cred = credential == null ? string.Empty : credential.Trim();
-                    var buffer = Encoding.ASCII.GetBytes($"{identity.Trim()}:{cred}");
-                    authValue = Convert.ToBase64String(buffer);
-                }
-                else
-                {
-                    authValue = identity;
+                    return new LoginResult { IsSuccess = false };
                 }
 
-                var url = new Uri($"{options.Value.IDTokenHost}{options.Value.IDTokenEndpoint}");
-                var request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.Headers.Authorization = new AuthenticationHeaderValue(scheme, authValue);
-
-                var response = await httpClient.SendAsync(request, cancellationToken);
-                if (!TryGetToken(response, out var token))
+                if (result.StatusCode == HttpStatusCode.Forbidden && result.Challenge.HasValue)
                 {
-                    if (response.StatusCode == HttpStatusCode.Unauthorized)
+                    return new LoginResult
                     {
-                        return new LoginResult { IsSuccess = false };
-                    }
+                        IsSuccess = false,
+                        Challenge = result.Challenge.Value,
+                        ChallengeSubject = result.ChallengeSubject
+                    };
+                }
 
-                    if (response.StatusCode == HttpStatusCode.Forbidden)
-                    {
-                        var challenge = response.Headers.WwwAuthenticate.SingleOrDefault();
-                        if (challenge != null)
-                        {
-                            _ = Enum.TryParse(challenge.Scheme, out AuthenticationKind challengeKind);
-                            return new LoginResult
-                            {
-                                IsSuccess = false,
-                                Challenge = challengeKind,
-                                ChallengeSubject = challenge.Parameter
-                            };
-                        }
-                    }
-
+                if (result.Token == null)
+                {
                     await this.InitializeIDTokenAsync(null, false);
                     await this.OnAuthenticationUpdated(false, cancellationToken);
                     return new LoginResult { IsSuccess = false };
                 }
                 else
                 {
-                    await this.InitializeIDTokenAsync(token, remember);
-                    await this.RefreshAccessTokenAsync(token, remember, cancellationToken);
+                    await this.InitializeIDTokenAsync(result.Token, remember);
+                    await this.RefreshAccessTokenAsync(result.Token, remember, cancellationToken);
                     var success = await this.GetAuthenticateStatus(cancellationToken);
                     await this.OnAuthenticationUpdated(true, cancellationToken);
                     return new LoginResult { IsSuccess = success };
@@ -183,24 +158,17 @@ namespace Cod.Channel.Identity
                 uri.Append(id);
             }
 
-            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(uri.ToString()));
-            request.Headers.Authorization = new AuthenticationHeaderValue(AuthenticationScheme.BearerLoginScheme, AccessToken!.EncodedToken);
-            var response = await httpClient.SendAsync(request, cancellationToken);
-            if (!response.IsSuccessStatusCode)
+            var result = await identityService.RequestResourceTokenAsync(AccessToken!.EncodedToken, type, resource, partition, id, cancellationToken);
+            if (result.StatusCode == HttpStatusCode.Unauthorized || result.Token == null)
             {
-                if (response.StatusCode == HttpStatusCode.Unauthorized)
-                {
-                    await this.InitializeIDTokenAsync(null, false);
-                    await this.OnAuthenticationUpdated(false, cancellationToken);
-                }
-
-                throw new ApplicationException((int)response.StatusCode);
+                await this.InitializeIDTokenAsync(null, false);
+                await this.OnAuthenticationUpdated(false, cancellationToken);
+                throw new ApplicationException((int)result.StatusCode, "Resource access authorization failed");
             }
 
-            var result = await response.Content.ReadFromJsonAsync<StorageSignature>(cancellationToken);
-            this.signatures.Add(key, result!);
+            this.signatures.Add(key, result.Token);
             await this.SaveResourceTokensAsync(this.signatures);
-            return result!.Signature;
+            return result.Token.Signature;
         }
 
         protected virtual Task<string?> GetSavedIDTokenAsync()
@@ -332,24 +300,21 @@ namespace Cod.Channel.Identity
         protected virtual async Task RefreshAccessTokenAsync(string idToken, bool remember, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(idToken, nameof(idToken));
-            var url = new Uri($"{options.Value.AccessTokenHost}{options.Value.AccessTokenEndpoint}");
-            var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.Headers.Authorization = new AuthenticationHeaderValue(AuthenticationScheme.BearerLoginScheme, idToken);
-            var response = await httpClient.SendAsync(request, cancellationToken);
-            if (TryGetToken(response, out var token))
+            var result = await identityService.RefreshAccessTokenAsync(idToken, cancellationToken);
+            if (result.Token != null)
             {
-                await this.InitializeAccessTokenAsync(token, remember);
+                await this.InitializeAccessTokenAsync(result.Token, remember);
             }
             else
             {
-                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                if (result.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     await this.InitializeIDTokenAsync(null, false);
                     await this.OnAuthenticationUpdated(false, cancellationToken);
                 }
                 else
                 {
-                    throw new ApplicationException((int)response.StatusCode);
+                    throw new ApplicationException((int)result.StatusCode, "Failed to refresh access token.");
                 }
             }
         }
@@ -358,22 +323,6 @@ namespace Cod.Channel.Identity
         {
             var e = new AuthenticationUpdatedEvent { IsAuthenticated = isAuthenticated };
             await eventHandlers.Value.InvokeAsync(e, cancellationToken);
-        }
-
-        private static bool TryGetToken(HttpResponseMessage response, [NotNullWhen(true)] out string? token)
-        {
-            if (response.IsSuccessStatusCode
-                && response.Headers.TryGetValues(HeaderNames.Authorization, out var authHeaders)
-                && !string.IsNullOrWhiteSpace(authHeaders?.SingleOrDefault())
-                && AuthenticationHeaderValue.TryParse(authHeaders!.Single(), out var authHeader)
-                && !string.IsNullOrWhiteSpace(authHeader.Parameter))
-            {
-                token = authHeader.Parameter;
-                return true;
-            }
-
-            token = null;
-            return false;
         }
 
         private static string BuildResourceTokenCacheKey(ResourceType type, string resource, string? partitionKey, string? rowKey)

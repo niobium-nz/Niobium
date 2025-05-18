@@ -6,10 +6,10 @@ namespace Cod.Channel.Identity.Blazor
 {
     internal class LocalStorageAuthenticator(
         IOptions<IdentityServiceOptions> options,
-        HttpClient httpClient,
+        IdentityService identityService,
         Lazy<IEnumerable<IDomainEventHandler<IAuthenticator>>> eventHandlers,
         IJSRuntime jsRuntime)
-            : DefaultAuthenticator(options, httpClient, eventHandlers), IAsyncDisposable
+            : DefaultAuthenticator(options, identityService, eventHandlers), IAsyncDisposable
     {
         private readonly Lazy<ValueTask<IJSObjectReference>> localStorageModule
             = new(() => jsRuntime.InvokeAsync<IJSObjectReference>("import", "./_content/Cod.Channel.Identity.Blazor/authenticator.js"));
