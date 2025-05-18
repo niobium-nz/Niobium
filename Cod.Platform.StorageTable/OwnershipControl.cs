@@ -2,7 +2,7 @@
 
 namespace Cod.Platform.StorageTable
 {
-    public abstract class OwnershipControl<TResource, TOwnership>(Lazy<IRepository<TOwnership>> repo) : IResourceControl
+    public class OwnershipControl<TResource, TOwnership>(Lazy<IRepository<TOwnership>> repo) : IResourceControl
     {
         public bool Grantable(ResourceType type, string resource)
         {
@@ -29,8 +29,7 @@ namespace Cod.Platform.StorageTable
 
         protected virtual async Task<bool> ExistAsync(string partitionKey, string rowKey, CancellationToken cancellationToken)
         {
-            TOwnership entity = await repo.Value.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
-            return entity != null;
+            return await repo.Value.ExistsAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
         }
 
         protected virtual string GetOwnerID(ClaimsPrincipal principal)

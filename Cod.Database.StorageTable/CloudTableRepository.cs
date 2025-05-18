@@ -12,10 +12,27 @@ namespace Cod.Table.StorageAccount
     {
         protected const string Equal = "eq";
         private static readonly List<T> emptyList = [];
+        private static readonly List<string> minimumSelects = [nameof(ITableEntity.PartitionKey), nameof(ITableEntity.RowKey)];
         private static readonly EntityBag<T> emptyResult = new(emptyList, null);
         private readonly ILogger logger = logger;
 
         public string TableName { get; set; }
+
+        public async Task<bool> ExistsAsync(string partitionKey, string rowKey, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var table = await GetTableAsync(DatabasePermissions.Query, partitionKey, cancellationToken);
+                NullableResponse<EntityDictionary> response = await table.GetEntityIfExistsAsync<EntityDictionary>(partitionKey, rowKey, select: minimumSelects, cancellationToken: cancellationToken);
+                return response.HasValue;
+            }
+            catch (RequestFailedException e)
+            {
+                string errorMessage = $"An Error occurred with status code {e.Status} while retrieving entity {partitionKey} -> {rowKey}: {e.Message}";
+                logger?.LogWarning(errorMessage);
+                throw new HttpRequestException(errorMessage, inner: e, statusCode: (HttpStatusCode)e.Status);
+            }
+        }
 
         public async Task<T> RetrieveAsync(string partitionKey, string rowKey, IList<string> fields = null, CancellationToken cancellationToken = default)
         {

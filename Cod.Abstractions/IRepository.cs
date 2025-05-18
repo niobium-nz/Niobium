@@ -2,6 +2,8 @@ namespace Cod
 {
     public interface IRepository<T>
     {
+        Task<bool> ExistsAsync(string partitionKey, string rowKey, CancellationToken cancellationToken = default);
+
         Task<T> RetrieveAsync(string partitionKey, string rowKey, IList<string> fields = null, CancellationToken cancellationToken = default);
 
         Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist = false, DateTimeOffset? expiry = null, CancellationToken cancellationToken = default);
