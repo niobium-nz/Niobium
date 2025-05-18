@@ -33,14 +33,14 @@ namespace Cod.Platform.Identity
             return await helper.ParseAsync(parameter, cancellationToken);
         }
 
-        public static async Task<ClaimsPrincipal> ParseIDPrincipalAsync(this PrincipalParser helper, HttpRequest request, CancellationToken cancellationToken = default)
+        public static async Task<ClaimsPrincipal> ParseIDPrincipalAsync(this PrincipalParser helper, HttpRequest request, string? audience = null, CancellationToken cancellationToken = default)
         {
             if (!request.TryParseAuthorizationHeader(out string inputScheme, out string parameter) || inputScheme != AuthenticationScheme.BearerLoginScheme)
             {
                 throw new ApplicationException(InternalError.AuthenticationRequired);
             }
 
-            return await helper.ParseIDPrincipalAsync(parameter, cancellationToken);
+            return await helper.ParseIDPrincipalAsync(parameter, audience: audience, cancellationToken);
         }
     }
 }

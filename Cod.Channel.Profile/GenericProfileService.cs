@@ -3,6 +3,7 @@ using Cod.Profile;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 
 namespace Cod.Channel.Profile
 {
@@ -11,20 +12,6 @@ namespace Cod.Channel.Profile
         : IProfileService<T> where T : IProfile
     {
         public virtual string ProfileEndpoint { get => Cod.Profile.Constants.DefaultProfileEndpoint; }
-
-        private async Task<HttpClient?> GetHttpClientAsync(CancellationToken cancellationToken)
-        {
-            var httpClient = httpClientFactory.CreateClient(ProfileOptions.DefaultHttpClientName);
-
-            var authenticated = await authenticator.GetAuthenticateStatus(cancellationToken);
-            if (!authenticated)
-            {
-                return null;
-            }
-
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authenticator.AccessToken!.EncodedToken);
-            return httpClient;
-        }
 
         public async Task<T?> RetrieveAsync(CancellationToken cancellationToken)
         {
@@ -57,7 +44,9 @@ namespace Cod.Channel.Profile
                 return;
             }
 
-            await httpClient.PutAsJsonAsync(ProfileEndpoint, profile, cancellationToken: cancellationToken)
+            var json = System.Text.Json.JsonSerializer.Serialize(profile);
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+            await httpClient.PutAsync(ProfileEndpoint, content, cancellationToken: cancellationToken)
                 .ContinueWith(t =>
                 {
                     if (t.IsFaulted)
@@ -70,6 +59,19 @@ namespace Cod.Channel.Profile
                     }
                 }, cancellationToken);
         }
-    }
 
+        private async Task<HttpClient?> GetHttpClientAsync(CancellationToken cancellationToken)
+        {
+            var httpClient = httpClientFactory.CreateClient(ProfileOptions.DefaultHttpClientName);
+
+            var authenticated = await authenticator.GetAuthenticateStatus(cancellationToken);
+            if (!authenticated)
+            {
+                return null;
+            }
+
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authenticator.IDToken!.EncodedToken);
+            return httpClient;
+        }
+    }
 }

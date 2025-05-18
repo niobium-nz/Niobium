@@ -9,7 +9,7 @@ namespace Cod.Platform.Identity
 {
     public class PrincipalParser(IOptions<IdentityServiceOptions> options)
     {
-        public async Task<ClaimsPrincipal> ParseIDPrincipalAsync(string bearerToken, CancellationToken cancellationToken = default)
+        public async Task<ClaimsPrincipal> ParseIDPrincipalAsync(string bearerToken, string? audience, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -20,7 +20,6 @@ namespace Cod.Platform.Identity
                     KeyId = "0"
                 };
                 var issuer = options.Value.IDTokenIssuer;
-                var audience = options.Value.IDTokenAudience;
                 return await ValidateAndDecodeJWTAsync(bearerToken, key, issuer, audience, cancellationToken);
             }
             catch (Exception)
@@ -47,7 +46,7 @@ namespace Cod.Platform.Identity
             }
         }
 
-        private static async Task<ClaimsPrincipal> ValidateAndDecodeJWTAsync(string jwt, SecurityKey key, string issuer, string audience, CancellationToken cancellationToken)
+        private static async Task<ClaimsPrincipal> ValidateAndDecodeJWTAsync(string jwt, SecurityKey key, string issuer, string? audience, CancellationToken cancellationToken)
         {
             TokenValidationParameters validationParameters = new()
             {
@@ -56,11 +55,21 @@ namespace Cod.Platform.Identity
                 RequireSignedTokens = true,
                 RequireExpirationTime = true,
                 ValidateLifetime = true,
-                ValidateAudience = true,
-                ValidAudience = audience,
                 ValidateIssuer = true,
                 ValidIssuer = issuer
             };
+
+            if (!string.IsNullOrWhiteSpace(audience))
+            {
+                validationParameters.ValidAudience = audience;
+                validationParameters.RequireAudience = true;
+                validationParameters.ValidateAudience = true;
+            }
+            else
+            {
+                validationParameters.RequireAudience = false;
+                validationParameters.ValidateAudience = false;
+            }
 
             try
             {

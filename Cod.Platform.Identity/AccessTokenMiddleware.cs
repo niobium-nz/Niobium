@@ -23,7 +23,7 @@ namespace Cod.Platform.Identity
                 return;
             }
 
-            var principal = await principalParser.ParseIDPrincipalAsync(req, context.RequestAborted);
+            var principal = await principalParser.ParseIDPrincipalAsync(req, options.Value.IDTokenAudience , context.RequestAborted);
             if (principal == null)
             {
                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
