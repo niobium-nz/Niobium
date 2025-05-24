@@ -10,7 +10,7 @@ namespace Cod.Channel.Profile
 
         private static volatile bool loaded;
 
-        public static IServiceCollection AddProfile(this IServiceCollection services, Action<ProfileOptions> options)
+        public static IServiceCollection AddProfile(this IServiceCollection services, Action<ProfileOptions> options, bool testMode = false)
         {
             if (loaded)
             {
@@ -21,11 +21,16 @@ namespace Cod.Channel.Profile
 
             services.Configure<ProfileOptions>(o => { options?.Invoke(o); o.Validate(); });
 
-            services.AddHttpClient(DefaultHttpClientName, (sp, httpClient) =>
+            var httpClientBuilder = services.AddHttpClient(DefaultHttpClientName, (sp, httpClient) =>
             {
                 var options = sp.GetRequiredService<IOptions<ProfileOptions>>();
                 httpClient.BaseAddress = new Uri(options.Value.ProfileServiceHost);
-            }).AddStandardResilienceHandler();
+            });
+
+            if (!testMode)
+            {
+                httpClientBuilder.AddStandardResilienceHandler();
+            }
 
             services.AddTransient(typeof(IProfileService<>), typeof(GenericProfileService<>));
             return services;

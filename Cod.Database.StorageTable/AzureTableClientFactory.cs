@@ -24,10 +24,10 @@ namespace Cod.Database.StorageTable
                 p.Type == ResourceType.AzureStorageTable
                 && p.Partition == table
                 && permissions.All(m => p.Entitlements.Contains(m.ToString().ToUpperInvariant()))
-                && (partition == null || partition.StartsWith(p.Scope)))
+                && (partition == null || p.Scope == null || partition.StartsWith(p.Scope)))
                 ?? throw new ApplicationException(InternalError.Forbidden);
-            var sasUri = await authenticator.Value.RetrieveResourceTokenAsync(ResourceType.AzureStorageTable, table, partition: partition, cancellationToken: cancellationToken);
-            var endpoint = new Uri($"https://{permission.Resource}/{permission.Partition}?{sasUri}");
+            var sasUri = await authenticator.Value.RetrieveResourceTokenAsync(ResourceType.AzureStorageTable, table, partition: partition ?? permission.Scope, cancellationToken: cancellationToken);
+            var endpoint = new Uri($"https://{permission.Resource}/{table}?{sasUri}");
             return clients.GetOrAdd($"{table}//{partition ?? string.Empty}", new TableServiceClient(endpoint, options: BuildClientOptions(options)));
         }
 

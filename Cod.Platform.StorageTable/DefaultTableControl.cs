@@ -13,7 +13,7 @@ namespace Cod.Platform.StorageTable
             StorageControl result = null;
             var permissions = principal.Claims.ToResourcePermissions();
             var entitlements = permissions
-                .Where(p => p.Type == ResourceType.AzureStorageTable && p.Partition == resource && partition.StartsWith(p.Scope))
+                .Where(p => p.Type == ResourceType.AzureStorageTable && p.Partition == resource && p.Scope != null && partition.StartsWith(p.Scope))
                 .SelectMany(p => p.Entitlements);
 
             if (entitlements != null && entitlements.Any())

@@ -9,7 +9,7 @@ namespace Cod.Channel.Identity.Blazor
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddIdentityBlazor(this IServiceCollection services, Action<IdentityServiceOptions>? options = null)
+        public static IServiceCollection AddIdentityBlazor(this IServiceCollection services, Action<IdentityServiceOptions>? options = null, bool testMode = false)
         {
             if (loaded)
             {
@@ -20,7 +20,7 @@ namespace Cod.Channel.Identity.Blazor
 
             if (options != null)
             {
-                services.AddIdentity(options);
+                services.AddIdentity(options, testMode: testMode);
             }
 
             services.AddChannelBlazor();

@@ -20,7 +20,7 @@ namespace Cod.Platform.StorageTable
         {
             services.AddIdentity(options);
             services.AddTransient<ISignatureIssuer, AzureTableSignatureIssuer>();
-            services.AddTransient<IResourceControl, DefaultTableControl>();
+            services.AddResourceControl<DefaultTableControl>();
             return services;
         }
 

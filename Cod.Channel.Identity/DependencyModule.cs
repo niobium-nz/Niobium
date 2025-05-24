@@ -7,7 +7,7 @@ namespace Cod.Channel.Identity
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddIdentity(this IServiceCollection services, Action<IdentityServiceOptions> options)
+        public static IServiceCollection AddIdentity(this IServiceCollection services, Action<IdentityServiceOptions> options, bool testMode = false)
         {
             if (loaded)
             {
@@ -19,7 +19,13 @@ namespace Cod.Channel.Identity
             services.AddChannel();
 
             services.Configure<IdentityServiceOptions>(o => { options?.Invoke(o); o.Validate(); });
-            services.AddHttpClient<IdentityService>().AddStandardResilienceHandler();
+
+            var httpClientBuilder = services.AddHttpClient<IdentityService>();
+            if (!testMode)
+            {
+                httpClientBuilder.AddStandardResilienceHandler();
+            }
+
             services.AddTransient<EmailLoginViewModel>();
             services.AddTransient<ICommand<LoginCommandParameter, LoginResult>, LoginCommand>();
             services.AddTransient<ICommand<TOTPLoginCommandParameter, LoginResult>, TOTPLoginCommand>();

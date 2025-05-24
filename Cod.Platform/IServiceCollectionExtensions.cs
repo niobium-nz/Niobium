@@ -4,7 +4,7 @@ namespace Cod.Platform
 {
     public static class IServiceCollectionExtensions
     {
-        public static IServiceCollection RegisterResourceControl<T>(this IServiceCollection services)
+        public static IServiceCollection AddResourceControl<T>(this IServiceCollection services)
             where T : class, IResourceControl
         {
             services.AddTransient<IResourceControl, T>();
