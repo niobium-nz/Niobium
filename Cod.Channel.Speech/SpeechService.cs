@@ -22,24 +22,26 @@ namespace Cod.Channel.Speech
 
         public IEnumerable<InputSourceDevice> InputSources { get; private set; } = [];
 
-        public async Task InitializeAsync(CancellationToken cancellationToken = default)
+        public async Task InitializeAsync(CancellationToken? cancellationToken = default)
         {
-            InputSources = await recognizer.GetInputSourcesAsync(cancellationToken);
+            cancellationToken ??= CancellationToken.None;
+            InputSources = await recognizer.GetInputSourcesAsync(cancellationToken.Value);
             await OnUpdateAsync(cancellationToken);
         }
 
-        public virtual async Task StartAsync(string inputLanguage, string? inputSource, CancellationToken cancellationToken = default)
+        public virtual async Task StartAsync(string inputLanguage, string? inputSource, CancellationToken? cancellationToken = default)
         {
             await StartAsync(inputLanguage, inputSource, false, cancellationToken);
         }
 
-        protected virtual async Task StartAsync(string inputLanguage, string? inputSource, bool resumeOnPrevious, CancellationToken cancellationToken = default)
+        protected virtual async Task StartAsync(string inputLanguage, string? inputSource, bool resumeOnPrevious, CancellationToken? cancellationToken = default)
         {
             if (IsListening)
             {
                 return;
             }
 
+            cancellationToken ??= CancellationToken.None;
             lastInputLanguage = inputLanguage;
             lastInputSource = inputSource;
             var success = false;
@@ -47,7 +49,7 @@ namespace Cod.Channel.Speech
             using (loadingStateService.SetBusy(BusyGroups.Speech))
             {
                 await OnUpdateAsync(cancellationToken);
-                (var sas, var region) = await authenticator.GetSpeechSASAndRegionAsync(cancellationToken);
+                (var sas, var region) = await authenticator.GetSpeechSASAndRegionAsync(cancellationToken.Value);
 
                 for (var i = 0; i < retryIntervalOnStartFailure.Length; i++)
                 {
@@ -57,7 +59,7 @@ namespace Cod.Channel.Speech
                         deviceID: inputSource,
                         language: inputLanguage,
                         continueOnPrevious: resumeOnPrevious,
-                        cancellationToken: cancellationToken);
+                        cancellationToken: cancellationToken.Value);
 
                     if (success)
                     {
@@ -65,7 +67,7 @@ namespace Cod.Channel.Speech
                     }
                     else
                     {
-                        await Task.Delay(retryIntervalOnStartFailure[i], cancellationToken);
+                        await Task.Delay(retryIntervalOnStartFailure[i], cancellationToken.Value);
                     }
                 }
             }
@@ -77,7 +79,7 @@ namespace Cod.Channel.Speech
             }
         }
 
-        public async Task ResumeAsync(CancellationToken cancellationToken)
+        public async Task ResumeAsync(CancellationToken? cancellationToken)
         {
             if (lastInputLanguage != null)
             {
@@ -85,9 +87,10 @@ namespace Cod.Channel.Speech
             }
         }
 
-        public async Task StopAsync(CancellationToken cancellationToken = default)
+        public async Task StopAsync(CancellationToken? cancellationToken = default)
         {
-            await recognizer.StopRecognitionAsync(cancellationToken);
+            cancellationToken ??= CancellationToken.None;
+            await recognizer.StopRecognitionAsync(cancellationToken.Value);
             await OnUpdateAsync(cancellationToken);
 
             var hasConversation = Current != null && Current.Lines.Count > 0 && Current.Lines.Any(l => !string.IsNullOrWhiteSpace(l.Text));
@@ -100,7 +103,7 @@ namespace Cod.Channel.Speech
 
         public void Reset() => recognizer.Reset();
 
-        public override async Task HandleAsync(SpeechRecognizerChangedEventArgs e, CancellationToken cancellationToken)
+        public override async Task HandleAsync(SpeechRecognizerChangedEventArgs e, CancellationToken? cancellationToken = null)
         {
             if (e.Type == SpeechRecognizerChangedType.Canceled)
             {
@@ -112,7 +115,7 @@ namespace Cod.Channel.Speech
             }
         }
 
-        private async Task OnUpdateAsync(CancellationToken cancellationToken)
+        private async Task OnUpdateAsync(CancellationToken? cancellationToken)
             => await eventHandlers.Value.InvokeAsync(new SpeechServiceUpdatedEventArgs(), cancellationToken: cancellationToken);
     }
 }

@@ -6,6 +6,6 @@ namespace Cod.Channel
 
         string CurrentUri { get; }
 
-        Task NavigateToAsync(string url, bool forceLoad = false);
+        Task NavigateToAsync(string url, bool forceLoad = false, CancellationToken? cancellationToken = default);
     }
 }

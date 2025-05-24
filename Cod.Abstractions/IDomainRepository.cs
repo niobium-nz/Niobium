@@ -3,11 +3,15 @@
     public interface IDomainRepository<TDomain, TEntity>
         where TDomain : class, IDomain<TEntity>
     {
-        Task<TDomain> GetAsync(string partitionKey, string rowKey, CancellationToken cancellationToken = default);
+        IReadOnlyCollection<string> CachedPartitions { get; }
 
-        Task<TDomain> GetAsync(TEntity entity, CancellationToken cancellationToken = default);
+        IReadOnlyCollection<TDomain> CachedDomains { get; }
 
-        IAsyncEnumerable<TDomain> GetAsync(string partitionKey, CancellationToken cancellationToken = default);
+        Task<TDomain> GetAsync(string partitionKey, string rowKey, bool forceLoad = false, CancellationToken? cancellationToken = default);
+
+        Task<TDomain> GetAsync(TEntity entity, CancellationToken? cancellationToken = default);
+
+        IAsyncEnumerable<TDomain> GetAsync(string partitionKey, bool forceLoad = false, CancellationToken cancellationToken = default);
 
         IAsyncEnumerable<TDomain> GetAsync(CancellationToken cancellationToken = default);
     }

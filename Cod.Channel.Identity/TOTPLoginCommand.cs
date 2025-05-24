@@ -11,7 +11,7 @@ namespace Cod.Channel.Identity
         : LoginCommand(authenticator, navigator, loadingStateService),
             ICommand<TOTPLoginCommandParameter, LoginResult>
     {
-        public async Task<LoginResult> ExecuteAsync(TOTPLoginCommandParameter parameter, CancellationToken cancellationToken = default)
+        public async Task<LoginResult> ExecuteAsync(TOTPLoginCommandParameter parameter, CancellationToken? cancellationToken = default)
         {
             var identity = IdentityHelper.BuildIdentity(options.Value.App, parameter.Username);
             var p = new LoginCommandParameter(AuthenticationScheme.BasicLoginScheme, identity)

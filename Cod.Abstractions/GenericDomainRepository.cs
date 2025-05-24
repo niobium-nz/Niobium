@@ -6,34 +6,47 @@ namespace Cod
     public class GenericDomainRepository<TDomain, TEntity> : IDomainRepository<TDomain, TEntity>, IDisposable
         where TDomain : class, IDomain<TEntity>
     {
+        private readonly List<TDomain> cachedDomains;
+        private readonly List<string> cachedPartitions;
         private readonly ConcurrentDictionary<StorageKey, TDomain> instanceCache;
         private readonly ConcurrentDictionary<string, IList<TDomain>> partitionCache;
         private readonly Func<TDomain> createDomain;
         private readonly Lazy<IRepository<TEntity>> repository;
         private bool disposed;
 
+        public IReadOnlyCollection<TDomain> CachedDomains => cachedDomains;
+        public IReadOnlyCollection<string> CachedPartitions => cachedPartitions;
+
         public GenericDomainRepository(Func<TDomain> createDomain, Lazy<IRepository<TEntity>> repository)
         {
+            cachedDomains = new List<TDomain>();
+            cachedPartitions = new List<string>();
             instanceCache = new ConcurrentDictionary<StorageKey, TDomain>();
             partitionCache = new ConcurrentDictionary<string, IList<TDomain>>();
             this.createDomain = createDomain;
             this.repository = repository;
         }
 
-        public Task<TDomain> GetAsync(TEntity entity, CancellationToken cancellationToken = default)
+        public Task<TDomain> GetAsync(TEntity entity, CancellationToken? cancellationToken = default)
         {
-            return GetAsync(entity, true, cancellationToken);
+            cancellationToken ??= CancellationToken.None;
+            return GetAsync(entity, true, cancellationToken.Value);
         }
 
-        public Task<TDomain> GetAsync(string partitionKey, string rowKey, CancellationToken cancellationToken = default)
+        public Task<TDomain> GetAsync(string partitionKey, string rowKey, bool forceLoad = false, CancellationToken? cancellationToken = default)
         {
-            return Task.FromResult(instanceCache.GetOrAdd(
-                new StorageKey { PartitionKey = partitionKey, RowKey = rowKey },
-                key =>
+            var key = new StorageKey { PartitionKey = partitionKey, RowKey = rowKey };
+
+            if (forceLoad)
+            {
+                instanceCache.TryRemove(key, out _);
+            }
+
+            return Task.FromResult(instanceCache.GetOrAdd(key, k =>
                 {
-                    if (partitionCache.TryGetValue(key.PartitionKey, out IList<TDomain> partition))
+                    if (partitionCache.TryGetValue(k.PartitionKey, out IList<TDomain> partition))
                     {
-                        TDomain c = partition.SingleOrDefault(d => d.RowKey == key.RowKey);
+                        TDomain c = partition.SingleOrDefault(d => d.RowKey == k.RowKey);
                         if (c != null)
                         {
                             return c;
@@ -41,13 +54,18 @@ namespace Cod
                     }
 
                     TDomain domain = createDomain();
-                    domain.Initialize(key.PartitionKey, key.RowKey);
+                    domain.Initialize(k.PartitionKey, k.RowKey);
                     return domain;
                 }));
         }
 
-        public async IAsyncEnumerable<TDomain> GetAsync(string partitionKey, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public async IAsyncEnumerable<TDomain> GetAsync(string partitionKey, bool forceLoad = false, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            if (forceLoad)
+            {
+                partitionCache.TryRemove(partitionKey, out _);
+            }
+
             List<TDomain> stub = new();
 
             IList<TDomain> result = partitionCache.GetOrAdd(partitionKey, key => stub);
@@ -61,6 +79,8 @@ namespace Cod
                     stub.Add(d);
                     yield return d;
                 }
+
+                RebuildCache();
             }
             else
             {
@@ -87,6 +107,8 @@ namespace Cod
                     });
                 yield return domain;
             }
+
+            RebuildCache();
         }
 
         public void Dispose()
@@ -116,10 +138,27 @@ namespace Cod
 
             if (clearPartitionCache && itemPK != null)
             {
-                partitionCache.TryRemove(itemPK, out _);
+                var changed = partitionCache.TryRemove(itemPK, out _);
+                if (changed)
+                {
+                    RebuildCache();
+                }
             }
 
             return Task.FromResult(domain);
+        }
+
+        protected void RebuildCache()
+        {
+            cachedPartitions.Clear();
+            cachedDomains.Clear();
+
+            var orderedPartitionKeys = partitionCache.Keys.OrderBy(k => k);
+            foreach (var key in orderedPartitionKeys)
+            {
+                cachedPartitions.Add(key);
+                cachedDomains.AddRange(partitionCache[key]);
+            }
         }
     }
 }

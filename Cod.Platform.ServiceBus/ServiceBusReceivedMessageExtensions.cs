@@ -38,7 +38,7 @@ namespace Cod.Messaging.ServiceBus
 
         public static async Task<Guid> TryGetUserIDAsync(this ServiceBusReceivedMessage message, PrincipalParser principalParser, CancellationToken cancellationToken = default)
         {
-            var claim = await message.TryGetClaimAsync<string>(principalParser, ClaimTypes.Sid, cancellationToken);
+            var claim = await message.TryGetClaimAsync<string>(principalParser, ClaimTypes.NameIdentifier, cancellationToken);
             if (claim == null || !Guid.TryParse(claim, out var userID))
             {
                 throw new ApplicationException(InternalError.Forbidden);

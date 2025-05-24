@@ -5,6 +5,7 @@
         private readonly Lazy<IRepository<T>> repository;
         private T cache;
         private Func<Task<T>> getEntity;
+        private string etag;
 
         public bool Initialized { get; protected set; }
 
@@ -12,12 +13,12 @@
 
         public string RowKey { get; private set; }
 
-        private string etag;
-        public async Task<string> GetHashAsync()
+
+        public async Task<string> GetHashAsync(CancellationToken? cancellationToken = default)
         {
             if (etag == null)
             {
-                var entity = await GetEntityAsync();
+                var entity = await GetEntityAsync(cancellationToken);
                 etag = EntityMappingHelper.GetField<string>(entity, EntityKeyKind.ETag);
             }
 
@@ -34,8 +35,9 @@
             EventHandlers = eventHandlers;
         }
 
-        public async Task<T> GetEntityAsync()
+        public async Task<T> GetEntityAsync(CancellationToken? cancellationToken = default)
         {
+            cancellationToken ??= CancellationToken.None;
             cache ??= await getEntity();
             return cache;
         }
@@ -73,13 +75,14 @@
             return this;
         }
 
-        protected async Task SaveAsync(bool force = false, CancellationToken cancellationToken = default)
+        protected async Task SaveAsync(bool force = false, CancellationToken? cancellationToken = default)
         {
             await SaveAsync(new[] { await GetEntityAsync() }, force, cancellationToken: cancellationToken);
         }
 
-        protected async Task<IEnumerable<T>> SaveAsync(IEnumerable<T> model, bool force = false, CancellationToken cancellationToken = default)
+        protected async Task<IEnumerable<T>> SaveAsync(IEnumerable<T> model, bool force = false, CancellationToken? cancellationToken = default)
         {
+            cancellationToken ??= CancellationToken.None;
             List<Func<EntityChangedEventArgs<T>>> events = new();
             List<T> results = new();
             if (model == null || !model.Any())
@@ -88,7 +91,7 @@
             }
             if (force)
             {
-                var createdOrReplaced = await Repository.CreateAsync(model, replaceIfExist: true, cancellationToken: cancellationToken);
+                var createdOrReplaced = await Repository.CreateAsync(model, replaceIfExist: true, cancellationToken: cancellationToken.Value);
                 results.AddRange(createdOrReplaced);
                 events.AddRange(createdOrReplaced.Select(m => new Func<EntityChangedEventArgs<T>>(() => new EntityChangedEventArgs<T>(null, m))));
             }
@@ -99,13 +102,13 @@
                 {
                     if (group.Key)
                     {
-                        var created = await Repository.CreateAsync(group, cancellationToken: cancellationToken);
+                        var created = await Repository.CreateAsync(group, cancellationToken: cancellationToken.Value);
                         results.AddRange(created);
                         events.AddRange(created.Select(m => new Func<EntityChangedEventArgs<T>>(() => new EntityChangedEventArgs<T>(null, m))));
                     }
                     else
                     {
-                        var updated = await Repository.UpdateAsync(group, cancellationToken: cancellationToken);
+                        var updated = await Repository.UpdateAsync(group, cancellationToken: cancellationToken.Value);
                         results.AddRange(updated);
                         foreach (var u in updated)
                         {
@@ -140,10 +143,10 @@
             return results;
         }
 
-        protected async Task OnEvent<TEventArgs>(TEventArgs e, CancellationToken cancellationToken = default) where TEventArgs : class
+        protected async Task OnEvent<TEventArgs>(TEventArgs e, CancellationToken? cancellationToken = default) where TEventArgs : class
             => await EventHandlers.InvokeAsync(e, cancellationToken);
 
-        protected async Task OnEvent<TEventArgs>(Func<TEventArgs> getEventArgs, CancellationToken cancellationToken = default) where TEventArgs : class
+        protected async Task OnEvent<TEventArgs>(Func<TEventArgs> getEventArgs, CancellationToken? cancellationToken = default) where TEventArgs : class
             => await EventHandlers.InvokeAsync(getEventArgs, cancellationToken);
     }
 }

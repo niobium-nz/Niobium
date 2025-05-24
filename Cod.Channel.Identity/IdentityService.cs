@@ -12,8 +12,10 @@ namespace Cod.Channel.Identity
 {
     public class IdentityService(HttpClient httpClient, IOptions<IdentityServiceOptions> options, ILogger<IdentityService> logger)
     {
-        public async Task<AccessTokenResponse> RequestIDTokenAsync(string scheme, string identity, string? credential, CancellationToken cancellationToken)
+        public async Task<AccessTokenResponse> RequestIDTokenAsync(string scheme, string identity, string? credential, CancellationToken? cancellationToken)
         {
+            cancellationToken ??= CancellationToken.None;
+
             string authValue;
             if (scheme == AuthenticationScheme.BasicLoginScheme)
             {
@@ -30,7 +32,7 @@ namespace Cod.Channel.Identity
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Authorization = new AuthenticationHeaderValue(scheme, authValue);
 
-            var response = await httpClient.SendAsync(request, cancellationToken);
+            var response = await httpClient.SendAsync(request, cancellationToken.Value);
             var result = new AccessTokenResponse { StatusCode = response.StatusCode };
             if (!TryGetToken(response, out var token))
             {
@@ -60,12 +62,13 @@ namespace Cod.Channel.Identity
             }
         }
 
-        public async Task<AccessTokenResponse> RefreshAccessTokenAsync(string idToken, CancellationToken cancellationToken)
+        public async Task<AccessTokenResponse> RefreshAccessTokenAsync(string idToken, CancellationToken? cancellationToken)
         {
+            cancellationToken ??= CancellationToken.None;
             var url = new Uri($"{options.Value.AccessTokenHost}{options.Value.AccessTokenEndpoint}");
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Authorization = new AuthenticationHeaderValue(AuthenticationScheme.BearerLoginScheme, idToken);
-            var response = await httpClient.SendAsync(request, cancellationToken);
+            var response = await httpClient.SendAsync(request, cancellationToken.Value);
             var result = new AccessTokenResponse { StatusCode = response.StatusCode };
             if (TryGetToken(response, out var token))
             {
@@ -75,8 +78,10 @@ namespace Cod.Channel.Identity
             return result;
         }
 
-        public async Task<ResourceTokenResponse> RequestResourceTokenAsync(string accessToken, ResourceType type, string resource, string? partition, string? id, CancellationToken cancellationToken)
+        public async Task<ResourceTokenResponse> RequestResourceTokenAsync(string accessToken, ResourceType type, string resource, string? partition, string? id, CancellationToken? cancellationToken)
         {
+            cancellationToken ??= CancellationToken.None;
+
             var uri = new StringBuilder($"{options.Value.ResourceTokenHost}{options.Value.ResourceTokenEndpoint}?type={(int)type}&resource={resource.Trim()}");
             if (!String.IsNullOrWhiteSpace(partition))
             {
@@ -92,14 +97,14 @@ namespace Cod.Channel.Identity
 
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(uri.ToString()));
             request.Headers.Authorization = new AuthenticationHeaderValue(AuthenticationScheme.BearerLoginScheme, accessToken);
-            var response = await httpClient.SendAsync(request, cancellationToken);
+            var response = await httpClient.SendAsync(request, cancellationToken.Value);
             var result = new ResourceTokenResponse { StatusCode = response.StatusCode };
             if (!response.IsSuccessStatusCode)
             {
                 return result;
             }
 
-            result.Token = await response.Content.ReadFromJsonAsync<StorageSignature>(cancellationToken);
+            result.Token = await response.Content.ReadFromJsonAsync<StorageSignature>(cancellationToken.Value);
 
             if (result.Token == null)
             {

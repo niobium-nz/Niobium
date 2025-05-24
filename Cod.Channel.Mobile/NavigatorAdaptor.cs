@@ -8,7 +8,7 @@ namespace Cod.Channel.Mobile
 
         public string CurrentUri => Shell.Current.CurrentState.Location.ToString();
 
-        public async Task NavigateToAsync(string url, bool forceLoad = false)
+        public async Task NavigateToAsync(string url, bool forceLoad = false, CancellationToken? cancellationToken = default)
         {
             if (forceLoad && !url.StartsWith("//", StringComparison.InvariantCulture))
             {

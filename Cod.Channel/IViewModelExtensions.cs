@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace Cod.Channel
 {
     public static class IViewModelExtensions
@@ -10,12 +5,14 @@ namespace Cod.Channel
         public static async Task<IList<TViewModel>> RefreshAsync<TEntity, TViewModel, TDomain>(
             this IList<TViewModel> existings,
             IEnumerable<TDomain> refreshments,
-            Func<TViewModel> createViewModel, TEntity dummy, IUIRefreshable parent = null)
-            where TViewModel : class, IViewModel<TDomain, TEntity>
-            where TDomain : IDomain<TEntity>
-            where TEntity : class, new()
+            Func<TViewModel> createViewModel,
+            TEntity dummy,
+            IRefreshable parent = null,
+            CancellationToken? cancellationToken = default)
+                where TViewModel : class, IViewModel<TDomain, TEntity>
+                where TDomain : IDomain<TEntity>
         {
-            existings ??= new List<TViewModel>();
+            existings ??= [];
 
             foreach (var refreshment in refreshments)
             {
@@ -32,8 +29,8 @@ namespace Cod.Channel
                 {
                     foreach (var change in changes)
                     {
-                        var existingETag = await change.GetHashAsync();
-                        var newETag = await refreshment.GetHashAsync();
+                        var existingETag = await change.GetHashAsync(cancellationToken);
+                        var newETag = await refreshment.GetHashAsync(cancellationToken);
                         if (existingETag == newETag)
                         {
                             changed = change;
@@ -44,7 +41,7 @@ namespace Cod.Channel
 
                 if (changed != null)
                 {
-                    await changed.InitializeAsync(domain: refreshment, parent: parent, force: true);
+                    await changed.InitializeAsync(domain: refreshment, parent: parent, force: true, cancellationToken: cancellationToken);
                 }
 
                 var added = !existings.Any(e =>
@@ -53,7 +50,7 @@ namespace Cod.Channel
 
                 if (added)
                 {
-                    var vm = (TViewModel)(await createViewModel().InitializeAsync(domain: refreshment, parent: parent, force: false));
+                    var vm = (TViewModel)(await createViewModel().InitializeAsync(domain: refreshment, parent: parent, force: false, cancellationToken: cancellationToken));
                     existings.Add(vm);
                 }
             }

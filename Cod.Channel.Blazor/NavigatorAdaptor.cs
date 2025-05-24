@@ -8,7 +8,7 @@ namespace Cod.Channel.Blazor
 
         public string CurrentUri => manager.Uri;
 
-        public Task NavigateToAsync(string url, bool forceLoad = false)
+        public Task NavigateToAsync(string url, bool forceLoad = false, CancellationToken? cancellationToken = default)
         {
             manager.NavigateTo(url, forceLoad: forceLoad);
             return Task.CompletedTask;

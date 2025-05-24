@@ -1,16 +1,14 @@
-using System.Threading.Tasks;
-
 namespace Cod.Channel
 {
     public abstract class BaseViewModel<TDomain, TEntity> : IViewModel<TDomain, TEntity>
             where TDomain : IDomain<TEntity>
-            where TEntity : class, new()
+            where TEntity : class
     {
         public string PartitionKey => this.Domain.PartitionKey;
 
         public string RowKey => this.Domain.RowKey;
 
-        public IUIRefreshable Parent { get; private set; }
+        public IRefreshable Parent { get; private set; }
 
         protected bool UIRefreshableInitialized { get; private set; }
 
@@ -18,14 +16,15 @@ namespace Cod.Channel
 
         protected bool DomainInitialized { get; private set; }
 
-        public async Task<string> GetHashAsync()
+        public async Task<string> GetHashAsync(CancellationToken? cancellationToken = default)
         {
-            return await Domain.GetHashAsync();
+            return await Domain.GetHashAsync(cancellationToken);
         }
 
-        public async Task<IViewModel<TDomain, TEntity>> InitializeAsync(TDomain domain, IUIRefreshable parent = null, bool force = false)
+        public async Task<IViewModel<TDomain, TEntity>> InitializeAsync(TDomain domain, IRefreshable parent = null, bool force = false, CancellationToken? cancellationToken = default)
         {
             var shouldNotify = false;
+            cancellationToken ??= CancellationToken.None;
 
             if (force || !this.DomainInitialized)
             {
@@ -41,12 +40,12 @@ namespace Cod.Channel
             }
             if (shouldNotify)
             {
-                await this.OnInitializeAsync();
+                await this.OnInitializeAsync(cancellationToken.Value);
             }
 
             return this;
         }
 
-        protected virtual Task OnInitializeAsync() => Task.CompletedTask;
+        protected virtual Task OnInitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 }

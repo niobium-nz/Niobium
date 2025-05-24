@@ -9,8 +9,9 @@ namespace Cod.Channel.Identity
         ILoadingStateService loadingStateService)
         : ICommand<LoginCommandParameter, LoginResult>
     {
-        public async Task<LoginResult> ExecuteAsync(LoginCommandParameter parameter, CancellationToken cancellationToken)
+        public async Task<LoginResult> ExecuteAsync(LoginCommandParameter parameter, CancellationToken? cancellationToken)
         {
+            cancellationToken ??= CancellationToken.None;
             using (loadingStateService.SetBusy(BusyGroups.Login))
             {
                 var result = await authenticator.LoginAsync(

@@ -21,23 +21,12 @@ namespace Cod
 
         public static T GetField<T>(object source, EntityKeyKind field)
         {
-            if (source is null)
+            if (TryGetField<T>(source, field, out var result))
             {
-                throw new ArgumentNullException(nameof(source));
+                return result;
             }
 
-            Type type = source.GetType();
-            var mapping = GetMapping(type);
-
-
-            string key = field.ToString();
-            if (!mapping.ContainsKey(key))
-            {
-                throw new InvalidDataException($"Cannot retrieve '{key}' from '{type.FullName}'.");
-            }
-
-            object value = mapping[key].GetValue(source);
-            return (T)value;
+            throw new InvalidDataException($"Cannot get {field} from {source}.");
         }
 
         public static bool TryGetField<T>(object source, EntityKeyKind field, out T result)
@@ -57,7 +46,37 @@ namespace Cod
             }
 
             object value = mapping[key].GetValue(source);
-            result = (T)value;
+            if (value == null)
+            {
+                result = default;
+                return false;
+            }
+
+            switch (field)
+            {
+                case EntityKeyKind.PartitionKey:
+                    result = (T)(object)value.ToString();
+                    break;
+                case EntityKeyKind.RowKey:
+                    result = (T)(object)value.ToString();
+                    break;
+                case EntityKeyKind.ETag:
+                    result = (T)(object)value.ToString();
+                    break;
+                case EntityKeyKind.Timestamp:
+                    if (value is DateTimeOffset && typeof(T) == typeof(DateTimeOffset))
+                    {
+                        result = (T)value;
+                    }
+                    else
+                    {
+                        result = (T)(object)value.ToString();
+                    }
+                    break;
+                default:
+                    throw new NotSupportedException($"Converting '{value}' to type '{typeof(T)}' is not supported.");
+            }
+
             return true;
         }
 
