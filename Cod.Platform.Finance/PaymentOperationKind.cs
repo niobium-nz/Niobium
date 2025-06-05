@@ -1,6 +1,6 @@
 ﻿namespace Cod.Platform.Finance
 {
-    public enum PaymentKind
+    public enum PaymentOperationKind
     {
         Authorize,
 

@@ -6,7 +6,7 @@
 
         public string Target { get; set; }
 
-        public double Delta { get; set; }
+        public long Delta { get; set; }
 
         public int Reason { get; set; }
 
@@ -16,7 +16,7 @@
 
         public string Corelation { get; set; }
 
-        public TransactionRequest(string target, double delta)
+        public TransactionRequest(string target, long delta)
         {
             Target = target;
             Delta = delta;

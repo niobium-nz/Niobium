@@ -22,5 +22,16 @@ namespace Cod.Database.StorageTable
 
             return services;
         }
+
+        public static IServiceCollection AddMemoryCachedRepository<T>(this IServiceCollection services)
+             where T : class, new()
+        {
+            services.AddSingleton<IRepository<T>>(sp =>
+            {
+                var innerRepository = sp.GetRequiredService<CloudTableRepository<T>>();
+                return new MemoryCachedRepository<T>(innerRepository);
+            });
+            return services;
+        }
     }
 }

@@ -44,7 +44,7 @@ namespace Cod.Platform.Finance
             else
             {
                 DateTimeOffset pos = latest.GetEnd();
-                double previousBalance = latest.Balance;
+                long previousBalance = latest.Balance;
                 while (pos < targetTime)
                 {
                     //REMARK (5he11) 数据层存储的都是记账日当天最后一刻的时间，所以加1毫秒就是新的要创建账务的日期
@@ -116,7 +116,7 @@ namespace Cod.Platform.Finance
         }
 
         public Task<TransactionRequest> BuildTransactionAsync(
-            double delta, int reason, string remark, string reference, string id = null, string corelation = null)
+            long delta, int reason, string remark, string reference, string id = null, string corelation = null)
         {
             return Task.FromResult(new TransactionRequest(AccountingPrincipal, delta)
             {
@@ -129,7 +129,7 @@ namespace Cod.Platform.Finance
         }
 
         public async Task<IEnumerable<Transaction>> MakeTransactionAsync(
-            double delta, int reason, string remark, string reference, string id = null, string corelation = null)
+            long delta, int reason, string remark, string reference, string id = null, string corelation = null)
         {
             return await MakeTransactionAsync(new[] { await BuildTransactionAsync(delta, reason, remark, reference, id, corelation) });
         }
@@ -152,7 +152,6 @@ namespace Cod.Platform.Finance
                 }
 
                 request.ID ??= Transaction.BuildRowKey(DateTimeOffset.UtcNow);
-                request.Delta = request.Delta.ChineseRound();
                 request.Target = request.Target.Trim();
 
                 Transaction transaction = new()
@@ -175,8 +174,8 @@ namespace Cod.Platform.Finance
             {
                 string pk = $"{DeltaKey}-{now}";
                 string rk = transaction.GetOwner();
-                double currentValue = await cacheStore.Value.GetAsync<double>(pk, rk);
-                double result = (currentValue + transaction.Delta).ChineseRound();
+                long currentValue = await cacheStore.Value.GetAsync<long>(pk, rk);
+                long result = currentValue + transaction.Delta;
                 await cacheStore.Value.SetAsync(pk, rk, result, false);
             }
             return transactions;
@@ -243,12 +242,11 @@ namespace Cod.Platform.Finance
             };
         }
 
-        private async Task<double> GetDeltaAsync(DateTimeOffset input)
+        private async Task<long> GetDeltaAsync(DateTimeOffset input)
         {
             string pk = $"{DeltaKey}-{input.ToSixDigitsDate()}";
             string rk = AccountingPrincipal;
-            double result = await cacheStore.Value.GetAsync<double>(pk, rk);
-            return result.ChineseRound();
+            return await cacheStore.Value.GetAsync<long>(pk, rk);
         }
 
         private async Task ClearDeltaAsync(DateTimeOffset input)
@@ -258,7 +256,7 @@ namespace Cod.Platform.Finance
             await cacheStore.Value.DeleteAsync(pk, rk);
         }
 
-        private async Task<Accounting> MakeAccountingAsync(DateTimeOffset input, double previousBalance)
+        private async Task<Accounting> MakeAccountingAsync(DateTimeOffset input, long previousBalance)
         {
             //REMARK (5he11) 将输入限制为仅取其日期的当日的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
             input = new DateTimeOffset(input.UtcDateTime.Date.ToUniversalTime()).AddDays(1).AddMilliseconds(-1);
@@ -272,11 +270,11 @@ namespace Cod.Platform.Finance
             DateTimeOffset transactionSearchFrom = new(input.UtcDateTime.Date.ToUniversalTime());
             List<Transaction> transactions = await GetTransactionsAsync(transactionSearchFrom, input).ToListAsync();
 
-            double credits = transactions.Where(t => t.Delta > 0).Select(t => t.Delta).DefaultIfEmpty().Sum();
-            double debits = transactions.Where(t => t.Delta < 0).Select(t => t.Delta).DefaultIfEmpty().Sum();
-            double delta = await GetDeltaAsync(input);
-            double diff = credits + debits - delta;
-            double b = (previousBalance + credits + debits).ChineseRound();
+            long credits = transactions.Where(t => t.Delta > 0).Select(t => t.Delta).DefaultIfEmpty().Sum();
+            long debits = transactions.Where(t => t.Delta < 0).Select(t => t.Delta).DefaultIfEmpty().Sum();
+            long delta = await GetDeltaAsync(input);
+            long diff = credits + debits - delta;
+            long b = previousBalance + credits + debits;
             string principal = AccountingPrincipal;
             logger.LogInformation($"账务主体 {principal} 从 {transactionSearchFrom} 开始，截止到 {input} 为止的账务变化为 {credits}/{debits} 与该日缓存相差 {diff} 截止此时余额为 {b}");
 
@@ -288,9 +286,9 @@ namespace Cod.Platform.Finance
 
             Accounting accounting = new()
             {
-                Balance = (previousBalance + credits + debits).ChineseRound(),
-                Credits = credits.ChineseRound(),
-                Debits = debits.ChineseRound(),
+                Balance = previousBalance + credits + debits,
+                Credits = credits,
+                Debits = debits,
             };
             accounting.SetPrincipal(principal);
             accounting.SetEnd(input);

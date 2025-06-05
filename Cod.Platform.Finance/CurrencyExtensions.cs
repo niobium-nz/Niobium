@@ -1,4 +1,4 @@
-﻿namespace Cod
+﻿namespace Cod.Platform.Finance
 {
     public static class CurrencyExtensions
     {

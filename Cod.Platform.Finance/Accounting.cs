@@ -11,11 +11,11 @@
         [EntityKey(EntityKeyKind.ETag)]
         public string ETag { get; set; }
 
-        public double Credits { get; set; }
+        public long Credits { get; set; }
 
-        public double Debits { get; set; }
+        public long Debits { get; set; }
 
-        public double Balance { get; set; }
+        public long Balance { get; set; }
 
         public string GetPrincipal()
         {

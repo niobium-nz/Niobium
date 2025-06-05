@@ -2,6 +2,11 @@
 {
     public struct Country : IEquatable<Country>
     {
+        public static readonly Country China = Country.Parse("CHN");
+        public static readonly Country UnitedStates = Country.Parse("USA");
+        public static readonly Country Australia = Country.Parse("AUS");
+        public static readonly Country NewZealand = Country.Parse("NZL");
+
         private static readonly Dictionary<string, string> alpha2 = new()
         {
             {"Albania", "AL" },

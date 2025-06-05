@@ -1,7 +1,9 @@
 ﻿using System.Globalization;
+using System.Text.Json.Serialization;
 
-namespace Cod
+namespace Cod.Platform.Finance
 {
+    [JsonConverter(typeof(CurrencyJsonConverter))]
     public struct Currency : IEquatable<Currency>
     {
         private static readonly IReadOnlyDictionary<string, CultureInfo> cultures = new Dictionary<string, CultureInfo>
@@ -195,12 +197,33 @@ namespace Cod
             "ZWL"
         };
 
+        public static bool TryParse(string code, out Currency result)
+        {
+            result = default;
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                return false;
+            }
+
+            code = code.Trim().ToUpperInvariant();
+            if (!codes.Contains(code))
+            {
+                return false;
+            }
+
+            result = new Currency { Code = code };
+            return true;
+        }
+
         public static Currency Parse(string code)
         {
             _ = code ?? throw new ArgumentNullException(nameof(code));
+            if (!TryParse(code, out var result))
+            {
+                throw new NotSupportedException($"The currency code '{code}' is not supported.");
+            }
 
-            code = code.Trim().ToUpper();
-            return !codes.Contains(code) ? throw new NotSupportedException() : new Currency { Code = code };
+            return result;
         }
 
         public static CultureInfo GetCulture(Currency currency)
@@ -236,6 +259,10 @@ namespace Cod
         {
             return Code;
         }
+
+        public static implicit operator string(Currency currency) => currency.Code;
+
+        public static implicit operator Currency(string code) => Parse(code);
 
         public static bool operator ==(Currency left, Currency right)
         {

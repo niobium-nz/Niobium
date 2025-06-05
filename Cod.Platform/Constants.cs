@@ -20,10 +20,5 @@ namespace Cod.Platform
         public const string NEW_HTTP_PROXY_USERNAME = "PROXY_USERNAME";
         public const string NEW_HTTP_PROXY_PASSWORD = "PROXY_PASSWORD";
         public const string NEW_AUTH_SECRET_NAME = "AUTH_TOKEN_KEY";
-
-        public static readonly Currency CNY = Currency.Parse("CNY");
-        public static readonly Currency USD = Currency.Parse("USD");
-        public static readonly Currency AUD = Currency.Parse("AUD");
-        public static readonly Currency NZD = Currency.Parse("NZD");
     }
 }

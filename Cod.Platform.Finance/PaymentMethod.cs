@@ -30,9 +30,9 @@
 
         public string Extra { get; set; }
 
-        public static string BuildPartitionKey(Guid user)
+        public static string BuildPartitionKey(string user)
         {
-            return user.ToString("N").ToUpperInvariant();
+            return user.Trim();
         }
 
         public static string BuildRowKey(string id)

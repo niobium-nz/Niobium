@@ -8,6 +8,7 @@ namespace Cod.Platform
 {
     public static class DependencyModule
     {
+        private static volatile bool used;
         private static volatile bool loaded;
 
         public static IServiceCollection AddPlatform(this IServiceCollection services)
@@ -36,12 +37,24 @@ namespace Cod.Platform
 
         public static T UsePlatform<T>(this T builder) where T : IFunctionsWorkerApplicationBuilder
         {
+            if (used)
+            {
+                return builder;
+            }
+
+            used = true;
             builder.UseWhen<FunctionMiddlewareAdaptor<ErrorHandlingMiddleware>>(FunctionMiddlewarePredicates.IsHttp);
             return builder;
         }
 
         public static IApplicationBuilder UsePlatform(this IApplicationBuilder builder)
         {
+            if (used)
+            {
+                return builder;
+            }
+
+            used = true;
             builder.UseMiddleware<ErrorHandlingMiddleware>();
             return builder;
         }

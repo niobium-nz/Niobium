@@ -1,4 +1,4 @@
-namespace Cod.Platform
+namespace Cod.Platform.Finance.Stripe
 {
     public enum StripeReportKind
     {

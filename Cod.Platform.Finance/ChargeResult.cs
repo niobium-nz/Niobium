@@ -8,7 +8,7 @@
 
         public PaymentChannels Channel { get; set; }
 
-        public PaymentKind PaymentKind { get; set; }
+        public PaymentOperationKind PaymentKind { get; set; }
 
         public string Source { get; set; }
 
@@ -16,7 +16,7 @@
 
         public object Account { get; set; }
 
-        public int Amount { get; set; }
+        public long Amount { get; set; }
 
         public Currency Currency { get; set; }
 

@@ -14,7 +14,7 @@
         [EntityKey(EntityKeyKind.ETag)]
         public string ETag { get; set; }
 
-        public double Delta { get; set; }
+        public long Delta { get; set; }
 
         public int Reason { get; set; }
 
@@ -38,6 +38,11 @@
         public string GetOwner()
         {
             return PartitionKey;
+        }
+
+        public long GetID()
+        {
+            return ParseRowKey(RowKey).ToReverseUnixTimeMilliseconds();
         }
 
         public DateTimeOffset GetCreated()

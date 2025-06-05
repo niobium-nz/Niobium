@@ -1,12 +1,15 @@
 namespace Cod.Platform.Finance
 {
+    [Flags]
     public enum PaymentMethodKind : int
     {
-        WechatJSAPI = 0,
+        None = 0,
 
         AlipayJSAPI = 1,
 
         WechatInApp = 2,
+
+        WechatJSAPI = 4,
 
         Visa = 32,
 
@@ -21,5 +24,7 @@ namespace Cod.Platform.Finance
         DinnersClub = 1024,
 
         Discover = 2048,
+
+        Afterpay = 4096,
     }
 }

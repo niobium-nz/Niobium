@@ -1,10 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
-namespace Cod.Platform
+namespace Cod.Platform.Finance.Stripe
 {
     internal static class R
     {
-        public static bool TryGet(string key, out string value)
+        public static bool TryGet(string key, [NotNullWhen(true)] out string? value)
         {
             var str = Localization.ResourceManager.GetString(key, CultureInfo.CurrentUICulture);
             if (str != null)

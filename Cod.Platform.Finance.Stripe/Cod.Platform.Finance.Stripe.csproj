@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Product>COD</Product>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
@@ -10,6 +10,12 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <NeutralLanguage>en-US</NeutralLanguage>
+    <Nullable>enable</Nullable>
+    <LangVersion>latestMajor</LangVersion>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <NoWarn>CA1848,CA2254,CA1305,CA1310,CA1711,CA1852,CA1822</NoWarn>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
   </PropertyGroup>
@@ -19,20 +25,12 @@
     <Version Condition=" '$(BUILD_BUILDNUMBER)' != '' ">$(BUILD_BUILDNUMBER)</Version>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <EnableNETAnalyzers>true</EnableNETAnalyzers>
-    <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
-    <AnalysisMode>AllEnabledByDefault</AnalysisMode>
-    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-    <RootNamespace>Cod.Platform</RootNamespace>
-    <NoWarn>CA1848,CA2254</NoWarn>
-  </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="Stripe.net" Version="39.114.0" />
+    <PackageReference Include="Stripe.net" Version="48.2.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.AzureRepos.Git" Version="8.0.0" PrivateAssets="All" />
     <ProjectReference Include="..\Cod.Abstractions\Cod.Abstractions.csproj" />
     <ProjectReference Include="..\Cod.Helper\Cod.Helper.csproj" />
     <ProjectReference Include="..\Cod.Platform.Finance\Cod.Platform.Finance.csproj" />

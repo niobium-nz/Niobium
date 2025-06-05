@@ -6,7 +6,7 @@ namespace Cod.Platform.Finance
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddPlatformFinance(this IServiceCollection services)
+        public static IServiceCollection AddFinance(this IServiceCollection services)
         {
             if (loaded)
             {

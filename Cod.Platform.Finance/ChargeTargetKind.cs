@@ -4,8 +4,6 @@ namespace Cod.Platform.Finance
     {
         Invalid = 0,
         User = 1,
-        Business = 2,
-        Dispatch = 3,
-        Send = 4
+        Tenant = 2,
     }
 }

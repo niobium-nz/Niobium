@@ -1,23 +1,13 @@
-using System.Net.Sockets;
 using Microsoft.Extensions.Logging;
 using Stripe;
+using System.Net.Sockets;
 
-namespace Cod.Platform
+namespace Cod.Platform.Finance.Stripe
 {
-    public class StripeIntegration
+    public class StripeIntegration(ILogger<StripeIntegration> logger)
     {
-        private readonly Lazy<IConfigurationProvider> configuration;
-        private readonly ILogger logger;
-
-        public StripeIntegration(Lazy<IConfigurationProvider> configuration, ILogger logger)
-        {
-            this.configuration = configuration;
-            this.logger = logger;
-        }
-
         public async Task<OperationResult<SetupIntent>> CreateSetupIntentAsync(Guid user)
         {
-            StripeConfiguration.ApiKey = await this.configuration.Value.GetSettingAsync<string>("STRIPE_KEY");
             var options = new CustomerCreateOptions();
             var service = new CustomerService();
             var customer = await service.CreateAsync(options);
@@ -27,7 +17,7 @@ namespace Cod.Platform
                 Customer = customer.Id,
                 Metadata = new Dictionary<string, string>
                 {
-                    { Integration.Stripe.Constants.IntentMetadataUserID, user.ToString("N") }
+                    { Constants.MetadataIntentUserID, user.ToString() }
                 }
             };
             var setupIntentService = new SetupIntentService();
@@ -38,87 +28,103 @@ namespace Cod.Platform
             }
             catch (StripeException se)
             {
-                this.logger.LogError(se, nameof(StripeIntegration));
+                logger.LogError(se, nameof(StripeIntegration));
                 return ConvertStripeError<SetupIntent>(se.StripeError);
             }
         }
 
         public async Task<SetupIntent> RetriveSetupIntentAsync(string id)
         {
-            if (id is null)
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            StripeConfiguration.ApiKey = await this.configuration.Value.GetSettingAsync<string>("STRIPE_KEY");
+            ArgumentNullException.ThrowIfNull(id);
 
             if (id.Contains("_secret_"))
             {
-                id = id.Split(new[] { "_secret_" }, StringSplitOptions.RemoveEmptyEntries)[0];
+                id = id.Split(["_secret_"], StringSplitOptions.RemoveEmptyEntries)[0];
             }
             var service = new SetupIntentService();
 
             return await service.GetAsync(id);
         }
 
-        public async Task<Stripe.Charge> RetriveChargeAsync(string id)
+        public async Task<Charge> RetriveChargeAsync(string id)
         {
-            StripeConfiguration.ApiKey = await this.configuration.Value.GetSettingAsync<string>("STRIPE_KEY");
             var service = new ChargeService();
             return await service.GetAsync(id);
         }
 
-        public async Task<Stripe.Refund> RetriveRefundAsync(string id)
+        public async Task<Refund> RetriveRefundAsync(string id)
         {
-            StripeConfiguration.ApiKey = await this.configuration.Value.GetSettingAsync<string>("STRIPE_KEY");
             var service = new RefundService();
             return await service.GetAsync(id);
         }
 
-        public async Task<Stripe.PaymentMethod> RetrivePaymentMethodAsync(string id)
+        public async Task<global::Stripe.PaymentMethod> RetrivePaymentMethodAsync(string id)
         {
-            StripeConfiguration.ApiKey = await this.configuration.Value.GetSettingAsync<string>("STRIPE_KEY");
             var service = new PaymentMethodService();
             return await service.GetAsync(id);
         }
 
         public async Task<OperationResult<PaymentIntent>> ChargeAsync(
+            ChargeTargetKind targetKind,
+            string target,
+            Guid order,
             Currency currency,
-            int amount,
-            string reference,
-            string customer,
-            string paymentMethod,
+            long amount,            
+            string? reference = null,
+            string? stripeCustomerID = null,
+            string? stripePaymentMethodID = null,
             int retryCount = 3)
         {
             if (retryCount <= 0)
             {
-                return new OperationResult<PaymentIntent>(InternalError.BadGateway);
+                return new OperationResult<PaymentIntent>(Cod.InternalError.BadGateway);
             }
-
-            StripeConfiguration.ApiKey = await this.configuration.Value.GetSettingAsync<string>("STRIPE_KEY");
 
             try
             {
-                var service = new PaymentIntentService();
-                var result = await service.CreateAsync(new PaymentIntentCreateOptions
+                var metadata = new Dictionary<string, string>
+                {
+                    { Constants.MetadataTargetKindKey, ((int)targetKind).ToString() },
+                    { Constants.MetadataTargetKey, target },
+                    { Constants.MetadataOrderKey, order.ToString() },
+                };
+
+                if (reference != null)
+                {
+                    metadata.Add(Constants.MetadataReferenceKey, reference);
+                }
+
+                var options = new PaymentIntentCreateOptions
                 {
                     Amount = amount,
-#pragma warning disable CA1308 // Stripe standard
                     Currency = currency.ToString().ToLowerInvariant(),
-#pragma warning restore CA1308 // Stripe standard
-                    Confirm = true,
-                    OffSession = true,
-                    Customer = customer,
-                    PaymentMethod = paymentMethod,
-                    CaptureMethod = "automatic",
-                    Metadata = new Dictionary<string, string> { { nameof(Order), reference } },
-                });
+                    Metadata = metadata,
+                };
+
+                if (stripeCustomerID != null)
+                {
+                    options.Customer = stripeCustomerID;
+                }
+
+                if (stripePaymentMethodID != null)
+                {
+                    options.PaymentMethod = stripePaymentMethodID;
+                }
+
+                if (stripeCustomerID != null && stripePaymentMethodID != null)
+                {
+                    options.OffSession = true;
+                    options.Confirm = true;
+                }
+
+                var service = new PaymentIntentService();
+                var result = await service.CreateAsync(options);
                 return new OperationResult<PaymentIntent>(result);
 
             }
             catch (StripeException se)
             {
-                this.logger.LogError(se, nameof(StripeIntegration));
+                logger.LogError(se, nameof(StripeIntegration));
                 return ConvertStripeError<PaymentIntent>(se.StripeError);
             }
             catch (HttpRequestException)
@@ -134,7 +140,7 @@ namespace Cod.Platform
             {
             }
 
-            return await this.ChargeAsync(currency, amount, reference, customer, paymentMethod, --retryCount);
+            return await ChargeAsync(targetKind, target, order, currency, amount, reference, stripeCustomerID, stripePaymentMethodID, --retryCount);
         }
 
         public async Task<OperationResult<Refund>> RefundAsync(
@@ -144,10 +150,8 @@ namespace Cod.Platform
         {
             if (retryCount <= 0)
             {
-                return new OperationResult<Refund>(InternalError.BadGateway);
+                return new OperationResult<Refund>(Cod.InternalError.BadGateway);
             }
-
-            StripeConfiguration.ApiKey = await this.configuration.Value.GetSettingAsync<string>("STRIPE_KEY");
 
             try
             {
@@ -157,7 +161,7 @@ namespace Cod.Platform
             }
             catch (StripeException se)
             {
-                this.logger.LogError(se, nameof(StripeIntegration));
+                logger.LogError(se, nameof(StripeIntegration));
                 return ConvertStripeError<Refund>(se.StripeError);
             }
             catch (HttpRequestException)
@@ -173,7 +177,7 @@ namespace Cod.Platform
             {
             }
 
-            return await this.RefundAsync(chargeID, amount, --retryCount);
+            return await RefundAsync(chargeID, amount, --retryCount);
         }
 
         public async Task<OperationResult<PaymentIntent>> CompleteAsync(
@@ -183,10 +187,8 @@ namespace Cod.Platform
         {
             if (retryCount <= 0)
             {
-                return new OperationResult<PaymentIntent>(InternalError.BadGateway);
+                return new OperationResult<PaymentIntent>(Cod.InternalError.BadGateway);
             }
-
-            StripeConfiguration.ApiKey = await this.configuration.Value.GetSettingAsync<string>("STRIPE_KEY");
 
             try
             {
@@ -197,7 +199,7 @@ namespace Cod.Platform
             }
             catch (StripeException se)
             {
-                this.logger.LogError(se, nameof(StripeIntegration));
+                logger.LogError(se, nameof(StripeIntegration));
                 return ConvertStripeError<PaymentIntent>(se.StripeError);
             }
             catch (HttpRequestException)
@@ -213,7 +215,7 @@ namespace Cod.Platform
             {
             }
 
-            return await this.VoidAsync(paymentIntentID, --retryCount);
+            return await VoidAsync(paymentIntentID, --retryCount);
         }
 
         public async Task<OperationResult<PaymentIntent>> VoidAsync(
@@ -222,10 +224,8 @@ namespace Cod.Platform
         {
             if (retryCount <= 0)
             {
-                return new OperationResult<PaymentIntent>(InternalError.BadGateway);
+                return new OperationResult<PaymentIntent>(Cod.InternalError.BadGateway);
             }
-
-            StripeConfiguration.ApiKey = await this.configuration.Value.GetSettingAsync<string>("STRIPE_KEY");
 
             try
             {
@@ -236,7 +236,7 @@ namespace Cod.Platform
             }
             catch (StripeException se)
             {
-                this.logger.LogError(se, nameof(StripeIntegration));
+                logger.LogError(se, nameof(StripeIntegration));
                 return ConvertStripeError<PaymentIntent>(se.StripeError);
             }
             catch (HttpRequestException)
@@ -252,46 +252,58 @@ namespace Cod.Platform
             {
             }
 
-            return await this.VoidAsync(paymentIntentID, --retryCount);
+            return await VoidAsync(paymentIntentID, --retryCount);
         }
 
         public async Task<OperationResult<PaymentIntent>> AuthorizeAsync(
+            ChargeTargetKind targetKind,
+            string target,
+            Guid order,
             Currency currency,
-            int amount,
-            string reference,
-            string customer,
-            string paymentMethod,
+            long amount,
+            string? reference = null,
+            string? stripeCustomerID = null,
+            string? stripePaymentMethodID = null,
             int retryCount = 3)
         {
             if (retryCount <= 0)
             {
-                return new OperationResult<PaymentIntent>(InternalError.BadGateway);
+                return new OperationResult<PaymentIntent>(Cod.InternalError.BadGateway);
             }
-
-            StripeConfiguration.ApiKey = await this.configuration.Value.GetSettingAsync<string>("STRIPE_KEY");
 
             try
             {
+
+                var metadata = new Dictionary<string, string>
+                {
+                    { Constants.MetadataTargetKindKey, ((int)targetKind).ToString() },
+                    { Constants.MetadataTargetKey, target },
+                    { Constants.MetadataOrderKey, order.ToString() },
+                };
+
+                if (reference != null)
+                {
+                    metadata.Add(Constants.MetadataReferenceKey, reference);
+                }
+
                 var service = new PaymentIntentService();
                 var result = await service.CreateAsync(new PaymentIntentCreateOptions
                 {
                     Amount = amount,
-#pragma warning disable CA1308 // Stripe standard
                     Currency = currency.ToString().ToLowerInvariant(),
-#pragma warning restore CA1308 // Stripe standard
                     Confirm = true,
                     OffSession = true,
-                    Customer = customer,
-                    PaymentMethod = paymentMethod,
+                    Customer = stripeCustomerID,
+                    PaymentMethod = stripePaymentMethodID,
                     CaptureMethod = "manual",
-                    Metadata = new Dictionary<string, string> { { nameof(Order), reference } },
+                    Metadata = metadata,
                 });
                 return new OperationResult<PaymentIntent>(result);
 
             }
             catch (StripeException se)
             {
-                this.logger.LogError(se, nameof(StripeIntegration));
+                logger.LogError(se, nameof(StripeIntegration));
                 return ConvertStripeError<PaymentIntent>(se.StripeError);
             }
             catch (HttpRequestException)
@@ -307,7 +319,7 @@ namespace Cod.Platform
             {
             }
 
-            return await this.AuthorizeAsync(currency, amount, reference, customer, paymentMethod, --retryCount);
+            return await AuthorizeAsync(targetKind, target, order, currency, amount, reference, stripeCustomerID, stripePaymentMethodID, --retryCount);
         }
 
         private static OperationResult<T> ConvertStripeError<T>(StripeError stripeError)
@@ -317,7 +329,7 @@ namespace Cod.Platform
                 return new OperationResult<T>(InternalError.PaymentErrorUnknown);
             }
 
-            if (!String.IsNullOrWhiteSpace(stripeError.Code) && !String.IsNullOrWhiteSpace(stripeError.DeclineCode))
+            if (!string.IsNullOrWhiteSpace(stripeError.Code) && !string.IsNullOrWhiteSpace(stripeError.DeclineCode))
             {
                 var code = stripeError.Code.Trim();
                 var declineCode = stripeError.DeclineCode.Trim();
