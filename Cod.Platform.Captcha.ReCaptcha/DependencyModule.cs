@@ -1,9 +1,7 @@
-using Cod.Platform.Captcha.Recaptcha;
-using Cod.Platform.Captcha.ReCaptcha;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Cod.Platform.Captcha
+namespace Cod.Platform.Captcha.ReCaptcha
 {
     public static class DependencyModule
     {
@@ -44,7 +42,7 @@ namespace Cod.Platform.Captcha
                 })
                 .AddStandardResilienceHandler();
             }
-                
+
             return services;
         }
     }

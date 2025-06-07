@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 
-namespace Cod.Platform.Captcha.Recaptcha
+namespace Cod.Platform.Captcha.ReCaptcha
 {
     internal partial class GoogleReCaptchaRiskAssessor(
         HttpClient httpClient,

@@ -1,6 +1,4 @@
-﻿using Cod.Platform.Captcha.Recaptcha;
-
-namespace Cod.Platform.Captcha.ReCaptcha
+﻿namespace Cod.Platform.Captcha.ReCaptcha
 {
     internal class DevelopmentRiskAccessor : IVisitorRiskAssessor
     {

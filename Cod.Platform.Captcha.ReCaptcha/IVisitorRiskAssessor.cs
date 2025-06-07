@@ -1,4 +1,4 @@
-﻿namespace Cod.Platform.Captcha.Recaptcha
+﻿namespace Cod.Platform.Captcha.ReCaptcha
 {
     public interface IVisitorRiskAssessor
     {
