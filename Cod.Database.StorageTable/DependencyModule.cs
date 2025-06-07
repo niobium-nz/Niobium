@@ -18,6 +18,7 @@ namespace Cod.Database.StorageTable
 
             services.Configure<StorageTableOptions>(o => options?.Invoke(o));
             services.AddTransient<IAzureTableClientFactory, AzureTableClientFactory>();
+            services.AddTransient(typeof(CloudTableRepository<>));
             services.AddTransient(typeof(IRepository<>), typeof(CloudTableRepository<>));
 
             return services;
