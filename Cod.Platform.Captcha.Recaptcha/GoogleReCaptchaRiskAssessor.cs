@@ -15,10 +15,13 @@ namespace Cod.Platform.Captcha.Recaptcha
             PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
         };
 
-        public async Task<bool> AssessAsync(Guid requestID, string token, string? clientIP, CancellationToken cancellationToken)
+        public async Task<bool> AssessAsync(Guid requestID, string tenant, string token, string? clientIP, CancellationToken cancellationToken)
         {
+            var secret = options.Value.Secrets[tenant]
+                ?? throw new ApplicationException(InternalError.InternalServerError, $"Missing tenant secret: {tenant}");
+
             List<KeyValuePair<string, string>> parameters = new([
-                new KeyValuePair<string, string>("secret", options.Value.Secret),
+                new KeyValuePair<string, string>("secret", secret),
                 new KeyValuePair<string, string>("response", token),
             ]);
             if (!string.IsNullOrWhiteSpace(clientIP))
@@ -43,7 +46,7 @@ namespace Cod.Platform.Captcha.Recaptcha
                 return false;
             }
 
-            return result.Success;
+            return result.Success && result.Hostname.Equals(tenant, StringComparison.OrdinalIgnoreCase);
         }
 
         private static T Deserialize<T>(string json) => System.Text.Json.JsonSerializer.Deserialize<T>(json, SERIALIZATION_OPTIONS)!;

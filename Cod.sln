@@ -82,7 +82,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cod.Profile", "Cod.Profile\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cod.Channel.Profile", "Cod.Channel.Profile\Cod.Channel.Profile.csproj", "{B8045479-0D07-482C-8D4E-A2262D90EEBF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cod.Platform.Captcha.Recaptcha", "Cod.Platform.Captcha.Recaptcha\Cod.Platform.Captcha.Recaptcha.csproj", "{91DA3B3F-34DB-45B2-8C67-EBA0CDC8EAE1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cod.Platform.Captcha.ReCaptcha", "Cod.Platform.Captcha.Recaptcha\Cod.Platform.Captcha.ReCaptcha.csproj", "{91DA3B3F-34DB-45B2-8C67-EBA0CDC8EAE1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

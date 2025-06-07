@@ -2,6 +2,6 @@
 {
     public class CaptchaOptions
     {
-        public required string Secret { get; set; }
+        public required Dictionary<string, string> Secrets { get; set; }
     }
 }
