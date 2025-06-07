@@ -13,7 +13,15 @@ namespace Cod.Platform.StorageTable
             services.AddPlatform();
 
             services.AddTransient(typeof(IQueryableRepository<>), typeof(QueryableCloudTableRepository<>));
-            return services.AddDatabase(configuration.Bind);
+            services.AddDatabase(configuration.Bind);
+
+            var isDevelopment = configuration.IsDevelopmentEnvironment();
+            if (isDevelopment)
+            {
+                services.PostConfigure<StorageTableOptions>(opt => opt.EnableInteractiveIdentity = true);
+            }
+
+            return services;
         }
 
         public static IServiceCollection AddDatabaseResourceTokenSupport(this IServiceCollection services, Action<IdentityServiceOptions> options)
