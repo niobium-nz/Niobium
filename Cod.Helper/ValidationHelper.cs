@@ -33,6 +33,11 @@ namespace Cod
 
         public static bool TryValidate<TEntity, TProperty>(this TEntity model, Expression<Func<TEntity, TProperty>> exp, out ValidationState result)
         {
+            if (model is IUserInput formatable)
+            {
+                formatable.Sanitize();
+            }
+
             result = new ValidationState();
             ValidationContext context = new(model);
             List<ValidationResult> validationResults = new();
@@ -62,11 +67,6 @@ namespace Cod
                         result.AddError(member, item.ErrorMessage);
                     }
                 }
-            }
-
-            if (isValid && model is IUserInput formatable)
-            {
-                formatable.Sanitize();
             }
 
             return isValid;
