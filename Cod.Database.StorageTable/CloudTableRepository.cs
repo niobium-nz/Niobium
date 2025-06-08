@@ -394,10 +394,13 @@ namespace Cod.Table.StorageAccount
 
         private static string ParsePartitionKey(string input)
         {
-            Match match = PartitionKeyRegex().Match(input);
-            if (match.Success && match.Groups.Count == 2)
+            if (!string.IsNullOrWhiteSpace(input))
             {
-                return match.Groups[1].Value;
+                Match match = PartitionKeyRegex().Match(input);
+                if (match.Success && match.Groups.Count == 2)
+                {
+                    return match.Groups[1].Value;
+                }
             }
 
             return null;
