@@ -5,15 +5,30 @@ using Cod.Platform.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 
 namespace Cod.Platform.Blob
 {
     public static class DependencyModule
     {
-        public static IServiceCollection AddFile(this IServiceCollection services, IConfiguration fileConfiguration)
+        private static volatile bool loaded;
+
+        public static void AddFile(this IHostApplicationBuilder builder)
         {
+            builder.Services.AddFile(builder.Configuration.GetSection(nameof(StorageBlobOptions)).Bind);
+        }
+
+        public static IServiceCollection AddFile(this IServiceCollection services, Action<StorageBlobOptions>? options = null)
+        {
+            if (loaded)
+            {
+                return services;
+            }
+
+            loaded = true;
             services.AddPlatform();
-            return services.AddFile(fileConfiguration.Bind);
+
+            return Cod.File.Blob.DependencyModule.AddFile(services, options);
         }
 
         public static IServiceCollection AddBlobResourceTokenSupport(this IServiceCollection services, Action<IdentityServiceOptions> options)

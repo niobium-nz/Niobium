@@ -6,7 +6,7 @@ namespace Cod.Messaging.ServiceBus
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddMessaging(this IServiceCollection services, Action<ServiceBusOptions> options)
+        public static IServiceCollection AddMessaging(this IServiceCollection services, Action<ServiceBusOptions>? options)
         {
             if (loaded)
             {
@@ -15,7 +15,7 @@ namespace Cod.Messaging.ServiceBus
 
             loaded = true;
 
-            services.Configure<ServiceBusOptions>(o => options(o));
+            services.Configure<ServiceBusOptions>(o => options?.Invoke(o));
             services.AddTransient<AuthenticationBasedQueueFactory>();
             services.AddTransient(typeof(IMessagingBroker<>), typeof(ServiceBusQueueBroker<>));
 

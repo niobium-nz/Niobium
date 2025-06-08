@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System.Net.Http.Headers;
 
@@ -10,14 +11,14 @@ namespace Cod.Platform.Notification.Email.Resend
         private const string resendAPIHost = "https://api.resend.com/";
         private static volatile bool loaded;
 
-        public static IServiceCollection AddNotification(this IServiceCollection services, IConfiguration configuration)
+        public static void AddNotification(this IHostApplicationBuilder builder)
         {
-            return services.AddNotification(configuration.Bind);
+            builder.Services.AddNotification(builder.Configuration.GetSection(nameof(ResendServiceOptions)).Bind);
         }
 
         public static IServiceCollection AddNotification(
             this IServiceCollection services,
-            Action<ResendServiceOptions> options)
+            Action<ResendServiceOptions>? options)
         {
             if (loaded)
             {
@@ -28,7 +29,7 @@ namespace Cod.Platform.Notification.Email.Resend
 
             services.AddPlatform();
 
-            services.Configure<ResendServiceOptions>(o => { options(o); o.Validate(); });
+            services.Configure<ResendServiceOptions>(o => { options?.Invoke(o); o.Validate(); });
 
             services.AddHttpClient<IEmailNotificationClient, ResendEmailNotificationClient>((serviceProvider, httpClient) =>
             {
@@ -40,6 +41,7 @@ namespace Cod.Platform.Notification.Email.Resend
                 }
             })
             .AddStandardResilienceHandler();
+
             return services;
         }
     }

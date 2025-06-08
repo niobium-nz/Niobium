@@ -1,17 +1,41 @@
 using Cod.Identity;
-using Cod.Platform;
+using Cod.Messaging;
+using Cod.Messaging.ServiceBus;
 using Cod.Platform.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
-namespace Cod.Messaging.ServiceBus
+namespace Cod.Platform.ServiceBus
 {
     public static class DependencyModule
     {
-        public static IServiceCollection AddMessaging(this IServiceCollection services, IConfiguration configuration)
+        private static volatile bool loaded;
+
+        public static void AddMessaging(this IHostApplicationBuilder builder)
         {
+            builder.Services.AddMessaging(builder.Configuration.GetSection(nameof(ServiceBusOptions)).Bind);
+
+            if (builder.Configuration.IsDevelopmentEnvironment())
+            {
+                builder.Services.PostConfigure<ServiceBusOptions>(options =>
+                {
+                    options.EnableInteractiveIdentity = true;
+                });
+            }
+        }
+
+        public static IServiceCollection AddMessaging(this IServiceCollection services, Action<ServiceBusOptions>? options)
+        {
+            if (loaded)
+            {
+                return services;
+            }
+
+            loaded = true;
+
             services.AddPlatform();
-            return services.AddMessaging(configuration.Bind);
+            return Cod.Messaging.ServiceBus.DependencyModule.AddMessaging(services, options);
         }
 
         public static IServiceCollection AddServiceBusResourceTokenSupport(this IServiceCollection services, Action<IdentityServiceOptions> options)

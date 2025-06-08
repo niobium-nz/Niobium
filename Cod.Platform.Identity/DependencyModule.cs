@@ -11,12 +11,12 @@ namespace Cod.Platform.Identity
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddIdentity(this IServiceCollection services, IConfiguration configuration)
+        public static void AddIdentity(this IHostApplicationBuilder builder)
         {
-            return services.AddIdentity(configuration.Bind);
+            builder.Services.AddIdentity(builder.Configuration.GetSection(nameof(IdentityServiceOptions)).Bind);
         }
 
-        public static IServiceCollection AddIdentity(this IServiceCollection services, Action<IdentityServiceOptions> identityOptions)
+        public static IServiceCollection AddIdentity(this IServiceCollection services, Action<IdentityServiceOptions>? identityOptions)
         {
             if (loaded)
             {
@@ -27,7 +27,7 @@ namespace Cod.Platform.Identity
 
             services.AddPlatform();
 
-            services.Configure<IdentityServiceOptions>(o => { identityOptions(o); o.Validate(); IdentityServiceOptions.Instance = o; });
+            services.Configure<IdentityServiceOptions>(o => { identityOptions?.Invoke(o); o.Validate(); IdentityServiceOptions.Instance = o; });
 
             services.AddTransient<PrincipalParser>();
             services.AddTransient<ISignatureService, SignatureService>();

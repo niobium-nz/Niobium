@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace Cod.Platform.OpenAI
@@ -8,14 +9,14 @@ namespace Cod.Platform.OpenAI
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddOpenAI(this IServiceCollection services, IConfiguration configuration)
+        public static void AddOpenAI(this IHostApplicationBuilder builder)
         {
-            return services.AddOpenAI(configuration.Bind);
+            builder.Services.AddOpenAI(builder.Configuration.GetSection(nameof(OpenAIServiceOptions)).Bind);
         }
 
         public static IServiceCollection AddOpenAI(
             this IServiceCollection services,
-            Action<OpenAIServiceOptions> options)
+            Action<OpenAIServiceOptions>? options)
         {
             if (loaded)
             {
@@ -26,7 +27,7 @@ namespace Cod.Platform.OpenAI
 
             services.AddPlatform();
 
-            services.Configure<OpenAIServiceOptions>(o => { options(o); o.Validate(); });
+            services.Configure<OpenAIServiceOptions>(o => { options?.Invoke(o); o.Validate(); });
 
             services.AddHttpClient<IOpenAIService, OpenAIService>((serviceProvider, httpClient) =>
             {

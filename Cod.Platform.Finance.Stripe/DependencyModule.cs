@@ -11,9 +11,9 @@ namespace Cod.Platform.Finance.Stripe
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddFinance(this IServiceCollection services, IConfiguration configuration)
+        public static void AddFinance(this IHostApplicationBuilder builder)
         {
-            return services.AddFinance(configuration.Bind);
+            builder.Services.AddFinance(builder.Configuration.GetSection(nameof(PaymentServiceOptions)).Bind);
         }
 
         public static IServiceCollection AddFinance(this IServiceCollection services, Action<PaymentServiceOptions> options)

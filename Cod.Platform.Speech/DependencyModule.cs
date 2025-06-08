@@ -2,6 +2,7 @@
 using Cod.Platform.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace Cod.Platform.Speech
@@ -10,12 +11,12 @@ namespace Cod.Platform.Speech
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddSpeech(this IServiceCollection services, IConfiguration configuration)
+        public static void AddSpeech(this IHostApplicationBuilder builder)
         {
-            return services.AddSpeech(configuration.Bind);
+            builder.Services.AddSpeech(builder.Configuration.GetSection(nameof(SpeechServiceOptions)).Bind);
         }
 
-        public static IServiceCollection AddSpeech(this IServiceCollection services, Action<SpeechServiceOptions> options)
+        public static IServiceCollection AddSpeech(this IServiceCollection services, Action<SpeechServiceOptions>? options)
         {
             if (loaded)
             {
@@ -26,7 +27,7 @@ namespace Cod.Platform.Speech
 
             services.AddPlatform();
 
-            services.Configure<SpeechServiceOptions>(o => { options(o); o.Validate(); });
+            services.Configure<SpeechServiceOptions>(o => { options?.Invoke(o); o.Validate(); });
 
             services.AddTransient<IResourceControl, SpeechServiceControl>();
             services.AddHttpClient<ISignatureIssuer, SpeechServiceSignatureIssuer>((serviceProvider, httpClient) =>

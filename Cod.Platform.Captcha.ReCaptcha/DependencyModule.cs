@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Cod.Platform.Captcha.ReCaptcha
 {
@@ -8,15 +9,23 @@ namespace Cod.Platform.Captcha.ReCaptcha
         private const string recaptchaHost = "https://www.google.com/";
         private static volatile bool loaded;
 
-        public static IServiceCollection AddCaptcha(this IServiceCollection services, IConfiguration configuration)
+        public static void AddCaptcha(this IHostApplicationBuilder builder)
         {
-            return services.AddCaptcha(configuration, configuration.Bind);
+            if (loaded)
+            {
+                return;
+            }
+
+            loaded = true;
+            builder.Services.AddCaptcha(builder.Configuration.GetSection(nameof(CaptchaOptions)).Bind);
+
+            if (builder.Configuration.IsDevelopmentEnvironment())
+            {
+                builder.Services.AddTransient<IVisitorRiskAssessor, DevelopmentRiskAccessor>();
+            }
         }
 
-        public static IServiceCollection AddCaptcha(
-            this IServiceCollection services,
-            IConfiguration configuration,
-            Action<CaptchaOptions> options)
+        public static IServiceCollection AddCaptcha(this IServiceCollection services, Action<CaptchaOptions>? options)
         {
             if (loaded)
             {
@@ -27,21 +36,14 @@ namespace Cod.Platform.Captcha.ReCaptcha
 
             services.AddPlatform();
 
-            if (configuration.IsDevelopmentEnvironment())
-            {
-                services.AddTransient<IVisitorRiskAssessor, DevelopmentRiskAccessor>();
-            }
-            else
-            {
-                services.Configure<CaptchaOptions>(o => options(o));
+            services.Configure<CaptchaOptions>(o => options?.Invoke(o));
 
-                services.AddTransient<IVisitorRiskAssessor, GoogleReCaptchaRiskAssessor>();
-                services.AddHttpClient<IVisitorRiskAssessor, GoogleReCaptchaRiskAssessor>((sp, httpClient) =>
-                {
-                    httpClient.BaseAddress = new Uri(recaptchaHost);
-                })
-                .AddStandardResilienceHandler();
-            }
+            services.AddTransient<IVisitorRiskAssessor, GoogleReCaptchaRiskAssessor>();
+            services.AddHttpClient<IVisitorRiskAssessor, GoogleReCaptchaRiskAssessor>((sp, httpClient) =>
+            {
+                httpClient.BaseAddress = new Uri(recaptchaHost);
+            })
+            .AddStandardResilienceHandler();
 
             return services;
         }

@@ -3,23 +3,38 @@ using Cod.Identity;
 using Cod.Platform.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Cod.Platform.StorageTable
 {
     public static class DependencyModule
     {
-        public static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
+        private static volatile bool loaded;
+
+        public static void AddDatabase(this IHostApplicationBuilder builder)
         {
+            builder.Services.AddDatabase(builder.Configuration.GetSection(nameof(StorageTableOptions)).Bind);
+
+            var isDevelopment = builder.Configuration.IsDevelopmentEnvironment();
+            if (isDevelopment)
+            {
+                builder.Services.PostConfigure<StorageTableOptions>(opt => opt.EnableInteractiveIdentity = true);
+            }
+        }
+
+        public static IServiceCollection AddDatabase(this IServiceCollection services, Action<StorageTableOptions> options)
+        {
+            if (loaded)
+            {
+                return services;
+            }
+
+            loaded = true;
+
             services.AddPlatform();
 
             services.AddTransient(typeof(IQueryableRepository<>), typeof(QueryableCloudTableRepository<>));
-            services.AddDatabase(configuration.Bind);
-
-            var isDevelopment = configuration.IsDevelopmentEnvironment();
-            if (isDevelopment)
-            {
-                services.PostConfigure<StorageTableOptions>(opt => opt.EnableInteractiveIdentity = true);
-            }
+            Cod.Database.StorageTable.DependencyModule.AddDatabase(services, options);
 
             return services;
         }
