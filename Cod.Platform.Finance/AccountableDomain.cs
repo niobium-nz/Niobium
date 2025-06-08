@@ -10,7 +10,6 @@ namespace Cod.Platform.Finance
         private readonly Lazy<IQueryableRepository<Accounting>> accountingRepo;
         private readonly Lazy<IEnumerable<IAccountingAuditor>> auditors;
         private readonly Lazy<ICacheStore> cacheStore;
-        private readonly ILogger logger;
 
         public AccountableDomain(
             Lazy<IRepository<T>> repo,
@@ -26,10 +25,12 @@ namespace Cod.Platform.Finance
             this.accountingRepo = accountingRepo;
             this.auditors = auditors;
             this.cacheStore = cacheStore;
-            this.logger = logger;
+            this.Logger = logger;
         }
 
         public abstract string AccountingPrincipal { get; }
+
+        protected ILogger Logger { get; private set; }
 
         public async Task MakeAccountingAsync()
         {
@@ -82,7 +83,7 @@ namespace Cod.Platform.Finance
             amount = amount.ChineseRound();
             if (amount < 0)
             {
-                throw new ArgumentException("金额不应为负值", nameof(amount));
+                throw new ArgumentException("Amount cannot be negative.", nameof(amount));
             }
             string pk = FrozenKey;
             string rk = AccountingPrincipal;
@@ -105,7 +106,7 @@ namespace Cod.Platform.Finance
             amount = amount.ChineseRound();
             if (amount < 0)
             {
-                throw new ArgumentException("金额不应为负值", nameof(amount));
+                throw new ArgumentException("Amount cannot be negative.", nameof(amount));
             }
             string pk = FrozenKey;
             string rk = AccountingPrincipal;
@@ -276,7 +277,7 @@ namespace Cod.Platform.Finance
             long diff = credits + debits - delta;
             long b = previousBalance + credits + debits;
             string principal = AccountingPrincipal;
-            logger.LogInformation($"账务主体 {principal} 从 {transactionSearchFrom} 开始，截止到 {input} 为止的账务变化为 {credits}/{debits} 与该日缓存相差 {diff} 截止此时余额为 {b}");
+            Logger.LogInformation($"账务主体 {principal} 从 {transactionSearchFrom} 开始，截止到 {input} 为止的账务变化为 {credits}/{debits} 与该日缓存相差 {diff} 截止此时余额为 {b}");
 
             //if (Math.Abs(diff) > 1)
             //{

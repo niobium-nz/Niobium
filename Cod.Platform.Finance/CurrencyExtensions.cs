@@ -17,6 +17,11 @@
             return ToDisplayLocal(currency, (decimal)payment);
         }
 
+        public static string ToDisplayLocal(this Currency currency, long cents)
+        {
+            return ToDisplayLocal(currency, Math.Round(cents / 100m, 2));
+        }
+
         public static string ToDisplayLocal(this Currency currency, decimal payment)
         {
             System.Globalization.CultureInfo culture = Currency.GetCulture(currency.Code);
