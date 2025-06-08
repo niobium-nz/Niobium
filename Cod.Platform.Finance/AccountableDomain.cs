@@ -70,30 +70,29 @@ namespace Cod.Platform.Finance
                       Transaction.BuildRowKey(fromInclusive));
         }
 
-        public async Task<double> GetFrozenAsync()
+        public async Task<long> GetFrozenAsync()
         {
             string pk = FrozenKey;
             string rk = AccountingPrincipal;
-            double result = await cacheStore.Value.GetAsync<double>(pk, rk);
+            long result = await cacheStore.Value.GetAsync<long>(pk, rk);
             return result;
         }
 
-        public async Task<double> FreezeAsync(double amount)
+        public async Task<long> FreezeAsync(long amount)
         {
-            amount = amount.ChineseRound();
             if (amount < 0)
             {
                 throw new ArgumentException("Amount cannot be negative.", nameof(amount));
             }
             string pk = FrozenKey;
             string rk = AccountingPrincipal;
-            double currentValue = await cacheStore.Value.GetAsync<double>(pk, rk);
-            double result = currentValue + amount;
+            long currentValue = await cacheStore.Value.GetAsync<long>(pk, rk);
+            long result = currentValue + amount;
             await cacheStore.Value.SetAsync(pk, rk, result, false);
             return result;
         }
 
-        public async Task<double> UnfreezeAsync()
+        public async Task<long> UnfreezeAsync()
         {
             string pk = FrozenKey;
             string rk = AccountingPrincipal;
@@ -101,17 +100,16 @@ namespace Cod.Platform.Finance
             return 0;
         }
 
-        public async Task<double> UnfreezeAsync(double amount)
+        public async Task<long> UnfreezeAsync(long amount)
         {
-            amount = amount.ChineseRound();
             if (amount < 0)
             {
                 throw new ArgumentException("Amount cannot be negative.", nameof(amount));
             }
             string pk = FrozenKey;
             string rk = AccountingPrincipal;
-            double currentValue = await cacheStore.Value.GetAsync<double>(pk, rk);
-            double result = currentValue - amount;
+            long currentValue = await cacheStore.Value.GetAsync<long>(pk, rk);
+            long result = currentValue - amount;
             await cacheStore.Value.SetAsync(pk, rk, result, false);
             return result;
         }
@@ -193,8 +191,7 @@ namespace Cod.Platform.Finance
         {
             //REMARK (5he11) 将输入限制为仅取其日期的当日的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
             input = new DateTimeOffset(input.UtcDateTime.Date.ToUniversalTime()).AddDays(1).AddMilliseconds(-1);
-            double frozen = await GetFrozenAsync();
-            frozen = frozen.ChineseRound();
+            long frozen = await GetFrozenAsync();
             bool queryCache;
             DateTimeOffset lastAccountDate = input;
             if (input.UtcDateTime.Date.ToUniversalTime() != DateTimeOffset.UtcNow.UtcDateTime.Date.ToUniversalTime())
@@ -209,7 +206,7 @@ namespace Cod.Platform.Finance
                 queryCache = true;
             }
 
-            double balance;
+            long balance;
             string principal = AccountingPrincipal;
             Accounting accounting = await accountingRepo.Value.RetrieveAsync(Accounting.BuildPartitionKey(principal), Accounting.BuildRowKey(lastAccountDate));
             if (accounting == null)
@@ -227,13 +224,11 @@ namespace Cod.Platform.Finance
                 DateTimeOffset pos = accounting.ETag == null ? input.AddMilliseconds(-1).AddDays(-3) : accounting.GetEnd().AddMilliseconds(1);
                 while (pos < input)
                 {
-                    double delta = await GetDeltaAsync(pos);
+                    long delta = await GetDeltaAsync(pos);
                     balance += delta;
                     pos = pos.AddDays(1);
                 }
             }
-
-            balance = balance.ChineseRound();
 
             return new AccountBalance
             {
