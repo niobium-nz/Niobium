@@ -187,6 +187,9 @@ namespace Cod.Platform.Finance
             return transaction;
         }
 
+        public async Task<AccountBalance> GetBalanceAsync()
+            => await GetBalanceAsync(DateTimeOffset.UtcNow);
+
         public async Task<AccountBalance> GetBalanceAsync(DateTimeOffset input)
         {
             //REMARK (5he11) 将输入限制为仅取其日期的当日的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
