@@ -1,4 +1,7 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Cod.Platform.Finance
 {
@@ -17,7 +20,25 @@ namespace Cod.Platform.Finance
 
             services.AddPlatform();
             services.AddTransient<IPaymentService, PaymentService>();
+            services.AddTransient<PaymentRequestMiddleware>();
+            services.AddTransient<PaymentWebhookMiddleware>();
             return services;
+        }
+
+        public static IFunctionsWorkerApplicationBuilder UsePlatformPayment(this IFunctionsWorkerApplicationBuilder builder)
+        {
+            builder.UsePlatform();
+            builder.UseWhen<FunctionMiddlewareAdaptor<PaymentRequestMiddleware>>(FunctionMiddlewarePredicates.IsHttp);
+            builder.UseWhen<FunctionMiddlewareAdaptor<PaymentWebhookMiddleware>>(FunctionMiddlewarePredicates.IsHttp);
+            return builder;
+        }
+
+        public static IApplicationBuilder UsePlatformPayment(this IApplicationBuilder builder)
+        {
+            builder.UsePlatform();
+            builder.UseMiddleware<PaymentRequestMiddleware>();
+            builder.UseMiddleware<PaymentWebhookMiddleware>();
+            return builder;
         }
     }
 }

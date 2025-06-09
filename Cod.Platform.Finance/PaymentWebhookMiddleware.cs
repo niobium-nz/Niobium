@@ -6,11 +6,19 @@ using Microsoft.Extensions.Options;
 using System.Net;
 using System.Text.Json;
 
-namespace Cod.Platform.Finance.Stripe
+namespace Cod.Platform.Finance
 {
-    internal class PaymentWebhookMiddleware(Lazy<IPaymentProcessor> paymentProcessor, IOptions<PaymentServiceOptions> options) : IMiddleware
+    internal class PaymentWebhookMiddleware : IMiddleware
     {
         private static readonly JsonSerializerOptions serializationOptions = new(JsonSerializerDefaults.Web);
+        private readonly Lazy<IPaymentProcessor> paymentProcessor;
+        private readonly IOptions<PaymentServiceOptions> options;
+
+        public PaymentWebhookMiddleware(Lazy<IPaymentProcessor> paymentProcessor, IOptions<PaymentServiceOptions> options)
+        {
+            this.paymentProcessor = paymentProcessor;
+            this.options = options;
+        }
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {

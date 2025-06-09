@@ -5,13 +5,22 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Options;
 using System.Net;
 
-namespace Cod.Platform.Finance.Stripe
+namespace Cod.Platform.Finance
 {
-    internal class PaymentRequestMiddleware(Lazy<IPaymentProcessor> paymentProcessor, IOptions<PaymentServiceOptions> options) : IMiddleware
+    internal class PaymentRequestMiddleware : IMiddleware
     {
-        public const string PaymentIDQueryParameter = "id";
+        public const string PaymentUserQueryParameter = "user";
+        public const string PaymentOrderQueryParameter = "order";
         public const string PaymentCurrencyQueryParameter = "currency";
         public const string PaymentAmountQueryParameter = "amount";
+        private readonly Lazy<IPaymentProcessor> paymentProcessor;
+        private readonly IOptions<PaymentServiceOptions> options;
+
+        public PaymentRequestMiddleware(Lazy<IPaymentProcessor> paymentProcessor, IOptions<PaymentServiceOptions> options)
+        {
+            this.paymentProcessor = paymentProcessor;
+            this.options = options;
+        }
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
@@ -28,17 +37,27 @@ namespace Cod.Platform.Finance.Stripe
                 return;
             }
 
-            if (!req.Query.TryGetValue(PaymentIDQueryParameter, out var id))
+            if (!req.Query.TryGetValue(PaymentUserQueryParameter, out var u) || !Guid.TryParse(u, out var user))
             {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                await context.Response.WriteAsync($"Invalid '{PaymentIDQueryParameter}' query parameter.");
+                await context.Response.WriteAsync($"Invalid '{PaymentUserQueryParameter}' query parameter.");
                 return;
+            }
+
+            string order = null;
+            if (req.Query.TryGetValue(PaymentOrderQueryParameter, out var o) )
+            {
+                order = o.SingleOrDefault();
+                if (!string.IsNullOrWhiteSpace(order))
+                {
+                    order = order.Trim();
+                }
             }
 
             if (!req.Query.TryGetValue(PaymentCurrencyQueryParameter, out var c) || !Currency.TryParse(c, out var currency))
             {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                await context.Response.WriteAsync($"Invalid '{PaymentIDQueryParameter}' query parameter.");
+                await context.Response.WriteAsync($"Invalid '{PaymentCurrencyQueryParameter}' query parameter.");
                 return;
             }
 
@@ -52,11 +71,11 @@ namespace Cod.Platform.Finance.Stripe
             var chargeRequest = new ChargeRequest
             {
                 TargetKind = ChargeTargetKind.User,
-                Target = id,
+                Target = user.ToString(),
                 Channel = PaymentChannels.Cards,
                 Operation = PaymentOperationKind.Charge,
                 Source = req.Headers.Origin,
-                Order = id,
+                Order = order,
                 Amount = amount,
                 Currency = currency,
                 IP = req.GetRemoteIP(),
