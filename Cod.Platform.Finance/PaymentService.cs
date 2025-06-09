@@ -3,10 +3,12 @@ namespace Cod.Platform.Finance
     public class PaymentService : IPaymentService
     {
         private readonly Lazy<IEnumerable<IPaymentProcessor>> processors;
+        private readonly IEnumerable<IDomainEventHandler<IDomain<Transaction>>> eventHandlers;
 
-        public PaymentService(Lazy<IEnumerable<IPaymentProcessor>> processors)
+        public PaymentService(Lazy<IEnumerable<IPaymentProcessor>> processors, IEnumerable<IDomainEventHandler<IDomain<Transaction>>> eventHandlers)
         {
             this.processors = processors;
+            this.eventHandlers = eventHandlers;
         }
 
         public virtual async Task<OperationResult<ChargeResult>> RetrieveChargeAsync(string transaction, PaymentChannels paymentChannel)
@@ -50,6 +52,12 @@ namespace Cod.Platform.Finance
                 {
                     continue;
                 }
+
+                if (result.IsSuccess && result.Result?.Transaction != null)
+                {
+                    await this.eventHandlers.InvokeAsync(new TransactionCreatedEvent(result.Result.Transaction));
+                }
+
                 return result;
             }
             throw new NotSupportedException();
