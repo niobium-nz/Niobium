@@ -167,6 +167,11 @@ namespace Cod.Platform.Finance
                 count++;
             }
 
+            return await MakeTransactionAsync(transactions);
+        }
+
+        public async Task<IEnumerable<Transaction>> MakeTransactionAsync(IEnumerable<Transaction> transactions)
+        {
             await transactionRepo.Value.CreateAsync(transactions);
             string now = DateTimeOffset.UtcNow.ToSixDigitsDate();
             foreach (Transaction transaction in transactions)

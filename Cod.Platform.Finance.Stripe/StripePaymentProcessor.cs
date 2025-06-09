@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Stripe;
+using System.Text.Json;
 
 namespace Cod.Platform.Finance.Stripe
 {
@@ -12,6 +13,7 @@ namespace Cod.Platform.Finance.Stripe
         ILogger<StripePaymentProcessor> logger)
         : IPaymentProcessor
     {
+        private static readonly JsonSerializerOptions serializationOptions = new(JsonSerializerDefaults.Web);
         private static readonly TimeSpan ValidTransactionMaxDelay = TimeSpan.FromMinutes(5);
         public const string PaymentInfoSpliter = "|";
 
@@ -173,16 +175,23 @@ namespace Cod.Platform.Finance.Stripe
             return new OperationResult<ChargeResponse>(result);
         }
 
-        public virtual async Task<OperationResult<ChargeResult>> ReportAsync(object notification)
+        public virtual async Task<OperationResult<ChargeResult>> ReportAsync(string notificationJSON)
         {
-            if (notification is not StripeReport r)
+            if (string.IsNullOrWhiteSpace(notificationJSON))
             {
                 return new OperationResult<ChargeResult>(Cod.InternalError.NotAcceptable);
             }
 
-            if (r.Kind == StripeReportKind.Setup)
+            var r = System.Text.Json.JsonSerializer.Deserialize<StripeReport>(notificationJSON, serializationOptions);
+
+            if (r == null || !StripeReport.SupportedTypes.Contains(r.Type))
             {
-                var setup = await stripeIntegration.Value.RetriveSetupIntentAsync(r.ID);
+                return new OperationResult<ChargeResult>(Cod.InternalError.NotAcceptable);
+            }
+
+            if (r.Type == StripeReport.TypeSetup)
+            {
+                var setup = await stripeIntegration.Value.RetriveSetupIntentAsync(r.Data.Object.ID);
                 if (setup == null)
                 {
                     return new OperationResult<ChargeResult>(Cod.InternalError.NotFound);
@@ -196,11 +205,6 @@ namespace Cod.Platform.Finance.Stripe
                 if (setup.Status != "succeeded")
                 {
                     return new OperationResult<ChargeResult>(Cod.InternalError.PaymentRequired, setup.Status);
-                }
-
-                if (setup.ClientSecret != r.Secret)
-                {
-                    return new OperationResult<ChargeResult>(Cod.InternalError.Forbidden);
                 }
 
                 if (DateTime.UtcNow - setup.Created > ValidTransactionMaxDelay)
@@ -239,9 +243,9 @@ namespace Cod.Platform.Finance.Stripe
             }
 
             // TODO (5he11) 这里要挂个HOOK，让外边可以根据Transaction.Reference（订单号）更新订单上边的Transaction字段；上边操作transaction的其实应该按照status决定删除，还是不管，还是插入
-            if (r.Kind == StripeReportKind.Charge)
+            if (r.Type == StripeReport.TypeCharge)
             {
-                var charge = await stripeIntegration.Value.RetriveChargeAsync(r.ID);
+                var charge = await stripeIntegration.Value.RetriveChargeAsync(r.Data.Object.ID);
                 var targetKind = (ChargeTargetKind)int.Parse(charge.Metadata[Constants.MetadataTargetKindKey]);
                 var target = charge.Metadata[Constants.MetadataTargetKey];
                 var order = charge.Metadata[Constants.MetadataOrderKey];
@@ -274,8 +278,6 @@ namespace Cod.Platform.Finance.Stripe
                         Status = (int)TransactionStatus.Completed,
                         Remark = Cod.Constants.TRANSACTION_REASON_DEPOSIT,
                     };
-
-                    await transactionRepo.Value.CreateAsync(transaction);
                 }
 
                 return new OperationResult<ChargeResult>(new ChargeResult
@@ -293,9 +295,9 @@ namespace Cod.Platform.Finance.Stripe
                     Transaction = transaction,
                 });
             }
-            else if (r.Kind == StripeReportKind.Refund)
+            else if (r.Type == StripeReport.TypeRefund)
             {
-                var refund = await stripeIntegration.Value.RetriveRefundAsync(r.ID);
+                var refund = await stripeIntegration.Value.RetriveRefundAsync(r.Data.Object.ID);
                 var charge1 = await stripeIntegration.Value.RetriveChargeAsync(refund.ChargeId);
                 var targetKind = (ChargeTargetKind)int.Parse(charge1.Metadata[Constants.MetadataTargetKindKey]);
                 var target = charge1.Metadata[Constants.MetadataTargetKey];
@@ -320,8 +322,6 @@ namespace Cod.Platform.Finance.Stripe
                         Status = (int)TransactionStatus.Refunded,
                         Remark = Cod.Constants.TRANSACTION_REASON_REFUND,
                     };
-
-                    await transactionRepo.Value.CreateAsync(transaction);
                 }
 
                 return new OperationResult<ChargeResult>(new ChargeResult

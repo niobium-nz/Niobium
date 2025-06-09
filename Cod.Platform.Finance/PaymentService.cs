@@ -43,11 +43,11 @@ namespace Cod.Platform.Finance
             throw new NotSupportedException();
         }
 
-        public virtual async Task<OperationResult<ChargeResult>> ReportAsync(object notification)
+        public virtual async Task<OperationResult<ChargeResult>> ReportAsync(string notificationJSON)
         {
             foreach (IPaymentProcessor processor in processors.Value)
             {
-                OperationResult<ChargeResult> result = await processor.ReportAsync(notification);
+                OperationResult<ChargeResult> result = await processor.ReportAsync(notificationJSON);
                 if (result.Code == Cod.InternalError.NotAcceptable)
                 {
                     continue;

@@ -13,12 +13,12 @@ namespace Cod.Platform.Finance
         public const string PaymentOrderQueryParameter = "order";
         public const string PaymentCurrencyQueryParameter = "currency";
         public const string PaymentAmountQueryParameter = "amount";
-        private readonly Lazy<IPaymentProcessor> paymentProcessor;
+        private readonly IPaymentService paymentService;
         private readonly IOptions<PaymentServiceOptions> options;
 
-        public PaymentRequestMiddleware(Lazy<IPaymentProcessor> paymentProcessor, IOptions<PaymentServiceOptions> options)
+        public PaymentRequestMiddleware(IPaymentService paymentService, IOptions<PaymentServiceOptions> options)
         {
-            this.paymentProcessor = paymentProcessor;
+            this.paymentService = paymentService;
             this.options = options;
         }
 
@@ -80,7 +80,7 @@ namespace Cod.Platform.Finance
                 Currency = currency,
                 IP = req.GetRemoteIP(),
             };
-            var result = await paymentProcessor.Value.ChargeAsync(chargeRequest);
+            var result = await paymentService.ChargeAsync(chargeRequest);
             var action = result.MakeResponse(JsonSerializationFormat.CamelCase);
             await action.ExecuteResultAsync(new ActionContext(context, new RouteData(), new ActionDescriptor()));
         }

@@ -25,19 +25,28 @@ namespace Cod.Platform.Finance
             return services;
         }
 
-        public static IFunctionsWorkerApplicationBuilder UsePlatformPayment(this IFunctionsWorkerApplicationBuilder builder)
+        public static IFunctionsWorkerApplicationBuilder UsePlatformPayment<TDepositHandler, TAccountableDomain, TAccountableEntity>(this IFunctionsWorkerApplicationBuilder builder)
+            where TDepositHandler : AccountDepositRecorder<TAccountableDomain, TAccountableEntity>
+            where TAccountableDomain : AccountableDomain<TAccountableEntity>
+            where TAccountableEntity : class, new()
         {
             builder.UsePlatform();
             builder.UseWhen<FunctionMiddlewareAdaptor<PaymentRequestMiddleware>>(FunctionMiddlewarePredicates.IsHttp);
             builder.UseWhen<FunctionMiddlewareAdaptor<PaymentWebhookMiddleware>>(FunctionMiddlewarePredicates.IsHttp);
+
+            builder.Services.AddDomainEventHandler<TDepositHandler, Transaction>();
             return builder;
         }
 
-        public static IApplicationBuilder UsePlatformPayment(this IApplicationBuilder builder)
+        public static IApplicationBuilder UsePlatformPayment<TDepositHandler, TAccountableDomain, TAccountableEntity>(this IApplicationBuilder builder)
+            where TDepositHandler : AccountDepositRecorder<TAccountableDomain, TAccountableEntity>
+            where TAccountableDomain : AccountableDomain<TAccountableEntity>
+            where TAccountableEntity : class, new()
         {
             builder.UsePlatform();
             builder.UseMiddleware<PaymentRequestMiddleware>();
             builder.UseMiddleware<PaymentWebhookMiddleware>();
+
             return builder;
         }
     }

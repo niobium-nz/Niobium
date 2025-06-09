@@ -4,19 +4,17 @@ using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Options;
 using System.Net;
-using System.Text.Json;
 
 namespace Cod.Platform.Finance
 {
     internal class PaymentWebhookMiddleware : IMiddleware
     {
-        private static readonly JsonSerializerOptions serializationOptions = new(JsonSerializerDefaults.Web);
-        private readonly Lazy<IPaymentProcessor> paymentProcessor;
+        private readonly IPaymentService paymentService;
         private readonly IOptions<PaymentServiceOptions> options;
 
-        public PaymentWebhookMiddleware(Lazy<IPaymentProcessor> paymentProcessor, IOptions<PaymentServiceOptions> options)
+        public PaymentWebhookMiddleware(IPaymentService paymentService, IOptions<PaymentServiceOptions> options)
         {
-            this.paymentProcessor = paymentProcessor;
+            this.paymentService = paymentService;
             this.options = options;
         }
 
@@ -41,8 +39,9 @@ namespace Cod.Platform.Finance
                 return;
             }
 
-            var chargeRequest = await req.ReadFromJsonAsync<ChargeRequest>(serializationOptions, context.RequestAborted);
-            var result = await paymentProcessor.Value.ChargeAsync(chargeRequest);
+            using var reader = new StreamReader(req.Body);
+            var json = await reader.ReadToEndAsync();
+            var result = await paymentService.ReportAsync(json);
             var action = result.MakeResponse();
             await action.ExecuteResultAsync(new ActionContext(context, new RouteData(), new ActionDescriptor()));
         }

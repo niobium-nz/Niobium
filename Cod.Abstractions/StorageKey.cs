@@ -36,5 +36,10 @@ namespace Cod
         {
             return !(left == right);
         }
+
+        public override string ToString()
+        {
+            return this.BuildFullID();
+        }
     }
 }

@@ -6,6 +6,6 @@ namespace Cod.Platform.Finance
 
         Task<OperationResult<ChargeResponse>> ChargeAsync(ChargeRequest request);
 
-        Task<OperationResult<ChargeResult>> ReportAsync(object notification);
+        Task<OperationResult<ChargeResult>> ReportAsync(string notificationJSON);
     }
 }
