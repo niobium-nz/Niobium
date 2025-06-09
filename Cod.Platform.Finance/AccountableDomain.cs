@@ -192,10 +192,24 @@ namespace Cod.Platform.Finance
             return transaction;
         }
 
-        public async Task<AccountBalance> GetBalanceAsync()
-            => await GetBalanceAsync(DateTimeOffset.UtcNow);
+        protected async Task InitializeBalanceAsync(CancellationToken cancellationToken = default)
+        {
+            //REMARK (5he11) 当日的最后一刻转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
+            var time = new DateTimeOffset(DateTimeOffset.UtcNow.UtcDateTime.Date.ToUniversalTime()).AddMilliseconds(-1);
+            await accountingRepo.Value.CreateAsync(new Accounting
+            {
+                PartitionKey = Accounting.BuildPartitionKey(AccountingPrincipal),
+                RowKey = Accounting.BuildRowKey(time),
+                Balance = 0,
+                Credits = 0,
+                Debits = 0,
+            }, cancellationToken: cancellationToken);
+        }
 
-        public async Task<AccountBalance> GetBalanceAsync(DateTimeOffset input)
+        public async Task<AccountBalance> GetBalanceAsync(CancellationToken cancellationToken = default)
+            => await GetBalanceAsync(DateTimeOffset.UtcNow, cancellationToken: cancellationToken);
+
+        public async Task<AccountBalance> GetBalanceAsync(DateTimeOffset input, CancellationToken cancellationToken = default)
         {
             //REMARK (5he11) 将输入限制为仅取其日期的当日的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
             input = new DateTimeOffset(input.UtcDateTime.Date.ToUniversalTime()).AddDays(1).AddMilliseconds(-1);
@@ -216,11 +230,14 @@ namespace Cod.Platform.Finance
 
             long balance;
             string principal = AccountingPrincipal;
-            Accounting accounting = await accountingRepo.Value.RetrieveAsync(Accounting.BuildPartitionKey(principal), Accounting.BuildRowKey(lastAccountDate));
+            Accounting accounting = await accountingRepo.Value.RetrieveAsync(
+                Accounting.BuildPartitionKey(principal),
+                Accounting.BuildRowKey(lastAccountDate),
+                cancellationToken: cancellationToken);
             if (accounting == null)
             {
                 //REMARK (5he11) 若无法高效命中则使用慢速范围查询
-                accounting = await GetLatestAccountingAsync(lastAccountDate);
+                accounting = await GetLatestAccountingAsync(lastAccountDate, cancellationToken);
                 queryCache = true;
             }
             balance = accounting.Balance;
@@ -244,6 +261,14 @@ namespace Cod.Platform.Finance
                 Frozen = frozen,
                 Available = balance - frozen
             };
+        }
+
+        protected async Task InitializeDeltaAsync(CancellationToken cancellationToken = default)
+        {
+            var time = new DateTimeOffset(DateTimeOffset.UtcNow.UtcDateTime.Date.ToUniversalTime());
+            string pk = $"{DeltaKey}-{time.ToSixDigitsDate()}";
+            string rk = AccountingPrincipal;
+            await cacheStore.Value.SetAsync(pk, rk, 0, false, cancellationToken: cancellationToken);
         }
 
         private async Task<long> GetDeltaAsync(DateTimeOffset input)
@@ -307,7 +332,7 @@ namespace Cod.Platform.Finance
             return accounting;
         }
 
-        private async Task<Accounting> GetLatestAccountingAsync(DateTimeOffset input)
+        private async Task<Accounting> GetLatestAccountingAsync(DateTimeOffset input, CancellationToken cancellationToken = default)
         {
             //REMARK (5he11) 将输入限制为仅取其日期的当日的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
             input = new DateTimeOffset(input.UtcDateTime.Date.ToUniversalTime()).AddDays(1).AddMilliseconds(-1);
@@ -316,8 +341,9 @@ namespace Cod.Platform.Finance
             List<Accounting> accountings = await accountingRepo.Value.QueryAsync(
                                     Accounting.BuildPartitionKey(principal),
                                     Accounting.BuildRowKey(input),
-                                    Accounting.BuildRowKey(searchFrom))
-                                .ToListAsync();
+                                    Accounting.BuildRowKey(searchFrom),
+                                    cancellationToken: cancellationToken)
+                                .ToListAsync(cancellationToken);
             Accounting latest = accountings.OrderByDescending(a => a.GetEnd()).FirstOrDefault();
             if (latest != null)
             {

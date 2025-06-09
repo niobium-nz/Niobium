@@ -16,6 +16,6 @@
 
         Task<Transaction> GetTransactionAsync(DateTimeOffset id);
 
-        Task<AccountBalance> GetBalanceAsync(DateTimeOffset input);
+        Task<AccountBalance> GetBalanceAsync(DateTimeOffset input, CancellationToken cancellationToken = default);
     }
 }
