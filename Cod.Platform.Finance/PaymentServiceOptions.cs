@@ -7,5 +7,7 @@
         public string PaymentRequestEndpoint { get; set; } = Constants.DefaultPaymentRequestEndpoint;
 
         public string SecretAPIKey { get; set; }
+
+        public string SecretHashKey { get; set; }
     }
 }

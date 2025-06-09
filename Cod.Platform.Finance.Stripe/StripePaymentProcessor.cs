@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Stripe;
 
 namespace Cod.Platform.Finance.Stripe
@@ -5,7 +7,9 @@ namespace Cod.Platform.Finance.Stripe
     public class StripePaymentProcessor(
         Lazy<IRepository<PaymentMethod>> paymentRepo,
         Lazy<IRepository<Transaction>> transactionRepo,
-        Lazy<StripeIntegration> stripeIntegration)
+        Lazy<StripeIntegration> stripeIntegration,
+        IOptions<PaymentServiceOptions> options,
+        ILogger<StripePaymentProcessor> logger)
         : IPaymentProcessor
     {
         private static readonly TimeSpan ValidTransactionMaxDelay = TimeSpan.FromMinutes(5);
@@ -77,7 +81,7 @@ namespace Cod.Platform.Finance.Stripe
                 {
                     string? stripeCustomer = null;
                     string? stripePaymentMethod = null;
-                    
+
                     if (request.Account != null && request.Account is string paymentInfo)
                     {
                         var paymentInfoParts = paymentInfo.Split([PaymentInfoSpliter], StringSplitOptions.RemoveEmptyEntries);
@@ -241,6 +245,15 @@ namespace Cod.Platform.Finance.Stripe
                 var targetKind = (ChargeTargetKind)int.Parse(charge.Metadata[Constants.MetadataTargetKindKey]);
                 var target = charge.Metadata[Constants.MetadataTargetKey];
                 var order = charge.Metadata[Constants.MetadataOrderKey];
+                var paymentHash = charge.Metadata[Constants.MetadataHashKey];
+                var valueToHash = $"{target}{order}";
+                var serverHash = SHA.SHA256Hash(valueToHash, options.Value.SecretHashKey);
+                if (!serverHash.Equals(paymentHash, StringComparison.OrdinalIgnoreCase))
+                {
+                    logger.LogWarning($"Payment hash mismatch for charge {charge.Id}. Expected: {serverHash}, Received: {paymentHash}");
+                    return new OperationResult<ChargeResult>(Cod.InternalError.NotAcceptable);
+                }
+
                 var timestamp = new DateTimeOffset(charge.Created);
                 var tpk = Transaction.BuildPartitionKey(target);
                 var trk = Transaction.BuildRowKey(timestamp);
@@ -376,7 +389,7 @@ namespace Cod.Platform.Finance.Stripe
             {
                 return new OperationResult<ChargeResult>(Cod.InternalError.NotFound);
             }
-            
+
             var targetKind = (ChargeTargetKind)int.Parse(charge.Metadata[Constants.MetadataTargetKindKey]);
             var target = charge.Metadata[Constants.MetadataTargetKey];
             var order = charge.Metadata[Constants.MetadataOrderKey];

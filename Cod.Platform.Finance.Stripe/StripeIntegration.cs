@@ -1,10 +1,11 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Stripe;
 using System.Net.Sockets;
 
 namespace Cod.Platform.Finance.Stripe
 {
-    public class StripeIntegration(ILogger<StripeIntegration> logger)
+    public class StripeIntegration(IOptions<PaymentServiceOptions> options, ILogger<StripeIntegration> logger)
     {
         public async Task<OperationResult<SetupIntent>> CreateSetupIntentAsync(Guid user)
         {
@@ -82,11 +83,14 @@ namespace Cod.Platform.Finance.Stripe
 
             try
             {
+                var valueToHash = $"{target}{order}";
+                var hash = SHA.SHA256Hash(valueToHash, options.Value.SecretHashKey);
                 var metadata = new Dictionary<string, string>
                 {
                     { Constants.MetadataTargetKindKey, ((int)targetKind).ToString() },
                     { Constants.MetadataTargetKey, target },
                     { Constants.MetadataOrderKey, order },
+                    { Constants.MetadataHashKey, hash },
                 };
 
                 if (reference != null)
@@ -94,7 +98,7 @@ namespace Cod.Platform.Finance.Stripe
                     metadata.Add(Constants.MetadataReferenceKey, reference);
                 }
 
-                var options = new PaymentIntentCreateOptions
+                var intentOptions = new PaymentIntentCreateOptions
                 {
                     Amount = amount,
                     Currency = currency.ToString().ToLowerInvariant(),
@@ -103,22 +107,22 @@ namespace Cod.Platform.Finance.Stripe
 
                 if (stripeCustomerID != null)
                 {
-                    options.Customer = stripeCustomerID;
+                    intentOptions.Customer = stripeCustomerID;
                 }
 
                 if (stripePaymentMethodID != null)
                 {
-                    options.PaymentMethod = stripePaymentMethodID;
+                    intentOptions.PaymentMethod = stripePaymentMethodID;
                 }
 
                 if (stripeCustomerID != null && stripePaymentMethodID != null)
                 {
-                    options.OffSession = true;
-                    options.Confirm = true;
+                    intentOptions.OffSession = true;
+                    intentOptions.Confirm = true;
                 }
 
                 var service = new PaymentIntentService();
-                var result = await service.CreateAsync(options);
+                var result = await service.CreateAsync(intentOptions);
                 return new OperationResult<PaymentIntent>(result);
 
             }
