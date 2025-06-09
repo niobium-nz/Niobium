@@ -28,7 +28,7 @@ namespace Cod.Platform.Finance.Stripe
                 return;
             }
 
-            if (!req.Query.TryGetValue(PaymentIDQueryParameter, out var id) || !Guid.TryParse(id, out var guid))
+            if (!req.Query.TryGetValue(PaymentIDQueryParameter, out var id))
             {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 await context.Response.WriteAsync($"Invalid '{PaymentIDQueryParameter}' query parameter.");
@@ -52,11 +52,11 @@ namespace Cod.Platform.Finance.Stripe
             var chargeRequest = new ChargeRequest
             {
                 TargetKind = ChargeTargetKind.User,
-                Target = guid.ToString(),
+                Target = id,
                 Channel = PaymentChannels.Cards,
                 Operation = PaymentOperationKind.Charge,
                 Source = req.Headers.Origin,
-                Order = guid,
+                Order = id,
                 Amount = amount,
                 Currency = currency,
                 IP = req.GetRemoteIP(),

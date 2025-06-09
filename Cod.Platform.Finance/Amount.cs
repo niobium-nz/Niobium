@@ -37,5 +37,10 @@
         {
             return !(left == right);
         }
+
+        public override string ToString()
+        {
+            return Currency.ToDisplayLocal(Cents);
+        }
     }
 }

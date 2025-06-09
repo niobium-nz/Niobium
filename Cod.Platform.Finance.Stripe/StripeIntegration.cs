@@ -67,7 +67,7 @@ namespace Cod.Platform.Finance.Stripe
         public async Task<OperationResult<PaymentIntent>> ChargeAsync(
             ChargeTargetKind targetKind,
             string target,
-            Guid order,
+            string order,
             Currency currency,
             long amount,            
             string? reference = null,
@@ -86,7 +86,7 @@ namespace Cod.Platform.Finance.Stripe
                 {
                     { Constants.MetadataTargetKindKey, ((int)targetKind).ToString() },
                     { Constants.MetadataTargetKey, target },
-                    { Constants.MetadataOrderKey, order.ToString() },
+                    { Constants.MetadataOrderKey, order },
                 };
 
                 if (reference != null)
@@ -258,7 +258,7 @@ namespace Cod.Platform.Finance.Stripe
         public async Task<OperationResult<PaymentIntent>> AuthorizeAsync(
             ChargeTargetKind targetKind,
             string target,
-            Guid order,
+            string order,
             Currency currency,
             long amount,
             string? reference = null,
@@ -278,7 +278,7 @@ namespace Cod.Platform.Finance.Stripe
                 {
                     { Constants.MetadataTargetKindKey, ((int)targetKind).ToString() },
                     { Constants.MetadataTargetKey, target },
-                    { Constants.MetadataOrderKey, order.ToString() },
+                    { Constants.MetadataOrderKey, order },
                 };
 
                 if (reference != null)
