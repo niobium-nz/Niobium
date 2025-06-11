@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace Cod.Platform.Captcha.ReCaptcha
 {
@@ -38,7 +39,18 @@ namespace Cod.Platform.Captcha.ReCaptcha
 
             services.Configure<CaptchaOptions>(o => options?.Invoke(o));
 
-            services.AddTransient<IVisitorRiskAssessor, GoogleReCaptchaRiskAssessor>();
+            services.AddTransient<IVisitorRiskAssessor>(sp =>
+            {
+                var captchaOptions = sp.GetRequiredService<IOptions<CaptchaOptions>>().Value;
+                if (captchaOptions.IsEnabled)
+                {
+                    return sp.GetRequiredService<GoogleReCaptchaRiskAssessor>();
+                }
+                else
+                {
+                    return sp.GetRequiredService<DevelopmentRiskAccessor>();
+                }
+            });
             services.AddHttpClient<IVisitorRiskAssessor, GoogleReCaptchaRiskAssessor>((sp, httpClient) =>
             {
                 httpClient.BaseAddress = new Uri(recaptchaHost);
