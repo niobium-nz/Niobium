@@ -27,8 +27,6 @@ namespace Cod.Messaging.ServiceBus
 
                 result.ID = message.MessageId;
                 result.Occurried = message.EnqueuedTime;
-                result.Source = DomainEventAudience.External;
-                result.Target = DomainEventAudience.Internal;
                 return true;
             }
             catch

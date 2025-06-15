@@ -13,8 +13,8 @@
 
         public async Task OnEvent(TEvent e, CancellationToken cancellationToken = default)
         {
-            e.Target = DomainEventAudience.Internal;
             e.Source = DomainEventAudience.External;
+            e.Target = DomainEventAudience.Internal;
             await eventHandlers.InvokeAsync(e, cancellationToken);
         }
     }
