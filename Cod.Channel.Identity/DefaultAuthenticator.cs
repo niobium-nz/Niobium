@@ -25,7 +25,7 @@ namespace Cod.Channel.Identity
 
         public JsonWebToken? AccessToken { get; private set; }
 
-        public async Task<bool> GetAuthenticateStatus(CancellationToken? cancellationToken)
+        public async Task<bool> GetAuthenticateStatus(CancellationToken cancellationToken = default)
         {
             await InitializeAsync();
 
@@ -64,14 +64,14 @@ namespace Cod.Channel.Identity
             return false;
         }
 
-        public async Task<IEnumerable<Claim>?> GetClaimsAsync(CancellationToken? cancellationToken)
+        public async Task<IEnumerable<Claim>?> GetClaimsAsync(CancellationToken cancellationToken = default)
         {
             await InitializeAsync();
             var authenticated = await this.GetAuthenticateStatus(cancellationToken);
             return authenticated ? this.AccessToken!.Claims : null;
         }
 
-        public virtual async Task<LoginResult> LoginAsync(string scheme, string identity, string? credential, bool remember, CancellationToken? cancellationToken)
+        public virtual async Task<LoginResult> LoginAsync(string scheme, string identity, string? credential, bool remember, CancellationToken cancellationToken = default)
         {
             await InitializeAsync();
 
@@ -115,14 +115,14 @@ namespace Cod.Channel.Identity
             }
         }
 
-        public async Task LogoutAsync(CancellationToken? cancellationToken)
+        public async Task LogoutAsync(CancellationToken cancellationToken = default)
         {
             await InitializeAsync();
             await this.InitializeIDTokenAsync(null, false);
             await this.OnAuthenticationUpdated(false, cancellationToken);
         }
 
-        public virtual async Task<string> RetrieveResourceTokenAsync(ResourceType type, string resource, string? partition, string? id, CancellationToken? cancellationToken)
+        public virtual async Task<string> RetrieveResourceTokenAsync(ResourceType type, string resource, string? partition, string? id, CancellationToken cancellationToken = default)
         {
             await InitializeAsync();
             var authenticated = await this.GetAuthenticateStatus(cancellationToken);
@@ -297,7 +297,7 @@ namespace Cod.Channel.Identity
             }
         }
 
-        protected virtual async Task RefreshAccessTokenAsync(string idToken, bool remember, CancellationToken? cancellationToken)
+        protected virtual async Task RefreshAccessTokenAsync(string idToken, bool remember, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(idToken, nameof(idToken));
             var result = await identityService.RefreshAccessTokenAsync(idToken, cancellationToken);
@@ -319,7 +319,7 @@ namespace Cod.Channel.Identity
             }
         }
 
-        protected async virtual Task OnAuthenticationUpdated(bool isAuthenticated, CancellationToken? cancellationToken)
+        protected async virtual Task OnAuthenticationUpdated(bool isAuthenticated, CancellationToken cancellationToken)
         {
             var e = new AuthenticationUpdatedEvent { IsAuthenticated = isAuthenticated };
             await eventHandlers.Value.InvokeAsync(e, cancellationToken);

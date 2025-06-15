@@ -8,12 +8,12 @@
 
         bool Initialized { get; }
 
-        Task<string> GetHashAsync(CancellationToken? cancellationToken = default);
+        Task<string> GetHashAsync(CancellationToken cancellationToken = default);
     }
 
     public interface IDomain<T> : IDomain
     {
-        Task<T> GetEntityAsync(CancellationToken? cancellationToken = default);
+        Task<T> GetEntityAsync(CancellationToken cancellationToken = default);
 
         IDomain<T> Initialize(T entity);
 

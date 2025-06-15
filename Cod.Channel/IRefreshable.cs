@@ -2,6 +2,6 @@
 {
     public interface IRefreshable
     {
-        Task RefreshAsync(CancellationToken? cancellationToken = default);
+        Task RefreshAsync(CancellationToken cancellationToken = default);
     }
 }

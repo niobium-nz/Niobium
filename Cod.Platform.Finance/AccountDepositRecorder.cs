@@ -11,7 +11,7 @@
             this.repo = repo;
         }
 
-        public override async Task HandleAsync(TransactionCreatedEvent e, CancellationToken? cancellationToken = null)
+        public override async Task HandleCoreAsync(TransactionCreatedEvent e, CancellationToken cancellationToken = default)
         {
             if (e.Transaction.ETag != null)
             {

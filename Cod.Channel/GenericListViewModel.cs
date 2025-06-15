@@ -14,12 +14,9 @@
 
         public bool IsBusy => loadingStateService.IsBusy(typeof(TEntity).Name);
 
-        public virtual async Task RefreshAsync(CancellationToken? cancellationToken = default)
+        public virtual async Task RefreshAsync(CancellationToken cancellationToken = default)
         {
-            cancellationToken ??= CancellationToken.None;
-
             var result = await loadCommand.ExecuteAsync(LoadCommandParameter, cancellationToken);
-
             Children = await Children.RefreshAsync(result.DomainsLoaded, createViewModel, default(TEntity), parent: this, cancellationToken: cancellationToken);
         }
     }

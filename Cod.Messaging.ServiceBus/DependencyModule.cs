@@ -15,6 +15,7 @@ namespace Cod.Messaging.ServiceBus
 
             loaded = true;
 
+            Cod.Messaging.DependencyModule.AddMessaging(services);
             services.Configure<ServiceBusOptions>(o => options?.Invoke(o));
             services.AddTransient<AuthenticationBasedQueueFactory>();
             services.AddTransient(typeof(IMessagingBroker<>), typeof(ServiceBusQueueBroker<>));

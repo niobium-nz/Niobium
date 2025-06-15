@@ -2,9 +2,9 @@
 {
     public static class IMessagingBrokerExtensions
     {
-        public static async Task EnqueueAsync<T>(this IMessagingBroker<T> broker, MessagingEntry<T> message)
+        public static async Task EnqueueAsync<T>(this IMessagingBroker<T> broker, MessagingEntry<T> message, CancellationToken cancellationToken = default)
         {
-            await broker.EnqueueAsync(new[] { message });
+            await broker.EnqueueAsync(new[] { message }, cancellationToken);
         }
     }
 }

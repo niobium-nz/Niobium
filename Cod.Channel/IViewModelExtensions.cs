@@ -8,7 +8,7 @@ namespace Cod.Channel
             Func<TViewModel> createViewModel,
             TEntity dummy,
             IRefreshable parent = null,
-            CancellationToken? cancellationToken = default)
+            CancellationToken cancellationToken = default)
                 where TViewModel : class, IViewModel<TDomain, TEntity>
                 where TDomain : IDomain<TEntity>
         {

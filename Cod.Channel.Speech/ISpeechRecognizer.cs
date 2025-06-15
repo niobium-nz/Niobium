@@ -16,9 +16,4 @@
 
         void Reset();
     }
-
-    public class SpeechRecognizerChangedEventArgs(SpeechRecognizerChangedType type)
-    {
-        public SpeechRecognizerChangedType Type { get; } = type;
-    }
 }

@@ -16,15 +16,14 @@ namespace Cod.Channel
 
         protected bool DomainInitialized { get; private set; }
 
-        public async Task<string> GetHashAsync(CancellationToken? cancellationToken = default)
+        public async Task<string> GetHashAsync(CancellationToken cancellationToken = default)
         {
             return await Domain.GetHashAsync(cancellationToken);
         }
 
-        public async Task<IViewModel<TDomain, TEntity>> InitializeAsync(TDomain domain, IRefreshable parent = null, bool force = false, CancellationToken? cancellationToken = default)
+        public async Task<IViewModel<TDomain, TEntity>> InitializeAsync(TDomain domain, IRefreshable parent = null, bool force = false, CancellationToken cancellationToken = default)
         {
             var shouldNotify = false;
-            cancellationToken ??= CancellationToken.None;
 
             if (force || !this.DomainInitialized)
             {
@@ -40,7 +39,7 @@ namespace Cod.Channel
             }
             if (shouldNotify)
             {
-                await this.OnInitializeAsync(cancellationToken.Value);
+                await this.OnInitializeAsync(cancellationToken);
             }
 
             return this;

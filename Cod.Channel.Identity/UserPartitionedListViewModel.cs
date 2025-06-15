@@ -15,11 +15,9 @@ namespace Cod.Channel.Identity
 
         protected override LoadCommandParameter LoadCommandParameter { get => new(Partition!); }
 
-        public async Task InitializeAsync(CancellationToken? cancellationToken = null)
+        public async Task InitializeAsync(CancellationToken cancellationToken = default)
         {
-            cancellationToken ??= CancellationToken.None;
-
-            (var success, Partition) = await GetPartitionAsync(cancellationToken.Value);
+            (var success, Partition) = await GetPartitionAsync(cancellationToken);
             if (!success)
             {
                 return;

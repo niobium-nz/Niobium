@@ -23,13 +23,13 @@ namespace Cod.Channel.Identity.Blazor
             return new AuthenticationState(principal);
         }
 
-        public async Task HandleAsync(AuthenticationUpdatedEvent e, CancellationToken? cancellationToken = null)
+        public async Task HandleAsync(AuthenticationUpdatedEvent e, CancellationToken cancellationToken = default)
         {
             var state = await GetAuthenticationStateAsync();
             NotifyAuthenticationStateChanged(Task.FromResult(state));
         }
 
-        public async Task HandleAsync(object e, CancellationToken? cancellationToken = null)
+        public async Task HandleAsync(object e, CancellationToken cancellationToken = default)
         {
             if (e is AuthenticationUpdatedEvent args)
             {

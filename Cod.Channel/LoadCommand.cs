@@ -12,10 +12,8 @@
             return loadingStateService.SetBusy(typeof(TEntity).Name, parameter.RowKeyStart ?? parameter.PartitionKeyStart);
         }
 
-        public async Task<LoadCommandResult<TDomain>> ExecuteAsync(LoadCommandParameter parameter, CancellationToken? cancellationToken = default)
+        public async Task<LoadCommandResult<TDomain>> ExecuteAsync(LoadCommandParameter parameter, CancellationToken cancellationToken = default)
         {
-            cancellationToken ??= CancellationToken.None;
-
             if (parameter.PartitionKeyStart != parameter.PartitionKeyEnd || parameter.PartitionKeyStart == null)
             {
                 throw new NotSupportedException("PartitionKeyStart and PartitionKeyEnd must be the same and are both not empty.");
@@ -30,7 +28,7 @@
 
                 using (NewBusyScope(parameter))
                 {
-                    var singleLoaded = await repository.GetAsync(parameter.PartitionKeyStart!, parameter.RowKeyStart!, forceLoad: parameter.Force, cancellationToken: cancellationToken.Value);
+                    var singleLoaded = await repository.GetAsync(parameter.PartitionKeyStart!, parameter.RowKeyStart!, forceLoad: parameter.Force, cancellationToken: cancellationToken);
                     return new LoadCommandResult<TDomain> { DomainsLoaded = new List<TDomain> { singleLoaded } };
                 }
             }
@@ -39,7 +37,7 @@
             {
                 using (NewBusyScope(parameter))
                 {
-                    var loaded = await repository.GetAsync(parameter.PartitionKeyStart!, forceLoad: false, cancellationToken: cancellationToken.Value).ToListAsync();
+                    var loaded = await repository.GetAsync(parameter.PartitionKeyStart!, forceLoad: false, cancellationToken: cancellationToken).ToListAsync(cancellationToken: cancellationToken);
                     return new LoadCommandResult<TDomain> { DomainsLoaded = loaded };
                 }
             }

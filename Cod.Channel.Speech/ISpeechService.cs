@@ -10,11 +10,11 @@
 
         IEnumerable<InputSourceDevice> InputSources { get; }
 
-        Task InitializeAsync(CancellationToken? cancellationToken = default);
+        Task InitializeAsync(CancellationToken cancellationToken = default);
 
-        Task StartAsync(string inputLanguage, string? inputSource, CancellationToken? cancellationToken = default);
+        Task StartAsync(string inputLanguage, string? inputSource, CancellationToken cancellationToken = default);
 
-        Task StopAsync(CancellationToken? cancellationToken = default);
+        Task StopAsync(CancellationToken cancellationToken = default);
 
         void Reset();
     }

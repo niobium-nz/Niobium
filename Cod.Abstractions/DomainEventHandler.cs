@@ -1,11 +1,19 @@
 ﻿namespace Cod
 {
     public abstract class DomainEventHandler<TDomain, TEventArgs> : IDomainEventHandler<TDomain, TEventArgs>
-        where TEventArgs : class
+        where TEventArgs : class, IDomainEvent
     {
-        public abstract Task HandleAsync(TEventArgs e, CancellationToken? cancellationToken = null);
+        public async Task HandleAsync(TEventArgs e, CancellationToken cancellationToken = default)
+        {
+            if (e.Target.HasFlag(DomainEventAudience.Internal))
+            {
+                await HandleCoreAsync(e, cancellationToken);
+            }
+        }
 
-        public async Task HandleAsync(object e, CancellationToken? cancellationToken = null)
+        public abstract Task HandleCoreAsync(TEventArgs e, CancellationToken cancellationToken);
+
+        public async Task HandleAsync(object e, CancellationToken cancellationToken = default)
         {
             if (e is TEventArgs args)
             {
