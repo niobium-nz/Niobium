@@ -4,6 +4,12 @@ namespace Cod.Messaging
 {
     public abstract class DomainEvent : IDomainEvent
     {
+        protected DomainEvent()
+        {
+            this.Source = Cod.DomainEventAudience.Internal;
+            this.Target = Cod.DomainEventAudience.Internal;
+        }
+
         [JsonIgnore]
         public string ID { get; set; } = string.Empty;
 
