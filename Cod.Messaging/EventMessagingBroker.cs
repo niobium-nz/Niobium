@@ -7,6 +7,8 @@
     {
         private readonly Lazy<IMessagingBroker<TEvent>> broker;
 
+        protected override DomainEventAudience EventTarget => DomainEventAudience.External;
+
         public EventMessagingBroker(Lazy<IMessagingBroker<TEvent>> broker)
         {
             this.broker = broker;
