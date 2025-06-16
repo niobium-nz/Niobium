@@ -2,14 +2,13 @@ using Azure.Messaging.ServiceBus;
 using Cod.Identity;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.Net.Http.Headers;
-using System.Text.Json;
 
 namespace Cod.Messaging.ServiceBus
 {
-    internal class ServiceBusQueueBroker<T>(AuthenticationBasedQueueFactory factory, Lazy<IAuthenticator> authenticator) : IMessagingBroker<T> where T : class, new()
+    internal class ServiceBusQueueBroker<T>(AuthenticationBasedQueueFactory factory, Lazy<IAuthenticator> authenticator) : IMessagingBroker<T> where T : class, IDomainEvent, new()
     {
-        private const string MessageContentType = "application/json";
-        private static readonly JsonSerializerOptions SerializationOptions = new(JsonSerializerDefaults.Web);
+        public const string MessageContentType = "application/json";
+
         protected virtual string QueueName { get => typeof(T).Name.ToLowerInvariant(); }
 
         public virtual async Task<MessagingEntry<T>?> DequeueAsync(TimeSpan? maxWaitTime = default, CancellationToken cancellationToken = default)
@@ -21,17 +20,12 @@ namespace Cod.Messaging.ServiceBus
                 return null;
             }
 
-            var value = msg.Body.ToObjectFromJson<T>(SerializationOptions);
-            if (value == null)
-            {
-                return null;
-            }
-
             return new ServiceBusMessageEntry<T>(msg, async (m) => await q.CompleteMessageAsync(m))
             {
                 ID = msg.MessageId,
                 Timestamp = msg.EnqueuedTime,
-                Value = value,
+                Body = msg.Body.ToString(),
+                Type = msg.ApplicationProperties.TryGetValue(HeaderNames.ContentType, out var type) ? type?.ToString() : null,
             };
         }
 
@@ -47,12 +41,12 @@ namespace Cod.Messaging.ServiceBus
                     throw new ApplicationException(InternalError.BadRequest);
                 }
 
-                var value = msg.Body.ToObjectFromJson<T>(SerializationOptions) ?? throw new ApplicationException(InternalError.BadRequest);
                 result.Add(new ServiceBusMessageEntry<T>(msg, async (m) => await q.CompleteMessageAsync(m))
                 {
                     ID = msg.MessageId,
                     Timestamp = msg.EnqueuedTime,
-                    Value = value,
+                    Body = msg.Body.ToString(),
+                    Type = msg.ApplicationProperties.TryGetValue(HeaderNames.ContentType, out var type) ? type?.ToString() : null,
                 });
             }
 
@@ -64,12 +58,16 @@ namespace Cod.Messaging.ServiceBus
             var q = await GetSenderAsync(MessagingPermissions.Add, cancellationToken);
             foreach (var message in messages)
             {
-                var json = Serialize(message.Value);
-                ServiceBusMessage sbmessage = new(json)
+                ServiceBusMessage sbmessage = new(message.Body)
                 {
                     MessageId = message.ID,
                     ContentType = MessageContentType,
                 };
+
+                if (message.Type != null)
+                {
+                    sbmessage.ApplicationProperties.Add(HeaderNames.ContentType, message.Type);
+                }
 
                 JsonWebToken? accessToken = null;
                 try
@@ -99,21 +97,32 @@ namespace Cod.Messaging.ServiceBus
         {
             var q = await GetReceiverAsync(MessagingPermissions.ProcessMessages, cancellationToken);
             var msgs = await q.PeekMessagesAsync(limit ?? 1000, cancellationToken: cancellationToken);
+            if (msgs == null)
+            {
+                return [];
+            }
+
             var result = new List<MessagingEntry<T>>();
             foreach (var msg in msgs)
             {
+                if (msg == null)
+                {
+                    continue;
+                }
+
                 if (msg.ContentType != MessageContentType)
                 {
                     throw new ApplicationException(InternalError.BadRequest);
                 }
 
-                var value = msg.Body.ToObjectFromJson<T>(SerializationOptions) ?? throw new ApplicationException(InternalError.BadRequest);
-                result.Add(new MessagingEntry<T>
+                if (msg.TryParse<T>(out var entry))
                 {
-                    ID = msg.MessageId,
-                    Timestamp = msg.EnqueuedTime,
-                    Value = value,
-                });
+                    result.Add(entry);
+                }
+                else
+                {
+                    throw new ApplicationException(InternalError.InternalServerError, $"Error parsing service bus message into {typeof(T).FullName}: {msg.Body}");
+                }
             }
 
             return result;
@@ -124,8 +133,5 @@ namespace Cod.Messaging.ServiceBus
 
         protected virtual Task<ServiceBusSender> GetSenderAsync(MessagingPermissions permission, CancellationToken cancellationToken)
             => factory.CreateSenderAsync([permission], QueueName, cancellationToken);
-
-        private static string Serialize(object obj)
-            => System.Text.Json.JsonSerializer.Serialize(obj, SerializationOptions)!;
     }
 }

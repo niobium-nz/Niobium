@@ -2,9 +2,24 @@ using System.Text.Json;
 
 namespace Cod.Messaging
 {
+    public class MessagingEntry
+    {
+        public static MessagingEntry<T> Parse<T>(string json, Type? type = null)
+        {
+            var result = new MessagingEntry<T> { Body = json };
+
+            if (type != null)
+            {
+                result.Type = MessagingEntry<T>.BuildTypeFullName(type);
+            }
+
+            return result;
+        }
+    }
+
     public class MessagingEntry<T> : IAsyncDisposable
     {
-        private static readonly JsonSerializerOptions serializationOptions = new(JsonSerializerDefaults.Web);
+        public static readonly JsonSerializerOptions SerializationOptions = new(JsonSerializerDefaults.Web);
         private T? value;
         private bool disposed;
 
@@ -26,18 +41,17 @@ namespace Cod.Messaging
                 {
                     if (Type == null)
                     {
-                        value = System.Text.Json.JsonSerializer.Deserialize<T>(Body, serializationOptions)!;
+                        value = System.Text.Json.JsonSerializer.Deserialize<T>(Body, SerializationOptions)!;
                     }
                     else
                     {
                         var type = System.Type.GetType(Type);
-                        value = (T)System.Text.Json.JsonSerializer.Deserialize(Body, type!, serializationOptions)!;
+                        value = (T)System.Text.Json.JsonSerializer.Deserialize(Body, type!, SerializationOptions)!;
                     }
                 }
 
                 return value;
             }
-
             set
             {
                 if (value == null)
@@ -47,8 +61,8 @@ namespace Cod.Messaging
                 }
                 else
                 {
-                    Body = System.Text.Json.JsonSerializer.Serialize(value, serializationOptions);
-                    Type = $"{value.GetType().FullName}, {value.GetType().Assembly.GetName().Name}";
+                    Body = System.Text.Json.JsonSerializer.Serialize(value, SerializationOptions);
+                    Type = BuildTypeFullName(value.GetType());
                 }
             }
         }
@@ -65,5 +79,10 @@ namespace Cod.Messaging
         }
 
         protected virtual ValueTask DisposeAsync(bool disposing) => ValueTask.CompletedTask;
+
+        internal static string BuildTypeFullName(Type type)
+        {
+            return $"{type.FullName}, {type.Assembly.GetName().Name}";
+        }
     }
 }
