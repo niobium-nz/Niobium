@@ -9,7 +9,23 @@ namespace Cod.Messaging.ServiceBus
     {
         public const string MessageContentType = "application/json";
 
-        protected virtual string QueueName { get => typeof(T).Name.ToLowerInvariant(); }
+        protected virtual string QueueName 
+        { 
+            get
+            {
+                var type = typeof(T);
+                if (type.IsGenericType)
+                {
+                    var arguments = type.GetGenericArguments();
+                    var name = type.Name.Split('`')[0];
+                    return $"{name.ToLowerInvariant()}-{string.Join("-", arguments.Select(arg => arg.Name.ToLowerInvariant()))}";
+                }
+                else
+                {
+                    return type.Name.ToLowerInvariant();
+                }
+            }
+        }
 
         public virtual async Task<MessagingEntry<T>?> DequeueAsync(TimeSpan? maxWaitTime = default, CancellationToken cancellationToken = default)
         {
