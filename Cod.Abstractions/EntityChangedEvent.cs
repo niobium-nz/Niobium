@@ -1,9 +1,9 @@
 ﻿namespace Cod
 {
-    public class EntityChangedEventArgs<T> : EventArgs, IDomainEvent
+    public class EntityChangedEvent<T> : EventArgs, IDomainEvent
         where T : class
     {
-        public EntityChangedEventArgs(T oldEntity, T newEntity)
+        public EntityChangedEvent(T oldEntity, T newEntity)
         {
             Source = DomainEventAudience.Internal;
             Target = DomainEventAudience.Internal;

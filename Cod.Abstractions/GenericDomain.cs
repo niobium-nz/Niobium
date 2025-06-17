@@ -81,7 +81,7 @@
 
         protected async Task<IEnumerable<T>> SaveAsync(IEnumerable<T> model, bool force = false, CancellationToken cancellationToken = default)
         {
-            List<Func<EntityChangedEventArgs<T>>> events = new();
+            List<Func<EntityChangedEvent<T>>> events = new();
             List<T> results = new();
             if (model == null || !model.Any())
             {
@@ -91,7 +91,7 @@
             {
                 var createdOrReplaced = await Repository.CreateAsync(model, replaceIfExist: true, cancellationToken: cancellationToken);
                 results.AddRange(createdOrReplaced);
-                events.AddRange(createdOrReplaced.Select(m => new Func<EntityChangedEventArgs<T>>(() => new EntityChangedEventArgs<T>(null, m))));
+                events.AddRange(createdOrReplaced.Select(m => new Func<EntityChangedEvent<T>>(() => new EntityChangedEvent<T>(null, m))));
             }
             else
             {
@@ -102,7 +102,7 @@
                     {
                         var created = await Repository.CreateAsync(group, cancellationToken: cancellationToken);
                         results.AddRange(created);
-                        events.AddRange(created.Select(m => new Func<EntityChangedEventArgs<T>>(() => new EntityChangedEventArgs<T>(null, m))));
+                        events.AddRange(created.Select(m => new Func<EntityChangedEvent<T>>(() => new EntityChangedEvent<T>(null, m))));
                     }
                     else
                     {
@@ -110,12 +110,12 @@
                         results.AddRange(updated);
                         foreach (var u in updated)
                         {
-                            events.Add(new Func<EntityChangedEventArgs<T>>(() =>
+                            events.Add(new Func<EntityChangedEvent<T>>(() =>
                             {
                                 var previous = group.FirstOrDefault(m =>
                                 EntityMappingHelper.GetField<string>(m, EntityKeyKind.PartitionKey) == EntityMappingHelper.GetField<string>(u, EntityKeyKind.PartitionKey)
                                     && EntityMappingHelper.GetField<string>(m, EntityKeyKind.RowKey) == EntityMappingHelper.GetField<string>(u, EntityKeyKind.RowKey));
-                                return new EntityChangedEventArgs<T>(previous, u);
+                                return new EntityChangedEvent<T>(previous, u);
                             }));
                         }
                     }
