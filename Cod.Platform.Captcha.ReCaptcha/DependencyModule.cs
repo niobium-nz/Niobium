@@ -17,7 +17,6 @@ namespace Cod.Platform.Captcha.ReCaptcha
                 return;
             }
 
-            loaded = true;
             builder.Services.AddCaptcha(builder.Configuration.GetSection(nameof(CaptchaOptions)).Bind);
 
             if (builder.Configuration.IsDevelopmentEnvironment())
