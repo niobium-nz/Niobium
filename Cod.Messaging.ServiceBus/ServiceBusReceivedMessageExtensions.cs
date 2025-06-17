@@ -7,7 +7,7 @@ namespace Cod.Messaging.ServiceBus
     public static class ServiceBusReceivedMessageExtensions
     {
         public static bool TryParse<T>(this ServiceBusReceivedMessage message, [NotNullWhen(true)] out MessagingEntry<T>? result)
-            where T : class, IDomainEvent, new()
+            where T : class, IDomainEvent
         {
             if (message == null)
             {

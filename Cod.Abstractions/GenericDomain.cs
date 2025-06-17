@@ -112,7 +112,7 @@
                         {
                             events.Add(new Func<EntityChangedEventArgs<T>>(() =>
                             {
-                                var previous = updated.FirstOrDefault(m =>
+                                var previous = group.FirstOrDefault(m =>
                                 EntityMappingHelper.GetField<string>(m, EntityKeyKind.PartitionKey) == EntityMappingHelper.GetField<string>(u, EntityKeyKind.PartitionKey)
                                     && EntityMappingHelper.GetField<string>(m, EntityKeyKind.RowKey) == EntityMappingHelper.GetField<string>(u, EntityKeyKind.RowKey));
                                 return new EntityChangedEventArgs<T>(previous, u);

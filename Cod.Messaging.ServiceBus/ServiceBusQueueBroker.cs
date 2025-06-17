@@ -5,7 +5,7 @@ using Microsoft.Net.Http.Headers;
 
 namespace Cod.Messaging.ServiceBus
 {
-    internal class ServiceBusQueueBroker<T>(AuthenticationBasedQueueFactory factory, Lazy<IAuthenticator> authenticator) : IMessagingBroker<T> where T : class, IDomainEvent, new()
+    internal class ServiceBusQueueBroker<T>(AuthenticationBasedQueueFactory factory, Lazy<IAuthenticator> authenticator) : IMessagingBroker<T> where T : class, IDomainEvent
     {
         public const string MessageContentType = "application/json";
 
