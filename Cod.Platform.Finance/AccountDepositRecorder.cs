@@ -1,16 +1,12 @@
-﻿namespace Cod.Platform.Finance
+﻿using Cod.Finance;
+
+namespace Cod.Platform.Finance
 {
-    public abstract class AccountDepositRecorder<TDomain, TEntity> : DomainEventHandler<IDomain<Transaction>, TransactionCreatedEvent>
+    public abstract class AccountDepositRecorder<TDomain, TEntity>(IDomainRepository<TDomain, TEntity> repo) 
+        : DomainEventHandler<IDomain<Transaction>, TransactionCreatedEvent>
         where TDomain : AccountableDomain<TEntity>
         where TEntity : class, new()
     {
-        private readonly IDomainRepository<TDomain, TEntity> repo;
-
-        public AccountDepositRecorder(IDomainRepository<TDomain, TEntity> repo)
-        {
-            this.repo = repo;
-        }
-
         public override async Task HandleCoreAsync(TransactionCreatedEvent e, CancellationToken cancellationToken = default)
         {
             if (e.Transaction.ETag != null)

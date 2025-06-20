@@ -1,15 +1,18 @@
-﻿namespace Cod.Platform.Finance
+﻿namespace Cod.Finance
 {
     public class Accounting
     {
         [EntityKey(EntityKeyKind.PartitionKey)]
-        public string PartitionKey { get; set; }
+        public required string PartitionKey { get; set; }
 
         [EntityKey(EntityKeyKind.RowKey)]
-        public string RowKey { get; set; }
+        public required string RowKey { get; set; }
+
+        [EntityKey(EntityKeyKind.Timestamp)]
+        public DateTimeOffset? Timestamp { get; set; }
 
         [EntityKey(EntityKeyKind.ETag)]
-        public string ETag { get; set; }
+        public string? ETag { get; set; }
 
         public long Credits { get; set; }
 

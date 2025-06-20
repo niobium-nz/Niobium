@@ -1,7 +1,9 @@
+using Cod.Finance;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Stripe;
 using System.Text.Json;
+using PaymentMethod = Cod.Finance.PaymentMethod;
 
 namespace Cod.Platform.Finance.Stripe
 {
@@ -28,6 +30,11 @@ namespace Cod.Platform.Finance.Stripe
 
             if (request.Operation == PaymentOperationKind.Validate)
             {
+                if (request.Account == null)
+                {
+                    return new OperationResult<ChargeResponse>(Cod.InternalError.BadRequest, "Account information is required for validation.");
+                }
+
                 var instruction = await stripeIntegration.Value.CreateSetupIntentAsync((Guid)request.Account);
                 if (!instruction.IsSuccess)
                 {
@@ -50,6 +57,11 @@ namespace Cod.Platform.Finance.Stripe
             var result = new ChargeResponse();
             if (request.Operation == PaymentOperationKind.Refund)
             {
+                if (request.Account == null)
+                {
+                    return new OperationResult<ChargeResponse>(Cod.InternalError.BadRequest, "Account information is required for refund operation.");
+                }
+
                 var transaction = await stripeIntegration.Value.RefundAsync((string)request.Account, request.Amount);
                 if (!transaction.IsSuccess)
                 {
@@ -63,6 +75,11 @@ namespace Cod.Platform.Finance.Stripe
 
                 if (request.Operation == PaymentOperationKind.Complete)
                 {
+                    if (request.Account == null)
+                    {
+                        return new OperationResult<ChargeResponse>(Cod.InternalError.BadRequest, "Account information is required for completion operation.");
+                    }
+
                     transaction = await stripeIntegration.Value.CompleteAsync((string)request.Account, request.Amount);
                     if (!transaction.IsSuccess)
                     {
@@ -72,6 +89,11 @@ namespace Cod.Platform.Finance.Stripe
                 }
                 else if (request.Operation == PaymentOperationKind.Void)
                 {
+                    if (request.Account == null)
+                    {
+                        return new OperationResult<ChargeResponse>(Cod.InternalError.BadRequest, "Account information is required for void operation.");
+                    }
+
                     transaction = await stripeIntegration.Value.VoidAsync((string)request.Account);
                     if (!transaction.IsSuccess)
                     {
@@ -109,9 +131,9 @@ namespace Cod.Platform.Finance.Stripe
                         transaction = await stripeIntegration.Value.AuthorizeAsync(
                             request.TargetKind,
                             request.Target,
-                            request.Order,
                             request.Currency,
                             request.Amount,
+                            request.Order,
                             request.Reference,
                             stripeCustomer,
                             stripePaymentMethod);
@@ -126,9 +148,9 @@ namespace Cod.Platform.Finance.Stripe
                         transaction = await stripeIntegration.Value.ChargeAsync(
                             request.TargetKind,
                             request.Target,
-                            request.Order,
                             request.Currency,
                             request.Amount,
+                            request.Order,
                             request.Reference,
                             stripeCustomer,
                             stripePaymentMethod);
@@ -263,9 +285,7 @@ namespace Cod.Platform.Finance.Stripe
                 var trk = Transaction.BuildRowKey(timestamp);
                 var transaction = await transactionRepo.Value.RetrieveAsync(tpk, trk);
 
-                if (transaction == null)
-                {
-                    transaction = new Transaction
+                transaction ??= new Transaction
                     {
                         PartitionKey = tpk,
                         RowKey = trk,
@@ -278,7 +298,6 @@ namespace Cod.Platform.Finance.Stripe
                         Status = (int)TransactionStatus.Completed,
                         Remark = Cod.Constants.TRANSACTION_REASON_DEPOSIT,
                     };
-                }
 
                 return new OperationResult<ChargeResult>(new ChargeResult
                 {
@@ -307,9 +326,7 @@ namespace Cod.Platform.Finance.Stripe
                 var trk = Transaction.BuildRowKey(timestamp);
                 var transaction = await transactionRepo.Value.RetrieveAsync(tpk, trk);
 
-                if (transaction == null)
-                {
-                    transaction = new Transaction
+                transaction ??= new Transaction
                     {
                         PartitionKey = tpk,
                         RowKey = trk,
@@ -322,7 +339,6 @@ namespace Cod.Platform.Finance.Stripe
                         Status = (int)TransactionStatus.Refunded,
                         Remark = Cod.Constants.TRANSACTION_REASON_REFUND,
                     };
-                }
 
                 return new OperationResult<ChargeResult>(new ChargeResult
                 {

@@ -1,3 +1,4 @@
+using Cod.Finance;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Stripe;
@@ -68,9 +69,9 @@ namespace Cod.Platform.Finance.Stripe
         public async Task<OperationResult<PaymentIntent>> ChargeAsync(
             ChargeTargetKind targetKind,
             string target,
-            string order,
             Currency currency,
             long amount,            
+            string? order = null,
             string? reference = null,
             string? stripeCustomerID = null,
             string? stripePaymentMethodID = null,
@@ -83,15 +84,19 @@ namespace Cod.Platform.Finance.Stripe
 
             try
             {
-                var valueToHash = $"{target}{order}";
+                var valueToHash = $"{target}{order ?? String.Empty}";
                 var hash = SHA.SHA256Hash(valueToHash, options.Value.SecretHashKey);
                 var metadata = new Dictionary<string, string>
                 {
                     { Constants.MetadataTargetKindKey, ((int)targetKind).ToString() },
                     { Constants.MetadataTargetKey, target },
-                    { Constants.MetadataOrderKey, order },
                     { Constants.MetadataHashKey, hash },
                 };
+
+                if (order != null)
+                {
+                    metadata.Add(Constants.MetadataOrderKey, order);
+                }
 
                 if (reference != null)
                 {
@@ -144,7 +149,7 @@ namespace Cod.Platform.Finance.Stripe
             {
             }
 
-            return await ChargeAsync(targetKind, target, order, currency, amount, reference, stripeCustomerID, stripePaymentMethodID, --retryCount);
+            return await ChargeAsync(targetKind, target, currency, amount, order, reference, stripeCustomerID, stripePaymentMethodID, --retryCount);
         }
 
         public async Task<OperationResult<Refund>> RefundAsync(
@@ -262,9 +267,9 @@ namespace Cod.Platform.Finance.Stripe
         public async Task<OperationResult<PaymentIntent>> AuthorizeAsync(
             ChargeTargetKind targetKind,
             string target,
-            string order,
             Currency currency,
             long amount,
+            string? order = null,
             string? reference = null,
             string? stripeCustomerID = null,
             string? stripePaymentMethodID = null,
@@ -282,8 +287,12 @@ namespace Cod.Platform.Finance.Stripe
                 {
                     { Constants.MetadataTargetKindKey, ((int)targetKind).ToString() },
                     { Constants.MetadataTargetKey, target },
-                    { Constants.MetadataOrderKey, order },
                 };
+
+                if (order != null)
+                {
+                    metadata.Add(Constants.MetadataOrderKey, order);
+                }
 
                 if (reference != null)
                 {
@@ -323,7 +332,7 @@ namespace Cod.Platform.Finance.Stripe
             {
             }
 
-            return await AuthorizeAsync(targetKind, target, order, currency, amount, reference, stripeCustomerID, stripePaymentMethodID, --retryCount);
+            return await AuthorizeAsync(targetKind, target, currency, amount, order, reference, stripeCustomerID, stripePaymentMethodID, --retryCount);
         }
 
         private static OperationResult<T> ConvertStripeError<T>(StripeError stripeError)

@@ -1,4 +1,4 @@
-namespace Cod.Platform.Finance
+namespace Cod.Finance
 {
     public enum ChargeTargetKind : int
     {

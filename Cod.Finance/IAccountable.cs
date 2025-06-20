@@ -1,4 +1,4 @@
-﻿namespace Cod.Platform.Finance
+﻿namespace Cod.Finance
 {
     public interface IAccountable
     {
@@ -6,9 +6,9 @@
 
         IAsyncEnumerable<Transaction> GetTransactionsAsync(DateTimeOffset fromInclusive, DateTimeOffset toInclusive);
 
-        Task<TransactionRequest> BuildTransactionAsync(long delta, int reason, string remark, string reference, string id = null, string corelation = null);
+        Task<TransactionRequest> BuildTransactionAsync(long delta, int reason, string remark, string reference, string? id = null, string? corelation = null);
 
-        Task<IEnumerable<Transaction>> MakeTransactionAsync(long delta, int reason, string remark, string reference, string id = null, string corelation = null);
+        Task<IEnumerable<Transaction>> MakeTransactionAsync(long delta, int reason, string remark, string reference, string? id = null, string? corelation = null);
 
         Task<IEnumerable<Transaction>> MakeTransactionAsync(TransactionRequest request);
 

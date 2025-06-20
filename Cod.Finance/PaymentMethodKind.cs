@@ -1,4 +1,4 @@
-namespace Cod.Platform.Finance
+namespace Cod.Finance
 {
     [Flags]
     public enum PaymentMethodKind : int

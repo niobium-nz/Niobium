@@ -6,7 +6,7 @@ namespace Cod.Platform.Finance.Stripe
         public const string TypeSetup = "setup_intent.succeeded";
         public const string TypeRefund = "refund.succeeded";
 
-        public static readonly string[] SupportedTypes = { TypeCharge, TypeSetup, TypeRefund };
+        public static readonly string[] SupportedTypes = [TypeCharge, TypeSetup, TypeRefund];
 
         /// <summary>
         /// Event Type

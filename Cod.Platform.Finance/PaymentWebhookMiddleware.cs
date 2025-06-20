@@ -7,17 +7,9 @@ using System.Net;
 
 namespace Cod.Platform.Finance
 {
-    internal class PaymentWebhookMiddleware : IMiddleware
+    internal class PaymentWebhookMiddleware(IPaymentService paymentService, IOptions<PaymentServiceOptions> options)
+        : IMiddleware
     {
-        private readonly IPaymentService paymentService;
-        private readonly IOptions<PaymentServiceOptions> options;
-
-        public PaymentWebhookMiddleware(IPaymentService paymentService, IOptions<PaymentServiceOptions> options)
-        {
-            this.paymentService = paymentService;
-            this.options = options;
-        }
-
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
             var req = context.Request;

@@ -1,14 +1,9 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Cod.Platform.Finance
+namespace Cod.Finance
 {
-    public class TransactionCreatedEvent : IDomainEvent
+    public class TransactionCreatedEvent(Transaction newTransaction) : IDomainEvent
     {
-        public TransactionCreatedEvent(Transaction newTransaction)
-        {
-            this.Transaction = newTransaction ?? throw new ArgumentNullException(nameof(newTransaction));
-        }
-
         [JsonIgnore]
         public string ID { get; set; } = string.Empty;
 
@@ -21,6 +16,6 @@ namespace Cod.Platform.Finance
         [JsonIgnore]
         public DomainEventAudience Target { get; set; }
 
-        public Transaction Transaction { get; }
+        public Transaction Transaction { get; } = newTransaction ?? throw new ArgumentNullException(nameof(newTransaction));
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Cod.Finance;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Routing;
@@ -7,20 +8,13 @@ using System.Net;
 
 namespace Cod.Platform.Finance
 {
-    internal class PaymentRequestMiddleware : IMiddleware
+    internal class PaymentRequestMiddleware(IPaymentService paymentService, IOptions<PaymentServiceOptions> options)
+        : IMiddleware
     {
         public const string PaymentUserQueryParameter = "user";
         public const string PaymentOrderQueryParameter = "order";
         public const string PaymentCurrencyQueryParameter = "currency";
         public const string PaymentAmountQueryParameter = "amount";
-        private readonly IPaymentService paymentService;
-        private readonly IOptions<PaymentServiceOptions> options;
-
-        public PaymentRequestMiddleware(IPaymentService paymentService, IOptions<PaymentServiceOptions> options)
-        {
-            this.paymentService = paymentService;
-            this.options = options;
-        }
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
@@ -44,7 +38,7 @@ namespace Cod.Platform.Finance
                 return;
             }
 
-            string order = null;
+            string? order = null;
             if (req.Query.TryGetValue(PaymentOrderQueryParameter, out var o) )
             {
                 order = o.SingleOrDefault();
@@ -54,7 +48,7 @@ namespace Cod.Platform.Finance
                 }
             }
 
-            if (!req.Query.TryGetValue(PaymentCurrencyQueryParameter, out var c) || !Currency.TryParse(c, out var currency))
+            if (!req.Query.TryGetValue(PaymentCurrencyQueryParameter, out var c) || !Currency.TryParse(c!, out var currency))
             {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 await context.Response.WriteAsync($"Invalid '{PaymentCurrencyQueryParameter}' query parameter.");

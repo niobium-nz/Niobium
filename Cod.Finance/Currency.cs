@@ -1,12 +1,12 @@
 ﻿using System.Globalization;
 using System.Text.Json.Serialization;
 
-namespace Cod.Platform.Finance
+namespace Cod.Finance
 {
     [JsonConverter(typeof(CurrencyJsonConverter))]
     public struct Currency : IEquatable<Currency>
     {
-        private static readonly IReadOnlyDictionary<string, CultureInfo> cultures = new Dictionary<string, CultureInfo>
+        private static readonly Dictionary<string, CultureInfo> cultures = new()
         {
             { "NZD", CultureInfo.GetCultureInfo("en-NZ") },
             { "AUD", CultureInfo.GetCultureInfo("en-AU") },
@@ -14,8 +14,8 @@ namespace Cod.Platform.Finance
             { "CNY", CultureInfo.GetCultureInfo("zh-CN") },
         };
 
-        private static readonly string[] codes = new string[]
-        {
+        private static readonly string[] codes =
+        [
             "AED",
             "AFN",
             "ALL",
@@ -195,7 +195,7 @@ namespace Cod.Platform.Finance
             "ZAR",
             "ZMW",
             "ZWL"
-        };
+        ];
 
         public static readonly Currency CNY = Currency.Parse("CNY");
         public static readonly Currency USD = Currency.Parse("USD");
@@ -240,12 +240,12 @@ namespace Cod.Platform.Finance
         {
             return string.IsNullOrWhiteSpace(code)
                 ? throw new ArgumentNullException(nameof(code))
-                : !cultures.ContainsKey(code) ? throw new NotSupportedException() : cultures[code];
+                : !cultures.TryGetValue(code, out CultureInfo? value) ? throw new NotSupportedException() : value;
         }
 
         public string Code { get; private set; }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is Currency currency && Equals(currency);
         }

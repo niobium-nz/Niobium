@@ -1,16 +1,10 @@
+using Cod.Finance;
+
 namespace Cod.Platform.Finance
 {
-    public class PaymentService : IPaymentService
+    public class PaymentService(Lazy<IEnumerable<IPaymentProcessor>> processors, IEnumerable<IDomainEventHandler<IDomain<Transaction>>> eventHandlers) 
+        : IPaymentService
     {
-        private readonly Lazy<IEnumerable<IPaymentProcessor>> processors;
-        private readonly IEnumerable<IDomainEventHandler<IDomain<Transaction>>> eventHandlers;
-
-        public PaymentService(Lazy<IEnumerable<IPaymentProcessor>> processors, IEnumerable<IDomainEventHandler<IDomain<Transaction>>> eventHandlers)
-        {
-            this.processors = processors;
-            this.eventHandlers = eventHandlers;
-        }
-
         public virtual async Task<OperationResult<ChargeResult>> RetrieveChargeAsync(string transaction, PaymentChannels paymentChannel)
         {
             foreach (IPaymentProcessor processor in processors.Value)
@@ -55,7 +49,7 @@ namespace Cod.Platform.Finance
 
                 if (result.IsSuccess && result.Result?.Transaction != null)
                 {
-                    await this.eventHandlers.InvokeAsync(new TransactionCreatedEvent(result.Result.Transaction));
+                    await eventHandlers.InvokeAsync(new TransactionCreatedEvent(result.Result.Transaction));
                 }
 
                 return result;

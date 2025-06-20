@@ -1,3 +1,5 @@
+using Cod.Finance;
+
 namespace Cod.Platform.Finance
 {
     public interface IPaymentService

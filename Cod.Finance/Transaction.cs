@@ -1,30 +1,30 @@
-﻿namespace Cod.Platform.Finance
+﻿namespace Cod.Finance
 {
     public class Transaction
     {
         [EntityKey(EntityKeyKind.PartitionKey)]
-        public string PartitionKey { get; set; }
+        public required string PartitionKey { get; set; }
 
         [EntityKey(EntityKeyKind.RowKey)]
-        public string RowKey { get; set; }
+        public required string RowKey { get; set; }
 
         [EntityKey(EntityKeyKind.Timestamp)]
         public DateTimeOffset? Timestamp { get; set; }
 
         [EntityKey(EntityKeyKind.ETag)]
-        public string ETag { get; set; }
+        public string? ETag { get; set; }
 
         public long Delta { get; set; }
 
         public int Reason { get; set; }
 
-        public string Remark { get; set; }
+        public string? Remark { get; set; }
 
-        public string Reference { get; set; }
+        public string? Reference { get; set; }
 
-        public string Corelation { get; set; }
+        public string? Corelation { get; set; }
 
-        public string Account { get; set; }
+        public string? Account { get; set; }
 
         public int Status { get; set; }
 

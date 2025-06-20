@@ -1,36 +1,25 @@
+using Cod.Finance;
 using Microsoft.Extensions.Logging;
 
 namespace Cod.Platform.Finance
 {
-    public abstract class AccountableDomain<T> : GenericDomain<T>, IAccountable where T : class
+    public abstract class AccountableDomain<T>(
+        Lazy<IRepository<T>> repo,
+        IEnumerable<IDomainEventHandler<IDomain<T>>> eventHandlers,
+        Lazy<IQueryableRepository<Transaction>> transactionRepo,
+        Lazy<IQueryableRepository<Accounting>> accountingRepo,
+        Lazy<IEnumerable<IAccountingAuditor>> auditors,
+        Lazy<ICacheStore> cacheStore,
+        ILogger logger) 
+        : GenericDomain<T>(repo, eventHandlers), IAccountable
+        where T : class
     {
         private const string FrozenKey = "frozen";
         private const string DeltaKey = "delta";
-        private readonly Lazy<IQueryableRepository<Transaction>> transactionRepo;
-        private readonly Lazy<IQueryableRepository<Accounting>> accountingRepo;
-        private readonly Lazy<IEnumerable<IAccountingAuditor>> auditors;
-        private readonly Lazy<ICacheStore> cacheStore;
-
-        public AccountableDomain(
-            Lazy<IRepository<T>> repo,
-            IEnumerable<IDomainEventHandler<IDomain<T>>> eventHandlers,
-            Lazy<IQueryableRepository<Transaction>> transactionRepo,
-            Lazy<IQueryableRepository<Accounting>> accountingRepo,
-            Lazy<IEnumerable<IAccountingAuditor>> auditors,
-            Lazy<ICacheStore> cacheStore,
-            ILogger logger)
-            : base(repo, eventHandlers)
-        {
-            this.transactionRepo = transactionRepo;
-            this.accountingRepo = accountingRepo;
-            this.auditors = auditors;
-            this.cacheStore = cacheStore;
-            this.Logger = logger;
-        }
 
         public abstract string AccountingPrincipal { get; }
 
-        protected ILogger Logger { get; private set; }
+        protected ILogger Logger { get; private set; } = logger;
 
         public async Task MakeAccountingAsync()
         {
@@ -50,7 +39,7 @@ namespace Cod.Platform.Finance
                 {
                     //REMARK (5he11) 数据层存储的都是记账日当天最后一刻的时间，所以加1毫秒就是新的要创建账务的日期
                     DateTimeOffset buildTarget = pos.AddMilliseconds(1);
-                    Accounting accounting = await MakeAccountingAsync(buildTarget, previousBalance);
+                    Accounting? accounting = await MakeAccountingAsync(buildTarget, previousBalance);
                     if (accounting == null)
                     {
                         break;
@@ -115,10 +104,12 @@ namespace Cod.Platform.Finance
         }
 
         public Task<TransactionRequest> BuildTransactionAsync(
-            long delta, int reason, string remark, string reference, string id = null, string corelation = null)
+            long delta, int reason, string remark, string reference, string? id = null, string? corelation = null)
         {
-            return Task.FromResult(new TransactionRequest(AccountingPrincipal, delta)
+            return Task.FromResult(new TransactionRequest
             {
+                Target = AccountingPrincipal,
+                Delta = delta,
                 Reason = reason,
                 ID = id,
                 Reference = reference,
@@ -128,7 +119,7 @@ namespace Cod.Platform.Finance
         }
 
         public async Task<IEnumerable<Transaction>> MakeTransactionAsync(
-            long delta, int reason, string remark, string reference, string id = null, string corelation = null)
+            long delta, int reason, string remark, string reference, string? id = null, string? corelation = null)
         {
             return await MakeTransactionAsync(new[] { await BuildTransactionAsync(delta, reason, remark, reference, id, corelation) });
         }
@@ -141,7 +132,7 @@ namespace Cod.Platform.Finance
         //TODO (5he11) 此方法要加锁并且实现事务
         public async Task<IEnumerable<Transaction>> MakeTransactionAsync(IEnumerable<TransactionRequest> requests)
         {
-            List<Transaction> transactions = new();
+            List<Transaction> transactions = [];
             int count = 0;
             foreach (TransactionRequest request in requests)
             {
@@ -153,17 +144,16 @@ namespace Cod.Platform.Finance
                 request.ID ??= Transaction.BuildRowKey(DateTimeOffset.UtcNow);
                 request.Target = request.Target.Trim();
 
-                Transaction transaction = new()
+                transactions.Add(new()
                 {
+                    PartitionKey = Transaction.BuildPartitionKey(request.Target),
+                    RowKey = request.ID,
                     Delta = request.Delta,
                     Remark = request.Remark,
                     Reason = request.Reason,
                     Reference = request.Reference,
                     Corelation = request.Corelation,
-                };
-                transaction.SetOwner(request.Target);
-                transaction.RowKey = request.ID;
-                transactions.Add(transaction);
+                });
                 count++;
             }
 
@@ -285,7 +275,7 @@ namespace Cod.Platform.Finance
             await cacheStore.Value.DeleteAsync(pk, rk);
         }
 
-        private async Task<Accounting> MakeAccountingAsync(DateTimeOffset input, long previousBalance)
+        private async Task<Accounting?> MakeAccountingAsync(DateTimeOffset input, long previousBalance)
         {
             //REMARK (5he11) 将输入限制为仅取其日期的当日的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
             input = new DateTimeOffset(input.UtcDateTime.Date.ToUniversalTime()).AddDays(1).AddMilliseconds(-1);
@@ -315,12 +305,12 @@ namespace Cod.Platform.Finance
 
             Accounting accounting = new()
             {
+                PartitionKey = Accounting.BuildPartitionKey(principal),
+                RowKey = Accounting.BuildRowKey(input),
                 Balance = previousBalance + credits + debits,
                 Credits = credits,
                 Debits = debits,
             };
-            accounting.SetPrincipal(principal);
-            accounting.SetEnd(input);
 
             foreach (IAccountingAuditor auditor in auditors.Value)
             {
@@ -344,19 +334,19 @@ namespace Cod.Platform.Finance
                                     Accounting.BuildRowKey(searchFrom),
                                     cancellationToken: cancellationToken)
                                 .ToListAsync(cancellationToken);
-            Accounting latest = accountings.OrderByDescending(a => a.GetEnd()).FirstOrDefault();
+            Accounting? latest = accountings.OrderByDescending(a => a.GetEnd()).FirstOrDefault();
             if (latest != null)
             {
                 return latest;
             }
             Accounting empty = new()
             {
+                PartitionKey = Accounting.BuildPartitionKey(principal),
+                RowKey = Accounting.BuildRowKey(input),
                 Balance = 0,
                 Credits = 0,
                 Debits = 0
             };
-            empty.SetEnd(input);
-            empty.SetPrincipal(principal);
             return empty;
         }
     }

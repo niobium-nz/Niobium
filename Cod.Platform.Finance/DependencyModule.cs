@@ -1,3 +1,4 @@
+using Cod.Finance;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.DependencyInjection;

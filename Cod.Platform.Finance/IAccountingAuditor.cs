@@ -1,4 +1,6 @@
-﻿namespace Cod.Platform.Finance
+﻿using Cod.Finance;
+
+namespace Cod.Platform.Finance
 {
     public interface IAccountingAuditor
     {

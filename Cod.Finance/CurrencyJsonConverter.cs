@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Cod.Platform.Finance
+namespace Cod.Finance
 {
     public class CurrencyJsonConverter : JsonConverter<Currency>
     {
