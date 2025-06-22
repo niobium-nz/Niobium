@@ -33,7 +33,7 @@ namespace Cod.Messaging.ServiceBus
                 ServiceBusOptions config = new();
                 options?.Invoke(config);
                 factory.Configuration = config;
-                var authenticator = sp.GetRequiredService<Lazy<IAuthenticator>>();
+                var authenticator = new Lazy<IAuthenticator>(() => sp.GetRequiredService<IAuthenticator>());
                 var broker = new ServiceBusQueueBroker<T>(factory, authenticator);
                 return broker;
             });
