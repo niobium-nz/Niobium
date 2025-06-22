@@ -26,6 +26,8 @@
 
         public string? Account { get; set; }
 
+        public string? Tenant { get; set; }
+
         public int Status { get; set; }
 
         public int Provider { get; set; }

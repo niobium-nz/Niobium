@@ -73,6 +73,7 @@ namespace Cod.Platform.Finance.Stripe
             long amount,            
             string? order = null,
             string? reference = null,
+            string? tenant = null,
             string? stripeCustomerID = null,
             string? stripePaymentMethodID = null,
             int retryCount = 3)
@@ -84,7 +85,7 @@ namespace Cod.Platform.Finance.Stripe
 
             try
             {
-                var valueToHash = $"{target}{order ?? String.Empty}";
+                var valueToHash = $"{tenant ?? String.Empty}{target}{order ?? String.Empty}";
                 var hash = SHA.SHA256Hash(valueToHash, options.Value.SecretHashKey);
                 var metadata = new Dictionary<string, string>
                 {
@@ -101,6 +102,11 @@ namespace Cod.Platform.Finance.Stripe
                 if (reference != null)
                 {
                     metadata.Add(Constants.MetadataReferenceKey, reference);
+                }
+
+                if (tenant != null)
+                {
+                    metadata.Add(Constants.MetadataTenantKey, tenant);
                 }
 
                 var intentOptions = new PaymentIntentCreateOptions
@@ -149,7 +155,7 @@ namespace Cod.Platform.Finance.Stripe
             {
             }
 
-            return await ChargeAsync(targetKind, target, currency, amount, order, reference, stripeCustomerID, stripePaymentMethodID, --retryCount);
+            return await ChargeAsync(targetKind, target, currency, amount, order, reference, tenant, stripeCustomerID, stripePaymentMethodID, --retryCount);
         }
 
         public async Task<OperationResult<Refund>> RefundAsync(
@@ -271,6 +277,7 @@ namespace Cod.Platform.Finance.Stripe
             long amount,
             string? order = null,
             string? reference = null,
+            string? tenant = null,
             string? stripeCustomerID = null,
             string? stripePaymentMethodID = null,
             int retryCount = 3)
@@ -297,6 +304,11 @@ namespace Cod.Platform.Finance.Stripe
                 if (reference != null)
                 {
                     metadata.Add(Constants.MetadataReferenceKey, reference);
+                }
+
+                if (tenant != null)
+                {
+                    metadata.Add(Constants.MetadataTenantKey, tenant);
                 }
 
                 var service = new PaymentIntentService();
@@ -332,7 +344,7 @@ namespace Cod.Platform.Finance.Stripe
             {
             }
 
-            return await AuthorizeAsync(targetKind, target, currency, amount, order, reference, stripeCustomerID, stripePaymentMethodID, --retryCount);
+            return await AuthorizeAsync(targetKind, target, currency, amount, order, reference, tenant, stripeCustomerID, stripePaymentMethodID, --retryCount);
         }
 
         private static OperationResult<T> ConvertStripeError<T>(StripeError stripeError)

@@ -133,10 +133,11 @@ namespace Cod.Platform.Finance.Stripe
                             request.Target,
                             request.Currency,
                             request.Amount,
-                            request.Order,
-                            request.Reference,
-                            stripeCustomer,
-                            stripePaymentMethod);
+                            order: request.Order,
+                            reference: request.Reference,
+                            tenant: request.Source,
+                            stripeCustomerID: stripeCustomer,
+                            stripePaymentMethodID: stripePaymentMethod);
                         if (!transaction.IsSuccess)
                         {
                             return new OperationResult<ChargeResponse>(transaction);
@@ -150,10 +151,11 @@ namespace Cod.Platform.Finance.Stripe
                             request.Target,
                             request.Currency,
                             request.Amount,
-                            request.Order,
-                            request.Reference,
-                            stripeCustomer,
-                            stripePaymentMethod);
+                            order: request.Order,
+                            reference: request.Reference,
+                            tenant: request.Source,
+                            stripeCustomerID: stripeCustomer,
+                            stripePaymentMethodID: stripePaymentMethod);
                         if (!transaction.IsSuccess)
                         {
                             return new OperationResult<ChargeResponse>(transaction);
@@ -270,9 +272,10 @@ namespace Cod.Platform.Finance.Stripe
                 var charge = await stripeIntegration.Value.RetriveChargeAsync(r.Data.Object.ID);
                 var targetKind = (ChargeTargetKind)int.Parse(charge.Metadata[Constants.MetadataTargetKindKey]);
                 var target = charge.Metadata[Constants.MetadataTargetKey];
-                var order = charge.Metadata[Constants.MetadataOrderKey];
+                charge.Metadata.TryGetValue(Constants.MetadataOrderKey, out string? order);
+                charge.Metadata.TryGetValue(Constants.MetadataTenantKey, out string? tenant);
                 var paymentHash = charge.Metadata[Constants.MetadataHashKey];
-                var valueToHash = $"{target}{order}";
+                var valueToHash = $"{tenant ?? String.Empty}{target}{order ?? String.Empty}";
                 var serverHash = SHA.SHA256Hash(valueToHash, options.Value.SecretHashKey);
                 if (!serverHash.Equals(paymentHash, StringComparison.OrdinalIgnoreCase))
                 {
@@ -286,18 +289,19 @@ namespace Cod.Platform.Finance.Stripe
                 var transaction = await transactionRepo.Value.RetrieveAsync(tpk, trk);
 
                 transaction ??= new Transaction
-                    {
-                        PartitionKey = tpk,
-                        RowKey = trk,
-                        Account = charge.PaymentIntentId,
-                        Corelation = charge.Id,
-                        Reference = order,
-                        Delta = charge.AmountCaptured,
-                        Provider = (int)PaymentServiceProvider.Stripe,
-                        Reason = (int)TransactionReason.Deposit,
-                        Status = (int)TransactionStatus.Completed,
-                        Remark = Cod.Constants.TRANSACTION_REASON_DEPOSIT,
-                    };
+                {
+                    PartitionKey = tpk,
+                    RowKey = trk,
+                    Account = charge.PaymentIntentId,
+                    Corelation = charge.Id,
+                    Reference = order,
+                    Tenant = tenant,
+                    Delta = charge.AmountCaptured,
+                    Provider = (int)PaymentServiceProvider.Stripe,
+                    Reason = (int)TransactionReason.Deposit,
+                    Status = (int)TransactionStatus.Completed,
+                    Remark = Cod.Constants.TRANSACTION_REASON_DEPOSIT,
+                };
 
                 return new OperationResult<ChargeResult>(new ChargeResult
                 {
@@ -318,27 +322,39 @@ namespace Cod.Platform.Finance.Stripe
             {
                 var refund = await stripeIntegration.Value.RetriveRefundAsync(r.Data.Object.ID);
                 var charge1 = await stripeIntegration.Value.RetriveChargeAsync(refund.ChargeId);
+
                 var targetKind = (ChargeTargetKind)int.Parse(charge1.Metadata[Constants.MetadataTargetKindKey]);
                 var target = charge1.Metadata[Constants.MetadataTargetKey];
-                var order = charge1.Metadata[Constants.MetadataOrderKey];
+                charge1.Metadata.TryGetValue(Constants.MetadataOrderKey, out string? order);
+                charge1.Metadata.TryGetValue(Constants.MetadataTenantKey, out string? tenant);
+                var paymentHash = charge1.Metadata[Constants.MetadataHashKey];
+                var valueToHash = $"{tenant ?? String.Empty}{target}{order ?? String.Empty}";
+                var serverHash = SHA.SHA256Hash(valueToHash, options.Value.SecretHashKey);
+                if (!serverHash.Equals(paymentHash, StringComparison.OrdinalIgnoreCase))
+                {
+                    logger.LogWarning($"Payment hash mismatch for charge {charge1.Id}. Expected: {serverHash}, Received: {paymentHash}");
+                    return new OperationResult<ChargeResult>(Cod.InternalError.NotAcceptable);
+                }
+
                 var timestamp = new DateTimeOffset(refund.Created);
                 var tpk = Transaction.BuildPartitionKey(target);
                 var trk = Transaction.BuildRowKey(timestamp);
                 var transaction = await transactionRepo.Value.RetrieveAsync(tpk, trk);
 
                 transaction ??= new Transaction
-                    {
-                        PartitionKey = tpk,
-                        RowKey = trk,
-                        Account = charge1.PaymentIntentId,
-                        Corelation = refund.Id,
-                        Reference = order,
-                        Delta = -refund.Amount,
-                        Provider = (int)PaymentServiceProvider.Stripe,
-                        Reason = (int)TransactionReason.Refund,
-                        Status = (int)TransactionStatus.Refunded,
-                        Remark = Cod.Constants.TRANSACTION_REASON_REFUND,
-                    };
+                {
+                    PartitionKey = tpk,
+                    RowKey = trk,
+                    Account = charge1.PaymentIntentId,
+                    Corelation = refund.Id,
+                    Reference = order,
+                    Tenant = tenant,
+                    Delta = -refund.Amount,
+                    Provider = (int)PaymentServiceProvider.Stripe,
+                    Reason = (int)TransactionReason.Refund,
+                    Status = (int)TransactionStatus.Refunded,
+                    Remark = Cod.Constants.TRANSACTION_REASON_REFUND,
+                };
 
                 return new OperationResult<ChargeResult>(new ChargeResult
                 {
