@@ -6,7 +6,7 @@ namespace Cod.Platform.Captcha.ReCaptcha
 {
     public static class HttpRequestExtensions
     {
-        public async static Task<IActionResult?> AssessRiskAsync(this HttpRequest request, IVisitorRiskAssessor assessor, Guid id, string captcha, ILogger? logger = null, CancellationToken cancellationToken = default)
+        public async static Task<IActionResult?> AssessRiskAsync(this HttpRequest request, IVisitorRiskAssessor assessor, string id, string captcha, ILogger? logger = null, CancellationToken cancellationToken = default)
         {
             var referer = request.Headers.Referer.SingleOrDefault();
             if (referer == null || !Uri.TryCreate(referer, UriKind.Absolute, out Uri? refererUri))
