@@ -15,7 +15,7 @@ namespace Cod.Platform.Captcha.ReCaptcha
             PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
         };
 
-        public async Task<bool> AssessAsync(Guid requestID, string tenant, string token, string? clientIP, CancellationToken cancellationToken)
+        public async Task<bool> AssessAsync(string requestID, string tenant, string token, string? clientIP, CancellationToken cancellationToken)
         {
             var secret = options.Value.Secrets[tenant]
                 ?? throw new ApplicationException(InternalError.InternalServerError, $"Missing tenant secret: {tenant}");

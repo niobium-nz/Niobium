@@ -2,6 +2,6 @@
 {
     internal class DevelopmentRiskAccessor : IVisitorRiskAssessor
     {
-        public Task<bool> AssessAsync(Guid requestID, string tenant, string token, string? remoteIP, CancellationToken cancellationToken) => Task.FromResult(true);
+        public Task<bool> AssessAsync(string requestID, string tenant, string token, string? remoteIP, CancellationToken cancellationToken) => Task.FromResult(true);
     }
 }

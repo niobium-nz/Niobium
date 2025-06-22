@@ -74,6 +74,11 @@ namespace Cod.Messaging.ServiceBus
             var q = await GetSenderAsync(MessagingPermissions.Add, cancellationToken);
             foreach (var message in messages)
             {
+                if (string.IsNullOrWhiteSpace(message.ID))
+                {
+                    message.ID = Guid.NewGuid().ToString();
+                }
+
                 ServiceBusMessage sbmessage = new(message.Body)
                 {
                     MessageId = message.ID,
