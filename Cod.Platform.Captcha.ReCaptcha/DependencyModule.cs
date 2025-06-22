@@ -41,7 +41,7 @@ namespace Cod.Platform.Captcha.ReCaptcha
             services.AddTransient<IVisitorRiskAssessor>(sp =>
             {
                 var captchaOptions = sp.GetRequiredService<IOptions<CaptchaOptions>>().Value;
-                if (captchaOptions.IsEnabled)
+                if (captchaOptions.IsDisabled)
                 {
                     return sp.GetRequiredService<GoogleReCaptchaRiskAssessor>();
                 }

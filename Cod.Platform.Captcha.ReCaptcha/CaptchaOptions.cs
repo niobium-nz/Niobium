@@ -2,7 +2,7 @@
 {
     public class CaptchaOptions
     {
-        public bool IsEnabled { get; set; }
+        public bool IsDisabled { get; set; }
 
         public required Dictionary<string, string> Secrets { get; set; }
     }
