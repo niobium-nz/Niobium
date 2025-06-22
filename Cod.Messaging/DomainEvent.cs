@@ -10,8 +10,7 @@ namespace Cod.Messaging
             this.Target = Cod.DomainEventAudience.Internal;
         }
 
-        [JsonIgnore]
-        public string ID { get; set; } = string.Empty;
+        public string ID { get; set; } = Guid.NewGuid().ToString();
 
         [JsonIgnore]
         public DateTimeOffset Occurried { get; set; }
