@@ -88,6 +88,17 @@ namespace Cod.Platform
             return GetRemoteIPs(request).FirstOrDefault();
         }
 
+        public static string GetTenant(this HttpRequest request)
+        {
+            var referer = request.Headers.Referer.SingleOrDefault();
+            if (referer != null && Uri.TryCreate(referer, UriKind.Absolute, out var refererUri))
+            {
+                return refererUri?.Host.ToLowerInvariant();
+            }
+
+            return null;
+        }
+
         public static IActionResult MakeResponse(
             this HttpRequest request,
             HttpStatusCode? statusCode = null,

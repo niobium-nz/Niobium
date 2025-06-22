@@ -8,13 +8,11 @@ namespace Cod.Platform.Captcha.ReCaptcha
     {
         public async static Task<IActionResult?> AssessRiskAsync(this HttpRequest request, IVisitorRiskAssessor assessor, string id, string captcha, ILogger? logger = null, CancellationToken cancellationToken = default)
         {
-            var referer = request.Headers.Referer.SingleOrDefault();
-            if (referer == null || !Uri.TryCreate(referer, UriKind.Absolute, out Uri? refererUri))
+            var tenant = request.GetTenant();
+            if (string.IsNullOrWhiteSpace(tenant))
             {
                 return new BadRequestResult();
             }
-
-            var tenant = refererUri?.Host.ToLowerInvariant();
 
             var clientIP = request.GetRemoteIP();
             var lowRisk = await assessor.AssessAsync(id, tenant!, captcha, clientIP, cancellationToken);
