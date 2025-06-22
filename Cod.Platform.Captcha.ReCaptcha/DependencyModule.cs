@@ -43,11 +43,11 @@ namespace Cod.Platform.Captcha.ReCaptcha
                 var captchaOptions = sp.GetRequiredService<IOptions<CaptchaOptions>>().Value;
                 if (captchaOptions.IsDisabled)
                 {
-                    return sp.GetRequiredService<GoogleReCaptchaRiskAssessor>();
+                    return sp.GetRequiredService<DevelopmentRiskAccessor>();
                 }
                 else
                 {
-                    return sp.GetRequiredService<DevelopmentRiskAccessor>();
+                    return sp.GetRequiredService<GoogleReCaptchaRiskAssessor>();
                 }
             });
             services.AddHttpClient<IVisitorRiskAssessor, GoogleReCaptchaRiskAssessor>((sp, httpClient) =>
