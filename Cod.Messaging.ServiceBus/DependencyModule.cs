@@ -1,3 +1,4 @@
+using Cod.Identity;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Cod.Messaging.ServiceBus
@@ -20,6 +21,22 @@ namespace Cod.Messaging.ServiceBus
             services.AddTransient<AuthenticationBasedQueueFactory>();
             services.AddTransient(typeof(IMessagingBroker<>), typeof(ServiceBusQueueBroker<>));
 
+            return services;
+        }
+
+        public static IServiceCollection AddMessagingBroker<T>(this IServiceCollection services, Action<ServiceBusOptions>? options = null)
+            where T : class, IDomainEvent
+        {
+            services.AddTransient<IMessagingBroker<T>>(sp =>
+            {
+                var factory = sp.GetRequiredService<AuthenticationBasedQueueFactory>();
+                ServiceBusOptions config = new();
+                options?.Invoke(config);
+                factory.Configuration = config;
+                var authenticator = sp.GetRequiredService<Lazy<IAuthenticator>>();
+                var broker = new ServiceBusQueueBroker<T>(factory, authenticator);
+                return broker;
+            });
             return services;
         }
     }

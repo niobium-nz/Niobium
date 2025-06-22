@@ -20,7 +20,7 @@ namespace Cod.Messaging
             return services;
         }
 
-        public static IServiceCollection EnableExternalEvent<TEntity, TEvent>(this IServiceCollection services)
+        public static IServiceCollection EnableExternalEvent<TEvent, TEntity>(this IServiceCollection services)
             where TEntity : class
             where TEvent : class, IDomainEvent
         {

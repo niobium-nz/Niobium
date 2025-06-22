@@ -15,14 +15,53 @@ namespace Cod.Messaging.ServiceBus
         private static readonly ConcurrentDictionary<string, ServiceBusClient> clients = [];
         private static readonly Dictionary<string, ServiceBusSender> senders = [];
         private static readonly Dictionary<string, ServiceBusReceiver> receivers = [];
-        private readonly DefaultAzureCredential defaultCredential = new(includeInteractiveCredentials: options.Value.EnableInteractiveIdentity);
+        private DefaultAzureCredential? defaultCredential;
+        private ServiceBusOptions? configuration;
         private bool disposed;
+
+        public ServiceBusOptions Configuration
+        {
+            get
+            {
+                if (configuration != null)
+                {
+                    return configuration;
+                }
+                else
+                {
+                    return options.Value;
+                }
+            }
+            set
+            {
+                if (value != null)
+                {
+                    configuration = value;
+                }
+            }
+        }
+
+        protected DefaultAzureCredential Credential
+        {
+            get
+            {
+                defaultCredential ??= new(includeInteractiveCredentials: Configuration.EnableInteractiveIdentity);
+                return defaultCredential;
+            }
+            set
+            {
+                if (value != null)
+                {
+                    defaultCredential = value;
+                }
+            }
+        }
 
         public async Task<ServiceBusReceiver> CreateReceiverAsync(IEnumerable<MessagingPermissions> permissions, string name, CancellationToken cancellationToken = default)
         {
             if (receivers.TryGetValue(name, out var cache))
             {
-                return cache; 
+                return cache;
             }
 
             var client = await CreateClientAsync(permissions, name, cancellationToken);
@@ -46,12 +85,12 @@ namespace Cod.Messaging.ServiceBus
 
         private async Task<ServiceBusClient> CreateClientAsync(IEnumerable<MessagingPermissions> permissions, string name, CancellationToken cancellationToken = default)
         {
-            if (!string.IsNullOrWhiteSpace(options.Value.FullyQualifiedNamespace))
+            if (!string.IsNullOrWhiteSpace(Configuration.FullyQualifiedNamespace))
             {
                 return clients.GetOrAdd(name, new ServiceBusClient(
-                    options.Value.FullyQualifiedNamespace,
-                    defaultCredential,
-                    options: CreateOptions(options.Value)));
+                    Configuration.FullyQualifiedNamespace,
+                    Credential,
+                    options: CreateOptions(Configuration)));
             }
             else
             {
@@ -65,7 +104,7 @@ namespace Cod.Messaging.ServiceBus
                 return clients.GetOrAdd(name, new ServiceBusClient(
                     permission.Resource,
                     new AzureSasCredential($"SharedAccessSignature {token}"),
-                    options: CreateOptions(options.Value)));
+                    options: CreateOptions(Configuration)));
             }
         }
 
