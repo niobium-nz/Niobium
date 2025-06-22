@@ -37,23 +37,23 @@ namespace Cod.Platform.Captcha.ReCaptcha
             services.AddPlatform();
 
             services.Configure<CaptchaOptions>(o => options?.Invoke(o));
+            services.AddTransient<DevelopmentRiskAccessor>();
+            services.AddTransient<GoogleReCaptchaRiskAssessor>();
 
-            services.AddTransient<IVisitorRiskAssessor>(sp =>
-            {
-                var captchaOptions = sp.GetRequiredService<IOptions<CaptchaOptions>>().Value;
-                if (captchaOptions.IsDisabled)
+            services.AddHttpClient<IVisitorRiskAssessor, GoogleReCaptchaRiskAssessor>(new Func<HttpClient, IServiceProvider, GoogleReCaptchaRiskAssessor>(
+                (httpClient, sp) =>
                 {
-                    return sp.GetRequiredService<DevelopmentRiskAccessor>();
-                }
-                else
-                {
-                    return sp.GetRequiredService<GoogleReCaptchaRiskAssessor>();
-                }
-            });
-            services.AddHttpClient<IVisitorRiskAssessor, GoogleReCaptchaRiskAssessor>((sp, httpClient) =>
-            {
-                httpClient.BaseAddress = new Uri(recaptchaHost);
-            })
+                    httpClient.BaseAddress = new Uri(recaptchaHost);
+                    var captchaOptions = sp.GetRequiredService<IOptions<CaptchaOptions>>().Value;
+                    if (captchaOptions.IsDisabled)
+                    {
+                        return sp.GetRequiredService<DevelopmentRiskAccessor>();
+                    }
+                    else
+                    {
+                        return sp.GetRequiredService<GoogleReCaptchaRiskAssessor>();
+                    }
+                }))
             .AddStandardResilienceHandler();
 
             return services;
