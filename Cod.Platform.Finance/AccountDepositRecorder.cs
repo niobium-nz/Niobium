@@ -16,7 +16,10 @@ namespace Cod.Platform.Finance
             }
 
             var pk = BuildPartitionKey(e.Transaction);
-            var rk = BuildPartitionKey(e.Transaction);
+            var rk = BuildRowKey(e.Transaction);
+            e.Transaction.PartitionKey = pk;
+            e.Transaction.RowKey = rk;
+
             var domain = await repo.GetAsync(pk, rk, cancellationToken: cancellationToken);
             await domain.MakeTransactionAsync(new[] { e.Transaction });
         }
