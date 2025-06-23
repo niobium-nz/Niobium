@@ -18,6 +18,7 @@ namespace Cod.Platform.Finance
         private const string DeltaKey = "delta";
 
         public abstract string AccountingPrincipal { get; }
+        public virtual string? Tenant { get; }
 
         protected ILogger Logger { get; private set; } = logger;
 
@@ -162,6 +163,14 @@ namespace Cod.Platform.Finance
 
         public async Task<IEnumerable<Transaction>> MakeTransactionAsync(IEnumerable<Transaction> transactions)
         {
+            if (Tenant != null)
+            {
+                foreach (var transaction in transactions)
+                {
+                    transaction.Tenant = Tenant;
+                }
+            }
+
             await transactionRepo.Value.CreateAsync(transactions);
             string now = DateTimeOffset.UtcNow.ToSixDigitsDate();
             foreach (Transaction transaction in transactions)
