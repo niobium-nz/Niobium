@@ -7,7 +7,6 @@ namespace Cod.Platform.Captcha.ReCaptcha
 {
     public static class DependencyModule
     {
-        private const string recaptchaHost = "https://www.google.com/";
         private static volatile bool loaded;
 
         public static void AddCaptcha(this IHostApplicationBuilder builder)
@@ -43,7 +42,6 @@ namespace Cod.Platform.Captcha.ReCaptcha
             services.AddHttpClient<IVisitorRiskAssessor, GoogleReCaptchaRiskAssessor>(new Func<HttpClient, IServiceProvider, GoogleReCaptchaRiskAssessor>(
                 (httpClient, sp) =>
                 {
-                    httpClient.BaseAddress = new Uri(recaptchaHost);
                     var captchaOptions = sp.GetRequiredService<IOptions<CaptchaOptions>>().Value;
                     if (captchaOptions.IsDisabled)
                     {

@@ -10,6 +10,7 @@ namespace Cod.Platform.Captcha.ReCaptcha
         ILogger<GoogleReCaptchaRiskAssessor> logger)
         : IVisitorRiskAssessor
     {
+        private const string recaptchaAPI = "https://www.google.com/recaptcha/api/siteverify";
         private static readonly JsonSerializerOptions SERIALIZATION_OPTIONS = new()
         {
             PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
@@ -30,7 +31,7 @@ namespace Cod.Platform.Captcha.ReCaptcha
             }
             var payload = new FormUrlEncodedContent(parameters);
 
-            using var response = await httpClient.PostAsync("recaptcha/api/siteverify", payload, cancellationToken);
+            using var response = await httpClient.PostAsync(recaptchaAPI, payload, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
