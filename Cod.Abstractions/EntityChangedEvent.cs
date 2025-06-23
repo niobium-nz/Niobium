@@ -3,12 +3,12 @@
     public class EntityChangedEvent<T> : EventArgs, IDomainEvent
         where T : class
     {
-        public EntityChangedEvent(T oldEntity, T newEntity)
+        public EntityChangedEvent(EntityChangeType changeType, T entity)
         {
             Source = DomainEventAudience.Internal;
             Target = DomainEventAudience.Internal;
-            OldEntity = oldEntity;
-            NewEntity = newEntity;
+            ChangeType = changeType;
+            Entity = entity;
         }
 
         public string ID { get; set; } = string.Empty;
@@ -19,8 +19,8 @@
 
         public DomainEventAudience Target { get; set; }
 
-        public T OldEntity { get; }
+        public T Entity { get; }
 
-        public T NewEntity { get; }
+        public EntityChangeType ChangeType { get; }
     }
 }

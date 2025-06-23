@@ -91,7 +91,7 @@
             {
                 var createdOrReplaced = await Repository.CreateAsync(model, replaceIfExist: true, cancellationToken: cancellationToken);
                 results.AddRange(createdOrReplaced);
-                events.AddRange(createdOrReplaced.Select(m => new Func<EntityChangedEvent<T>>(() => new EntityChangedEvent<T>(null, m))));
+                events.AddRange(createdOrReplaced.Select(m => new Func<EntityChangedEvent<T>>(() => new EntityChangedEvent<T>(EntityChangeType.Created | EntityChangeType.Updated, m))));
             }
             else
             {
@@ -102,7 +102,7 @@
                     {
                         var created = await Repository.CreateAsync(group, cancellationToken: cancellationToken);
                         results.AddRange(created);
-                        events.AddRange(created.Select(m => new Func<EntityChangedEvent<T>>(() => new EntityChangedEvent<T>(null, m))));
+                        events.AddRange(created.Select(m => new Func<EntityChangedEvent<T>>(() => new EntityChangedEvent<T>(EntityChangeType.Created, m))));
                     }
                     else
                     {
@@ -112,10 +112,7 @@
                         {
                             events.Add(new Func<EntityChangedEvent<T>>(() =>
                             {
-                                var previous = group.FirstOrDefault(m =>
-                                EntityMappingHelper.GetField<string>(m, EntityKeyKind.PartitionKey) == EntityMappingHelper.GetField<string>(u, EntityKeyKind.PartitionKey)
-                                    && EntityMappingHelper.GetField<string>(m, EntityKeyKind.RowKey) == EntityMappingHelper.GetField<string>(u, EntityKeyKind.RowKey));
-                                return new EntityChangedEvent<T>(previous, u);
+                                return new EntityChangedEvent<T>(EntityChangeType.Updated, u);
                             }));
                         }
                     }
