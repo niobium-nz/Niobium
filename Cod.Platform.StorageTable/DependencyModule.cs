@@ -79,8 +79,8 @@ namespace Cod.Platform.StorageTable
             });
         }
 
-        public static IServiceCollection AddDatabaseResourceTokenSupport(this IServiceCollection services, IConfiguration identityConfiguration)
-            => services.AddDatabaseResourceTokenSupport(identityConfiguration.Bind);
+        public static IServiceCollection AddDatabaseResourceTokenSupport(this IHostApplicationBuilder builder)
+            => builder.Services.AddDatabaseResourceTokenSupport(builder.Configuration.GetSection(nameof(IdentityServiceOptions)).Bind);
 
         public static IServiceCollection GrantDatabaseEntitlementTo(this IServiceCollection services, string role, DatabasePermissions permissions, string tableName, string fullyQualifiedDomainName)
             => services.GrantDatabaseEntitlementTo(_ => role, permissions, _ => tableName, _ => fullyQualifiedDomainName);
