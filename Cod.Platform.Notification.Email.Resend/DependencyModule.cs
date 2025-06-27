@@ -14,6 +14,12 @@ namespace Cod.Platform.Notification.Email.Resend
         public static void AddNotification(this IHostApplicationBuilder builder)
         {
             builder.Services.AddNotification(builder.Configuration.GetSection(nameof(ResendServiceOptions)).Bind);
+
+
+            if (builder.Configuration.IsDevelopmentEnvironment())
+            {
+                builder.Services.AddTransient<IEmailNotificationClient, DevelopmentEmailNotificationClient>();
+            }
         }
 
         public static IServiceCollection AddNotification(

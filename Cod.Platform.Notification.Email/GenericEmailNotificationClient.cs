@@ -4,6 +4,8 @@ namespace Cod.Platform.Notification.Email
 {
     public abstract class GenericEmailNotificationClient(ILogger<GenericEmailNotificationClient> logger) : IEmailNotificationClient
     {
+        protected ILogger Logger { get; } = logger;
+
         public async Task<bool> SendAsync(EmailAddress from, IEnumerable<string> recipients, string subject, string body, CancellationToken cancellationToken = default)
         {
             from.Address = from.Address.Trim().ToLowerInvariant();

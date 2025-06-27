@@ -5,5 +5,14 @@
         public string? DisplayName { get; set; }
 
         public required string Address { get; set; }
+
+        public override string ToString()
+        {
+            if (string.IsNullOrWhiteSpace(DisplayName))
+            {
+                return Address;
+            }
+            return $"{DisplayName} <{Address}>";
+        }
     }
 }
