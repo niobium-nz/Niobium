@@ -32,9 +32,12 @@ namespace Cod.Platform.Identity
             services.AddTransient<PrincipalParser>();
             services.AddTransient<ISignatureService, SignatureService>();
             services.AddTransient<ITokenBuilder, BearerTokenBuilder>();
+            services.AddTransient<BearerTokenMiddleware>();
             services.AddTransient<AccessTokenMiddleware>();
             services.AddTransient<ResourceTokenMiddleware>();
+            services.AddTransient<FunctionMiddlewareAdaptor<BearerTokenMiddleware>>();
             services.AddTransient<FunctionMiddlewareAdaptor<AccessTokenMiddleware>>();
+            services.AddTransient<FunctionMiddlewareAdaptor<ResourceTokenMiddleware>>();
             services.AddTransient<IEntitlementDescriptor, DatabaseEntitlementStore>();
             return services;
         }
@@ -42,6 +45,7 @@ namespace Cod.Platform.Identity
         public static IFunctionsWorkerApplicationBuilder UsePlatformIdentity(this IFunctionsWorkerApplicationBuilder builder)
         {
             builder.UsePlatform();
+            builder.UseWhen<FunctionMiddlewareAdaptor<BearerTokenMiddleware>>(FunctionMiddlewarePredicates.IsHttp);
             builder.UseWhen<FunctionMiddlewareAdaptor<AccessTokenMiddleware>>(FunctionMiddlewarePredicates.IsHttp);
             builder.UseWhen<FunctionMiddlewareAdaptor<ResourceTokenMiddleware>>(FunctionMiddlewarePredicates.IsHttp);
             return builder;
@@ -50,6 +54,7 @@ namespace Cod.Platform.Identity
         public static IApplicationBuilder UsePlatformIdentity(this IApplicationBuilder builder)
         {
             builder.UsePlatform();
+            builder.UseMiddleware<BearerTokenMiddleware>();
             builder.UseMiddleware<AccessTokenMiddleware>();
             builder.UseMiddleware<ResourceTokenMiddleware>();
             return builder;
