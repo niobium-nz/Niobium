@@ -13,7 +13,6 @@
 
         public string RowKey { get; private set; }
 
-
         public async Task<string> GetHashAsync(CancellationToken cancellationToken = default)
         {
             if (etag == null)
@@ -53,13 +52,13 @@
             return this;
         }
 
-        public async Task ReloadAsync()
+        public async Task ReloadAsync(CancellationToken cancellationToken = default)
         {
             if (!Initialized)
             {
                 throw new NotSupportedException();
             }
-            cache = await Repository.RetrieveAsync(PartitionKey, RowKey);
+            cache = await Repository.RetrieveAsync(PartitionKey, RowKey, cancellationToken: cancellationToken);
         }
 
         public IDomain<T> Initialize(T entity)

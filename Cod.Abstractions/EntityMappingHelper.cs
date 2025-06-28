@@ -55,23 +55,34 @@ namespace Cod
             switch (field)
             {
                 case EntityKeyKind.PartitionKey:
-                    result = (T)(object)value.ToString();
-                    break;
                 case EntityKeyKind.RowKey:
-                    result = (T)(object)value.ToString();
-                    break;
-                case EntityKeyKind.ETag:
-                    result = (T)(object)value.ToString();
-                    break;
                 case EntityKeyKind.Timestamp:
-                    if (value is DateTimeOffset && typeof(T) == typeof(DateTimeOffset))
+                    if (value is DateTimeOffset time)
                     {
-                        result = (T)value;
+                        if (typeof(T) == typeof(DateTimeOffset))
+                        {
+                            result = (T)value;
+                        }
+                        else if (typeof(T) == typeof(long))
+                        {
+                            result = (T)(object)time.ToReverseUnixTimeMilliseconds();
+                        }
+                        else if (typeof(T) == typeof(string))
+                        {
+                            result = (T)(object)time.ToReverseUnixTimeMilliseconds().ToString();
+                        }
+                        else
+                        {
+                            throw new InvalidDataContractException($"Property '{key}' on '{type.FullName}' must be of type DateTimeOffset or long.");
+                        }
                     }
                     else
                     {
                         result = (T)(object)value.ToString();
                     }
+                    break;
+                case EntityKeyKind.ETag:
+                    result = (T)(object)value.ToString();
                     break;
                 default:
                     throw new NotSupportedException($"Converting '{value}' to type '{typeof(T)}' is not supported.");
