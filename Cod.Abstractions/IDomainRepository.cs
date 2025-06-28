@@ -14,5 +14,7 @@
         IAsyncEnumerable<TDomain> GetAsync(string partitionKey, bool forceLoad = false, CancellationToken cancellationToken = default);
 
         IAsyncEnumerable<TDomain> GetAsync(CancellationToken cancellationToken = default);
+
+        Task<TDomain> BuildAsync(TEntity entity, CancellationToken cancellationToken = default);
     }
 }

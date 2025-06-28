@@ -15,6 +15,7 @@ namespace Cod
         private bool disposed;
 
         public IReadOnlyCollection<TDomain> CachedDomains => cachedDomains;
+
         public IReadOnlyCollection<string> CachedPartitions => cachedPartitions;
 
         public GenericDomainRepository(Func<TDomain> createDomain, Lazy<IRepository<TEntity>> repository)
@@ -109,6 +110,24 @@ namespace Cod
             }
 
             RebuildCache();
+        }
+
+        public Task<TDomain> BuildAsync(TEntity entity, CancellationToken cancellationToken = default)
+        {
+            TDomain domain = createDomain();
+            domain.Initialize(entity);
+
+            partitionCache.AddOrUpdate(
+                domain.PartitionKey,
+                new List<TDomain> { domain },
+                (key, existing) =>
+                {
+                    existing.Add(domain);
+                    return existing;
+                });
+            RebuildCache();
+
+            return Task.FromResult(domain);
         }
 
         public void Dispose()
