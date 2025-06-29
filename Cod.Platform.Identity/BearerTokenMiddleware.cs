@@ -6,14 +6,14 @@ namespace Cod.Platform.Identity
     {
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
-            try
+            var principal = await principalParser.TryParseAsync(context.Request, cancellationToken: context.RequestAborted);
+
+            if (principal != null)
             {
-                context.User = await principalParser.ParseAsync(context.Request, cancellationToken: context.RequestAborted);
-                await next(context);
+                context.User = principal;
             }
-            catch (ApplicationException)
-            {
-            }
+
+            await next(context);
         }
     }
 }

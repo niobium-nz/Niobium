@@ -2,6 +2,6 @@
 {
     public interface IVisitorRiskAssessor
     {
-        Task<bool> AssessAsync(string requestID, string tenant, string token, string? remoteIP, CancellationToken cancellationToken);
+        Task<bool> AssessAsync(string token, string? requestID = null, string? tenant = null, string? clientIP = null, bool throwsExceptionWhenFail = true, CancellationToken cancellationToken = default);
     }
 }

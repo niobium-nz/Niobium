@@ -32,6 +32,7 @@ namespace Cod.Platform
             services.AddTransient<ErrorHandlingMiddleware>();
             services.AddTransient<FunctionMiddlewareAdaptor<ErrorHandlingMiddleware>>();
 
+            services.AddHttpContextAccessor();
             return services;
         }
 

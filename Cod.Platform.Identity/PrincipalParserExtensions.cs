@@ -23,6 +23,23 @@ namespace Cod.Platform.Identity
             return !principal.TryGetClaim(claim, out T result) ? null : result!.Equals(value) ? principal : null;
         }
 
+        public static async Task<ClaimsPrincipal?> TryParseAsync(this PrincipalParser helper, HttpRequest request, CancellationToken cancellationToken = default)
+        {
+            if (!request.TryParseAuthorizationHeader(out string inputScheme, out string parameter) || inputScheme != AuthenticationScheme.BearerLoginScheme)
+            {
+                return null;
+            }
+
+            try
+            {
+                return await helper.ParseAsync(parameter, cancellationToken);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         public static async Task<ClaimsPrincipal> ParseAsync(this PrincipalParser helper, HttpRequest request, CancellationToken cancellationToken = default)
         {
             if (!request.TryParseAuthorizationHeader(out string inputScheme, out string parameter) || inputScheme != AuthenticationScheme.BearerLoginScheme)

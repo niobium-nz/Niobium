@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 
@@ -7,17 +8,36 @@ namespace Cod.Platform.Captcha.ReCaptcha
     internal partial class GoogleReCaptchaRiskAssessor(
         HttpClient httpClient,
         IOptions<CaptchaOptions> options,
+        Lazy<IHttpContextAccessor> httpContextAccessor,
         ILogger<GoogleReCaptchaRiskAssessor> logger)
         : IVisitorRiskAssessor
     {
         private const string recaptchaAPI = "https://www.google.com/recaptcha/api/siteverify";
-        private static readonly JsonSerializerOptions SERIALIZATION_OPTIONS = new()
+        private static readonly JsonSerializerOptions GoogleRechptchaSerializationOptions = new()
         {
             PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
         };
 
-        public async virtual Task<bool> AssessAsync(string requestID, string tenant, string token, string? clientIP, CancellationToken cancellationToken)
+        public async virtual Task<bool> AssessAsync(string token, string? requestID = null, string? tenant = null, string? clientIP = null, bool throwsExceptionWhenFail = true, CancellationToken cancellationToken = default)
         {
+            requestID ??= Guid.NewGuid().ToString();
+            if (String.IsNullOrWhiteSpace(token))
+            {
+                throw new ApplicationException(InternalError.BadRequest, "Missing captcha token in request.");
+            }
+
+            if (String.IsNullOrWhiteSpace(tenant))
+            {
+                tenant = httpContextAccessor.Value.HttpContext?.Request.GetTenant()
+                    ?? throw new ApplicationException(InternalError.BadRequest, "Missing tenant information in request.");
+            }
+
+            if (String.IsNullOrWhiteSpace(clientIP))
+            {
+                clientIP = httpContextAccessor.Value.HttpContext?.Request.GetRemoteIP()
+                    ?? throw new ApplicationException(InternalError.BadRequest, "unable to get client IP from request.");
+            }
+
             var secret = options.Value.Secrets[tenant]
                 ?? throw new ApplicationException(InternalError.InternalServerError, $"Missing tenant secret: {tenant}");
 
@@ -47,9 +67,16 @@ namespace Cod.Platform.Captcha.ReCaptcha
                 return false;
             }
 
-            return result.Success && result.Hostname.Equals(tenant, StringComparison.OrdinalIgnoreCase);
+            var lowrisk = result.Success && result.Hostname.Equals(tenant, StringComparison.OrdinalIgnoreCase);
+            if (throwsExceptionWhenFail && !lowrisk)
+            {
+                logger?.LogWarning($"{clientIP} is considered high risk for request {requestID}");
+                throw new UnauthorizedAccessException();
+            }
+
+            return lowrisk;
         }
 
-        private static T Deserialize<T>(string json) => System.Text.Json.JsonSerializer.Deserialize<T>(json, SERIALIZATION_OPTIONS)!;
+        private static T Deserialize<T>(string json) => System.Text.Json.JsonSerializer.Deserialize<T>(json, GoogleRechptchaSerializationOptions)!;
     }
 }

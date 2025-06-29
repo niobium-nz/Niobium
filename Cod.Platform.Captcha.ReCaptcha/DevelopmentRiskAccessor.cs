@@ -1,11 +1,13 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Cod.Platform.Captcha.ReCaptcha
 {
-    internal class DevelopmentRiskAccessor(HttpClient httpClient, IOptions<CaptchaOptions> options, ILogger<GoogleReCaptchaRiskAssessor> logger)
-        : GoogleReCaptchaRiskAssessor(httpClient, options, logger)
+    internal class DevelopmentRiskAccessor(HttpClient httpClient, IOptions<CaptchaOptions> options, Lazy<IHttpContextAccessor> httpContextAccessor, ILogger<GoogleReCaptchaRiskAssessor> logger)
+                : GoogleReCaptchaRiskAssessor(httpClient, options, httpContextAccessor, logger)
     {
-        public override Task<bool> AssessAsync(string requestID, string tenant, string token, string? remoteIP, CancellationToken cancellationToken) => Task.FromResult(true);
+        public override Task<bool> AssessAsync(string token, string? requestID = null, string? tenant = null, string? clientIP = null, bool throwsExceptionWhenFail = true, CancellationToken cancellationToken = default)
+             => Task.FromResult(true);
     }
 }
