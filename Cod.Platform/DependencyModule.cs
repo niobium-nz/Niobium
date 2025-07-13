@@ -1,5 +1,6 @@
 using Cod.Platform.Analytics;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -44,7 +45,10 @@ namespace Cod.Platform
             }
 
             used = true;
-            builder.UseWhen<FunctionMiddlewareAdaptor<ErrorHandlingMiddleware>>(FunctionMiddlewarePredicates.IsHttp);
+
+            builder.Services.AddSingleton<IHttpContextAccessor, FunctionContextAccessor>();
+            builder.UseMiddleware<FunctionContextAccessorMiddleware>();
+            builder.UseMiddleware<FunctionMiddlewareAdaptor<ErrorHandlingMiddleware>>();
             return builder;
         }
 
