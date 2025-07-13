@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 using System.Net.Http.Headers;
 
@@ -17,33 +16,6 @@ namespace Cod.Platform.Identity
         {
             request.HttpContext.Response.Headers.WWWAuthenticate = new AuthenticationHeaderValue(scheme, token).ToString();
             request.HttpContext.Response.Headers.AccessControlExposeHeaders = HeaderNames.WWWAuthenticate;
-        }
-
-        public static bool TryParseAuthorizationHeader(this HttpRequest request, out string scheme, out string parameter)
-        {
-            parameter = string.Empty;
-            scheme = string.Empty;
-            
-            if (!request.Headers.TryGetValue(HeaderNames.Authorization, out StringValues header))
-            {
-                return false;
-            }
-
-            var auth = header.SingleOrDefault();
-            if (string.IsNullOrWhiteSpace(auth))
-            {
-                return false;
-            }
-
-            string[] parts = auth.Split(' ');
-            if (parts.Length < 2)
-            {
-                return false;
-            }
-
-            scheme = parts[0];
-            parameter = parts[1];
-            return true;
         }
     }
 }

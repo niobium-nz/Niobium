@@ -10,7 +10,6 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <NeutralLanguage>en-US</NeutralLanguage>
-    <InvariantGlobalization>true</InvariantGlobalization>
     <Nullable>enable</Nullable>
     <LangVersion>latestMajor</LangVersion>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
@@ -27,14 +26,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="9.6.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3" />
     <PackageReference Include="Microsoft.SourceLink.AzureRepos.Git" Version="8.0.0" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Cod.Abstractions\Cod.Abstractions.csproj" />
+    <ProjectReference Include="..\Cod.Identity\Cod.Identity.csproj" />
+    <ProjectReference Include="..\Cod.Platform\Cod.Platform.csproj" />
+    <ProjectReference Include="..\Cod.Profile\Cod.Profile.csproj" />
   </ItemGroup>
 
 </Project>

@@ -62,7 +62,7 @@ namespace Cod.Platform
 
                 var request = new FirebaseMessageRequest { Message = message.Message };
                 using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
-                httpclient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                httpclient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthenticationScheme.BearerLoginScheme, token);
                 var json = JsonSerializer.SerializeObject(request, JsonSerializationFormat.CamelCase);
                 using var content = new StringContent(json, Encoding.UTF8, "application/json");
                 var resp = await httpclient.PostAsync($"https://fcm.googleapis.com/v1/projects/{message.ProjectID}/messages:send", content);

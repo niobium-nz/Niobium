@@ -26,11 +26,11 @@ namespace Cod.Platform.Notification.Email.Resend
 
             if (config.Value.DomainScopedAPIKeys != null && config.Value.DomainScopedAPIKeys.TryGetValue(fromDomain, out string? value))
             {
-                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", value);
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthenticationScheme.BearerLoginScheme, value);
             }
             else
             {
-                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", config.Value.GlobalAPIKey);
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthenticationScheme.BearerLoginScheme, config.Value.GlobalAPIKey);
             }
 
             var json = Serialize(new ResendRequest

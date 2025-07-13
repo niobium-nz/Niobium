@@ -1,13 +1,10 @@
-﻿using Cod.Identity;
-using Cod.Profile;
-using Microsoft.Extensions.Logging;
-using System.Net.Http.Headers;
+﻿using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
 using System.Text;
 
-namespace Cod.Channel.Profile
+namespace Cod.Profile
 {
-    public class GenericProfileService<T>(IAuthenticator authenticator, IHttpClientFactory httpClientFactory, ILogger<GenericProfileService<T>> logger)
+    public abstract class GenericProfileService<T>(IHttpClientFactory httpClientFactory, ILogger<GenericProfileService<T>> logger)
         : IProfileService<T> where T : class, IProfile
     {
         private T? profile;
@@ -72,18 +69,12 @@ namespace Cod.Channel.Profile
             this.profile = default;
         }
 
-        private async Task<HttpClient?> GetHttpClientAsync(CancellationToken cancellationToken)
+        protected virtual async Task<HttpClient?> GetHttpClientAsync(CancellationToken cancellationToken)
         {
-            var httpClient = httpClientFactory.CreateClient(ProfileOptions.DefaultHttpClientName);
-
-            var authenticated = await authenticator.GetAuthenticateStatus(cancellationToken);
-            if (!authenticated)
-            {
-                return null;
-            }
-
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authenticator.IDToken!.EncodedToken);
-            return httpClient;
+            var httpClient = httpClientFactory.CreateClient(Cod.Profile.Constants.DefaultHttpClientName);
+            return await ConfigureHttpClientAsync(httpClient, cancellationToken);
         }
+
+        protected abstract Task<HttpClient?> ConfigureHttpClientAsync(HttpClient httpClient, CancellationToken cancellationToken);
     }
 }

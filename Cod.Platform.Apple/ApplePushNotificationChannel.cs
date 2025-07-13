@@ -67,7 +67,7 @@ namespace Cod.Platform
                     request.Headers.Add("apns-id", message.ID.ToString());
                     request.Headers.Add("apns-expiration", message.Expires.ToUnixTimeSeconds().ToString());
                     request.Headers.Add("apns-topic", message.Topic);
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                    request.Headers.Authorization = new AuthenticationHeaderValue(AuthenticationScheme.BearerLoginScheme, token);
 
                     var sb = new StringBuilder();
                     if (message.Background)

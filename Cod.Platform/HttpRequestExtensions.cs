@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
-using System.Net.Http.Headers;
 using System.Net;
+using System.Net.Http.Headers;
 
 namespace Cod.Platform
 {
@@ -36,6 +36,38 @@ namespace Cod.Platform
             "172.30.",  //172.16.0.0¨C172.31.255.255
             "172.31.",  //172.16.0.0¨C172.31.255.255
         };
+
+        public static bool TryParseAuthorizationHeader(this HttpRequest request, string headerName, out string scheme, out string parameter)
+        {
+            parameter = string.Empty;
+            scheme = string.Empty;
+
+            if (!request.Headers.TryGetValue(headerName, out StringValues header))
+            {
+                return false;
+            }
+
+            var auth = header.SingleOrDefault();
+            if (string.IsNullOrWhiteSpace(auth))
+            {
+                return false;
+            }
+
+            string[] parts = auth.Split(' ');
+            if (parts.Length < 2)
+            {
+                return false;
+            }
+
+            scheme = parts[0];
+            parameter = parts[1];
+            return true;
+        }
+
+        public static bool TryParseAuthorizationHeader(this HttpRequest request, out string scheme, out string parameter)
+        {
+            return TryParseAuthorizationHeader(request, HeaderNames.Authorization, out scheme, out parameter);
+        }
 
         public static List<string> GetRemoteIPs(this HttpRequest request)
         {

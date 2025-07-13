@@ -6,6 +6,8 @@
 
         public required Guid App { get; set; }
 
+        public string? PlatformAPIEndpoint { get; set; }
+
         public required string IDTokenHost { get; set; }
 
         public required string IDTokenEndpoint { get; set; } = Cod.Identity.Constants.DefaultIDTokenEndpoint;

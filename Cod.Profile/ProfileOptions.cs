@@ -1,9 +1,7 @@
-﻿namespace Cod.Channel.Profile
+﻿namespace Cod.Profile
 {
     public class ProfileOptions
     {
-        public const string DefaultHttpClientName = "IdentityAPIClient";
-
         public required string ProfileServiceHost { get; set; }
 
         public required string ProfileServiceEndpoint { get; set; } = Cod.Profile.Constants.DefaultProfileEndpoint;

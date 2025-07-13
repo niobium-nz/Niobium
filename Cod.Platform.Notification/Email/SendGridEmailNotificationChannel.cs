@@ -77,7 +77,7 @@ namespace Cod.Platform.Notification.Email
             SendGridEmailRequest requestObj = await MakeRequestAsync(brand, email, context, templateID, parameters);
             string requestData = JsonSerializer.SerializeObject(requestObj, JsonSerializationFormat.UnderstoreCase);
             using HttpClient httpclient = new(HttpHandler.GetHandler(), false);
-            httpclient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Key);
+            httpclient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthenticationScheme.BearerLoginScheme, Key);
             using StringContent content = new(requestData, Encoding.UTF8, "application/json");
             HttpResponseMessage resp = await httpclient.PostAsync("https://api.sendgrid.com/v3/mail/send", content);
             int status = (int)resp.StatusCode;

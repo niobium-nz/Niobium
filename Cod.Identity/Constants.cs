@@ -14,5 +14,6 @@
 
         public const string ClaimKeyPrefix = "COD-";
         public const string TenantIDHeaderKey = "X-Tenant";
+        public const string IDTokenHeaderKey = "X-IDT";
     }
 }
