@@ -1,6 +1,7 @@
 ﻿using Cod.Profile;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Net.Http.Headers;
 
 namespace Cod.Platform.Profile
@@ -8,8 +9,9 @@ namespace Cod.Platform.Profile
     public class PlatformProfileService<T>(
         IHttpContextAccessor httpContextAccessor,
         IHttpClientFactory httpClientFactory,
+        IOptions<ProfileOptions> options,
         ILogger<GenericProfileService<T>> logger)
-        : GenericProfileService<T>(httpClientFactory, logger), IProfileService<T>
+        : GenericProfileService<T>(httpClientFactory, options, logger), IProfileService<T>
         where T : class, IProfile
     {
         protected override Task<HttpClient?> ConfigureHttpClientAsync(HttpClient httpClient, CancellationToken cancellationToken)

@@ -1,15 +1,19 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Net.Http.Json;
 using System.Text;
 
 namespace Cod.Profile
 {
-    public abstract class GenericProfileService<T>(IHttpClientFactory httpClientFactory, ILogger<GenericProfileService<T>> logger)
+    public abstract class GenericProfileService<T>(
+        IHttpClientFactory httpClientFactory,
+        IOptions<ProfileOptions> options,
+        ILogger<GenericProfileService<T>> logger)
         : IProfileService<T> where T : class, IProfile
     {
         private T? profile;
 
-        public virtual string ProfileEndpoint { get => Cod.Profile.Constants.DefaultProfileEndpoint; }
+        public virtual string ProfileEndpoint { get => options.Value.ProfileServiceEndpoint; }
 
         public async Task<T?> RetrieveAsync(bool forceRefresh = false, CancellationToken? cancellationToken = null)
         {
