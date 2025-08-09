@@ -20,6 +20,7 @@ namespace Cod.Channel
             services.AddTransient(typeof(Lazy<>), typeof(LazyWrapper<>));
             services.AddSingleton<ILoadingStateService, DefaultLoadingStateService>();
             services.AddSingleton<INotificationService, NotificationService>();
+            services.AddTransient<IEditModeValueProviderFactory>(sp => new DefaultEditModeValueProviderFactory(sp));
             return services;
         }
 

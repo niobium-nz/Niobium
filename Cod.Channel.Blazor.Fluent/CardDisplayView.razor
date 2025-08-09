@@ -1,0 +1,96 @@
+﻿@if (!IsBusy)
+{
+    <FluentStack AdaptiveRendering="true">
+        @if (Data.IsInitialized)
+        {
+            @foreach (var item in Data)
+            {
+                <FluentCard Width="500px">
+                    @if (item.IsBusy)
+                    {
+                        <FluentProgressRing />
+                    }
+                    else
+                    {
+                        <FluentGrid Spacing="20" AdaptiveRendering="true" Justify="JustifyContent.FlexStart">
+
+                            @if (properties != null)
+                            {
+                                foreach (var group in properties)
+                                {
+                                    foreach (var property in group)
+                                    {
+                                        <PropertyDisplayMode ViewModel="item" Property="property" />
+                                    }
+
+                                    <FluentGridItem lg="12">
+                                        <FluentDivider />
+                                    </FluentGridItem>
+                                }
+                            }
+
+                            @if (actions != null)
+                            {
+                                foreach (var action in actions)
+                                {
+                                    <FluentButton Appearance="Appearance.Accent"
+                                                  IconStart="@(new Icons.Regular.Size16.Money())"
+                                                  OnClick="@(async () => await action.Action.Invoke(item))">
+                                        @action.DisplayName
+                                    </FluentButton>
+                                }
+                            }
+
+                        </FluentGrid>
+                    }
+                </FluentCard>
+            }
+        }
+    </FluentStack>
+}
+else
+{
+    <FluentProgressRing />
+}
+
+@code {
+    private bool disposed;
+    private IEnumerable<IGrouping<int, DisplayProperty>>? properties;
+    private IEnumerable<DisplayAction>? actions;
+
+    [Parameter]
+    public required IListViewModel Data { get; set; }
+
+    private bool IsBusy => Data.IsBusy;
+
+    protected async override Task OnInitializedAsync() 
+    {
+        Data.RefreshRequested += Data_RefreshRequested;
+        await Data.InitializeAsync();
+
+        var any = Data.FirstOrDefault();
+        if (any != null)
+        {
+            properties = ModelHelper.GetDisplayProperies(any);
+            actions = ModelHelper.GetDisplayActions(any);
+        }
+
+        await base.OnInitializedAsync();
+    }
+
+    private void Data_RefreshRequested(object? sender, EventArgs e)
+    {
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        if (!disposed)
+        {
+            Data.RefreshRequested -= Data_RefreshRequested;
+            disposed = true;
+        }
+
+        GC.SuppressFinalize(this);
+    }
+}

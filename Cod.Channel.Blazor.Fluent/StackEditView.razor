@@ -1,0 +1,76 @@
+﻿@if (!Data.IsBusy)
+{
+    <EditForm Model="@Data">
+        <DataAnnotationsValidator />
+        <FluentValidationSummary />
+
+        <FluentStack Orientation="Orientation.Vertical">
+            @if (properties != null)
+            {
+                foreach (var group in properties)
+                {
+                    foreach (var property in group)
+                    {
+                        <PropertyEditMode ViewModel="Data" Property="property" />
+                    }
+
+                    <FluentGridItem lg="12">
+                        <FluentDivider />
+                    </FluentGridItem>
+                }
+            }
+
+            @if (actions != null)
+            {
+                foreach (var action in actions)
+                {
+                    <FluentButton Appearance="Appearance.Accent"
+                                  IconStart="@(new Icons.Regular.Size16.Money())"
+                                  OnClick="@(async () => await action.Action.Invoke(Data))">
+                        @action.DisplayName
+                    </FluentButton>
+                }
+            }
+        </FluentStack>
+    </EditForm>
+}
+else
+{
+    <FluentProgressRing />
+}
+
+@code {
+    private bool disposed;
+    private IEnumerable<IEditModeValueProvider> valueProviders = [];
+    private IEnumerable<IGrouping<int, EditProperty>>? properties => ModelHelper.GetEditProperies(Data, valueProviders);
+    private IEnumerable<DisplayAction>? actions => ModelHelper.GetDisplayActions(Data);
+
+    [Parameter]
+    public required IViewModel Data { get; set; }
+
+    [Inject]
+    public required IEditModeValueProviderFactory ValueProviderFactory { get; set; }
+
+    protected async override Task OnInitializedAsync()
+    {
+        Data.RefreshRequested += Data_RefreshRequested;
+        valueProviders = ValueProviderFactory.Create(Data.GetType());
+        await base.OnInitializedAsync();
+    }
+
+    private void Data_RefreshRequested(object? sender, EventArgs e)
+    {
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        if (!disposed)
+        {
+            Data.RefreshRequested -= Data_RefreshRequested;
+            disposed = true;
+        }
+
+        GC.SuppressFinalize(this);
+    }
+}

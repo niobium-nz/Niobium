@@ -1,0 +1,303 @@
+﻿@if (propertyValue is not string && propertyValue is System.Collections.IEnumerable children)
+{
+    foreach (var child in children)
+    {
+        if (child is IViewModel vm)
+        {
+            <FluentGridItem lg="2">
+                <FluentLabel Typo="Typography.Body">@Property.DisplayName</FluentLabel>
+            </FluentGridItem>
+            <StackEditView Data="vm" />
+        }
+    }
+}
+else if (Property.Control == PropertyControl.Label)
+{
+    <PropertyDisplayMode ViewModel="ViewModel" Property="Property" />
+}
+else if (Property.Control == PropertyControl.TextField)
+{
+    <FluentTextField Name="@fieldName"
+                     Label="@fieldDisplayName"
+                     @bind-Value:get="textBindValue"
+                     @bind-Value:set="(v) => Property.SetValue(ViewModel, v)"
+                     Required="@Property.IsRequired" />
+
+    <FluentValidationMessage TValue="EditProperty" Field="@fieldIdentifier" />
+}
+else if (Property.Control == PropertyControl.NumberField)
+{
+    if (propertyValue is long lv)
+    {
+        <FluentNumberField Name="@fieldName"
+                           Label="@fieldDisplayName"
+                           @bind-Value:get="lv"
+                           @bind-Value:set="(v) => Property.SetValue(ViewModel, v)"
+                           Required="@Property.IsRequired" />
+    }
+    else if (propertyValue is ulong ulv)
+    {
+        <FluentNumberField Name="@fieldName"
+                           Label="@fieldDisplayName"
+                           @bind-Value:get="ulv"
+                           @bind-Value:set="(v) => Property.SetValue(ViewModel, v)"
+                           Required="@Property.IsRequired" />
+    }
+    else if (propertyValue is uint ui)
+    {
+        <FluentNumberField Name="@fieldName"
+                           Label="@fieldDisplayName"
+                           @bind-Value:get="ui"
+                           @bind-Value:set="(v) => Property.SetValue(ViewModel, v)"
+                           Required="@Property.IsRequired" />
+    }
+    else if (propertyValue is int i)
+    {
+        <FluentNumberField Name="@fieldName"
+                           Label="@fieldDisplayName"
+                           @bind-Value:get="i"
+                           @bind-Value:set="(v) => Property.SetValue(ViewModel, v)"
+                           Required="@Property.IsRequired" />
+    }
+    else if (propertyValue is short s)
+    {
+        <FluentNumberField Name="@fieldName"
+                           Label="@fieldDisplayName"
+                           @bind-Value:get="s"
+                           @bind-Value:set="(v) => Property.SetValue(ViewModel, v)"
+                           Required="@Property.IsRequired" />
+    }
+    else if (propertyValue is ushort us)
+    {
+        <FluentNumberField Name="@fieldName"
+                           Label="@fieldDisplayName"
+                           @bind-Value:get="us"
+                           @bind-Value:set="(v) => Property.SetValue(ViewModel, v)"
+                           Required="@Property.IsRequired" />
+    }
+    else if (propertyValue is decimal d)
+    {
+        <FluentNumberField Name="@fieldName"
+                           Label="@fieldDisplayName"
+                           @bind-Value:get="d"
+                           @bind-Value:set="(v) => Property.SetValue(ViewModel, v)"
+                           Required="@Property.IsRequired" />
+    }
+    else if (propertyValue is float f)
+    {
+        <FluentNumberField Name="@fieldName"
+                           Label="@fieldDisplayName"
+                           @bind-Value:get="f"
+                           @bind-Value:set="(v) => Property.SetValue(ViewModel, v)"
+                           Required="@Property.IsRequired" />
+    }
+    else if (propertyValue is double db)
+    {
+        <FluentNumberField Name="@fieldName"
+                           Label="@fieldDisplayName"
+                           @bind-Value:get="db"
+                           @bind-Value:set="(v) => Property.SetValue(ViewModel, v)"
+                           Required="@Property.IsRequired" />
+    }
+    else
+    {
+        throw new InvalidOperationException($"Unsupported type for number field binding: {propertyValue.GetType()}");
+    }
+
+    <FluentValidationMessage TValue="EditProperty" Field="@fieldIdentifier" />
+}
+else if (Property.Control == PropertyControl.Dropdown)
+{
+    <FluentLabel Typo="Typography.Body">@Property.DisplayName</FluentLabel>
+    <FluentSelect TOption="EditOption"
+                  Name="@fieldName"
+                  Items=@options
+                  Multiple="@isMultipleSelect"
+                  OptionText="@(i => i!.Text)"
+                  OptionValue="@(i => i!.Value)"
+                  OptionSelected="@(i => i!.IsSelected)"
+                  SelectedOptionChanged="OnSelectedOptionChanged"
+                  SelectedOptionsChanged="OnSelectedOptionsChanged"
+                  Required="@Property.IsRequired" />
+}
+else if (Property.Control == PropertyControl.Calendar && Property is EditDateTimeProperty p)
+{
+    switch (p.Calendar)
+    {
+        case CalendarKind.Day:
+            <FluentDatePicker Name="@fieldName"
+                              View="CalendarViews.Days"
+                              Label="@fieldDisplayName"
+                              Required="@Property.IsRequired"
+                              @bind-Value="calendarBindValue" />
+            break;
+        case CalendarKind.Month:
+            <FluentDatePicker Name="@fieldName"
+                              View="CalendarViews.Months"
+                              Label="@fieldDisplayName"
+                              Required="@Property.IsRequired"
+                              @bind-Value="calendarBindValue" />
+            break;
+        case CalendarKind.Year:
+            <FluentDatePicker Name="@fieldName"
+                              View="CalendarViews.Years"
+                              Label="@fieldDisplayName"
+                              Required="@Property.IsRequired"
+                              @bind-Value="calendarBindValue" />
+            break;
+    }
+}
+
+@code {
+
+    private string fieldDisplayName => Property.DisplayName;
+    private object fieldDisplayValue => ModelHelper.GetDisplayValue(propertyValue);
+    private string fieldName => Property.PropertyName;
+    private Microsoft.AspNetCore.Components.Forms.FieldIdentifier fieldIdentifier
+        => new FieldIdentifier(ViewModel, fieldName);
+    private object propertyValue => Property.GetValue(ViewModel);
+
+    private string? textBindValue => fieldDisplayValue?.ToString();
+
+    private bool isMultipleSelect => false;
+
+    private IEnumerable<EditOption> options => (Property as EditOptionalProperty)?.Options ?? Enumerable.Empty<EditOption>();
+
+    private DateTime? calendarBindValue
+    {
+        get
+        {
+            if (propertyValue == null)
+            {
+                return null;
+            }
+
+            if (propertyValue is DateTime dt)
+            {
+                return dt;
+            }
+
+            if (propertyValue is DateTimeOffset dto)
+            {
+                return dto.DateTime;
+            }
+
+            if (propertyValue is string str && DateTime.TryParse(str, out var parsedDate))
+            {
+                return parsedDate;
+            }
+
+            if (propertyValue is long timestamp)
+            {
+                return DateTimeOffsetExtensions.FromReverseUnixTimeMilliseconds(timestamp).DateTime;
+            }
+
+            if (propertyValue is DateOnly dateOnly)
+            {
+                return dateOnly.ToDateTime(TimeOnly.MinValue);
+            }
+
+            if (propertyValue is TimeOnly timeOnly)
+            {
+                return DateTime.Today.Add(timeOnly.ToTimeSpan());
+            }
+
+            throw new InvalidOperationException($"Unsupported type for calendar binding: {propertyValue.GetType()}");
+        }
+        set
+        {
+            if (value.HasValue)
+            {
+                if (Property.PropertyType == typeof(DateTime) || Property.PropertyType == typeof(DateTime?))
+                {
+                    Property.SetValue(ViewModel, value.Value);
+                }
+                else if (Property.PropertyType == typeof(DateTimeOffset) || Property.PropertyType == typeof(DateTimeOffset?))
+                {
+                    var dto = new DateTimeOffset(value.Value, TimeZoneInfo.Local.GetUtcOffset(value.Value));
+                    Property.SetValue(ViewModel, dto);
+                }
+                else if (Property.PropertyType == typeof(long) || Property.PropertyType == typeof(long?))
+                {
+                    var dto = new DateTimeOffset(value.Value, TimeZoneInfo.Local.GetUtcOffset(value.Value));
+                    var timestamp = dto.ToReverseUnixTimeMilliseconds();
+                    Property.SetValue(ViewModel, timestamp);
+                }
+                else if (Property.PropertyType == typeof(DateOnly) || Property.PropertyType == typeof(DateOnly?))
+                {
+                    Property.SetValue(ViewModel, value.Value.Date);
+                }
+                else if (Property.PropertyType == typeof(TimeOnly) || Property.PropertyType == typeof(TimeOnly?))
+                {
+                    Property.SetValue(ViewModel, TimeOnly.FromDateTime(value.Value));
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Unsupported type for calendar binding: {Property.PropertyType}");
+                }
+            }
+        }
+    }
+
+    [Parameter]
+    public required IViewModel ViewModel { get; set; }
+
+    [Parameter]
+    public required EditProperty Property { get; set; }
+
+    private async Task OnSelectedOptionsChanged(IEnumerable<EditOption>? optionsChanged)
+    {
+        bool isDirty = false;
+        if (isMultipleSelect)
+        {
+            if (optionsChanged != null)
+            {
+                foreach (var opt in optionsChanged)
+                {
+                    opt.OnSelected(true);
+                    isDirty = true;
+                }
+            }
+
+            foreach (var opt in options)
+            {
+                if (optionsChanged == null || !optionsChanged.Contains(opt))
+                {
+                    opt.OnSelected(false);
+                    isDirty = true;
+                }
+            }
+        }
+
+        if (isDirty)
+        {
+            await ViewModel.RefreshAsync();
+        }
+    }
+    private async Task OnSelectedOptionChanged(EditOption? optionChanged)
+    {
+        bool isDirty = false;
+        if (!isMultipleSelect)
+        {
+            if (optionChanged != null)
+            {
+                optionChanged.OnSelected(true);
+                isDirty = true;
+            }
+
+            foreach (var opt in options)
+            {
+                if (opt != optionChanged)
+                {
+                    opt.OnSelected(false);
+                    isDirty = true;
+                }
+            }
+        }
+
+        if (isDirty)
+        {
+            await ViewModel.RefreshAsync();
+        }
+    }
+}

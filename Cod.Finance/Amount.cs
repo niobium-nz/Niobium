@@ -11,6 +11,34 @@ namespace Cod.Finance
         {
         }
 
+        public Amount(long cents)
+        {
+            Cents = cents;
+        }
+
+        public Amount(long cents, Currency currency) : this(cents)
+        {
+            Currency = currency;
+        }
+
+        public Amount(long cents, string currency) : this(cents, Currency.Parse(currency))
+        {
+        }
+
+        public Amount(double dollars)
+        {
+            Cents = (long)Math.Round(dollars * 100, 0);
+        }
+
+        public Amount(double cents, Currency currency) : this(cents)
+        {
+            Currency = currency;
+        }
+
+        public Amount(double cents, string currency) : this(cents, Currency.Parse(currency))
+        {
+        }
+
         public long Cents { get; set; } = 0;
 
         public Currency Currency { get; set; } = Currency.USD;
@@ -44,6 +72,16 @@ namespace Cod.Finance
         public static bool operator !=(Amount left, Amount right)
         {
             return !(left == right);
+        }
+
+        public static implicit operator long(Amount input)
+        {
+            return input.Cents;
+        }
+
+        public static implicit operator double(Amount input)
+        {
+            return Math.Round(input.Cents / 100d, 2);
         }
     }
 }

@@ -1,6 +1,17 @@
 namespace Cod.Channel
 {
-    public interface IViewModel<TDomain, TEntity>
+    public interface IViewModel : IRefreshable
+    {
+        IRefreshable Parent { get; }
+
+        bool IsInitialized { get; }
+
+        bool IsBusy { get; }
+
+        EventHandler RefreshRequested { get; set; }
+    }
+
+    public interface IViewModel<TDomain, TEntity> : IViewModel
         where TDomain : IDomain<TEntity>
     {
         string PartitionKey { get; }
@@ -8,8 +19,6 @@ namespace Cod.Channel
         string RowKey { get; }
 
         Task<string> GetHashAsync(CancellationToken cancellationToken = default);
-
-        IRefreshable Parent { get; }
 
         Task<IViewModel<TDomain, TEntity>> InitializeAsync(TDomain domain, IRefreshable parent = null, bool force = false, CancellationToken cancellationToken = default);
     }

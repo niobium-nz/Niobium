@@ -88,6 +88,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cod.Finance", "Cod.Finance\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cod.Platform.Profile", "Cod.Platform.Profile\Cod.Platform.Profile.csproj", "{83A12D36-1615-46A5-87C4-3308A6E0F0F0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cod.Channel.Blazor.Fluent", "Cod.Channel.Blazor.Fluent\Cod.Channel.Blazor.Fluent.csproj", "{B7762946-2FAA-4722-8ABD-32B0236120AE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -566,6 +568,18 @@ Global
 		{83A12D36-1615-46A5-87C4-3308A6E0F0F0}.Release|x64.Build.0 = Release|Any CPU
 		{83A12D36-1615-46A5-87C4-3308A6E0F0F0}.Release|x86.ActiveCfg = Release|Any CPU
 		{83A12D36-1615-46A5-87C4-3308A6E0F0F0}.Release|x86.Build.0 = Release|Any CPU
+		{B7762946-2FAA-4722-8ABD-32B0236120AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7762946-2FAA-4722-8ABD-32B0236120AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7762946-2FAA-4722-8ABD-32B0236120AE}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B7762946-2FAA-4722-8ABD-32B0236120AE}.Debug|x64.Build.0 = Debug|Any CPU
+		{B7762946-2FAA-4722-8ABD-32B0236120AE}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B7762946-2FAA-4722-8ABD-32B0236120AE}.Debug|x86.Build.0 = Debug|Any CPU
+		{B7762946-2FAA-4722-8ABD-32B0236120AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7762946-2FAA-4722-8ABD-32B0236120AE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7762946-2FAA-4722-8ABD-32B0236120AE}.Release|x64.ActiveCfg = Release|Any CPU
+		{B7762946-2FAA-4722-8ABD-32B0236120AE}.Release|x64.Build.0 = Release|Any CPU
+		{B7762946-2FAA-4722-8ABD-32B0236120AE}.Release|x86.ActiveCfg = Release|Any CPU
+		{B7762946-2FAA-4722-8ABD-32B0236120AE}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

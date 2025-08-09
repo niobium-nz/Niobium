@@ -1,23 +1,43 @@
-﻿namespace Cod.Channel
+﻿using System.Collections;
+
+namespace Cod.Channel
 {
     public abstract class GenericListViewModel<TViewModel, TDomain, TEntity>(
         ILoadingStateService loadingStateService,
         ICommand<LoadCommandParameter, LoadCommandResult<TDomain>> loadCommand,
         Func<TViewModel> createViewModel)
-        : IRefreshable
+        : IListViewModel<TViewModel, TDomain, TEntity>
             where TViewModel : class, IViewModel<TDomain, TEntity>
             where TDomain : IDomain<TEntity>
     {
         protected abstract LoadCommandParameter LoadCommandParameter { get; }
-        protected IList<TViewModel> Children { get; set; } = [];
-        public IEnumerable<TViewModel> List { get => Children; }
+
+        protected IList<TViewModel> ViewModels { get; set; } = [];
+
+        public IEnumerable<TViewModel> Children { get => ViewModels; }
 
         public bool IsBusy => loadingStateService.IsBusy(typeof(TEntity).Name);
+
+        public virtual IRefreshable Parent { get => null; }
+
+        public bool IsInitialized { get; private set; }
+
+        public EventHandler RefreshRequested { get; set; }
+
+        public virtual Task InitializeAsync(CancellationToken cancellationToken = default)
+        {
+            IsInitialized = true;
+            return Task.CompletedTask;
+        }
 
         public virtual async Task RefreshAsync(CancellationToken cancellationToken = default)
         {
             var result = await loadCommand.ExecuteAsync(LoadCommandParameter, cancellationToken);
-            Children = await Children.RefreshAsync(result.DomainsLoaded, createViewModel, default(TEntity), parent: this, cancellationToken: cancellationToken);
+            ViewModels = await ViewModels.RefreshAsync(result.DomainsLoaded, createViewModel, default(TEntity), parent: this, cancellationToken: cancellationToken);
         }
+
+        public IEnumerator<IViewModel> GetEnumerator() => Children.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

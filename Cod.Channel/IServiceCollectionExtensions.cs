@@ -17,5 +17,13 @@ namespace Cod.Channel
             services.AddTransient<Func<T>>(sp => () => sp.GetRequiredService<T>());
             return services;
         }
+        public static IServiceCollection AddEditModeValueProvider<TImplementation, TViewModel>(this IServiceCollection services)
+            where TImplementation : class, IEditModeValueProvider<TViewModel>
+            where TViewModel : class, IViewModel
+        {
+            services.AddTransient<IEditModeValueProvider, TImplementation>();
+            services.AddTransient<IEditModeValueProvider<TViewModel>, TImplementation>();
+            return services;
+        }
     }
 }

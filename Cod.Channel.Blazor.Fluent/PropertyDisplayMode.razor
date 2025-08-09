@@ -1,0 +1,28 @@
+﻿@if (Property.Control == PropertyControl.Label)
+{
+    if (Property.IsSubject)
+    {
+        <FluentGridItem lg="12">
+            <FluentLabel Typo="Typography.Subject" Color="@Color.Accent">@PropertyValue</FluentLabel>
+        </FluentGridItem>
+    }
+    else
+    {
+        <FluentGridItem lg="2">
+            <FluentLabel Typo="Typography.Body">@Property.DisplayName</FluentLabel>
+        </FluentGridItem>
+        <FluentGridItem lg="10">
+            <FluentLabel Typo="Typography.Body">@PropertyValue</FluentLabel>
+        </FluentGridItem>
+    }
+}
+
+@code {
+    [Parameter]
+    public required object ViewModel { get; set; }
+
+    [Parameter]
+    public required DisplayProperty Property { get; set; }
+
+    private object PropertyValue => ModelHelper.GetDisplayValue(Property.GetValue(ViewModel));
+}
