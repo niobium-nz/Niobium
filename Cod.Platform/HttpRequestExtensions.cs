@@ -36,6 +36,8 @@ namespace Cod.Platform
             "172.30.",  //172.16.0.0¨C172.31.255.255
             "172.31.",  //172.16.0.0¨C172.31.255.255
         };
+        private static readonly string[] colonSeparator = [":"];
+        private static readonly string[] commaSeparator = [","];
 
         public static bool TryParseAuthorizationHeader(this HttpRequest request, string headerName, out string scheme, out string parameter)
         {
@@ -76,29 +78,29 @@ namespace Cod.Platform
             if (request.Headers.TryGetValue("X-Forwarded-For", out var values))
             {
                 result.AddRange(values.Where(v => !string.IsNullOrWhiteSpace(v))
-                    .SelectMany(v => v.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries))
-                    .Select(v => v.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries).First()));
+                    .SelectMany(v => v!.Split(commaSeparator, StringSplitOptions.RemoveEmptyEntries))
+                    .Select(v => v.Split(colonSeparator, StringSplitOptions.RemoveEmptyEntries).First()));
             }
 
             if (request.Headers.TryGetValue("x-forwarded-for", out var values2))
             {
                 result.AddRange(values2.Where(v => !string.IsNullOrWhiteSpace(v))
-                    .SelectMany(v => v.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries))
-                    .Select(v => v.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries).First()));
+                    .SelectMany(v => v!.Split(commaSeparator, StringSplitOptions.RemoveEmptyEntries))
+                    .Select(v => v.Split(colonSeparator, StringSplitOptions.RemoveEmptyEntries).First()));
             }
 
             if (request.Headers.TryGetValue("CLIENT-IP", out var values3))
             {
                 result.AddRange(values3.Where(v => !string.IsNullOrWhiteSpace(v))
-                    .SelectMany(v => v.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries))
-                    .Select(v => v.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries).First()));
+                    .SelectMany(v => v!.Split(commaSeparator, StringSplitOptions.RemoveEmptyEntries))
+                    .Select(v => v.Split(colonSeparator, StringSplitOptions.RemoveEmptyEntries).First()));
             }
 
             if (request.Headers.TryGetValue("client-ip", out var values4))
             {
                 result.AddRange(values4.Where(v => !string.IsNullOrWhiteSpace(v))
-                    .SelectMany(v => v.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries))
-                    .Select(v => v.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries).First()));
+                    .SelectMany(v => v!.Split(commaSeparator, StringSplitOptions.RemoveEmptyEntries))
+                    .Select(v => v.Split(colonSeparator, StringSplitOptions.RemoveEmptyEntries).First()));
             }
 
             result = result.Where(i => IPv4ReservedIPPrefix.All(p => !i.StartsWith(p, StringComparison.InvariantCulture))).ToList();
@@ -115,12 +117,12 @@ namespace Cod.Platform
             return result;
         }
 
-        public static string GetRemoteIP(this HttpRequest request)
+        public static string? GetRemoteIP(this HttpRequest request)
         {
             return GetRemoteIPs(request).FirstOrDefault();
         }
 
-        public static string GetTenant(this HttpRequest request)
+        public static string? GetTenant(this HttpRequest request)
         {
             var referer = request.Headers.Referer.SingleOrDefault();
             if (referer != null && Uri.TryCreate(referer, UriKind.Absolute, out var refererUri))
@@ -132,10 +134,10 @@ namespace Cod.Platform
         }
 
         public static IActionResult MakeResponse(
-            this HttpRequest request,
+            this HttpRequest? request,
             HttpStatusCode? statusCode = null,
-            object payload = null,
-            string contentType = null,
+            object? payload = null,
+            string? contentType = null,
             JsonSerializationFormat? serializationFormat = null)
         {
             int? code = null;
@@ -169,11 +171,7 @@ namespace Cod.Platform
 
         public static void DeliverAuthenticationToken(this HttpRequest request, string token, string scheme)
         {
-            if (request.HttpContext.Response.Headers.ContainsKey(HeaderNames.WWWAuthenticate))
-            {
-                request.HttpContext.Response.Headers.Remove(HeaderNames.WWWAuthenticate);
-            }
-
+            request.HttpContext.Response.Headers.Remove(HeaderNames.WWWAuthenticate);
             request.HttpContext.Response.Headers[HeaderNames.WWWAuthenticate] = new AuthenticationHeaderValue(scheme, token).ToString();
             request.HttpContext.Response.Headers[HeaderNames.AccessControlExposeHeaders] = HeaderNames.WWWAuthenticate;
         }

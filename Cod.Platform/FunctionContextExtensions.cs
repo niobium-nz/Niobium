@@ -16,7 +16,7 @@ namespace Cod.Platform
         /// </summary>
         /// <param name="context">The <see cref="FunctionContext"/>.</param>
         /// <returns>The <see cref="HttpContext"/> for the function execution or null if it does not exist.</returns>
-        public static HttpContext GetHttpContext(this FunctionContext context)
+        public static HttpContext? GetHttpContext(this FunctionContext context)
         {
             if (context.Items.TryGetValue(HttpContextKey, out var requestContext)
                 && requestContext is HttpContext httpContext)
@@ -33,7 +33,7 @@ namespace Cod.Platform
         /// <param name="context">The <see cref="FunctionContext"/>.</param>
         /// <param name="request">The <see cref="HttpRequest"/> for the context.</param>
         /// <returns></returns>
-        public static bool TryGetRequest(this FunctionContext context, [NotNullWhen(true)] out HttpRequest request)
+        public static bool TryGetRequest(this FunctionContext context, [NotNullWhen(true)] out HttpRequest? request)
         {
             request = null;
 

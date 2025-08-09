@@ -8,14 +8,14 @@ namespace Cod.Messaging.ServiceBus
     {
         public bool Grantable(ResourceType type, string resource) => type == ResourceType.AzureServiceBus && resource == options.Value.FullyQualifiedNamespace;
 
-        public Task<StorageControl?> GrantAsync(ClaimsPrincipal principal, ResourceType type, string resource, string partition, string row, CancellationToken cancellationToken = default)
+        public Task<StorageControl?> GrantAsync(ClaimsPrincipal principal, ResourceType type, string resource, string? partition, string? row, CancellationToken cancellationToken = default)
         {
             StorageControl? result = null;
             var permissions = principal.Claims.ToResourcePermissions();
             var entitlements = permissions
                 .Where(p => p.Type == ResourceType.AzureServiceBus
                     && p.Resource == resource
-                    && (partition == p.Partition || partition.StartsWith(p.Partition)))
+                    && (partition != null && (partition == p.Partition || partition.StartsWith(p.Partition))))
                 .SelectMany(p => p.Entitlements);
 
             if (entitlements != null && entitlements.Any())

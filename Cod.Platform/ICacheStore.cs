@@ -2,7 +2,7 @@
 {
     public interface ICacheStore
     {
-        Task<T> GetAsync<T>(string partitionKey, string rowKey, CancellationToken cancellationToken = default) where T : IConvertible;
+        Task<T?> GetAsync<T>(string partitionKey, string rowKey, CancellationToken cancellationToken = default) where T : IConvertible;
 
         Task DeleteAsync(string partitionKey, string rowKey, CancellationToken cancellationToken = default);
 

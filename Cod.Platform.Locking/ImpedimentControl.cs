@@ -6,19 +6,19 @@ namespace Cod.Platform.Locking
     {
         public bool Grantable(ResourceType type, string resource)
         {
-            return type == ResourceType.AzureStorageTable && resource.ToLowerInvariant() == typeof(Impediment).Name.ToLowerInvariant();
+            return type == ResourceType.AzureStorageTable && resource.Equals(typeof(Impediment).Name, StringComparison.OrdinalIgnoreCase);
         }
 
-        public Task<StorageControl> GrantAsync(ClaimsPrincipal principal, ResourceType type, string resource, string partition, string row, CancellationToken cancellationToken = default)
+        public Task<StorageControl?> GrantAsync(ClaimsPrincipal principal, ResourceType type, string resource, string? partition, string? row, CancellationToken cancellationToken = default)
         {
             Guid sid = principal.GetClaim<Guid>(ClaimTypes.Sid);
-            return partition.StartsWith(sid.ToKey(), StringComparison.InvariantCultureIgnoreCase)
-                ? Task.FromResult(new StorageControl((int)DatabasePermissions.Query, typeof(Impediment).Name)
+            return partition != null && partition.StartsWith(sid.ToKey(), StringComparison.InvariantCultureIgnoreCase)
+                ? Task.FromResult<StorageControl?>(new StorageControl((int)DatabasePermissions.Query, typeof(Impediment).Name)
                 {
                     StartPartitionKey = partition,
                     EndPartitionKey = partition
                 })
-                : Task.FromResult<StorageControl>(null);
+                : Task.FromResult<StorageControl?>(null);
         }
     }
 }

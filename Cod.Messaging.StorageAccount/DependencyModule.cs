@@ -15,7 +15,7 @@ namespace Cod.Messaging.StorageAccount
         public static IServiceCollection AddMessaging(
             this IServiceCollection services,
             IConfiguration tableConfiguration,
-            IConfiguration azureClientDefaults = null,
+            IConfiguration? azureClientDefaults = null,
             bool enableInteractiveIdentity = false)
         {
             return services.AddMessaging(s =>
@@ -36,7 +36,7 @@ namespace Cod.Messaging.StorageAccount
         public static IServiceCollection AddMessaging(
             this IServiceCollection services,
             StorageQueueOptions options,
-            IConfiguration azureClientDefaults = null)
+            IConfiguration? azureClientDefaults = null)
         {
             return services.AddMessaging(s =>
             {

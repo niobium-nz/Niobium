@@ -1,5 +1,3 @@
-using Cod.Platform.Tenant;
-
 namespace Cod.Platform.Notification
 {
     internal class NofiticationChannelRepository : INofiticationChannelRepository

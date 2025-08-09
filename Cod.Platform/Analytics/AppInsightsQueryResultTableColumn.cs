@@ -2,8 +2,8 @@ namespace Cod.Platform.Analytics
 {
     public class AppInsightsQueryResultTableColumn
     {
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
-        public string Type { get; set; }
+        public required string Type { get; set; }
     }
 }

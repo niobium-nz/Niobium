@@ -1,18 +1,11 @@
-using Cod.Platform.Tenant;
 using System.Net.Http.Headers;
 using System.Text;
 
 namespace Cod.Platform.Notification.Email
 {
-    public abstract class SendGridEmailNotificationChannel : INotificationChannel
+    public abstract class SendGridEmailNotificationChannel(Lazy<INofiticationChannelRepository> openIDManager) : INotificationChannel
     {
-        private static string Key;
-        private readonly Lazy<INofiticationChannelRepository> openIDManager;
-
-        public SendGridEmailNotificationChannel(Lazy<INofiticationChannelRepository> openIDManager)
-        {
-            this.openIDManager = openIDManager;
-        }
+        private static string Key = string.Empty;
 
         public static void Initialize(string key)
         {
@@ -36,7 +29,7 @@ namespace Cod.Platform.Notification.Email
                 return OperationResult.NotAllowed;
             }
 
-            string email = null;
+            string? email = null;
             if (parameters.ContainsKey(NotificationParameters.PreferredEmail)
                 && parameters[NotificationParameters.PreferredEmail] is string s)
             {
@@ -51,7 +44,7 @@ namespace Cod.Platform.Notification.Email
                 }
 
                 List<OpenID> channels = await openIDManager.Value.GetChannelsAsync(user, (int)OpenIDKind.Email).ToListAsync();
-                if (!channels.Any())
+                if (channels.Count == 0)
                 {
                     return OperationResult.NotAllowed;
                 }

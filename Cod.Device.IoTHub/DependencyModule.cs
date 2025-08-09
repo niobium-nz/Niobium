@@ -1,5 +1,4 @@
 using Cod.Platform;
-using Cod.Storage.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Cod.Device.IoTHub

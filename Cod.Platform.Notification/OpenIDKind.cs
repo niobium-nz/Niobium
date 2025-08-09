@@ -1,4 +1,4 @@
-﻿namespace Cod.Platform.Tenant
+﻿namespace Cod.Platform.Notification
 {
     public enum OpenIDKind : int
     {

@@ -1,7 +1,7 @@
-namespace Cod.Storage.Messaging
+namespace Cod.Device
 {
     public interface IIoTCommander
     {
-        Task<IoTCommandResult> ExecuteAsync(string device, object command, bool fireAndForget = true);
+        Task<IoTCommandResult?> ExecuteAsync(string device, object command, bool fireAndForget = true);
     }
 }

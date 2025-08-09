@@ -1,65 +1,55 @@
 using Cod.Platform.Notification;
-using Cod.Platform.Tenant;
 using Jose;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Cod.Platform
+namespace Cod.Platform.Notification.Apple
 {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "WindowsOnly")]
-    public abstract class ApplePushNotificationChannel : PushNotificationChannel
+    public abstract class ApplePushNotificationChannel(Lazy<INofiticationChannelRepository> repo, Lazy<ICacheStore> cacheStore) : PushNotificationChannel(repo)
     {
-        private readonly Lazy<ICacheStore> cacheStore;
         private const string AccessTokenCacheKey = "ApplePushAccessToken";
-
-        public ApplePushNotificationChannel(Lazy<INofiticationChannelRepository> repo, Lazy<ICacheStore> cacheStore)
-            : base(repo) => this.cacheStore = cacheStore;
 
         protected virtual string ApplePushNotificationHost => "api.sandbox.push.apple.com";
 
-        public override async Task<OperationResult> SendAsync(string brand,
-            Guid user,
-            NotificationContext context,
-            int template,
-            IReadOnlyDictionary<string, object> parameters,
-            int level = 0)
+        public async override Task<OperationResult> SendAsync(string brand, Guid user, NotificationContext context, int templateID, IReadOnlyDictionary<string, object> parameters, int level = 0)
         {
             if (level != (int)OpenIDKind.iOS
-                || (context != null && context.Kind != (int)OpenIDKind.iOS))
+                || context != null && context.Kind != (int)OpenIDKind.iOS)
             {
-                return new OperationResult(InternalError.NotAcceptable);
+                return new OperationResult(Cod.InternalError.NotAcceptable);
             }
-            return await base.SendAsync(brand, user, context, template, parameters, level);
+            return await base.SendAsync(brand, user, context!, templateID, parameters, level);
         }
 
         protected override async Task<OperationResult> SendPushAsync(
             string brand,
             IEnumerable<NotificationContext> targets,
-            int template,
+            int templateID,
             IReadOnlyDictionary<string, object> parameters)
         {
             var success = true;
             foreach (var target in targets)
             {
-                var messages = await this.GetMessagesAsync(brand, template, target, parameters);
+                var messages = await GetMessagesAsync(brand, templateID, target, parameters);
                 if (messages == null || !messages.Any())
                 {
                     continue;
                 }
 
-                var token = await this.cacheStore.Value.GetAsync<string>(target.App, AccessTokenCacheKey);
-                if (String.IsNullOrWhiteSpace(token))
+                var token = await cacheStore.Value.GetAsync<string>(target.App, AccessTokenCacheKey);
+                if (string.IsNullOrWhiteSpace(token))
                 {
-                    token = await this.IssueTokenAsync(target);
-                    await this.cacheStore.Value.SetAsync(target.App, AccessTokenCacheKey, token, false, DateTimeOffset.UtcNow.AddMinutes(30));
+                    token = await IssueTokenAsync(target);
+                    await cacheStore.Value.SetAsync(target.App, AccessTokenCacheKey, token, false, DateTimeOffset.UtcNow.AddMinutes(30));
                 }
 
                 using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
                 foreach (var message in messages)
                 {
-                    using var request = new HttpRequestMessage(HttpMethod.Post, $"https://{this.ApplePushNotificationHost}/3/device/{target.Identity}")
+                    using var request = new HttpRequestMessage(HttpMethod.Post, $"https://{ApplePushNotificationHost}/3/device/{target.Identity}")
                     {
                         Version = new Version(2, 0)
                     };
@@ -91,10 +81,7 @@ namespace Cod.Platform
                     {
                         success = false;
                         var error = await resp.Content.ReadAsStringAsync();
-                        if (Logger.Instance != null)
-                        {
-                            Logger.Instance.LogError($"An error occurred while making request to APN with status code {status}: {error}");
-                        }
+                        Logger.Instance?.LogError($"An error occurred while making request to APN with status code {status}: {error}");
                     }
                 }
             }
@@ -113,13 +100,13 @@ namespace Cod.Platform
 
         protected abstract Task<IEnumerable<ApplePushNotification>> GetMessagesAsync(
             string brand,
-            int template,
+            int templateID,
             NotificationContext context,
             IReadOnlyDictionary<string, object> parameters);
 
         private async Task<string> IssueTokenAsync(NotificationContext context)
         {
-            var cred = await this.GetCredentialAsync(context);
+            var cred = await GetCredentialAsync(context);
             var iat = DateTimeOffset.UtcNow.AddMinutes(-1).ToUnixTimeSeconds();
             var exp = DateTimeOffset.UtcNow.AddMinutes(30).ToUnixTimeSeconds();
             var payload = new Dictionary<string, object>()

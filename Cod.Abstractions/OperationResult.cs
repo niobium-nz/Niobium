@@ -102,7 +102,7 @@ namespace Cod
         {
         }
 
-        public OperationResult(T result) : this()
+        public OperationResult(T result) : base()
         {
             Result = result;
         }

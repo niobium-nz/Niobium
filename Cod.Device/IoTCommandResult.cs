@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace Cod.Storage.Messaging
+namespace Cod.Device
 {
     public sealed class IoTCommandResult
     {
@@ -8,7 +8,7 @@ namespace Cod.Storage.Messaging
         public int Status { get; set; }
 
         [JsonProperty("j")]
-        public string PayloadJSON { get; set; }
+        public required string PayloadJSON { get; set; }
 
         [JsonProperty("t")]
         public DateTimeOffset ExecutedAt { get; set; }

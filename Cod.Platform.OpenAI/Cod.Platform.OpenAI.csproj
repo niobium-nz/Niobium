@@ -2,13 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <Product>COD</Product>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <ImplicitUsings>enable</ImplicitUsings>
-    <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <IncludeSource>true</IncludeSource>
+    <IncludeSymbols>true</IncludeSymbols>
+    <EmbedAllSources>true</EmbedAllSources>
     <NeutralLanguage>en-US</NeutralLanguage>
     <InvariantGlobalization>true</InvariantGlobalization>
     <Nullable>enable</Nullable>
@@ -16,9 +15,8 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisMode>Recommended</AnalysisMode>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-    <NoWarn>CA1848,CA2254,CA1305,CA1310,CA1711,CA1852</NoWarn>
+    <NoWarn>CA1848,CA2254,CA1305,CA1310,CA1711,CA1852,CA1822</NoWarn>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsAsErrors />
   </PropertyGroup>
 
   <PropertyGroup>
@@ -27,8 +25,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="9.6.0" />
-    <PackageReference Include="Microsoft.SourceLink.AzureRepos.Git" Version="8.0.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="9.7.0" />
   </ItemGroup>
 
   <ItemGroup>

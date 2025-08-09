@@ -1,4 +1,3 @@
-using Cod.Storage.Messaging;
 using Microsoft.Azure.Devices;
 using Microsoft.Azure.Devices.Common.Exceptions;
 using Microsoft.Extensions.Logging;
@@ -23,7 +22,7 @@ namespace Cod.Device.IoTHub
             this.logger = logger;
         }
 
-        public async Task<IoTCommandResult> ExecuteAsync(string device, object command, bool fireAndForget = true)
+        public async Task<IoTCommandResult?> ExecuteAsync(string device, object command, bool fireAndForget = true)
         {
             string msg = command is string str ? str : JsonSerializer.SerializeObject(command);
             if (fireAndForget)
@@ -40,7 +39,7 @@ namespace Cod.Device.IoTHub
             return Task.CompletedTask;
         }
 
-        private async Task<IoTCommandResult> ExecuteDirectMethodAsync(string device, string message)
+        private async Task<IoTCommandResult?> ExecuteDirectMethodAsync(string device, string message)
         {
             CloudToDeviceMethod methodInvocation = new CloudToDeviceMethod(DirectMethodName)
             {

@@ -1,46 +1,46 @@
-﻿namespace Cod.Platform.Tenant
+﻿namespace Cod.Platform.Notification
 {
     public class OpenID : ITrackable
     {
         [EntityKey(EntityKeyKind.PartitionKey)]
-        public string PartitionKey { get; set; }
+        public required string PartitionKey { get; set; }
 
         [EntityKey(EntityKeyKind.RowKey)]
-        public string RowKey { get; set; }
+        public required string RowKey { get; set; }
 
         [EntityKey(EntityKeyKind.Timestamp)]
         public DateTimeOffset? Timestamp { get; set; }
 
         [EntityKey(EntityKeyKind.ETag)]
-        public string ETag { get; set; }
+        public string? ETag { get; set; }
 
         public DateTimeOffset? Created { get; set; }
 
-        public string Identity { get; set; }
+        public required string Identity { get; set; }
 
         public static string BuildPartitionKey(Guid user)
         {
             return user.ToString("N").ToUpperInvariant();
         }
 
-        public static string BuildRowKey(OpenIDKind kind, string identifier = null)
+        public static string BuildRowKey(OpenIDKind kind, string? identifier = null)
         {
             return BuildRowKey((int)kind, identifier);
         }
 
-        public static string BuildRowKey(int kind, string identifier = null)
+        public static string BuildRowKey(int kind, string? identifier = null)
         {
             identifier ??= string.Empty;
 
             return $"{BuildRowKeyStart(kind)}|{identifier.Trim()}";
         }
 
-        public static string BuildRowKey(OpenIDKind kind, string app, string identifier = null)
+        public static string BuildRowKey(OpenIDKind kind, string app, string? identifier = null)
         {
             return BuildRowKey((int)kind, app, identifier);
         }
 
-        public static string BuildRowKey(int kind, string app, string identifier = null)
+        public static string BuildRowKey(int kind, string app, string? identifier = null)
         {
             identifier ??= string.Empty;
             app ??= string.Empty;
@@ -95,7 +95,7 @@
         public string GetApp()
         {
             string[] parts = RowKey.Split('|');
-            return parts.Length == 3 ? parts[1] : null;
+            return parts.Length == 3 ? parts[1] : throw new InvalidDataException($"Invalid RowKey: {RowKey} on {nameof(OpenID)}\\{PartitionKey}");
         }
 
         public int GetKind()

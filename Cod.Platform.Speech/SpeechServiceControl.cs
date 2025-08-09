@@ -8,9 +8,9 @@ namespace Cod.Platform.Speech
         public bool Grantable(ResourceType type, string resource)
             => type == ResourceType.AzureSpeechService && resource == options.Value.FullyQualifiedDomainName;
 
-        public Task<StorageControl> GrantAsync(ClaimsPrincipal principal, ResourceType type, string resource, string partition, string row, CancellationToken cancellationToken = default)
+        public Task<StorageControl?> GrantAsync(ClaimsPrincipal principal, ResourceType type, string resource, string? partition, string? row, CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(new StorageControl(default, resource));
+            return Task.FromResult<StorageControl?>(new StorageControl(default, resource));
         }
     }
 }

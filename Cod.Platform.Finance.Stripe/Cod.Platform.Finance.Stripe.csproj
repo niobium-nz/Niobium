@@ -2,14 +2,14 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <Product>COD</Product>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <ImplicitUsings>enable</ImplicitUsings>
-    <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <IncludeSource>true</IncludeSource>
+    <IncludeSymbols>true</IncludeSymbols>
+    <EmbedAllSources>true</EmbedAllSources>
     <NeutralLanguage>en-US</NeutralLanguage>
+    <InvariantGlobalization>true</InvariantGlobalization>
     <Nullable>enable</Nullable>
     <LangVersion>latestMajor</LangVersion>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
@@ -17,7 +17,6 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <NoWarn>CA1848,CA2254,CA1305,CA1310,CA1711,CA1852,CA1822</NoWarn>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsAsErrors />
   </PropertyGroup>
 
   <PropertyGroup>
@@ -26,11 +25,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Stripe.net" Version="48.2.0" />
+    <PackageReference Include="Stripe.net" Version="48.4.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.AzureRepos.Git" Version="8.0.0" PrivateAssets="All" />
     <ProjectReference Include="..\Cod.Abstractions\Cod.Abstractions.csproj" />
     <ProjectReference Include="..\Cod.Helper\Cod.Helper.csproj" />
     <ProjectReference Include="..\Cod.Platform.Finance\Cod.Platform.Finance.csproj" />

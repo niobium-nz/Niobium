@@ -2,10 +2,10 @@ namespace Cod.Platform.Notification.Email
 {
     public class SendGridEmailBody
     {
-        public IEnumerable<SendGridEmailAddress> To { get; set; }
+        public required IEnumerable<SendGridEmailAddress> To { get; set; }
 
-        public IDictionary<string, object> DynamicTemplateData { get; set; }
+        public required IDictionary<string, object> DynamicTemplateData { get; set; }
 
-        public string Subject { get; set; }
+        public required string Subject { get; set; }
     }
 }

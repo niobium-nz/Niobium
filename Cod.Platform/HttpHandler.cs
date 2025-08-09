@@ -16,7 +16,7 @@ namespace Cod.Platform
             return handler.Value;
         }
 
-        public static async Task<HttpClientHandler> GetProxyHandler(string location, IHttpProxyFactory factory = null)
+        public static async Task<HttpClientHandler> GetProxyHandler(string location, IHttpProxyFactory? factory = null)
         {
             if (string.IsNullOrWhiteSpace(location))
             {
@@ -24,9 +24,14 @@ namespace Cod.Platform
             }
             location = location.Trim().ToUpperInvariant();
 
-            if (proxyHandlers.ContainsKey(location))
+            if (proxyHandlers.TryGetValue(location, out Task<HttpClientHandler>? value))
             {
-                HttpClientHandler handler = await proxyHandlers[location];
+                HttpClientHandler handler = await value;
+                if (handler.Proxy == null)
+                {
+                    throw new InvalidOperationException("No suitable proxy HTTP handler can be found.");
+                }
+
                 IUnstableWebProxy proxy = (IUnstableWebProxy)handler.Proxy;
                 bool works = await proxy.TestAsync();
                 if (works)
@@ -35,13 +40,13 @@ namespace Cod.Platform
                 }
                 else
                 {
-                    proxyHandlers.TryRemove(location, out Task<HttpClientHandler> _);
+                    proxyHandlers.TryRemove(location, out _);
                 }
             }
 
             return await proxyHandlers.AddOrUpdate(location, async (l) =>
             {
-                IWebProxy proxy = null;
+                IWebProxy? proxy = null;
                 if (factory != null)
                 {
                     for (int i = 0; i < 5; i++)
@@ -63,9 +68,14 @@ namespace Cod.Platform
                 else
                 {
                     ConfigurationProvider cfg = new();
-                    string proxyHost = await cfg.GetSettingAsStringAsync(Constants.HTTP_PROXY_HOST);
-                    string proxyUsername = await cfg.GetSettingAsStringAsync(Constants.HTTP_PROXY_USERNAME);
-                    string proxyPassword = await cfg.GetSettingAsStringAsync(Constants.HTTP_PROXY_PASSWORD);
+                    var proxyHost = await cfg.GetSettingAsStringAsync(Constants.HTTP_PROXY_HOST);
+                    if (string.IsNullOrWhiteSpace(proxyHost))
+                    {
+                        throw new InvalidOperationException("No suitable proxy HTTP handler can be found.");
+                    }
+
+                    var proxyUsername = await cfg.GetSettingAsStringAsync(Constants.HTTP_PROXY_USERNAME);
+                    var proxyPassword = await cfg.GetSettingAsStringAsync(Constants.HTTP_PROXY_PASSWORD);
                     proxy = new WebProxy
                     {
                         Address = new Uri(proxyHost),

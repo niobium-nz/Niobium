@@ -1,4 +1,4 @@
-﻿namespace Cod.Platform
+﻿namespace Cod.Platform.Notification.Apple
 {
     public class ApplePushNotification
     {
@@ -8,8 +8,8 @@
 
         public DateTimeOffset Expires { get; set; }
 
-        public string Topic { get; set; }
+        public required string Topic { get; set; }
 
-        public object Message { get; set; }
+        public required object Message { get; set; }
     }
 }

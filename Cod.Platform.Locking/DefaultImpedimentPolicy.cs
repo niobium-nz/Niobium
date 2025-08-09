@@ -2,17 +2,15 @@ using System.Runtime.CompilerServices;
 
 namespace Cod.Platform.Locking
 {
-    public abstract class DefaultImpedimentPolicy : IImpedimentPolicy
+    public abstract class DefaultImpedimentPolicy(Lazy<IRepository<Impediment>> repository) : IImpedimentPolicy
     {
-        private readonly Lazy<IRepository<Impediment>> repository;
-
-        public DefaultImpedimentPolicy(Lazy<IRepository<Impediment>> repository)
-        {
-            this.repository = repository;
-        }
-
         public async IAsyncEnumerable<Impediment> GetImpedimentsAsync(IImpedimentContext context, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            if (context == null || string.IsNullOrWhiteSpace(context.Category))
+            {
+                throw new ArgumentNullException(nameof(context), "Context and category must not be null or empty.");
+            }
+
             if (await SupportAsync(context, cancellationToken))
             {
                 if (context.Cause != 0)
@@ -42,6 +40,11 @@ namespace Cod.Platform.Locking
 
         public async Task<bool> ImpedeAsync(IImpedimentContext context, CancellationToken cancellationToken = default)
         {
+            if (context == null || string.IsNullOrWhiteSpace(context.Category))
+            {
+                throw new ArgumentNullException(nameof(context), "Context and category must not be null or empty.");
+            }
+
             if (await SupportAsync(context, cancellationToken))
             {
                 string pk = Impediment.BuildPartitionKey(context.ImpedementID, context.Category);
@@ -59,7 +62,7 @@ namespace Cod.Platform.Locking
                     replaceIfExist: true,
                     cancellationToken: cancellationToken);
                 }
-                else if (!existing.Policy.Contains(context.PolicyInput))
+                else if (existing.Policy != null && context.PolicyInput != null && !existing.Policy.Contains(context.PolicyInput))
                 {
                     existing.Policy += $",{context.PolicyInput}";
                     await repository.Value.UpdateAsync(existing, cancellationToken: cancellationToken);
@@ -74,6 +77,11 @@ namespace Cod.Platform.Locking
 
         public async Task<bool> UnimpedeAsync(IImpedimentContext context, CancellationToken cancellationToken = default)
         {
+            if (context == null || string.IsNullOrWhiteSpace(context.Category))
+            {
+                throw new ArgumentNullException(nameof(context), "Context and category must not be null or empty.");
+            }
+
             if (await SupportAsync(context, cancellationToken))
             {
                 Impediment existing = await repository.Value.RetrieveAsync(
@@ -88,8 +96,8 @@ namespace Cod.Platform.Locking
                     }
                     else
                     {
-                        List<string> policies = existing.Policy.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries).ToList();
-                        if (policies.Contains(context.PolicyInput))
+                        List<string> policies = existing.Policy?.Split([","], StringSplitOptions.RemoveEmptyEntries).ToList() ?? [];
+                        if (context.PolicyInput != null && policies.Contains(context.PolicyInput))
                         {
                             policies.Remove(context.PolicyInput);
                             if (policies.Count == 0)

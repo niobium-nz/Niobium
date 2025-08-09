@@ -11,6 +11,6 @@ namespace Cod.Platform
             logger.Value = value;
         }
 
-        public static ILogger Instance => logger.Value;
+        public static ILogger? Instance => logger.Value;
     }
 }

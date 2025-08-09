@@ -1,8 +1,10 @@
-﻿namespace Cod.Platform
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Cod.Platform
 {
     internal class InternalErrorRetriever : IErrorRetriever
     {
-        public bool TryGet(string key, out string value)
+        public bool TryGet(string key, [NotNullWhen(true)] out string? value)
         {
             return R.TryGet(key, out value);
         }

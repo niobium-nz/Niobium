@@ -5,12 +5,12 @@ namespace Cod.Platform.Locking
 {
     public static class IImpedableExtensions
     {
-        public static async Task ImpedeAsync(this IImpedable impedable, string category, int cause, string policyInput = null)
+        public static async Task ImpedeAsync(this IImpedable impedable, string category, int cause, string? policyInput = null)
         {
             await impedable.ImpedeAsync(category, new int[] { cause }, policyInput);
         }
 
-        public static async Task ImpedeAsync(this IImpedable impedable, string category, IEnumerable<int> causes, string policyInput = null)
+        public static async Task ImpedeAsync(this IImpedable impedable, string category, IEnumerable<int> causes, string? policyInput = null)
         {
             foreach (int cause in causes)
             {
@@ -29,17 +29,17 @@ namespace Cod.Platform.Locking
             }
         }
 
-        public static async Task UnimpedeAsync(this IImpedable impedable, string category, int cause, string policyInput = null)
+        public static async Task UnimpedeAsync(this IImpedable impedable, string category, int cause, string? policyInput = null)
         {
             await impedable.UnimpedeAsync(category, new int[] { cause }, policyInput);
         }
 
-        public static async Task UnimpedeAsync(this IImpedable impedable, string category, IEnumerable<int> causes, string policyInput = null)
+        public static async Task UnimpedeAsync(this IImpedable impedable, string category, IEnumerable<int> causes, string? policyInput = null)
         {
             await impedable.UnimpedeAsync(impedable.GetImpedementID(), category, causes, policyInput);
         }
 
-        public static async Task UnimpedeAsync(this IImpedable impedable, string impedementID, string category, IEnumerable<int> causes, string policyInput = null)
+        public static async Task UnimpedeAsync(this IImpedable impedable, string impedementID, string category, IEnumerable<int> causes, string? policyInput = null)
         {
             foreach (int cause in causes)
             {
@@ -65,17 +65,13 @@ namespace Cod.Platform.Locking
                 : impedable.GetImpedimentsAsync(category, cancellationToken: cancellationToken);
         }
 
-        public static async Task<Impediment> GetImpedimentAsync(this IImpedable impedable, string category, int cause, CancellationToken cancellationToken = default)
+        public static async Task<Impediment?> GetImpedimentAsync(this IImpedable impedable, string category, int cause, CancellationToken cancellationToken = default)
         {
-            if (category is null)
-            {
-                throw new ArgumentNullException(nameof(category));
-            }
             Impediment[] impediments = await impedable.GetImpedimentsAsync(category, cause, cancellationToken: cancellationToken).ToArrayAsync(cancellationToken: cancellationToken);
             return impediments.SingleOrDefault();
         }
 
-        private static async IAsyncEnumerable<Impediment> GetImpedimentsAsync(this IImpedable impedable, string category = null, int cause = 0, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        private static async IAsyncEnumerable<Impediment> GetImpedimentsAsync(this IImpedable impedable, string? category = null, int cause = 0, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             ConcurrentDictionary<string, bool> existsLockers = new();
             foreach (IImpedimentPolicy policy in impedable.ImpedimentPolicies)

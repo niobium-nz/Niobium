@@ -6,7 +6,7 @@ namespace Cod.Platform
     {
         private static readonly AsyncLocal<FunctionContextRedirect> _currentContext = new();
 
-        public HttpContext HttpContext
+        public HttpContext? HttpContext
         {
             get
             {
@@ -32,7 +32,7 @@ namespace Cod.Platform
 
         private class FunctionContextRedirect
         {
-            public HttpContext HeldContext;
+            public HttpContext? HeldContext;
         }
     }
 }

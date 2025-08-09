@@ -9,13 +9,13 @@ namespace Cod.Platform.Blob
     {
         public bool Grantable(ResourceType type, string resource) => type == ResourceType.AzureStorageBlob && options.Value.FullyQualifiedDomainName == resource && options.Value.Key != null;
 
-        public Task<StorageControl?> GrantAsync(ClaimsPrincipal principal, ResourceType type, string resource, string partition, string row, CancellationToken cancellationToken = default)
+        public Task<StorageControl?> GrantAsync(ClaimsPrincipal principal, ResourceType type, string resource, string? partition, string? row, CancellationToken cancellationToken = default)
         {
             StorageControl? result = null;
             var entitlements = principal.Claims.ToResourcePermissions()
                 .Where(p => p.Type == ResourceType.AzureStorageBlob
                     && p.Resource == resource
-                    && (partition == p.Partition || partition.StartsWith(p.Partition)))
+                    && (partition != null && (partition == p.Partition || partition.StartsWith(p.Partition))))
                 .SelectMany(p => p.Entitlements);
 
             if (entitlements != null && entitlements.Any())

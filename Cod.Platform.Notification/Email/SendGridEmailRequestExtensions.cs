@@ -6,19 +6,12 @@
             this SendGridEmailRequest request,
             Stream input,
             string filename,
-            string contentType = null,
+            string? contentType = null,
             SendGridEmailAttachmentDisposition disposition = SendGridEmailAttachmentDisposition.Attachment,
-            string contentID = null)
+            string? contentID = null)
         {
-            if (request is null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-
-            if (input is null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(input);
 
             if (input.CanSeek)
             {
@@ -33,7 +26,7 @@
             }
 
             string base64 = Convert.ToBase64String(buff);
-            request.Attachments ??= new List<SendGridEmailAttachment>();
+            request.Attachments ??= [];
             string dis = disposition switch
             {
                 SendGridEmailAttachmentDisposition.Attachment => "attachment",

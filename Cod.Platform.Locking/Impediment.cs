@@ -5,20 +5,20 @@ namespace Cod.Platform.Locking
     public class Impediment : ITrackable
     {
         [EntityKey(EntityKeyKind.PartitionKey)]
-        public string PartitionKey { get; set; }
+        public required string PartitionKey { get; set; }
 
         [EntityKey(EntityKeyKind.RowKey)]
-        public string RowKey { get; set; }
+        public required string RowKey { get; set; }
 
         [EntityKey(EntityKeyKind.Timestamp)]
         public DateTimeOffset? Timestamp { get; set; }
 
         [EntityKey(EntityKeyKind.ETag)]
-        public string ETag { get; set; }
+        public string? ETag { get; set; }
 
         public DateTimeOffset? Created { get; set; }
 
-        public string Policy { get; set; }
+        public string? Policy { get; set; }
 
         public string GetCategory()
         {

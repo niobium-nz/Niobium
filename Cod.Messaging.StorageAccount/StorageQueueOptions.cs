@@ -2,7 +2,7 @@
 {
     public class StorageQueueOptions
     {
-        public string ServiceEndpoint { get; set; }
+        public required string ServiceEndpoint { get; set; }
 
         public bool EnableInteractiveIdentity { get; set; }
 

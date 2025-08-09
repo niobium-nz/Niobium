@@ -3,16 +3,10 @@ using System.Globalization;
 
 namespace Cod.Platform
 {
-    internal class DatabaseCacheStore : ICacheStore
+    internal class DatabaseCacheStore(IRepository<Cache> cacheRepo) : ICacheStore
     {
         private readonly ConcurrentDictionary<string, object> memoryCache = new();
         private readonly ConcurrentDictionary<string, DateTimeOffset> memoryCacheExpiry = new();
-        private readonly IRepository<Cache> cacheRepo;
-
-        public DatabaseCacheStore(IRepository<Cache> cacheRepo)
-        {
-            this.cacheRepo = cacheRepo;
-        }
 
         public bool SupportTTL { get; set; }
 
@@ -29,12 +23,12 @@ namespace Cod.Platform
             }
         }
 
-        public async Task<T> GetAsync<T>(string partitionKey, string rowKey, CancellationToken cancellationToken = default) where T : IConvertible
+        public async Task<T?> GetAsync<T>(string partitionKey, string rowKey, CancellationToken cancellationToken = default) where T : IConvertible
         {
             partitionKey = partitionKey.Trim();
             rowKey = rowKey.Trim();
             string memkey = $"{partitionKey}@{rowKey}";
-            if (memoryCache.TryGetValue(memkey, out object value))
+            if (memoryCache.TryGetValue(memkey, out var value))
             {
                 if (memoryCacheExpiry.TryGetValue(memkey, out DateTimeOffset t) && t < DateTimeOffset.UtcNow)
                 {
@@ -78,6 +72,11 @@ namespace Cod.Platform
             {
                 return;
             }
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value), "Value cannot be null.");
+            }
+
             partitionKey = partitionKey.Trim();
             rowKey = rowKey.Trim();
             string memkey = $"{partitionKey}@{rowKey}";
@@ -95,7 +94,7 @@ namespace Cod.Platform
             {
                 PartitionKey = partitionKey,
                 RowKey = rowKey,
-                Value = value.ToString(),
+                Value = value.ToString()!,
                 InMemory = memoryCached,
                 Expiry = expiry ?? DateTimeOffset.Parse("2100-01-01T00:00:00Z", CultureInfo.InvariantCulture)
             },

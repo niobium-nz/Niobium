@@ -6,7 +6,7 @@ namespace Cod.Platform
 {
     internal class SecureVault
     {
-        public static async Task<string> GetSecretAsync(Uri keyVaultUri, string key)
+        public static async Task<string?> GetSecretAsync(Uri keyVaultUri, string key)
         {
             if (string.IsNullOrWhiteSpace(key))
             {

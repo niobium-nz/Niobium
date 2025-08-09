@@ -2,10 +2,10 @@ namespace Cod.Platform.Analytics
 {
     public class AppInsightsQueryResultTable
     {
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
-        public AppInsightsQueryResultTableColumn[] Columns { get; set; }
+        public required AppInsightsQueryResultTableColumn[] Columns { get; set; }
 
-        public string[][] Rows { get; set; }
+        public required string[][] Rows { get; set; }
     }
 }

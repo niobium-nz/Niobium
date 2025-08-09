@@ -1,14 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <Product>COD</Product>
+    <TargetFramework>net9.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <ImplicitUsings>enable</ImplicitUsings>
-    <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <IncludeSource>true</IncludeSource>
+    <IncludeSymbols>true</IncludeSymbols>
+    <EmbedAllSources>true</EmbedAllSources>
     <NeutralLanguage>en-US</NeutralLanguage>
     <InvariantGlobalization>true</InvariantGlobalization>
     <Nullable>enable</Nullable>
@@ -16,12 +15,12 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisMode>Recommended</AnalysisMode>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <NoWarn>CA1848,CA2254,CA1305,CA1310,CA1711,CA1852,CA1822</NoWarn>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsAsErrors />
-    <NoWarn>CA1848,CA2254,CA1305,CA1310,CA1711,CA1852,CA1816</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
+    <BlazorWebAssemblyEnableLinking>false</BlazorWebAssemblyEnableLinking>
     <OutputType>Library</OutputType>
     <IsPackable>true</IsPackable>
     <CompressionEnabled>false</CompressionEnabled>
@@ -33,15 +32,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.AzureRepos.Git" Version="8.0.0" PrivateAssets="All" />
-  </ItemGroup>
-
-  <ItemGroup>
     <SupportedPlatform Include="browser" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.17" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.8" />
   </ItemGroup>
 
   <ItemGroup>

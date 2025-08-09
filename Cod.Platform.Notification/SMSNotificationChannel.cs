@@ -1,16 +1,7 @@
-using Cod.Platform.Tenant;
-
 namespace Cod.Platform.Notification
 {
-    public abstract class SMSNotificationChannel : INotificationChannel
+    public abstract class SMSNotificationChannel(Lazy<INofiticationChannelRepository> openIDManager) : INotificationChannel
     {
-        private readonly Lazy<INofiticationChannelRepository> openIDManager;
-
-        public SMSNotificationChannel(Lazy<INofiticationChannelRepository> openIDManager)
-        {
-            this.openIDManager = openIDManager;
-        }
-
         public async Task<OperationResult> SendAsync(
             string brand,
             Guid user,
@@ -24,7 +15,7 @@ namespace Cod.Platform.Notification
                 return OperationResult.NotAllowed;
             }
 
-            string mobile = null;
+            string? mobile = null;
             if (parameters.ContainsKey(NotificationParameters.PreferredMobile)
                 && parameters[NotificationParameters.PreferredMobile] is string s)
             {
@@ -39,7 +30,7 @@ namespace Cod.Platform.Notification
                 }
 
                 List<OpenID> channels = await openIDManager.Value.GetChannelsAsync(user, (int)OpenIDKind.SMS).ToListAsync();
-                if (!channels.Any())
+                if (channels.Count == 0)
                 {
                     return OperationResult.NotAllowed;
                 }

@@ -1,16 +1,7 @@
-using Cod.Platform.Tenant;
-
 namespace Cod.Platform.Notification
 {
-    public abstract class PushNotificationChannel : INotificationChannel
+    public abstract class PushNotificationChannel(Lazy<INofiticationChannelRepository> repo) : INotificationChannel
     {
-        private readonly Lazy<INofiticationChannelRepository> repo;
-
-        public PushNotificationChannel(Lazy<INofiticationChannelRepository> repo)
-        {
-            this.repo = repo;
-        }
-
         public virtual async Task<OperationResult> SendAsync(
             string brand,
             Guid user,
@@ -26,7 +17,7 @@ namespace Cod.Platform.Notification
                 return OperationResult.NotAllowed;
             }
 
-            IEnumerable<NotificationContext> targets = Enumerable.Empty<NotificationContext>();
+            IEnumerable<NotificationContext> targets = [];
             if (context != null)
             {
                 targets = new List<NotificationContext> { context };

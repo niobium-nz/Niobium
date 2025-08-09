@@ -7,12 +7,7 @@ namespace Cod.Platform
     {
         public static IActionResult MakeResponse<T>(this OperationResult<T> operationResult, JsonSerializationFormat? serializationFormat = null)
         {
-            if (operationResult is null)
-            {
-                throw new ArgumentNullException(nameof(operationResult));
-            }
-
-            object payload = operationResult;
+            object? payload = operationResult;
             HttpStatusCode? code;
             if (operationResult.IsSuccess)
             {
@@ -27,14 +22,9 @@ namespace Cod.Platform
             return HttpRequestExtensions.MakeResponse(null, statusCode: code, payload: payload, serializationFormat: serializationFormat);
         }
 
-        public static IActionResult MakeResponse(this OperationResult operationResult, object successPayload = null, JsonSerializationFormat? serializationFormat = null)
+        public static IActionResult MakeResponse(this OperationResult operationResult, object? successPayload = null, JsonSerializationFormat? serializationFormat = null)
         {
-            if (operationResult is null)
-            {
-                throw new ArgumentNullException(nameof(operationResult));
-            }
-
-            object payload = operationResult;
+            object? payload = operationResult;
             HttpStatusCode? code;
             if (operationResult.IsSuccess)
             {

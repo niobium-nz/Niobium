@@ -5,8 +5,8 @@ namespace Cod.Platform
 {
     public class ConfigurationProvider : IConfigurationProvider
     {
-        private static string KeyVaultUrl;
-        private static Func<IConfigurationBuilder, IConfigurationBuilder> CustomConfig;
+        private static string? KeyVaultUrl;
+        private static Func<IConfigurationBuilder, IConfigurationBuilder>? CustomConfig;
         private static readonly ConcurrentDictionary<string, string> Caches = new();
 
         private static readonly Lazy<IConfiguration> config = new(
@@ -38,18 +38,18 @@ namespace Cod.Platform
             KeyVaultUrl = keyVaultUrl.EndsWith('/') ? keyVaultUrl[..^1] : keyVaultUrl;
         }
 
-        public async Task<string> GetSettingAsStringAsync(string key, bool cache = true)
+        public async Task<string?> GetSettingAsStringAsync(string key, bool cache = true)
         {
             if (cache)
             {
-                if (Caches.ContainsKey(key))
+                if (Caches.TryGetValue(key, out string? value))
                 {
-                    return Caches[key];
+                    return value;
                 }
             }
 
-            string v = GetSetting(key);
-            if (!string.IsNullOrWhiteSpace(KeyVaultUrl) && v == null && Uri.TryCreate(KeyVaultUrl, UriKind.Absolute, out Uri uri))
+            var v = GetSetting(key);
+            if (!string.IsNullOrWhiteSpace(KeyVaultUrl) && v == null && Uri.TryCreate(KeyVaultUrl, UriKind.Absolute, out var uri))
             {
                 v = await SecureVault.GetSecretAsync(uri, key);
             }
@@ -68,22 +68,22 @@ namespace Cod.Platform
             return v;
         }
 
-        public string GetSettingAsString(string key, bool cache = true)
+        public string? GetSettingAsString(string key, bool cache = true)
         {
             return GetSetting(key, cache);
         }
 
-        public static string GetSetting(string key, bool cache = true)
+        public static string? GetSetting(string key, bool cache = true)
         {
             if (cache)
             {
-                if (Caches.ContainsKey(key))
+                if (Caches.TryGetValue(key, out string? value))
                 {
-                    return Caches[key];
+                    return value;
                 }
             }
 
-            string v = config.Value[key];
+            string? v = config.Value[key];
             v ??= config.Value[$"Values:{key}"];
 
             if (cache && v != null)

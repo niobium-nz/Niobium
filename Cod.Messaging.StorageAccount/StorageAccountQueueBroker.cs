@@ -4,25 +4,19 @@ using Azure.Storage.Queues.Models;
 
 namespace Cod.Messaging.StorageAccount
 {
-    public class StorageAccountQueueBroker<T> : IMessagingBroker<T> where T : class, new()
+    public class StorageAccountQueueBroker<T>(QueueServiceClient client, string queueName) : IMessagingBroker<T> where T : class, new()
     {
-        protected QueueServiceClient Client { get; }
-
-        protected virtual string QueueName { get; }
-
-        protected virtual bool CreateQueueIfNotExist { get; } = true;
-
         public StorageAccountQueueBroker(QueueServiceClient client) : this(client, typeof(T).Name.ToLowerInvariant())
         {
         }
 
-        public StorageAccountQueueBroker(QueueServiceClient client, string queueName)
-        {
-            Client = client;
-            QueueName = queueName;
-        }
+        protected QueueServiceClient Client { get; } = client;
 
-        public virtual async Task<MessagingEntry<T>> DequeueAsync(TimeSpan? maxWaitTime = default, CancellationToken cancellationToken = default)
+        protected virtual string QueueName { get; } = queueName;
+
+        protected virtual bool CreateQueueIfNotExist { get; } = true;
+
+        public virtual async Task<MessagingEntry<T>?> DequeueAsync(TimeSpan? maxWaitTime = default, CancellationToken cancellationToken = default)
         {
             QueueClient q = await GetQueueAsync(cancellationToken);
             Response<QueueMessage> msg = await q.ReceiveMessageAsync(cancellationToken: cancellationToken);
@@ -41,7 +35,7 @@ namespace Cod.Messaging.StorageAccount
             List<MessagingEntry<T>> result = new();
             QueueClient q = await GetQueueAsync(cancellationToken);
             Response<QueueMessage[]> msgs = await q.ReceiveMessagesAsync(maxMessages: limit <= 0 ? null : limit, cancellationToken: cancellationToken);
-            if (msgs.Value.Any())
+            if (msgs.Value.Length != 0)
             {
                 foreach (QueueMessage msg in msgs.Value)
                 {

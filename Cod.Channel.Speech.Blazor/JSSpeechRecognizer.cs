@@ -121,6 +121,8 @@ namespace Cod.Channel.Speech.Blazor
                 var t = await recognizer.Value;
                 await t.DisposeAsync();
             }
+
+            GC.SuppressFinalize(this);
         }
     }
 }

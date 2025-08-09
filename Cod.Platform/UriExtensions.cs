@@ -7,17 +7,17 @@ namespace Cod.Platform
     {
         private const int DefaultRetryTimes = 3;
 
-        public static async Task<Stream> FetchStreamAsync(this Uri uri)
+        public static async Task<Stream?> FetchStreamAsync(this Uri uri)
         {
             return await FetchStreamAsync(uri, null);
         }
 
-        public static async Task<Stream> FetchStreamAsync(this Uri uri, Func<HttpResponseMessage, Task> onError)
+        public static async Task<Stream?> FetchStreamAsync(this Uri uri, Func<HttpResponseMessage, Task>? onError)
         {
             return await FetchStreamAsync(uri, onError, DefaultRetryTimes);
         }
 
-        public static async Task<Stream> FetchStreamAsync(this Uri uri, Func<HttpResponseMessage, Task> onError, int retry)
+        public static async Task<Stream?> FetchStreamAsync(this Uri uri, Func<HttpResponseMessage, Task>? onError, int retry)
         {
             if (retry <= 0)
             {

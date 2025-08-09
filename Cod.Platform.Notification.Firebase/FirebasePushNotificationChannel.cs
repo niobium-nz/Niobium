@@ -1,11 +1,10 @@
 ﻿using Cod.Platform.Notification;
-using Cod.Platform.Tenant;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Text;
 
-namespace Cod.Platform
+namespace Cod.Platform.Notification.Firebase
 {
     public abstract class FirebasePushNotificationChannel : PushNotificationChannel
     {
@@ -18,44 +17,44 @@ namespace Cod.Platform
         public override async Task<OperationResult> SendAsync(string brand,
             Guid user,
             NotificationContext context,
-            int template,
+            int templateID,
             IReadOnlyDictionary<string, object> parameters,
             int level = 0)
         {
             if (level != (int)OpenIDKind.GoogleAndroid
-                || (context != null && context.Kind != (int)OpenIDKind.GoogleAndroid))
+                || context != null && context.Kind != (int)OpenIDKind.GoogleAndroid)
             {
                 return OperationResult.NotAcceptable;
             }
-            return await base.SendAsync(brand, user, context, template, parameters, level);
+            return await base.SendAsync(brand, user, context!, templateID, parameters, level);
         }
 
         protected override async Task<OperationResult> SendPushAsync(
             string brand,
             IEnumerable<NotificationContext> targets,
-            int template,
+            int templateID,
             IReadOnlyDictionary<string, object> parameters)
         {
             var success = true;
             foreach (var target in targets)
             {
-                var message = await this.GetMessageAsync(brand, template, target, parameters);
+                var message = await GetMessageAsync(brand, templateID, target, parameters);
                 if (message == null || message.Message == null)
                 {
                     continue;
                 }
 
-                var token = await this.cacheStore.Value.GetAsync<string>(target.App, AccessTokenCacheKey);
-                if (String.IsNullOrWhiteSpace(token))
+                var token = await cacheStore.Value.GetAsync<string>(target.App, AccessTokenCacheKey);
+                if (string.IsNullOrWhiteSpace(token))
                 {
-                    var cred = await this.GetCredentialAsync(target);
+                    var cred = await GetCredentialAsync(target);
                     var scope = cred.CreateScoped("https://www.googleapis.com/auth/firebase.messaging");
                     await scope.UnderlyingCredential.GetAccessTokenForRequestAsync();
                     var t = ((ServiceAccountCredential)scope.UnderlyingCredential).Token;
                     if (t.ExpiresInSeconds.HasValue)
                     {
                         var expiry = DateTimeOffset.UtcNow.AddSeconds(t.ExpiresInSeconds.Value - 1000);
-                        await this.cacheStore.Value.SetAsync(target.App, AccessTokenCacheKey, t.AccessToken, true, expiry);
+                        await cacheStore.Value.SetAsync(target.App, AccessTokenCacheKey, t.AccessToken, true, expiry);
                     }
                     token = t.AccessToken;
                 }
@@ -92,7 +91,7 @@ namespace Cod.Platform
 
         protected abstract Task<ProjectScopeFirebaseMessage> GetMessageAsync(
             string brand,
-            int template,
+            int templateID,
             NotificationContext context,
             IReadOnlyDictionary<string, object> parameters);
     }
