@@ -184,10 +184,10 @@ namespace Cod.Platform.Finance
             return transactions;
         }
 
-        public async Task<Transaction> GetTransactionAsync(DateTimeOffset id)
+        public async Task<Transaction?> GetTransactionAsync(DateTimeOffset id)
         {
             string target = AccountingPrincipal;
-            Transaction transaction = await transactionRepo.Value.RetrieveAsync(target, Transaction.BuildRowKey(id));
+            var transaction = await transactionRepo.Value.RetrieveAsync(target, Transaction.BuildRowKey(id));
             return transaction;
         }
 
@@ -229,7 +229,7 @@ namespace Cod.Platform.Finance
 
             long balance;
             string principal = AccountingPrincipal;
-            Accounting accounting = await accountingRepo.Value.RetrieveAsync(
+            var accounting = await accountingRepo.Value.RetrieveAsync(
                 Accounting.BuildPartitionKey(principal),
                 Accounting.BuildRowKey(lastAccountDate),
                 cancellationToken: cancellationToken);

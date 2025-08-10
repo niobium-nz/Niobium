@@ -439,7 +439,7 @@
             return !TryParse(nameOrCode, out Country result) ? throw new ArgumentOutOfRangeException(nameof(nameOrCode)) : result;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is Country country && Equals(country);
         }

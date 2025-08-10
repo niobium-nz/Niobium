@@ -1,7 +1,9 @@
-﻿namespace Cod
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Cod
 {
     public interface IErrorRetriever
     {
-        bool TryGet(string key, out string value);
+        bool TryGet(string key, [NotNullWhen(true)] out string? value);
     }
 }

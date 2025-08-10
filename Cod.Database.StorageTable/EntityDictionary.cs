@@ -3,30 +3,33 @@ using Azure.Data.Tables;
 
 namespace Cod.Database.StorageTable
 {
-    internal class EntityDictionary : Dictionary<string, object>, ITableEntity
+    internal class EntityDictionary : Dictionary<string, object?>, ITableEntity
     {
-        public string PartitionKey { get => Get<string>(nameof(PartitionKey)); set => Set(nameof(PartitionKey), value); }
+        public string PartitionKey { get => Get<string>(nameof(PartitionKey))!; set => Set(nameof(PartitionKey), value); }
 
-        public string RowKey { get => Get<string>(nameof(RowKey)); set => Set(nameof(RowKey), value); }
+        public string RowKey { get => Get<string>(nameof(RowKey))!; set => Set(nameof(RowKey), value); }
 
         public DateTimeOffset? Timestamp { get => Get<DateTimeOffset?>(nameof(Timestamp)); set => Set(nameof(Timestamp), value); }
 
         public ETag ETag { get; set; }
 
-        private T Get<T>(string key)
+        private T? Get<T>(string key)
         {
-            return TryGetValue(key, out object value) ? (T)value : default;
+            return TryGetValue(key, out var value) ? value is T t ? t : default : default;
         }
 
-        private void Set(string key, object value)
+        private void Set(string key, object? value)
         {
-            if (ContainsKey(key))
+            if (value != null)
             {
-                this[key] = value;
-            }
-            else
-            {
-                Add(key, value);
+                if (ContainsKey(key))
+                {
+                    this[key] = value;
+                }
+                else
+                {
+                    Add(key, value);
+                }
             }
         }
     }

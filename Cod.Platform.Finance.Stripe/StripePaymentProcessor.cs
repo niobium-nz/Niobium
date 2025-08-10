@@ -47,9 +47,9 @@ namespace Cod.Platform.Finance.Stripe
                         {
                             Amount = request.Amount,
                             Method = PaymentMethodKind.Visa | PaymentMethodKind.MasterCard | PaymentMethodKind.AmericanExpress,
-                            Reference = instruction.Result.CustomerId,
-                            UpstreamID = instruction.Result.Id,
-                            Instruction = instruction.Result.ClientSecret,
+                            Reference = instruction.Result?.CustomerId,
+                            UpstreamID = instruction.Result?.Id,
+                            Instruction = instruction.Result?.ClientSecret,
                         });
                 }
             }
@@ -67,7 +67,7 @@ namespace Cod.Platform.Finance.Stripe
                 {
                     return new OperationResult<ChargeResponse>(transaction);
                 }
-                result.UpstreamID = transaction.Result.Id;
+                result.UpstreamID = transaction.Result?.Id;
             }
             else
             {
@@ -85,7 +85,7 @@ namespace Cod.Platform.Finance.Stripe
                     {
                         return new OperationResult<ChargeResponse>(transaction);
                     }
-                    result.UpstreamID = transaction.Result.LatestChargeId;
+                    result.UpstreamID = transaction.Result?.LatestChargeId;
                 }
                 else if (request.Operation == PaymentOperationKind.Void)
                 {
@@ -99,7 +99,7 @@ namespace Cod.Platform.Finance.Stripe
                     {
                         return new OperationResult<ChargeResponse>(transaction);
                     }
-                    result.UpstreamID = transaction.Result.Id;
+                    result.UpstreamID = transaction.Result?.Id;
                 }
                 else
                 {
@@ -142,7 +142,7 @@ namespace Cod.Platform.Finance.Stripe
                         {
                             return new OperationResult<ChargeResponse>(transaction);
                         }
-                        result.UpstreamID = transaction.Result.Id;
+                        result.UpstreamID = transaction.Result?.Id;
                     }
                     else if (request.Operation == PaymentOperationKind.Charge)
                     {
@@ -161,7 +161,7 @@ namespace Cod.Platform.Finance.Stripe
                             return new OperationResult<ChargeResponse>(transaction);
                         }
 
-                        if (transaction.Result.LatestChargeId != null)
+                        if (transaction.Result?.LatestChargeId != null)
                         {
                             // the charge was successful
                             result.UpstreamID = transaction.Result.LatestChargeId;
@@ -171,6 +171,11 @@ namespace Cod.Platform.Finance.Stripe
                             // the charge is pending for some reason, we need to wait for the report
                             // posibly the payment intent is not yet confirmed due to missing customer or payment method information
                             // so we need to return the client secret and other details for further client-side processing (e.g. collecting payment method info / 3D Secure authentication)
+                            if (transaction.Result == null)
+                            {
+                                throw new InvalidOperationException("Transaction result is null, expected a valid PaymentIntent.");
+                            }
+
                             result.Amount = transaction.Result.Amount;
                             result.Method = FigurePaymentMethodType(transaction.Result.PaymentMethodTypes);
                             result.Instruction = transaction.Result.ClientSecret;
@@ -188,7 +193,7 @@ namespace Cod.Platform.Finance.Stripe
                     return new OperationResult<ChargeResponse>(transaction);
                 }
 
-                if (transaction.Result.LastPaymentError != null)
+                if (transaction.Result?.LastPaymentError != null)
                 {
                     return new OperationResult<ChargeResponse>(Cod.InternalError.PaymentRequired, transaction.Result.LastPaymentError.StripeResponse?.Content);
                 }
@@ -300,7 +305,7 @@ namespace Cod.Platform.Finance.Stripe
                     Provider = (int)PaymentServiceProvider.Stripe,
                     Reason = (int)TransactionReason.Deposit,
                     Status = (int)TransactionStatus.Completed,
-                    Remark = Cod.Constants.TRANSACTION_REASON_DEPOSIT,
+                    Remark = Cod.Constants.TransactionReasonDeposit,
                 };
 
                 return new OperationResult<ChargeResult>(new ChargeResult
@@ -353,7 +358,7 @@ namespace Cod.Platform.Finance.Stripe
                     Provider = (int)PaymentServiceProvider.Stripe,
                     Reason = (int)TransactionReason.Refund,
                     Status = (int)TransactionStatus.Refunded,
-                    Remark = Cod.Constants.TRANSACTION_REASON_REFUND,
+                    Remark = Cod.Constants.TransactionReasonRefund,
                 };
 
                 return new OperationResult<ChargeResult>(new ChargeResult

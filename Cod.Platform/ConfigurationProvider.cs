@@ -5,7 +5,6 @@ namespace Cod.Platform
 {
     public class ConfigurationProvider : IConfigurationProvider
     {
-        private static string? KeyVaultUrl;
         private static Func<IConfigurationBuilder, IConfigurationBuilder>? CustomConfig;
         private static readonly ConcurrentDictionary<string, string> Caches = new();
 
@@ -28,31 +27,17 @@ namespace Cod.Platform
             CustomConfig = func;
         }
 
-        public static void EnableKeyValueSupport(string keyVaultUrl)
-        {
-            if (string.IsNullOrWhiteSpace(keyVaultUrl))
-            {
-                throw new ArgumentException($"'{nameof(keyVaultUrl)}' cannot be null or whitespace.", nameof(keyVaultUrl));
-            }
-
-            KeyVaultUrl = keyVaultUrl.EndsWith('/') ? keyVaultUrl[..^1] : keyVaultUrl;
-        }
-
-        public async Task<string?> GetSettingAsStringAsync(string key, bool cache = true)
+        public Task<string?> GetSettingAsStringAsync(string key, bool cache = true)
         {
             if (cache)
             {
                 if (Caches.TryGetValue(key, out string? value))
                 {
-                    return value;
+                    return Task.FromResult<string?>(value);
                 }
             }
 
             var v = GetSetting(key);
-            if (!string.IsNullOrWhiteSpace(KeyVaultUrl) && v == null && Uri.TryCreate(KeyVaultUrl, UriKind.Absolute, out var uri))
-            {
-                v = await SecureVault.GetSecretAsync(uri, key);
-            }
 
             if (cache && v != null)
             {
@@ -65,7 +50,7 @@ namespace Cod.Platform
                     _ = Caches.AddOrUpdate(key, _ => v, (_, _) => v);
                 }
             }
-            return v;
+            return Task.FromResult<string?>(v);
         }
 
         public string? GetSettingAsString(string key, bool cache = true)

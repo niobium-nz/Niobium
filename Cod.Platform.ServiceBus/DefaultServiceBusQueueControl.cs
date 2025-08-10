@@ -15,7 +15,7 @@ namespace Cod.Messaging.ServiceBus
             var entitlements = permissions
                 .Where(p => p.Type == ResourceType.AzureServiceBus
                     && p.Resource == resource
-                    && (partition != null && (partition == p.Partition || partition.StartsWith(p.Partition))))
+                    && (partition == p.Partition || (partition != null && p.Partition != null && partition.StartsWith(p.Partition))))
                 .SelectMany(p => p.Entitlements);
 
             if (entitlements != null && entitlements.Any())

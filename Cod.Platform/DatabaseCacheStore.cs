@@ -16,7 +16,7 @@ namespace Cod.Platform
             memoryCache.TryRemove(memkey, out _);
             memoryCacheExpiry.TryRemove(memkey, out _);
 
-            Cache cache = await cacheRepo.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
+            var cache = await cacheRepo.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
             if (cache != null)
             {
                 await cacheRepo.DeleteAsync(cache, preconditionCheck: false, successIfNotExist: true, cancellationToken: cancellationToken);
@@ -34,7 +34,7 @@ namespace Cod.Platform
                 {
                     memoryCache.TryRemove(memkey, out _);
                     memoryCacheExpiry.TryRemove(memkey, out _);
-                    Cache expiredcache = await cacheRepo.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
+                    var expiredcache = await cacheRepo.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
                     if (expiredcache != null)
                     {
                         await cacheRepo.DeleteAsync(expiredcache, preconditionCheck: false, successIfNotExist: true, cancellationToken: cancellationToken);
@@ -44,7 +44,7 @@ namespace Cod.Platform
                 return (T)value;
             }
 
-            Cache cache = await cacheRepo.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
+            var cache = await cacheRepo.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
             if (cache != null)
             {
                 if (cache.Expiry < DateTimeOffset.UtcNow)

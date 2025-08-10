@@ -11,7 +11,7 @@
         internal async static Task InvokeAsync<TEventArgs, TDomain>(this IEnumerable<IDomainEventHandler<TDomain>> eventHandlers, Func<TEventArgs> getEventArgs, CancellationToken cancellationToken = default)
             where TEventArgs : class
         {
-            TEventArgs args = null;
+            TEventArgs? args = null;
 
             foreach (var handler in eventHandlers)
             {

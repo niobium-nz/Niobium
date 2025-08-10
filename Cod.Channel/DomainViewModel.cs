@@ -14,7 +14,8 @@ namespace Cod.Channel
 
         public string? RowKey => Domain?.RowKey;
 
-        public override bool IsBusy => loadingStateService.IsBusy(typeof(TEntity).Name, new StorageKey { PartitionKey = PartitionKey, RowKey = RowKey }.ToString());
+        public override bool IsBusy =>
+            !IsInitialized && loadingStateService.IsBusy(typeof(TEntity).Name, new StorageKey(PartitionKey!, RowKey!).ToString());
 
         public TDomain? Domain { get; private set; }
 

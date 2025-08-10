@@ -10,7 +10,7 @@
     <EmbedAllSources>true</EmbedAllSources>
     <NeutralLanguage>en-US</NeutralLanguage>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <Nullable>disable</Nullable>
+    <Nullable>enable</Nullable>
     <LangVersion>latestMajor</LangVersion>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisMode>Recommended</AnalysisMode>

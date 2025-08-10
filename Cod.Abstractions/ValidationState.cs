@@ -1,8 +1,10 @@
-﻿namespace Cod
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Cod
 {
     public class ValidationState
     {
-        private readonly Dictionary<string, List<string>> errors = new();
+        private readonly Dictionary<string, List<string>> errors = [];
 
         public IReadOnlyCollection<string> this[string key] => errors[key];
 
@@ -16,13 +18,13 @@
 
         public void AddError(string propertyName, string errorMessage)
         {
-            if (!errors.ContainsKey(propertyName))
+            if (!errors.TryGetValue(propertyName, out List<string>? value))
             {
-                errors.Add(propertyName, new List<string> { errorMessage });
+                errors.Add(propertyName, [errorMessage]);
             }
             else
             {
-                errors[propertyName].Add(errorMessage);
+                value.Add(errorMessage);
             }
         }
 
@@ -31,9 +33,9 @@
             return errors.ContainsKey(key);
         }
 
-        public bool TryGetValue(string key, out IReadOnlyCollection<string> value)
+        public bool TryGetValue(string key, [NotNullWhen(true)] out IReadOnlyCollection<string>? value)
         {
-            bool b = errors.TryGetValue(key, out List<string> result);
+            bool b = errors.TryGetValue(key, out var result);
             value = result;
             return b;
         }

@@ -2,9 +2,9 @@
 {
     public class StorageTableOptions
     {
-        public string FullyQualifiedDomainName { get; set; }
+        public string? FullyQualifiedDomainName { get; set; }
 
-        public string Key { get; set; }
+        public string? Key { get; set; }
 
         public int MaxRetries { get; set; } = 5;
 

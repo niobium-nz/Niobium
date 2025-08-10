@@ -15,7 +15,7 @@ namespace Cod.Platform.Locking
             {
                 if (context.Cause != 0)
                 {
-                    Impediment entity = await repository.Value.RetrieveAsync(
+                    var entity = await repository.Value.RetrieveAsync(
                         Impediment.BuildPartitionKey(context.ImpedementID, context.Category),
                         Impediment.BuildRowKey(context.Cause),
                         cancellationToken: cancellationToken);
@@ -50,7 +50,7 @@ namespace Cod.Platform.Locking
                 string pk = Impediment.BuildPartitionKey(context.ImpedementID, context.Category);
                 string rk = Impediment.BuildRowKey(context.Cause);
 
-                Impediment existing = await repository.Value.RetrieveAsync(pk, rk, cancellationToken: cancellationToken);
+                var existing = await repository.Value.RetrieveAsync(pk, rk, cancellationToken: cancellationToken);
                 if (existing == null)
                 {
                     await repository.Value.CreateAsync(new Impediment
@@ -84,7 +84,7 @@ namespace Cod.Platform.Locking
 
             if (await SupportAsync(context, cancellationToken))
             {
-                Impediment existing = await repository.Value.RetrieveAsync(
+                var existing = await repository.Value.RetrieveAsync(
                     Impediment.BuildPartitionKey(context.ImpedementID, context.Category),
                     Impediment.BuildRowKey(context.Cause),
                     cancellationToken: cancellationToken);

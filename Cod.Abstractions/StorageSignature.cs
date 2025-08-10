@@ -2,9 +2,9 @@
 {
     public class StorageSignature
     {
-        public string Signature { get; set; }
+        public required string Signature { get; set; }
 
-        public StorageControl Control { get; set; }
+        public required StorageControl Control { get; set; }
 
         public long Expiry { get; set; }
 

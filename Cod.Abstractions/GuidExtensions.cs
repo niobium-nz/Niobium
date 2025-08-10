@@ -2,9 +2,9 @@
 {
     public static class GuidExtensions
     {
-        public static string ToKey(this Guid guid)
+        public static string ToKey(this Guid key)
         {
-            return CodSettings.UseLegacyGuidFormat ? guid.ToString("N").ToUpperInvariant() : guid.ToString();
+            return CodSettings.UseLegacyGuidFormat ? key.ToString("N").ToUpperInvariant() : key.ToString();
         }
     }
 }

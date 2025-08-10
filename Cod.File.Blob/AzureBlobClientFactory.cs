@@ -23,6 +23,7 @@ namespace Cod.File.Blob
             var permission = resourcePermissions.FirstOrDefault(p => 
                 p.Type == ResourceType.AzureStorageBlob 
                 && permissions.All(m => p.Entitlements.Contains(m.ToString().ToUpperInvariant()))
+                && p.Partition != null
                 && containerName.StartsWith(p.Partition))
                 ?? throw new ApplicationException(InternalError.Forbidden);
             var sas = await authenticator.Value.RetrieveResourceTokenAsync(ResourceType.AzureStorageBlob, permission.Resource, partition: containerName, cancellationToken: cancellationToken);

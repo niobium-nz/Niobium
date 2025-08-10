@@ -12,7 +12,7 @@ namespace Cod.Database.StorageTable
         private static readonly ConcurrentDictionary<string, TableServiceClient> clients = [];
         private static readonly ConcurrentDictionary<string, TokenCredential> credentials = [];
 
-        public async Task<TableServiceClient> CreateClientAsync(IEnumerable<DatabasePermissions> permissions, string table, string partition = null, CancellationToken cancellationToken = default)
+        public async Task<TableServiceClient> CreateClientAsync(IEnumerable<DatabasePermissions> permissions, string table, string? partition = null, CancellationToken cancellationToken = default)
         {
             if (!String.IsNullOrWhiteSpace(options.Value.FullyQualifiedDomainName))
             {

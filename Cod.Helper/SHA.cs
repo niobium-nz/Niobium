@@ -7,11 +7,11 @@ namespace Cod
     {
         public static string SHA384Hash(string data, int maxLength = -1)
         {
-            using SHA384 sha = new SHA384Managed();
-            string hash = sha.ComputeHash(Encoding.UTF8.GetBytes(data)).ToHex();
+            using HMACSHA384 hmac = new();
+            string hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(data)).ToHex();
             if (maxLength > 0 && hash.Length > maxLength)
             {
-                hash = hash.Substring(0, maxLength);
+                hash = hash[..maxLength];
             }
             return hash;
         }
@@ -22,7 +22,7 @@ namespace Cod
             string hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(data)).ToHex();
             if (maxLength > 0 && hash.Length > maxLength)
             {
-                hash = hash.Substring(0, maxLength);
+                hash = hash[..maxLength];
             }
             return hash;
         }
@@ -33,7 +33,7 @@ namespace Cod
             string hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(data)).ToHex();
             if (maxLength > 0 && hash.Length > maxLength)
             {
-                hash = hash.Substring(0, maxLength);
+                hash = hash[..maxLength];
             }
             return hash;
         }
@@ -44,6 +44,7 @@ namespace Cod
             return hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "for backward compatiability")]
         public static string SHA1Base64(string data, string key)
         {
             using HMACSHA1 hmac = new(Encoding.UTF8.GetBytes(key));

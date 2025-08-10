@@ -42,16 +42,19 @@ namespace Cod.Database.StorageTable
                     continue;
                 }
 
-                object value = m[key].GetValue(source);
+                var value = m[key].GetValue(source);
                 if (key == EntityKeyKind.PartitionKey.ToString() || key == EntityKeyKind.RowKey.ToString())
                 {
-                    if (value is DateTimeOffset timeValue)
+                    if (value != null)
                     {
-                        value = DateTimeOffsetExtensions.ToReverseUnixTimestamp(timeValue);
-                    }
-                    else
-                    {
-                        value = value.ToString();
+                        if (value is DateTimeOffset timeValue)
+                        {
+                            value = DateTimeOffsetExtensions.ToReverseUnixTimestamp(timeValue);
+                        }
+                        else
+                        {
+                            value = value?.ToString();
+                        }
                     }
                 }
 
@@ -71,29 +74,29 @@ namespace Cod.Database.StorageTable
             return dic;
         }
 
-        public static T FromTableEntity<T>(this IDictionary<string, object> source) where T : class, new()
+        public static T FromTableEntity<T>(this IDictionary<string, object?> source) where T : class, new()
         {
-            if (typeof(T) == typeof(Dictionary<string, object>))
+            if (typeof(T) == typeof(Dictionary<string, object?>))
             {
-                return new Dictionary<string, object>(source) as T;
+                return (new Dictionary<string, object?>(source) as T)!;
             }
 
             return source.ToObject<T>(AzureTableEntityMapping);
         }
 
-        private static T ToObject<T>(this IDictionary<string, object> source, Dictionary<string, string> specialMapping)
+        private static T ToObject<T>(this IDictionary<string, object?> source, Dictionary<string, string> specialMapping)
             where T : class, new()
         {
             T obj = new();
             Type type = obj.GetType();
             var mapping = EntityMappingHelper.GetMapping(type);
 
-            foreach (KeyValuePair<string, object> item in source)
+            foreach (var item in source)
             {
-                string keyName = specialMapping.TryGetValue(item.Key, out string mappedKey) ? mappedKey : item.Key;
-                if (mapping.TryGetValue(keyName, out PropertyInfo value))
+                string keyName = specialMapping.TryGetValue(item.Key, out var mappedKey) ? mappedKey : item.Key;
+                if (mapping.TryGetValue(keyName, out var value))
                 {
-                    object itemValue = item.Value;
+                    var itemValue = item.Value;
                     if (keyName == EntityKeyKind.Timestamp.ToString() && itemValue is long epoch)
                     {
                         itemValue = epoch < 9999999999 ? DateTimeOffset.FromUnixTimeSeconds(epoch) : DateTimeOffset.FromUnixTimeMilliseconds(epoch);
@@ -102,14 +105,17 @@ namespace Cod.Database.StorageTable
                     if ((keyName == EntityKeyKind.PartitionKey.ToString() || keyName == EntityKeyKind.RowKey.ToString())
                         && value.PropertyType != typeof(string))
                     {
-                        if (value.PropertyType == typeof(DateTimeOffset))
+                        if (itemValue != null)
                         {
-                            var reverseTimestamp = long.Parse((string)itemValue);
-                            itemValue = DateTimeOffsetExtensions.FromReverseUnixTimeMilliseconds(reverseTimestamp);
-                        }
-                        else
-                        {
-                            itemValue = TypeConverter.Convert((string)itemValue, value.PropertyType);
+                            if (value.PropertyType == typeof(DateTimeOffset))
+                            {
+                                var reverseTimestamp = long.Parse((string)itemValue);
+                                itemValue = DateTimeOffsetExtensions.FromReverseUnixTimeMilliseconds(reverseTimestamp);
+                            }
+                            else
+                            {
+                                itemValue = TypeConverter.Convert((string)itemValue, value.PropertyType);
+                            }
                         }
                     }
 

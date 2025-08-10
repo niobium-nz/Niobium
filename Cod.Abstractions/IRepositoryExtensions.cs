@@ -5,13 +5,13 @@
         public static async Task<T> CreateAsync<T>(this IRepository<T> repository, T entity, bool replaceIfExist = false, DateTimeOffset? expiry = null, CancellationToken cancellationToken = default)
         {
             IEnumerable<T> result = await repository.CreateAsync(new[] { entity }, replaceIfExist: replaceIfExist, expiry: expiry, cancellationToken: cancellationToken);
-            return result.SingleOrDefault();
+            return result.Single();
         }
 
         public static async Task<T> UpdateAsync<T>(this IRepository<T> repository, T entity, bool preconditionCheck = true, bool mergeIfExists = false, CancellationToken cancellationToken = default)
         {
             IEnumerable<T> result = await repository.UpdateAsync(new[] { entity }, preconditionCheck: preconditionCheck, mergeIfExists: mergeIfExists, cancellationToken: cancellationToken);
-            return result.SingleOrDefault();
+            return result.Single();
         }
 
         public static async Task DeleteAsync<T>(this IRepository<T> repository, T entity, bool preconditionCheck = true, bool successIfNotExist = true, CancellationToken cancellationToken = default)
@@ -21,7 +21,7 @@
 
         public static async Task DeleteAsync<T>(this IRepository<T> repository, string partitionKey, string rowKey, bool successIfNotExist = true, CancellationToken cancellationToken = default)
         {
-            T entity = await repository.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
+            var entity = await repository.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
             if (entity != null)
             {
                 await repository.DeleteAsync(new[] { entity }, preconditionCheck: false, successIfNotExist: false, cancellationToken: cancellationToken);
@@ -35,14 +35,14 @@
 
         public static async Task DeleteAsync<T>(this IRepository<T> repository, string partitionKey, CancellationToken cancellationToken = default)
         {
-            List<T> itemsToDelete = new();
+            List<T> itemsToDelete = [];
             IAsyncEnumerable<T> entities = repository.GetAsync(partitionKey, cancellationToken: cancellationToken);
             await foreach (T entity in entities)
             {
                 itemsToDelete.Add(entity);
             }
 
-            if (itemsToDelete.Any())
+            if (itemsToDelete.Count != 0)
             {
                 await repository.DeleteAsync(itemsToDelete, preconditionCheck: false, successIfNotExist: false, cancellationToken: cancellationToken);
             }

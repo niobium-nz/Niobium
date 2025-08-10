@@ -5,7 +5,7 @@ namespace Cod
 {
     public abstract class JsonSetting
     {
-        public static JsonSerializerSettings Default { get; set; } = CamelCase;
+        public static JsonSerializerSettings Default { get; set; } = CamelCase!;
 
         public static readonly JsonSerializerSettings PascalCase = new() { ContractResolver = new DefaultContractResolver() };
 

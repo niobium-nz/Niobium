@@ -14,12 +14,12 @@ namespace Cod
 
             if (input.StartsWith("0086"))
             {
-                input = input.Substring(4, input.Length - 4);
+                input = input[4..];
             }
 
             if (input.StartsWith("+86"))
             {
-                input = input.Substring(3, input.Length - 3);
+                input = input[3..];
             }
 
             return input.Length == 11 && input.All(char.IsDigit) && input[0] == '1';
@@ -31,8 +31,13 @@ namespace Cod
             return TryValidate<TEntity, string>(model, null, out result);
         }
 
-        public static bool TryValidate<TEntity, TProperty>(this TEntity model, Expression<Func<TEntity, TProperty>> exp, out ValidationState result)
+        public static bool TryValidate<TEntity, TProperty>(this TEntity model, Expression<Func<TEntity, TProperty>>? exp, out ValidationState result)
         {
+            if (model == null)
+            {
+                throw new ArgumentNullException(nameof(model), "Model cannot be null.");
+            }
+
             if (model is IUserInput formatable)
             {
                 formatable.Sanitize();
@@ -40,7 +45,7 @@ namespace Cod
 
             result = new ValidationState();
             ValidationContext context = new(model);
-            List<ValidationResult> validationResults = new();
+            List<ValidationResult> validationResults = [];
 
             bool isValid;
             if (exp == null)
@@ -64,7 +69,10 @@ namespace Cod
                 {
                     foreach (string member in item.MemberNames)
                     {
-                        result.AddError(member, item.ErrorMessage);
+                        if (item.ErrorMessage != null)
+                        {
+                            result.AddError(member, item.ErrorMessage);
+                        }
                     }
                 }
             }

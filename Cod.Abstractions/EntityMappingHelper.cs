@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Serialization;
 
@@ -29,13 +30,8 @@ namespace Cod
             throw new InvalidDataException($"Cannot get {field} from {source}.");
         }
 
-        public static bool TryGetField<T>(object source, EntityKeyKind field, out T result)
+        public static bool TryGetField<T>(object source, EntityKeyKind field, [NotNullWhen(true)] out T? result)
         {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-
             Type type = source.GetType();
             var mapping = GetMapping(type);
             string key = field.ToString();
@@ -45,7 +41,7 @@ namespace Cod
                 return false;
             }
 
-            object value = mapping[key].GetValue(source);
+            var value = mapping[key].GetValue(source);
             if (value == null)
             {
                 result = default;
@@ -78,11 +74,11 @@ namespace Cod
                     }
                     else
                     {
-                        result = (T)(object)value.ToString();
+                        result = (T)(object)value.ToString()!;
                     }
                     break;
                 case EntityKeyKind.ETag:
-                    result = (T)(object)value.ToString();
+                    result = (T)(object)value.ToString()!;
                     break;
                 default:
                     throw new NotSupportedException($"Converting '{value}' to type '{typeof(T)}' is not supported.");
@@ -93,25 +89,28 @@ namespace Cod
 
         public static IDictionary<string, object> ToCosmosEntity(object source, IDictionary<string, string> specialMapping)
         {
-            Dictionary<string, object> dic = new();
+            Dictionary<string, object> dic = [];
             Type type = source.GetType();
             var mapping = GetMapping(type);
 
             foreach (string key in mapping.Keys)
             {
-                object value = mapping[key].GetValue(source);
+                var value = mapping[key].GetValue(source);
                 if (key == EntityKeyKind.Timestamp.ToString() && value is DateTimeOffset time)
                 {
                     value = time.ToUnixTimeSeconds();
                 }
 
-                if (specialMapping.TryGetValue(key, out string mappedKey))
+                if (value != null)
                 {
-                    dic.Add(mappedKey, value);
-                }
-                else
-                {
-                    dic.Add(key, value);
+                    if (specialMapping.TryGetValue(key, out var mappedKey))
+                    {
+                        dic.Add(mappedKey, value);
+                    }
+                    else
+                    {
+                        dic.Add(key, value);
+                    }
                 }
             }
 
@@ -120,11 +119,11 @@ namespace Cod
 
         private static void BuildPropertyMapping(Type type)
         {
-            Dictionary<string, PropertyInfo> mapping = new();
+            Dictionary<string, PropertyInfo> mapping = [];
             PropertyInfo[] properties = type.GetProperties(bindingAttr);
             foreach (PropertyInfo property in properties)
             {
-                EntityKeyAttribute key = property.GetCustomAttribute<EntityKeyAttribute>();
+                var key = property.GetCustomAttribute<EntityKeyAttribute>();
                 if (key != null)
                 {
                     switch (key.Kind)

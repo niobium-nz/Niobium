@@ -8,19 +8,25 @@ namespace Cod.Platform.Identity
         public static async Task<T?> GetClaimAsync<T>(this PrincipalParser helper, HttpRequest request, string claim)
         {
             var principal = await helper.ParseAsync(request);
-            return principal.TryGetClaim(claim, out T result) ? result : default;
+            if (principal == null)
+            {
+                return default;
+            }
+
+            return principal.TryGetClaim(claim, out T? result) ? result : default;
         }
 
         public static async Task<IEnumerable<T>> GetClaimsAsync<T>(this PrincipalParser helper, HttpRequest request, string claim)
         {
             var principal = await helper.ParseAsync(request);
-            return principal.TryGetClaims(claim, out IEnumerable<T> result) ? result : [];
+            var result = principal.TryGetClaims(claim, out IEnumerable<T>? r) ? r : [];
+            return result ?? [];
         }
 
         public static async Task<ClaimsPrincipal?> HasClaimAsync<T>(this PrincipalParser helper, HttpRequest request, string claim, T value)
         {
             var principal = await helper.ParseAsync(request);
-            return !principal.TryGetClaim(claim, out T result) ? null : result!.Equals(value) ? principal : null;
+            return !principal.TryGetClaim(claim, out T? result) ? null : result!.Equals(value) ? principal : null;
         }
 
         public static async Task<ClaimsPrincipal?> TryParseAsync(this PrincipalParser helper, HttpRequest request, CancellationToken cancellationToken = default)

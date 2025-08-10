@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Security.Claims;
 
 namespace Cod
 {
@@ -29,25 +30,25 @@ namespace Cod
 
         public static T GetClaim<T>(this ClaimsPrincipal principal, string key)
         {
-            return !principal.TryGetClaim<T>(key, out T result)
+            return !principal.TryGetClaim<T>(key, out var result)
                 ? throw new KeyNotFoundException($"The specified claim does not exist: {key}.")
-                : result;
+                : result!;
         }
 
-        public static bool TryGetClaim<T>(this ClaimsPrincipal principal, string key, out T result)
+        public static bool TryGetClaim<T>(this ClaimsPrincipal principal, string key, [NotNullWhen(true)] out T? result)
         {
-            Claim claim = principal.Claims.SingleOrDefault(c => c.Type == key);
+            Claim? claim = principal.Claims.SingleOrDefault(c => c.Type == key);
             if (claim == null)
             {
                 result = default;
                 return false;
             }
 
-            result = TypeConverter.Convert<T>(claim.Value);
+            result = TypeConverter.Convert<T>(claim.Value)!;
             return true;
         }
 
-        public static bool TryGetClaims<T>(this ClaimsPrincipal principal, string key, out IEnumerable<T> result)
+        public static bool TryGetClaims<T>(this ClaimsPrincipal principal, string key, [NotNullWhen(true)] out IEnumerable<T>? result)
         {
             var claim = principal.Claims.Where(c => c.Type == key);
             if (!claim.Any())

@@ -34,7 +34,7 @@ namespace Cod
 
         public string Message => getMessage();
 
-        public object Reference { get; set; }
+        public object? Reference { get; set; }
 
         public bool IsSuccess => Code == SuccessCode;
 
@@ -42,13 +42,13 @@ namespace Cod
         {
         }
 
-        public OperationResult(int code, string description = null)
+        public OperationResult(int code, string? description = null)
         {
             Code = code;
             getMessage = () =>
             {
                 StringBuilder msg = new();
-                if (InternalError.TryGet(code, out string val))
+                if (InternalError.TryGet(code, out var val))
                 {
                     msg.Append(val);
                 }
@@ -61,7 +61,7 @@ namespace Cod
                 {
                     if (msg.Length > 0)
                     {
-                        msg.Append(":");
+                        msg.Append(':');
                     }
                     msg.Append(description);
                 }
@@ -69,8 +69,8 @@ namespace Cod
                 if (code != SuccessCode)
                 {
                     msg.Append(" [0x");
-                    msg.Append(code.ToString());
-                    msg.Append("]");
+                    msg.Append(code);
+                    msg.Append(']');
                 }
 
                 return msg.ToString();
@@ -89,7 +89,7 @@ namespace Cod
             return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(OperationResult<>);
         }
 
-        public T GetResult<T>()
+        public T? GetResult<T>()
         {
             bool hasResult = HasResult();
             return hasResult && this is OperationResult<T> result ? result.Result : default;
@@ -107,11 +107,11 @@ namespace Cod
             Result = result;
         }
 
-        public OperationResult(int code, string description = null) : base(code, description)
+        public OperationResult(int code, string? description = null) : base(code, description)
         {
         }
 
-        public OperationResult(int code, T result, string description = null) : this(code, description)
+        public OperationResult(int code, T result, string? description = null) : this(code, description)
         {
             Result = result;
         }
@@ -120,6 +120,6 @@ namespace Cod
         {
         }
 
-        public T Result { get; set; }
+        public T? Result { get; set; }
     }
 }

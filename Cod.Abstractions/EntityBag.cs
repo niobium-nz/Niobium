@@ -2,21 +2,13 @@ using System.Collections;
 
 namespace Cod
 {
-    public class EntityBag<T> : IReadOnlyList<T>
+    public class EntityBag<T>(IReadOnlyList<T> result, string? continuationToken) : IReadOnlyList<T>
     {
-        private readonly IReadOnlyList<T> result;
-
-        public EntityBag(IReadOnlyList<T> result, string continuationToken)
-        {
-            this.result = result;
-            ContinuationToken = continuationToken;
-        }
-
         public T this[int index] => result[index];
 
         public int Count => result.Count;
 
-        public string ContinuationToken { get; }
+        public string? ContinuationToken { get; } = continuationToken;
 
         public bool Contains(T item)
         {

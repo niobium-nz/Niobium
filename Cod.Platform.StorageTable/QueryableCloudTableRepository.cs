@@ -12,7 +12,7 @@ namespace Cod.Platform.StorageTable
         private const string GreaterThanOrEqual = "ge";
         private const string LessThanOrEqual = "le";
 
-        public async Task<EntityBag<T>> QueryAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, int limit, IList<string> fields = null, string continuationToken = null, CancellationToken cancellationToken = default)
+        public async Task<EntityBag<T>> QueryAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, int limit, IList<string>? fields = null, string? continuationToken = null, CancellationToken cancellationToken = default)
         {
             return await QueryAsync(filter: string.Join(And,
             [
@@ -22,7 +22,7 @@ namespace Cod.Platform.StorageTable
             ]), fields: fields, limit: limit, continuationToken: continuationToken, cancellationToken: cancellationToken);
         }
 
-        public async Task<EntityBag<T>> QueryAsync(string partitionKeyStart, string partitionKeyEnd, int limit, IList<string> fields = null, string continuationToken = null, CancellationToken cancellationToken = default)
+        public async Task<EntityBag<T>> QueryAsync(string partitionKeyStart, string partitionKeyEnd, int limit, IList<string>? fields = null, string? continuationToken = null, CancellationToken cancellationToken = default)
         {
             return await QueryAsync(filter: string.Join(And,
             [
@@ -31,7 +31,7 @@ namespace Cod.Platform.StorageTable
             ]), fields: fields, limit: limit, continuationToken: continuationToken, cancellationToken: cancellationToken);
         }
 
-        public async Task<EntityBag<T>> QueryAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int limit, IList<string> fields = null, string continuationToken = null, CancellationToken cancellationToken = default)
+        public async Task<EntityBag<T>> QueryAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, int limit, IList<string>? fields = null, string? continuationToken = null, CancellationToken cancellationToken = default)
         {
             return await QueryAsync(filter: string.Join(And,
             [
@@ -42,7 +42,7 @@ namespace Cod.Platform.StorageTable
             ]), fields: fields, limit: limit, continuationToken: continuationToken, cancellationToken: cancellationToken);
         }
 
-        public IAsyncEnumerable<T> QueryAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, IList<string> fields = null, CancellationToken cancellationToken = default)
+        public IAsyncEnumerable<T> QueryAsync(string partitionKey, string rowKeyStart, string rowKeyEnd, IList<string>? fields = null, CancellationToken cancellationToken = default)
         {
             return QueryAsync(filter: string.Join(And,
             [
@@ -52,7 +52,7 @@ namespace Cod.Platform.StorageTable
             ]), fields: fields, cancellationToken: cancellationToken);
         }
 
-        public IAsyncEnumerable<T> QueryAsync(string partitionKeyStart, string partitionKeyEnd, IList<string> fields = null, CancellationToken cancellationToken = default)
+        public IAsyncEnumerable<T> QueryAsync(string partitionKeyStart, string partitionKeyEnd, IList<string>? fields = null, CancellationToken cancellationToken = default)
         {
             return QueryAsync(filter: string.Join(And,
             [
@@ -61,7 +61,7 @@ namespace Cod.Platform.StorageTable
             ]), fields: fields, cancellationToken: cancellationToken);
         }
 
-        public IAsyncEnumerable<T> QueryAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, IList<string> fields = null, CancellationToken cancellationToken = default)
+        public IAsyncEnumerable<T> QueryAsync(string partitionKeyStart, string partitionKeyEnd, string rowKeyStart, string rowKeyEnd, IList<string>? fields = null, CancellationToken cancellationToken = default)
         {
             return QueryAsync(filter: string.Join(And,
             [

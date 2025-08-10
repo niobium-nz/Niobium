@@ -8,12 +8,14 @@ namespace Cod.Platform.StorageTable
     {
         public bool Grantable(ResourceType type, string resource) => type == ResourceType.AzureStorageTable && options.Value.FullyQualifiedDomainName != null && options.Value.Key != null;
 
-        public Task<StorageControl> GrantAsync(ClaimsPrincipal principal, ResourceType type, string resource, string partition, string row, CancellationToken cancellationToken = default)
+        public Task<StorageControl?> GrantAsync(ClaimsPrincipal principal, ResourceType type, string resource, string? partition, string? row, CancellationToken cancellationToken = default)
         {
-            StorageControl result = null;
+            StorageControl? result = null;
             var permissions = principal.Claims.ToResourcePermissions();
             var entitlements = permissions
-                .Where(p => p.Type == ResourceType.AzureStorageTable && p.Partition == resource && p.Scope != null && partition.StartsWith(p.Scope))
+                .Where(p => p.Type == ResourceType.AzureStorageTable
+                            && p.Partition == resource
+                            && (p.Scope != null && partition != null && partition.StartsWith(p.Scope) || (p.Scope == null && partition == null)))
                 .SelectMany(p => p.Entitlements);
 
             if (entitlements != null && entitlements.Any())

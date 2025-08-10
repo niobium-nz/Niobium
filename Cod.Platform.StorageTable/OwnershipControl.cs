@@ -9,7 +9,7 @@ namespace Cod.Platform.StorageTable
             return type == ResourceType.AzureStorageTable && resource.Equals(typeof(TResource).Name, StringComparison.InvariantCultureIgnoreCase);
         }
 
-        public async Task<StorageControl> GrantAsync(ClaimsPrincipal principal, ResourceType type, string resource, string partition, string row, CancellationToken cancellationToken = default)
+        public async Task<StorageControl?> GrantAsync(ClaimsPrincipal principal, ResourceType type, string resource, string? partition, string? row, CancellationToken cancellationToken = default)
         {
             bool grant = await HasPermission(principal, partition, cancellationToken);
             return grant
@@ -21,8 +21,13 @@ namespace Cod.Platform.StorageTable
                 : null;
         }
 
-        protected virtual async Task<bool> HasPermission(ClaimsPrincipal principal, string partition, CancellationToken cancellationToken)
+        protected virtual async Task<bool> HasPermission(ClaimsPrincipal principal, string? partition, CancellationToken cancellationToken)
         {
+            if (partition == null)
+            {
+                return false;
+            }
+
             string owner = GetOwnerID(principal);
             return await ExistAsync(owner, partition, cancellationToken);
         }

@@ -128,11 +128,11 @@ namespace Cod
         {
             return string.IsNullOrWhiteSpace(dateString) || dateString.Length != 8
                 ? null
-                : !int.TryParse(dateString.Substring(0, 4), out int year)
+                : !int.TryParse(dateString.AsSpan(0, 4), out int year)
                 ? null
-                : !int.TryParse(dateString.Substring(4, 2), out int month)
+                : !int.TryParse(dateString.AsSpan(4, 2), out int month)
                 ? null
-                : !int.TryParse(dateString.Substring(6, 2), out int day) ? null : new DateTimeOffset(year, month, day, 0, 0, 0, TimeSpan.Zero);
+                : !int.TryParse(dateString.AsSpan(6, 2), out int day) ? null : new DateTimeOffset(year, month, day, 0, 0, 0, TimeSpan.Zero);
         }
 
         public static DateTimeOffset ToLocal(this DateTimeOffset dateTimeOffset, TimeZoneInfo timeZoneInfo)

@@ -7,7 +7,7 @@ namespace Cod.Database.StorageTable
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddDatabase(this IServiceCollection services, Action<StorageTableOptions> options = null)
+        public static IServiceCollection AddDatabase(this IServiceCollection services, Action<StorageTableOptions>? options = null)
         {
             if (loaded)
             {

@@ -1,4 +1,6 @@
-﻿namespace Cod
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Cod
 {
     public abstract class InternalError
     {
@@ -32,13 +34,13 @@
 
         static InternalError()
         {
-            errorRetrievers = new List<IErrorRetriever>
-        {
-            new InternalErrorRetriever(),
-        };
+            errorRetrievers =
+            [
+                new InternalErrorRetriever(),
+            ];
         }
 
-        public static string UnknownErrorMessage => TryGet(Unknown, out string val) ? val : throw new NotImplementedException();
+        public static string UnknownErrorMessage => TryGet(Unknown, out var val) ? val : throw new NotImplementedException();
 
         public static void Register(IErrorRetriever retriever)
         {
@@ -48,7 +50,7 @@
             }
         }
 
-        public static bool TryGet(int code, out string value)
+        public static bool TryGet(int code, [NotNullWhen(true)] out string? value)
         {
             foreach (IErrorRetriever errorRetriever in errorRetrievers)
             {
@@ -64,7 +66,7 @@
 
         public static string Get(int code)
         {
-            return TryGet(code, out string val) ? val : throw new KeyNotFoundException();
+            return TryGet(code, out var val) ? val : throw new KeyNotFoundException();
         }
     }
 }

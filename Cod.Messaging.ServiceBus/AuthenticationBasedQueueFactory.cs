@@ -98,6 +98,7 @@ namespace Cod.Messaging.ServiceBus
                 var permission = resourcePermissions.FirstOrDefault(p =>
                         p.Type == ResourceType.AzureServiceBus
                         && permissions.All(m => p.Entitlements.Contains(m.ToString().ToUpperInvariant()))
+                        && p.Partition != null
                         && name.StartsWith(p.Partition))
                     ?? throw new ApplicationException(InternalError.Forbidden);
                 var token = await authenticator.Value.RetrieveResourceTokenAsync(ResourceType.AzureServiceBus, permission.Resource, partition: name, cancellationToken: cancellationToken);

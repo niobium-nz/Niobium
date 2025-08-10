@@ -2,18 +2,13 @@
 
 namespace Cod
 {
-    public class MemoryCachedRepository<T> : IRepository<T>
+    public class MemoryCachedRepository<T>(IRepository<T> innerRepository) : IRepository<T>, IDisposable
     {
         private static readonly TimeSpan CacheUpdateGap = TimeSpan.FromMinutes(5);
         private DateTimeOffset lastCacheUpdate = DateTimeOffset.MinValue;
+        private bool disposedValue;
         private readonly SemaphoreSlim cahceLock = new(1, 1);
-        private readonly Dictionary<StorageKey, T> cache = new();
-        private readonly IRepository<T> innerRepository;
-
-        public MemoryCachedRepository(IRepository<T> innerRepository)
-        {
-            this.innerRepository = innerRepository;
-        }
+        private readonly Dictionary<StorageKey, T> cache = [];
 
         public async Task<IEnumerable<T>> CreateAsync(IEnumerable<T> entities, bool replaceIfExist = false, DateTimeOffset? expiry = null, CancellationToken cancellationToken = default)
         {
@@ -60,7 +55,7 @@ namespace Cod
             }
         }
 
-        public async Task<EntityBag<T>> GetAsync(int limit, string continuationToken = null, IList<string> fields = null, CancellationToken cancellationToken = default)
+        public async Task<EntityBag<T>> GetAsync(int limit, string? continuationToken = null, IList<string>? fields = null, CancellationToken cancellationToken = default)
         {
             await cahceLock.WaitAsync(cancellationToken);
             try
@@ -76,7 +71,7 @@ namespace Cod
             }
         }
 
-        public async Task<EntityBag<T>> GetAsync(string partitionKey, int limit, string continuationToken = null, IList<string> fields = null, CancellationToken cancellationToken = default)
+        public async Task<EntityBag<T>> GetAsync(string partitionKey, int limit, string? continuationToken = null, IList<string>? fields = null, CancellationToken cancellationToken = default)
         {
             await cahceLock.WaitAsync(cancellationToken);
             try
@@ -100,7 +95,7 @@ namespace Cod
             }
         }
 
-        public async IAsyncEnumerable<T> GetAsync(IList<string> fields = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public async IAsyncEnumerable<T> GetAsync(IList<string>? fields = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             await cahceLock.WaitAsync(cancellationToken);
             try
@@ -118,7 +113,7 @@ namespace Cod
             }
         }
 
-        public async IAsyncEnumerable<T> GetAsync(string partitionKey, IList<string> fields = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public async IAsyncEnumerable<T> GetAsync(string partitionKey, IList<string>? fields = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             await cahceLock.WaitAsync(cancellationToken);
             try
@@ -140,7 +135,7 @@ namespace Cod
             }
         }
 
-        public async Task<T> RetrieveAsync(string partitionKey, string rowKey, IList<string> fields = null, CancellationToken cancellationToken = default)
+        public async Task<T?> RetrieveAsync(string partitionKey, string rowKey, IList<string>? fields = null, CancellationToken cancellationToken = default)
         {
             await cahceLock.WaitAsync(cancellationToken);
             try
@@ -183,10 +178,13 @@ namespace Cod
                 var entities = innerRepository.GetAsync(cancellationToken: cancellationToken);
                 await foreach (var item in entities)
                 {
-                    var pk = EntityMappingHelper.GetField<string>(item, EntityKeyKind.PartitionKey);
-                    var rk = EntityMappingHelper.GetField<string>(item, EntityKeyKind.RowKey);
-                    var key = new StorageKey { PartitionKey = pk, RowKey = rk };
-                    cache.Add(key, item);
+                    if (item != null)
+                    {
+                        var pk = EntityMappingHelper.GetField<string>(item, EntityKeyKind.PartitionKey);
+                        var rk = EntityMappingHelper.GetField<string>(item, EntityKeyKind.RowKey);
+                        var key = new StorageKey { PartitionKey = pk, RowKey = rk };
+                        cache.Add(key, item);
+                    }
                 }
 
                 lastCacheUpdate = DateTimeOffset.UtcNow;
@@ -194,5 +192,24 @@ namespace Cod
         }
 
         protected virtual void PurgeCache() => cache.Clear();
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    cahceLock.Dispose();
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
     }
 }

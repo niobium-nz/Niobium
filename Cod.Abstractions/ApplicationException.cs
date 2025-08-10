@@ -2,26 +2,13 @@
 
 namespace Cod
 {
-    public class ApplicationException : Exception
+    public class ApplicationException(int errorCode, string? internalMessage = null, Exception? innerException = null) : Exception(internalMessage, innerException)
     {
         private const int SuccessCode = 0;
-        private readonly Func<string> getMessage;
-
-        public int ErrorCode { get; set; }
-
-        public override string Message => getMessage();
-
-        public object Reference { get; set; }
-
-        public ApplicationException(int errorCode, string internalMessage = null, Exception innerException = null)
-            : base(internalMessage, innerException)
-        {
-            ErrorCode = errorCode;
-
-            getMessage = () =>
+        private readonly Func<string> getMessage = () =>
             {
                 StringBuilder msg = new();
-                if (InternalError.TryGet(errorCode, out string val))
+                if (InternalError.TryGet(errorCode, out var val))
                 {
                     msg.Append(val);
                 }
@@ -36,12 +23,17 @@ namespace Cod
                 if (errorCode != SuccessCode)
                 {
                     msg.Append(" [0x");
-                    msg.Append(errorCode.ToString());
-                    msg.Append("]");
+                    msg.Append(errorCode);
+                    msg.Append(']');
                 }
 
                 return msg.ToString();
             };
-        }
+
+        public int ErrorCode { get; set; } = errorCode;
+
+        public override string Message => getMessage();
+
+        public object? Reference { get; set; }
     }
 }

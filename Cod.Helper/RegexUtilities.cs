@@ -5,7 +5,7 @@ namespace Cod
 {
     public static class RegexUtilities
     {
-        public static bool IsValidEmail(string email)
+        public static bool IsValidEmail(string? email)
         {
             if (string.IsNullOrWhiteSpace(email))
             {

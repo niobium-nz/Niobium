@@ -3,30 +3,18 @@ using System.Runtime.CompilerServices;
 
 namespace Cod
 {
-    public class GenericDomainRepository<TDomain, TEntity> : IDomainRepository<TDomain, TEntity>, IDisposable
+    public class GenericDomainRepository<TDomain, TEntity>(Func<TDomain> createDomain, Lazy<IRepository<TEntity>> repository) : IDomainRepository<TDomain, TEntity>, IDisposable
         where TDomain : class, IDomain<TEntity>
     {
-        private readonly List<TDomain> cachedDomains;
-        private readonly List<string> cachedPartitions;
-        private readonly ConcurrentDictionary<StorageKey, TDomain> instanceCache;
-        private readonly ConcurrentDictionary<string, IList<TDomain>> partitionCache;
-        private readonly Func<TDomain> createDomain;
-        private readonly Lazy<IRepository<TEntity>> repository;
+        private readonly List<TDomain> cachedDomains = [];
+        private readonly List<string> cachedPartitions = [];
+        private readonly ConcurrentDictionary<StorageKey, TDomain> instanceCache = new();
+        private readonly ConcurrentDictionary<string, IList<TDomain>> partitionCache = new();
         private bool disposed;
 
         public IReadOnlyCollection<TDomain> CachedDomains => cachedDomains;
 
         public IReadOnlyCollection<string> CachedPartitions => cachedPartitions;
-
-        public GenericDomainRepository(Func<TDomain> createDomain, Lazy<IRepository<TEntity>> repository)
-        {
-            cachedDomains = new List<TDomain>();
-            cachedPartitions = new List<string>();
-            instanceCache = new ConcurrentDictionary<StorageKey, TDomain>();
-            partitionCache = new ConcurrentDictionary<string, IList<TDomain>>();
-            this.createDomain = createDomain;
-            this.repository = repository;
-        }
 
         public Task<TDomain> GetAsync(TEntity entity, CancellationToken? cancellationToken = default)
         {
@@ -45,9 +33,9 @@ namespace Cod
 
             return Task.FromResult(instanceCache.GetOrAdd(key, k =>
                 {
-                    if (partitionCache.TryGetValue(k.PartitionKey, out IList<TDomain> partition))
+                    if (partitionCache.TryGetValue(k.PartitionKey, out var partition))
                     {
-                        TDomain c = partition.SingleOrDefault(d => d.RowKey == k.RowKey);
+                        var c = partition.SingleOrDefault(d => d.RowKey == k.RowKey);
                         if (c != null)
                         {
                             return c;
@@ -67,7 +55,7 @@ namespace Cod
                 partitionCache.TryRemove(partitionKey, out _);
             }
 
-            List<TDomain> stub = new();
+            List<TDomain> stub = [];
 
             IList<TDomain> result = partitionCache.GetOrAdd(partitionKey, key => stub);
 
@@ -98,9 +86,14 @@ namespace Cod
             await foreach (TEntity entity in entities)
             {
                 TDomain domain = await GetAsync(entity, cancellationToken);
+                if (domain.PartitionKey == null)
+                {
+                    throw new InvalidOperationException("Domain must have a valid PartitionKey.");
+                }
+
                 partitionCache.AddOrUpdate(
                     domain.PartitionKey,
-                    new List<TDomain> { domain },
+                    [domain],
                     (key, existing) =>
                     {
                         existing.Add(domain);
@@ -116,10 +109,14 @@ namespace Cod
         {
             TDomain domain = createDomain();
             domain.Initialize(entity);
+            if (domain.PartitionKey == null)
+            {
+                throw new InvalidOperationException("Domain must have a valid PartitionKey.");
+            }
 
             partitionCache.AddOrUpdate(
                 domain.PartitionKey,
-                new List<TDomain> { domain },
+                [domain],
                 (key, existing) =>
                 {
                     existing.Add(domain);
@@ -144,6 +141,7 @@ namespace Cod
 
         protected Task<TDomain> GetAsync(TEntity entity, bool clearPartitionCache, CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(entity);
             TDomain domain = createDomain();
             domain.Initialize(entity);
 

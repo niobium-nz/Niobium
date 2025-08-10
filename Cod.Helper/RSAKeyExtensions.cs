@@ -25,7 +25,7 @@ namespace Cod
             }
             catch
             {
-                throw new Exception("Invalid JSON RSA key.");
+                throw new InvalidDataException("Invalid JSON RSA key.");
             }
         }
 
@@ -49,14 +49,14 @@ namespace Cod
 
         #region XML
 
-        public static void FromXmlString(this RSA rsa, string xmlString, string dummy)
+        public static void FromXmlString(this RSA rsa, string xmlString, string? dummy)
         {
             RSAParameters parameters = new();
 
             XmlDocument xmlDoc = new();
             xmlDoc.LoadXml(xmlString);
 
-            if (xmlDoc.DocumentElement.Name.Equals("RSAKeyValue"))
+            if (xmlDoc.DocumentElement != null && xmlDoc.DocumentElement.Name.Equals("RSAKeyValue"))
             {
                 foreach (XmlNode node in xmlDoc.DocumentElement.ChildNodes)
                 {
@@ -75,7 +75,7 @@ namespace Cod
             }
             else
             {
-                throw new Exception("Invalid XML RSA key.");
+                throw new InvalidDataException("Invalid XML RSA key.");
             }
 
             rsa.ImportParameters(parameters);

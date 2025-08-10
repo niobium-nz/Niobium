@@ -14,7 +14,7 @@
 
         Task<IEnumerable<Transaction>> MakeTransactionAsync(IEnumerable<TransactionRequest> requests);
 
-        Task<Transaction> GetTransactionAsync(DateTimeOffset id);
+        Task<Transaction?> GetTransactionAsync(DateTimeOffset id);
 
         Task<AccountBalance> GetBalanceAsync(DateTimeOffset input, CancellationToken cancellationToken = default);
     }

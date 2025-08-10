@@ -7,42 +7,52 @@ namespace Cod
     {
         public static string Encrypt(string plainText, string key)
         {
-            byte[] plainBytes = Encoding.UTF8.GetBytes(plainText);
-            using RijndaelManaged rijndaelManaged = GetRijndaelManaged(key);
-            return Encrypt(plainBytes, rijndaelManaged).ToHex();
+            using (Aes aes = Aes.Create())
+            {
+                aes.Key = Encoding.UTF8.GetBytes(key);
+                aes.GenerateIV();
+                aes.Mode = CipherMode.CBC;
+                using (var encryptor = aes.CreateEncryptor(aes.Key, aes.IV))
+                {
+                    using (var ms = new MemoryStream())
+                    {
+                        ms.Write(aes.IV, 0, aes.IV.Length);
+                        using (var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
+                        {
+                            using (var sw = new StreamWriter(cs))
+                            {
+                                sw.Write(plainText);
+                            }
+                        }
+                        return Convert.ToBase64String(ms.ToArray());
+                    }
+                }
+            }
         }
 
         public static string Decrypt(string encryptedText, string key)
         {
-            byte[] encryptedBytes = encryptedText.FromHex();
-            using RijndaelManaged rijndaelManaged = GetRijndaelManaged(key);
-            return Encoding.UTF8.GetString(Decrypt(encryptedBytes, rijndaelManaged));
-        }
-
-        private static byte[] Encrypt(byte[] plainBytes, RijndaelManaged rijndaelManaged)
-        {
-            return rijndaelManaged.CreateEncryptor().TransformFinalBlock(plainBytes, 0, plainBytes.Length);
-        }
-
-        private static byte[] Decrypt(byte[] encryptedData, RijndaelManaged rijndaelManaged)
-        {
-            return rijndaelManaged.CreateDecryptor().TransformFinalBlock(encryptedData, 0, encryptedData.Length);
-        }
-
-        private static RijndaelManaged GetRijndaelManaged(string secretKey)
-        {
-            byte[] keyBytes = new byte[16];
-            byte[] secretKeyBytes = Encoding.UTF8.GetBytes(secretKey);
-            Array.Copy(secretKeyBytes, keyBytes, Math.Min(keyBytes.Length, secretKeyBytes.Length));
-            return new RijndaelManaged
+            using (Aes aes = Aes.Create())
             {
-                Mode = CipherMode.CBC,
-                Padding = PaddingMode.PKCS7,
-                KeySize = 128,
-                BlockSize = 128,
-                Key = keyBytes,
-                IV = new byte[16] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, }
-            };
+                aes.Key = Encoding.UTF8.GetBytes(key);
+                byte[] fullCipher = Convert.FromBase64String(encryptedText);
+                byte[] iv = new byte[aes.IV.Length];
+                Array.Copy(fullCipher, 0, iv, 0, iv.Length);
+                aes.IV = iv;
+                using (var decryptor = aes.CreateDecryptor(aes.Key, aes.IV))
+                {
+                    using (var ms = new MemoryStream(fullCipher, iv.Length, fullCipher.Length - iv.Length))
+                    {
+                        using (var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read))
+                        {
+                            using (var sr = new StreamReader(cs))
+                            {
+                                return sr.ReadToEnd();
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

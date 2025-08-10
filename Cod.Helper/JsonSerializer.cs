@@ -21,12 +21,12 @@ namespace Cod
         {
             return format switch
             {
-                JsonSerializationFormat.PascalCase => JsonConvert.DeserializeObject<T>(value, JsonSetting.PascalCase),
-                JsonSerializationFormat.CamelCase => JsonConvert.DeserializeObject<T>(value, JsonSetting.CamelCase),
-                JsonSerializationFormat.UnderstoreCase => JsonConvert.DeserializeObject<T>(value, JsonSetting.UnderstoreCase),
-                JsonSerializationFormat.TypedPascalCase => JsonConvert.DeserializeObject<T>(value, JsonSetting.TypedPascalCase),
-                JsonSerializationFormat.TypedCamelCase => JsonConvert.DeserializeObject<T>(value, JsonSetting.TypedCamelCase),
-                _ => JsonConvert.DeserializeObject<T>(value),
+                JsonSerializationFormat.PascalCase => JsonConvert.DeserializeObject<T>(value, JsonSetting.PascalCase)!,
+                JsonSerializationFormat.CamelCase => JsonConvert.DeserializeObject<T>(value, JsonSetting.CamelCase)!,
+                JsonSerializationFormat.UnderstoreCase => JsonConvert.DeserializeObject<T>(value, JsonSetting.UnderstoreCase)!,
+                JsonSerializationFormat.TypedPascalCase => JsonConvert.DeserializeObject<T>(value, JsonSetting.TypedPascalCase)!,
+                JsonSerializationFormat.TypedCamelCase => JsonConvert.DeserializeObject<T>(value, JsonSetting.TypedCamelCase)!,
+                _ => JsonConvert.DeserializeObject<T>(value)!,
             };
         }
 
@@ -34,12 +34,12 @@ namespace Cod
         {
             return format switch
             {
-                JsonSerializationFormat.PascalCase => JsonConvert.DeserializeObject(value, type: targetType, settings: JsonSetting.PascalCase),
-                JsonSerializationFormat.CamelCase => JsonConvert.DeserializeObject(value, type: targetType, settings: JsonSetting.CamelCase),
-                JsonSerializationFormat.UnderstoreCase => JsonConvert.DeserializeObject(value, type: targetType, settings: JsonSetting.UnderstoreCase),
-                JsonSerializationFormat.TypedPascalCase => JsonConvert.DeserializeObject(value, type: targetType, settings: JsonSetting.TypedPascalCase),
-                JsonSerializationFormat.TypedCamelCase => JsonConvert.DeserializeObject(value, type: targetType, settings: JsonSetting.TypedCamelCase),
-                _ => JsonConvert.DeserializeObject(value, targetType),
+                JsonSerializationFormat.PascalCase => JsonConvert.DeserializeObject(value, type: targetType, settings: JsonSetting.PascalCase)!,
+                JsonSerializationFormat.CamelCase => JsonConvert.DeserializeObject(value, type: targetType, settings: JsonSetting.CamelCase)!,
+                JsonSerializationFormat.UnderstoreCase => JsonConvert.DeserializeObject(value, type: targetType, settings: JsonSetting.UnderstoreCase)!,
+                JsonSerializationFormat.TypedPascalCase => JsonConvert.DeserializeObject(value, type: targetType, settings: JsonSetting.TypedPascalCase)!,
+                JsonSerializationFormat.TypedCamelCase => JsonConvert.DeserializeObject(value, type: targetType, settings: JsonSetting.TypedCamelCase)!,
+                _ => JsonConvert.DeserializeObject(value, targetType)!,
             };
         }
     }

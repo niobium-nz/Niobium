@@ -1,24 +1,26 @@
 ﻿namespace Cod
 {
-    public abstract class GenericDomain<T> : IDomain<T> where T : class
+    public abstract class GenericDomain<T>(Lazy<IRepository<T>> repository, IEnumerable<IDomainEventHandler<IDomain<T>>> eventHandlers) : IDomain<T> where T : class
     {
-        private readonly Lazy<IRepository<T>> repository;
-        private T cache;
-        private Func<CancellationToken, Task<T>> getEntity;
-        private string etag;
+        private T? cache;
+        private Func<CancellationToken, Task<T?>>? getEntity;
+        private string? etag;
 
         public bool Initialized { get; protected set; }
 
-        public string PartitionKey { get; private set; }
+        public string? PartitionKey { get; private set; }
 
-        public string RowKey { get; private set; }
+        public string? RowKey { get; private set; }
 
-        public async Task<string> GetHashAsync(CancellationToken cancellationToken = default)
+        public async Task<string?> GetHashAsync(CancellationToken cancellationToken = default)
         {
             if (etag == null)
             {
                 var entity = await GetEntityAsync(cancellationToken);
-                etag = EntityMappingHelper.GetField<string>(entity, EntityKeyKind.ETag);
+                if (entity != null)
+                {
+                    etag = EntityMappingHelper.GetField<string>(entity, EntityKeyKind.ETag);
+                }
             }
 
             return etag;
@@ -26,17 +28,15 @@
 
         protected IRepository<T> Repository => repository.Value;
 
-        protected IEnumerable<IDomainEventHandler<IDomain<T>>> EventHandlers { get; }
+        protected IEnumerable<IDomainEventHandler<IDomain<T>>> EventHandlers { get; } = eventHandlers;
 
-        protected GenericDomain(Lazy<IRepository<T>> repository, IEnumerable<IDomainEventHandler<IDomain<T>>> eventHandlers)
+        public async Task<T?> GetEntityAsync(CancellationToken cancellationToken = default)
         {
-            this.repository = repository;
-            EventHandlers = eventHandlers;
-        }
+            if (cache == null && getEntity != null)
+            {
+                cache = await getEntity(cancellationToken);
+            }
 
-        public async Task<T> GetEntityAsync(CancellationToken cancellationToken = default)
-        {
-            cache ??= await getEntity(cancellationToken);
             return cache;
         }
 
@@ -54,9 +54,9 @@
 
         public async Task ReloadAsync(CancellationToken cancellationToken = default)
         {
-            if (!Initialized)
+            if (!Initialized || PartitionKey == null || RowKey == null)
             {
-                throw new NotSupportedException();
+                throw new InvalidOperationException("Domain must be initialized before reloading.");
             }
             cache = await Repository.RetrieveAsync(PartitionKey, RowKey, cancellationToken: cancellationToken);
         }
@@ -65,7 +65,7 @@
         {
             if (!Initialized)
             {
-                getEntity = _ => Task.FromResult(entity);
+                getEntity = _ => Task.FromResult<T?>(entity);
                 PartitionKey = EntityMappingHelper.GetField<string>(entity, EntityKeyKind.PartitionKey);
                 RowKey = EntityMappingHelper.GetField<string>(entity, EntityKeyKind.RowKey);
             }
@@ -75,22 +75,27 @@
 
         protected async Task SaveAsync(bool force = false, CancellationToken cancellationToken = default)
         {
-            await SaveAsync(new[] { await GetEntityAsync() }, force, cancellationToken: cancellationToken);
+            var input = await GetEntityAsync(cancellationToken);
+            if (input != null)
+            {
+                await SaveAsync(new[] { input }, force, cancellationToken: cancellationToken);
+            }
         }
 
         protected async Task<IEnumerable<T>> SaveAsync(IEnumerable<T> model, bool force = false, CancellationToken cancellationToken = default)
         {
-            List<Func<EntityChangedEvent<T>>> events = new();
-            List<T> results = new();
-            if (model == null || !model.Any())
+            List<Func<EntityChangedEventArgs<T>>> events = [];
+            List<T> results = [];
+            if (!model.Any())
             {
                 return model;
             }
+
             if (force)
             {
                 var createdOrReplaced = await Repository.CreateAsync(model, replaceIfExist: true, cancellationToken: cancellationToken);
                 results.AddRange(createdOrReplaced);
-                events.AddRange(createdOrReplaced.Select(m => new Func<EntityChangedEvent<T>>(() => new EntityChangedEvent<T>(EntityChangeType.Created | EntityChangeType.Updated, m))));
+                events.AddRange(createdOrReplaced.Select(m => new Func<EntityChangedEventArgs<T>>(() => new EntityChangedEventArgs<T>(EntityChangeType.Created | EntityChangeType.Updated, m))));
             }
             else
             {
@@ -101,7 +106,7 @@
                     {
                         var created = await Repository.CreateAsync(group, cancellationToken: cancellationToken);
                         results.AddRange(created);
-                        events.AddRange(created.Select(m => new Func<EntityChangedEvent<T>>(() => new EntityChangedEvent<T>(EntityChangeType.Created, m))));
+                        events.AddRange(created.Select(m => new Func<EntityChangedEventArgs<T>>(() => new EntityChangedEventArgs<T>(EntityChangeType.Created, m))));
                     }
                     else
                     {
@@ -109,9 +114,9 @@
                         results.AddRange(updated);
                         foreach (var u in updated)
                         {
-                            events.Add(new Func<EntityChangedEvent<T>>(() =>
+                            events.Add(new Func<EntityChangedEventArgs<T>>(() =>
                             {
-                                return new EntityChangedEvent<T>(EntityChangeType.Updated, u);
+                                return new EntityChangedEventArgs<T>(EntityChangeType.Updated, u);
                             }));
                         }
                     }
@@ -120,7 +125,7 @@
 
             if (Initialized)
             {
-                T c = results.SingleOrDefault(m =>
+                T? c = results.SingleOrDefault(m =>
                     EntityMappingHelper.GetField<string>(m, EntityKeyKind.PartitionKey) == PartitionKey
                         && EntityMappingHelper.GetField<string>(m, EntityKeyKind.RowKey) == RowKey);
                 if (c != null)

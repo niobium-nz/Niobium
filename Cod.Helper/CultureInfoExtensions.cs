@@ -1,10 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace Cod
 {
     public static class CultureInfoExtensions
     {
-        public static bool TryParseCultureInfo(string cultureCode, out CultureInfo culture)
+        public static bool TryParseCultureInfo(string cultureCode, [NotNullWhen(true)] out CultureInfo? culture)
         {
             culture = null;
 

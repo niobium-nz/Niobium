@@ -1,15 +1,18 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Cod
 {
-    public struct StorageKey : IEquatable<StorageKey>
+    [method: SetsRequiredMembers]
+    public struct StorageKey(string partitionKey, string rowKey) : IEquatable<StorageKey>
     {
         public const string MinKey = "!";
         public const string MaxKey = "~";
 
-        public string PartitionKey { get; set; }
+        public required string PartitionKey { get; set; } = partitionKey;
 
-        public string RowKey { get; set; }
+        public required string RowKey { get; set; } = rowKey;
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is StorageKey key && Equals(key);
         }
@@ -21,10 +24,7 @@ namespace Cod
 
         public override int GetHashCode()
         {
-            int hashCode = 1963138530;
-            hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(PartitionKey);
-            hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(RowKey);
-            return hashCode;
+            return HashCode.Combine(PartitionKey, RowKey);
         }
 
         public static bool operator ==(StorageKey left, StorageKey right)

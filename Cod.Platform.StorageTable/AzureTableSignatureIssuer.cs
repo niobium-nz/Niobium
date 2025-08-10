@@ -51,7 +51,7 @@ namespace Cod.Platform.StorageTable
                 RowKeyStart = control.StartRowKey,
                 RowKeyEnd = control.EndRowKey,
             };
-            var accountName = ParseAccountName(options.Value.FullyQualifiedDomainName);
+            var accountName = ParseAccountName(options.Value.FullyQualifiedDomainName!);
             var cred = new TableSharedKeyCredential(accountName, options.Value.Key);
             var sas = builder.ToSasQueryParameters(cred);
 

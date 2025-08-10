@@ -9,7 +9,7 @@
 
         public static StorageKey ParseFullID(string fullID)
         {
-            string[] splited = fullID.Split(new string[] { "%" }, System.StringSplitOptions.RemoveEmptyEntries);
+            string[] splited = fullID.Split(["%"], System.StringSplitOptions.RemoveEmptyEntries);
             return splited.Length == 2 ? new StorageKey { PartitionKey = splited[0], RowKey = splited[1] } : throw new NotSupportedException();
         }
     }

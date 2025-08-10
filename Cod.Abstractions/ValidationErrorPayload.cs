@@ -2,6 +2,6 @@
 {
     public class ValidationErrorPayload : GenericErrorPayload
     {
-        public ValidationState Validation { get; set; }
+        public required ValidationState Validation { get; set; }
     }
 }

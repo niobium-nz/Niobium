@@ -6,7 +6,7 @@ namespace Cod
 {
     public static class TypeConverter
     {
-        private static readonly Type[] ConvertibleTypes = new[] { typeof(Guid), typeof(DateTime), typeof(DateTimeOffset), typeof(TimeSpan), };
+        private static readonly Type[] ConvertibleTypes = [typeof(Guid), typeof(DateTime), typeof(DateTimeOffset), typeof(TimeSpan),];
 
         public static T Convert<T>(string input)
         {
@@ -24,8 +24,8 @@ namespace Cod
                     throw new NotSupportedException();
                 }
 
-                string[] parts = input.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries);
-                IList result = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(genericArgs));
+                string[] parts = input.Split([","], StringSplitOptions.RemoveEmptyEntries);
+                IList result = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(genericArgs))!;
                 foreach (string part in parts)
                 {
                     obj = Convert(part, genericArgs[0]);
@@ -36,11 +36,11 @@ namespace Cod
             else if (typeof(IConvertible).IsAssignableFrom(targetType) || ConvertibleTypes.Contains(targetType))
             {
                 System.ComponentModel.TypeConverter converter = TypeDescriptor.GetConverter(targetType);
-                obj = converter.ConvertFrom(input);
+                obj = converter.ConvertFrom(input)!;
             }
             else
             {
-                obj = JsonConvert.DeserializeObject(input, targetType);
+                obj = JsonConvert.DeserializeObject(input, targetType)!;
             }
 
             return obj;

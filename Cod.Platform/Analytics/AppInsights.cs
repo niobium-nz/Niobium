@@ -2,20 +2,14 @@ using System.Text;
 
 namespace Cod.Platform.Analytics
 {
-    public class AppInsights
+    public class AppInsights(Lazy<IConfigurationProvider> configuration)
     {
         private const string QUERY_TEMPLATE = "{\"query\":\"XXX\",\"workspaceFilters\":{\"regions\":[]}}";
-        private readonly Lazy<IConfigurationProvider> configuration;
-
-        public AppInsights(Lazy<IConfigurationProvider> configuration)
-        {
-            this.configuration = configuration;
-        }
 
         public async Task<AppInsightsQueryResult> QueryAsync(string query, DateTimeOffset start, DateTimeOffset end, bool isAzureChina = false)
         {
-            string appInsightsAPIAccessApplicationID = await configuration.Value.GetSettingAsStringAsync("APPINSIGHTS_APIACCESS_APPLICATION_ID");
-            string appInsightsAPIAccessApplicationKey = await configuration.Value.GetSettingAsStringAsync("APPINSIGHTS_APIACCESS_APPLICATION_KEY");
+            var appInsightsAPIAccessApplicationID = await configuration.Value.GetSettingAsStringAsync("APPINSIGHTS_APIACCESS_APPLICATION_ID");
+            var appInsightsAPIAccessApplicationKey = await configuration.Value.GetSettingAsStringAsync("APPINSIGHTS_APIACCESS_APPLICATION_KEY");
 
             using HttpClient httpclient = new(HttpHandler.GetHandler(), false);
             string endpoint = isAzureChina ? "https://api.applicationinsights.azure.cn" : "https://api.applicationinsights.io";

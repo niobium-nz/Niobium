@@ -1,12 +1,13 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace Cod
 {
     internal static class R
     {
-        public static bool TryGet(string key, out string value)
+        public static bool TryGet(string key, [NotNullWhen(true)] out string? value)
         {
-            string str = Localization.ResourceManager.GetString(key, CultureInfo.CurrentUICulture);
+            var str = Localization.ResourceManager.GetString(key, CultureInfo.CurrentUICulture);
             if (str != null)
             {
                 value = str;
@@ -19,7 +20,7 @@ namespace Cod
 
         public static string Get(string key)
         {
-            string str = Localization.ResourceManager.GetString(key, CultureInfo.CurrentUICulture);
+            var str = Localization.ResourceManager.GetString(key, CultureInfo.CurrentUICulture);
             return str ?? key;
         }
     }

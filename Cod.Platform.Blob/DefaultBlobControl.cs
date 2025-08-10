@@ -15,7 +15,7 @@ namespace Cod.Platform.Blob
             var entitlements = principal.Claims.ToResourcePermissions()
                 .Where(p => p.Type == ResourceType.AzureStorageBlob
                     && p.Resource == resource
-                    && (partition != null && (partition == p.Partition || partition.StartsWith(p.Partition))))
+                    && (partition == p.Partition || (partition != null && p.Partition != null && partition.StartsWith(p.Partition))))
                 .SelectMany(p => p.Entitlements);
 
             if (entitlements != null && entitlements.Any())
