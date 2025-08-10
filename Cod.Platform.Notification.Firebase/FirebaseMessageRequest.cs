@@ -1,6 +1,6 @@
 ﻿namespace Cod.Platform.Notification.Firebase
 {
-    internal class FirebaseMessageRequest
+    internal sealed class FirebaseMessageRequest
     {
         public required FirebaseMessage Message { get; set; }
     }

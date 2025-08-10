@@ -13,7 +13,7 @@ namespace Cod.Channel.Identity
         Lazy<IEnumerable<IDomainEventHandler<IAuthenticator>>> eventHandlers)
         : IAuthenticator, IAsyncDisposable
     {
-        private readonly static Dictionary<string, StorageSignature> emptyResourceToken = [];
+        private static readonly Dictionary<string, StorageSignature> emptyResourceToken = [];
         private readonly SemaphoreSlim initializationLock = new(1, 1);
         private bool disposed;
         private bool isInitialized;
@@ -30,7 +30,7 @@ namespace Cod.Channel.Identity
             await InitializeAsync();
 
             bool tokenRevoked = false;
-            var now = DateTime.UtcNow;
+            DateTime now = DateTime.UtcNow;
             if (AccessToken != null)
             {
                 if (now - AccessToken.ValidFrom > -options.Value.MaxClockSkewTolerence
@@ -39,7 +39,7 @@ namespace Cod.Channel.Identity
                     return true;
                 }
 
-                await this.InitializeAccessTokenAsync(null, false);
+                await InitializeAccessTokenAsync(null, false);
                 tokenRevoked = true;
             }
 
@@ -47,7 +47,7 @@ namespace Cod.Channel.Identity
                 && now - IDToken.ValidFrom > -options.Value.MaxClockSkewTolerence
                 && IDToken.ValidTo - now > -options.Value.MaxClockSkewTolerence)
             {
-                await this.RefreshAccessTokenAsync(IDToken.EncodedToken, true, cancellationToken);
+                await RefreshAccessTokenAsync(IDToken.EncodedToken, true, cancellationToken);
                 now = DateTime.UtcNow;
                 if (AccessToken != null
                     && now - AccessToken.ValidFrom > -options.Value.MaxClockSkewTolerence
@@ -59,7 +59,7 @@ namespace Cod.Channel.Identity
 
             if (tokenRevoked)
             {
-                await this.OnAuthenticationUpdated(false, cancellationToken);
+                await OnAuthenticationUpdated(false, cancellationToken);
             }
             return false;
         }
@@ -67,8 +67,8 @@ namespace Cod.Channel.Identity
         public async Task<IEnumerable<Claim>?> GetClaimsAsync(CancellationToken cancellationToken = default)
         {
             await InitializeAsync();
-            var authenticated = await this.GetAuthenticateStatus(cancellationToken);
-            return authenticated ? this.AccessToken!.Claims : null;
+            bool authenticated = await GetAuthenticateStatus(cancellationToken);
+            return authenticated ? AccessToken!.Claims : null;
         }
 
         public virtual async Task<LoginResult> LoginAsync(string scheme, string identity, string? credential, bool remember, CancellationToken cancellationToken = default)
@@ -77,7 +77,7 @@ namespace Cod.Channel.Identity
 
             try
             {
-                var result = await identityService.RequestIDTokenAsync(scheme, identity, credential, cancellationToken);
+                AccessTokenResponse result = await identityService.RequestIDTokenAsync(scheme, identity, credential, cancellationToken);
                 if (result.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     return new LoginResult { IsSuccess = false };
@@ -95,16 +95,16 @@ namespace Cod.Channel.Identity
 
                 if (result.Token == null)
                 {
-                    await this.InitializeIDTokenAsync(null, false);
-                    await this.OnAuthenticationUpdated(false, cancellationToken);
+                    await InitializeIDTokenAsync(null, false);
+                    await OnAuthenticationUpdated(false, cancellationToken);
                     return new LoginResult { IsSuccess = false };
                 }
                 else
                 {
-                    await this.InitializeIDTokenAsync(result.Token, remember);
-                    await this.RefreshAccessTokenAsync(result.Token, remember, cancellationToken);
-                    var success = await this.GetAuthenticateStatus(cancellationToken);
-                    await this.OnAuthenticationUpdated(true, cancellationToken);
+                    await InitializeIDTokenAsync(result.Token, remember);
+                    await RefreshAccessTokenAsync(result.Token, remember, cancellationToken);
+                    bool success = await GetAuthenticateStatus(cancellationToken);
+                    await OnAuthenticationUpdated(true, cancellationToken);
                     return new LoginResult { IsSuccess = success };
                 }
             }
@@ -118,26 +118,26 @@ namespace Cod.Channel.Identity
         public async Task LogoutAsync(CancellationToken cancellationToken = default)
         {
             await InitializeAsync();
-            await this.InitializeIDTokenAsync(null, false);
-            await this.OnAuthenticationUpdated(false, cancellationToken);
+            await InitializeIDTokenAsync(null, false);
+            await OnAuthenticationUpdated(false, cancellationToken);
         }
 
         public virtual async Task<string> RetrieveResourceTokenAsync(ResourceType type, string resource, string? partition, string? id, CancellationToken cancellationToken = default)
         {
             await InitializeAsync();
-            var authenticated = await this.GetAuthenticateStatus(cancellationToken);
+            bool authenticated = await GetAuthenticateStatus(cancellationToken);
             if (!authenticated)
             {
                 throw new ApplicationException(InternalError.AuthenticationRequired);
             }
 
-            var key = BuildResourceTokenCacheKey(type, resource, partition, id);
-            if (signatures.TryGetValue(key, out var value))
+            string key = BuildResourceTokenCacheKey(type, resource, partition, id);
+            if (signatures.TryGetValue(key, out StorageSignature? value))
             {
                 if (value.Expires < DateTimeOffset.UtcNow)
                 {
-                    this.signatures.Remove(key);
-                    await this.SaveResourceTokensAsync(this.signatures);
+                    signatures.Remove(key);
+                    await SaveResourceTokensAsync(signatures);
                 }
                 else
                 {
@@ -145,35 +145,35 @@ namespace Cod.Channel.Identity
                 }
             }
 
-            var uri = new StringBuilder($"{options.Value.ResourceTokenHost}{options.Value.ResourceTokenEndpoint}?type={(int)type}&resource={resource.Trim()}");
-            if (!String.IsNullOrWhiteSpace(partition))
+            StringBuilder uri = new($"{options.Value.ResourceTokenHost}{options.Value.ResourceTokenEndpoint}?type={(int)type}&resource={resource.Trim()}");
+            if (!string.IsNullOrWhiteSpace(partition))
             {
                 uri.Append("&partition=");
                 uri.Append(partition);
             }
 
-            if (!String.IsNullOrWhiteSpace(id))
+            if (!string.IsNullOrWhiteSpace(id))
             {
                 uri.Append("&id=");
                 uri.Append(id);
             }
 
-            var result = await identityService.RequestResourceTokenAsync(AccessToken!.EncodedToken, type, resource, partition, id, cancellationToken);
+            ResourceTokenResponse result = await identityService.RequestResourceTokenAsync(AccessToken!.EncodedToken, type, resource, partition, id, cancellationToken);
             if (result.StatusCode == HttpStatusCode.Unauthorized || result.Token == null)
             {
-                await this.InitializeIDTokenAsync(null, false);
-                await this.OnAuthenticationUpdated(false, cancellationToken);
+                await InitializeIDTokenAsync(null, false);
+                await OnAuthenticationUpdated(false, cancellationToken);
                 throw new ApplicationException((int)result.StatusCode, "Resource access authorization failed");
             }
 
-            this.signatures.Add(key, result.Token);
-            await this.SaveResourceTokensAsync(this.signatures);
+            signatures.Add(key, result.Token);
+            await SaveResourceTokensAsync(signatures);
             return result.Token.Signature;
         }
 
         protected virtual Task<string?> GetSavedIDTokenAsync()
         {
-            return String.IsNullOrWhiteSpace(savedIDToken)
+            return string.IsNullOrWhiteSpace(savedIDToken)
                 ? Task.FromResult<string?>(null)
                 : Task.FromResult<string?>(savedIDToken);
         }
@@ -186,7 +186,7 @@ namespace Cod.Channel.Identity
 
         protected virtual Task<string?> GetSavedAccessTokenAsync()
         {
-            return String.IsNullOrWhiteSpace(savedAccessToken)
+            return string.IsNullOrWhiteSpace(savedAccessToken)
                 ? Task.FromResult<string?>(null)
                 : Task.FromResult<string?>(savedAccessToken);
         }
@@ -203,7 +203,9 @@ namespace Cod.Channel.Identity
         }
 
         protected virtual Task SaveResourceTokensAsync(IDictionary<string, StorageSignature> resourceTokens)
-            => Task.CompletedTask;
+        {
+            return Task.CompletedTask;
+        }
 
         protected virtual async Task InitializeAsync()
         {
@@ -215,22 +217,22 @@ namespace Cod.Channel.Identity
                 {
                     if (!isInitialized)
                     {
-                        var idt = await this.GetSavedIDTokenAsync();
+                        string? idt = await GetSavedIDTokenAsync();
                         if (!string.IsNullOrWhiteSpace(idt))
                         {
-                            await this.InitializeIDTokenAsync(idt, true);
+                            await InitializeIDTokenAsync(idt, true);
                         }
 
-                        var act = await this.GetSavedAccessTokenAsync();
+                        string? act = await GetSavedAccessTokenAsync();
                         if (!string.IsNullOrWhiteSpace(act))
                         {
-                            await this.InitializeAccessTokenAsync(act, true);
+                            await InitializeAccessTokenAsync(act, true);
                         }
 
-                        var ss = await this.GetSavedResourceTokensAsync();
+                        IDictionary<string, StorageSignature> ss = await GetSavedResourceTokensAsync();
                         if (ss.Count > 0)
                         {
-                            await this.InitializeResourceTokensAsync(ss, true);
+                            await InitializeResourceTokensAsync(ss, true);
                         }
 
                         isInitialized = true;
@@ -246,18 +248,18 @@ namespace Cod.Channel.Identity
         protected async Task InitializeIDTokenAsync(string? token, bool remember)
         {
             IDToken = string.IsNullOrWhiteSpace(token) ? null : new JsonWebToken(token);
-            var savedToken = await this.GetSavedIDTokenAsync();
-            var isChanged = savedToken != token;
+            string? savedToken = await GetSavedIDTokenAsync();
+            bool isChanged = savedToken != token;
 
             if (isChanged)
             {
-                await this.SaveIDTokenAsync(null);
+                await SaveIDTokenAsync(null);
                 if (remember)
                 {
-                    await this.SaveIDTokenAsync(token);
+                    await SaveIDTokenAsync(token);
                 }
 
-                await this.InitializeAccessTokenAsync(null, false);
+                await InitializeAccessTokenAsync(null, false);
             }
         }
 
@@ -265,52 +267,52 @@ namespace Cod.Channel.Identity
         {
             AccessToken = string.IsNullOrWhiteSpace(token) ? null : new JsonWebToken(token);
 
-            var savedToken = await this.GetSavedAccessTokenAsync();
-            var isChanged = savedToken != token;
+            string? savedToken = await GetSavedAccessTokenAsync();
+            bool isChanged = savedToken != token;
             if (isChanged)
             {
                 if (remember)
                 {
-                    await this.SaveAccessTokenAsync(token);
+                    await SaveAccessTokenAsync(token);
                 }
                 else
                 {
-                    await this.SaveAccessTokenAsync(null);
+                    await SaveAccessTokenAsync(null);
                 }
 
-                await this.InitializeResourceTokensAsync(emptyResourceToken, false);
+                await InitializeResourceTokensAsync(emptyResourceToken, false);
             }
         }
 
         protected async Task InitializeResourceTokensAsync(IDictionary<string, StorageSignature> tokens, bool remember)
         {
-            this.signatures.Clear();
-            foreach (var key in tokens.Keys)
+            signatures.Clear();
+            foreach (string key in tokens.Keys)
             {
-                this.signatures.Add(key, tokens[key]);
+                signatures.Add(key, tokens[key]);
             }
 
-            await this.SaveResourceTokensAsync(emptyResourceToken);
+            await SaveResourceTokensAsync(emptyResourceToken);
             if (remember)
             {
-                await this.SaveResourceTokensAsync(this.signatures);
+                await SaveResourceTokensAsync(signatures);
             }
         }
 
         protected virtual async Task RefreshAccessTokenAsync(string idToken, bool remember, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(idToken, nameof(idToken));
-            var result = await identityService.RefreshAccessTokenAsync(idToken, cancellationToken);
+            AccessTokenResponse result = await identityService.RefreshAccessTokenAsync(idToken, cancellationToken);
             if (result.Token != null)
             {
-                await this.InitializeAccessTokenAsync(result.Token, remember);
+                await InitializeAccessTokenAsync(result.Token, remember);
             }
             else
             {
                 if (result.StatusCode == HttpStatusCode.Unauthorized)
                 {
-                    await this.InitializeIDTokenAsync(null, false);
-                    await this.OnAuthenticationUpdated(false, cancellationToken);
+                    await InitializeIDTokenAsync(null, false);
+                    await OnAuthenticationUpdated(false, cancellationToken);
                 }
                 else
                 {
@@ -319,14 +321,16 @@ namespace Cod.Channel.Identity
             }
         }
 
-        protected async virtual Task OnAuthenticationUpdated(bool isAuthenticated, CancellationToken cancellationToken)
+        protected virtual async Task OnAuthenticationUpdated(bool isAuthenticated, CancellationToken cancellationToken)
         {
-            var e = new AuthenticationUpdatedEvent { IsAuthenticated = isAuthenticated };
+            AuthenticationUpdatedEvent e = new() { IsAuthenticated = isAuthenticated };
             await eventHandlers.Value.InvokeAsync(e, cancellationToken);
         }
 
         private static string BuildResourceTokenCacheKey(ResourceType type, string resource, string? partitionKey, string? rowKey)
-            => $"{(int)type}|{resource}|{partitionKey ?? string.Empty}|{rowKey ?? string.Empty}";
+        {
+            return $"{(int)type}|{resource}|{partitionKey ?? string.Empty}|{rowKey ?? string.Empty}";
+        }
 
         protected virtual ValueTask DisposeAsync(bool disposing)
         {

@@ -18,27 +18,27 @@ namespace Cod.Platform.Captcha.ReCaptcha
             PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
         };
 
-        public async virtual Task<bool> AssessAsync(string token, string? requestID = null, string? tenant = null, string? clientIP = null, bool throwsExceptionWhenFail = true, CancellationToken cancellationToken = default)
+        public virtual async Task<bool> AssessAsync(string token, string? requestID = null, string? tenant = null, string? clientIP = null, bool throwsExceptionWhenFail = true, CancellationToken cancellationToken = default)
         {
             requestID ??= Guid.NewGuid().ToString();
-            if (String.IsNullOrWhiteSpace(token))
+            if (string.IsNullOrWhiteSpace(token))
             {
                 throw new ApplicationException(InternalError.BadRequest, "Missing captcha token in request.");
             }
 
-            if (String.IsNullOrWhiteSpace(tenant))
+            if (string.IsNullOrWhiteSpace(tenant))
             {
                 tenant = httpContextAccessor.Value.HttpContext?.Request.GetTenant()
                     ?? throw new ApplicationException(InternalError.BadRequest, "Missing tenant information in request.");
             }
 
-            if (String.IsNullOrWhiteSpace(clientIP))
+            if (string.IsNullOrWhiteSpace(clientIP))
             {
                 clientIP = httpContextAccessor.Value.HttpContext?.Request.GetRemoteIP()
                     ?? throw new ApplicationException(InternalError.BadRequest, "unable to get client IP from request.");
             }
 
-            var secret = options.Value.Secrets[tenant]
+            string secret = options.Value.Secrets[tenant]
                 ?? throw new ApplicationException(InternalError.InternalServerError, $"Missing tenant secret: {tenant}");
 
             List<KeyValuePair<string, string>> parameters = new([
@@ -49,9 +49,9 @@ namespace Cod.Platform.Captcha.ReCaptcha
             {
                 parameters.Add(new KeyValuePair<string, string>("remoteip", clientIP));
             }
-            var payload = new FormUrlEncodedContent(parameters);
+            FormUrlEncodedContent payload = new(parameters);
 
-            using var response = await httpClient.PostAsync(recaptchaAPI, payload, cancellationToken);
+            using HttpResponseMessage response = await httpClient.PostAsync(recaptchaAPI, payload, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -59,15 +59,15 @@ namespace Cod.Platform.Captcha.ReCaptcha
                 return false;
             }
 
-            var respbody = await response.Content.ReadAsStringAsync(cancellationToken);
-            var result = Deserialize<GoogleReCaptchaResult>(respbody);
+            string respbody = await response.Content.ReadAsStringAsync(cancellationToken);
+            GoogleReCaptchaResult result = Deserialize<GoogleReCaptchaResult>(respbody);
             if (result == null)
             {
                 logger.LogError($"Error deserializing Google ReCaptcha response: {respbody} on request {requestID}.");
                 return false;
             }
 
-            var lowrisk = result.Success && result.Hostname.Equals(tenant, StringComparison.OrdinalIgnoreCase);
+            bool lowrisk = result.Success && result.Hostname.Equals(tenant, StringComparison.OrdinalIgnoreCase);
             if (throwsExceptionWhenFail && !lowrisk)
             {
                 logger?.LogWarning($"{clientIP} is considered high risk for request {requestID}");
@@ -77,6 +77,9 @@ namespace Cod.Platform.Captcha.ReCaptcha
             return lowrisk;
         }
 
-        private static T Deserialize<T>(string json) => System.Text.Json.JsonSerializer.Deserialize<T>(json, GoogleRechptchaSerializationOptions)!;
+        private static T Deserialize<T>(string json)
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<T>(json, GoogleRechptchaSerializationOptions)!;
+        }
     }
 }

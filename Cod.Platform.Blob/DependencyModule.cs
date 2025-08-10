@@ -48,9 +48,9 @@ namespace Cod.Platform.Blob
         {
             return services.AddTransient<IEntitlementDescriptor>(sp =>
             {
-                var role = resolveRole(sp);
-                var container = resolveContainerName(sp);
-                var fullyQualifiedDomainName = resolvefullyQualifiedDomainName(sp);
+                string role = resolveRole(sp);
+                string container = resolveContainerName(sp);
+                string fullyQualifiedDomainName = resolvefullyQualifiedDomainName(sp);
                 return new RoleBasedEntitlementDescriptor(role, permissions, fullyQualifiedDomainName, container);
             });
         }
@@ -64,24 +64,32 @@ namespace Cod.Platform.Blob
         {
             return services.AddTransient<IEntitlementDescriptor>(sp =>
             {
-                var role = resolveRole(sp);
-                var containerNamePrefix = resolveContainerNamePrefix(sp);
-                var fullyQualifiedDomainName = resolvefullyQualifiedDomainName(sp);
+                string role = resolveRole(sp);
+                IEnumerable<string> containerNamePrefix = resolveContainerNamePrefix(sp);
+                string fullyQualifiedDomainName = resolvefullyQualifiedDomainName(sp);
                 return new PersonalizedEntitlementDescriptor(role, permissions, fullyQualifiedDomainName, containerNamePrefix);
             });
         }
 
         public static IServiceCollection AddBlobResourceTokenSupport(this IServiceCollection services, IConfiguration identityConfiguration)
-            => services.AddBlobResourceTokenSupport(identityConfiguration.Bind);
+        {
+            return services.AddBlobResourceTokenSupport(identityConfiguration.Bind);
+        }
 
         public static IServiceCollection GrantBlobEntitlementTo(this IServiceCollection services, string role, FilePermissions permissions, string containerName, string fullyQualifiedDomainName)
-            => services.GrantBlobEntitlementTo(_ => role, permissions, _ => containerName, _ => fullyQualifiedDomainName);
+        {
+            return services.GrantBlobEntitlementTo(_ => role, permissions, _ => containerName, _ => fullyQualifiedDomainName);
+        }
 
         public static IServiceCollection GrantBlobPersonalizedEntitlementTo(this IServiceCollection services, string role, FilePermissions permissions, string containerNamePrefix, string fullyQualifiedDomainName)
-            => services.GrantBlobPersonalizedEntitlementTo(_ => role, permissions, _ => [containerNamePrefix], _ => fullyQualifiedDomainName);
+        {
+            return services.GrantBlobPersonalizedEntitlementTo(_ => role, permissions, _ => [containerNamePrefix], _ => fullyQualifiedDomainName);
+        }
 
         public static IServiceCollection GrantBlobPersonalizedEntitlementTo(this IServiceCollection services, string role, FilePermissions permissions, IEnumerable<string> containerNamePrefix, string fullyQualifiedDomainName)
-            => services.GrantBlobPersonalizedEntitlementTo(_ => role, permissions, _ => containerNamePrefix, _ => fullyQualifiedDomainName);
+        {
+            return services.GrantBlobPersonalizedEntitlementTo(_ => role, permissions, _ => containerNamePrefix, _ => fullyQualifiedDomainName);
+        }
 
         public static IServiceCollection GrantBlobPersonalizedEntitlementTo(
             this IServiceCollection services,
@@ -89,6 +97,8 @@ namespace Cod.Platform.Blob
             FilePermissions permissions,
             Func<IServiceProvider, string> resolveContainerNamePrefix,
             Func<IServiceProvider, string> resolvefullyQualifiedDomainName)
-            => services.GrantBlobPersonalizedEntitlementTo(resolveRole, permissions, sp => [resolveContainerNamePrefix(sp)], resolvefullyQualifiedDomainName);
+        {
+            return services.GrantBlobPersonalizedEntitlementTo(resolveRole, permissions, sp => [resolveContainerNamePrefix(sp)], resolvefullyQualifiedDomainName);
+        }
     }
 }

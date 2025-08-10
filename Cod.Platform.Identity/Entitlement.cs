@@ -6,7 +6,7 @@ namespace Cod.Platform.Identity
 {
 #pragma warning disable CS8618
     [method: SetsRequiredMembers]
-    internal class Entitlement() : ITrackable
+    internal sealed class Entitlement() : ITrackable
     {
         [EntityKey(EntityKeyKind.PartitionKey)]
         public required Guid Tenant { get; set; }
@@ -27,20 +27,20 @@ namespace Cod.Platform.Identity
         public IEnumerable<EntitlementDescription> GetEntitlements()
         {
             List<EntitlementDescription> result = [];
-            var list = Entitlements.Split(',', StringSplitOptions.RemoveEmptyEntries);
-            foreach (var item in list)
+            string[] list = Entitlements.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            foreach (string item in list)
             {
-                var parts = item.Split('@', StringSplitOptions.RemoveEmptyEntries);
+                string[] parts = item.Split('@', StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length == 2)
                 {
-                    var resource = parts[0];
+                    string resource = parts[0];
                     parts = parts[1].Split(':', StringSplitOptions.RemoveEmptyEntries);
                     if (parts.Length == 2)
                     {
-                        var type = parts[0];
-                        var permission = parts[1];
+                        string type = parts[0];
+                        string permission = parts[1];
 
-                        if (int.TryParse(type, out var resourceType))
+                        if (int.TryParse(type, out int resourceType))
                         {
                             result.Add(new EntitlementDescription
                             {
@@ -58,10 +58,10 @@ namespace Cod.Platform.Identity
 
         public void SetEntitlements(IEnumerable<EntitlementDescription> input)
         {
-            var result = new List<string>();
-            foreach (var item in input)
+            List<string> result = [];
+            foreach (EntitlementDescription item in input)
             {
-                var sb = new StringBuilder();
+                StringBuilder sb = new();
                 sb.Append(item.Resource);
                 sb.Append('@');
                 sb.Append((int)item.Type);
@@ -73,8 +73,15 @@ namespace Cod.Platform.Identity
             Entitlements = string.Join(",", result);
         }
 
-        public static string BuildPartitionKey(Guid tenant) => tenant.ToString();
-        public static string BuildRowKey(string role) => role.Trim();
+        public static string BuildPartitionKey(Guid tenant)
+        {
+            return tenant.ToString();
+        }
+
+        public static string BuildRowKey(string role)
+        {
+            return role.Trim();
+        }
     }
 #pragma warning restore CS8618
 }

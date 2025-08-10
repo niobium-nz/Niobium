@@ -8,8 +8,8 @@ namespace Cod.Platform.Analytics
 
         public async Task<AppInsightsQueryResult> QueryAsync(string query, DateTimeOffset start, DateTimeOffset end, bool isAzureChina = false)
         {
-            var appInsightsAPIAccessApplicationID = await configuration.Value.GetSettingAsStringAsync("APPINSIGHTS_APIACCESS_APPLICATION_ID");
-            var appInsightsAPIAccessApplicationKey = await configuration.Value.GetSettingAsStringAsync("APPINSIGHTS_APIACCESS_APPLICATION_KEY");
+            string? appInsightsAPIAccessApplicationID = await configuration.Value.GetSettingAsStringAsync("APPINSIGHTS_APIACCESS_APPLICATION_ID");
+            string? appInsightsAPIAccessApplicationKey = await configuration.Value.GetSettingAsStringAsync("APPINSIGHTS_APIACCESS_APPLICATION_KEY");
 
             using HttpClient httpclient = new(HttpHandler.GetHandler(), false);
             string endpoint = isAzureChina ? "https://api.applicationinsights.azure.cn" : "https://api.applicationinsights.io";

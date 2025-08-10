@@ -14,23 +14,23 @@ namespace Cod.Channel
         {
             existings ??= [];
 
-            foreach (var refreshment in refreshments)
+            foreach (TDomain refreshment in refreshments)
             {
                 TViewModel? changed = null;
-                var changes = existings.Where(e =>
+                IEnumerable<TViewModel> changes = existings.Where(e =>
                     e.PartitionKey == refreshment.PartitionKey
                     && e.RowKey == refreshment.RowKey);
-                var count = changes.Count();
+                int count = changes.Count();
                 if (count == 1)
                 {
                     changed = changes.Single();
                 }
                 else if (count > 1)
                 {
-                    foreach (var change in changes)
+                    foreach (TViewModel? change in changes)
                     {
-                        var existingETag = await change.GetHashAsync(cancellationToken);
-                        var newETag = await refreshment.GetHashAsync(cancellationToken);
+                        string? existingETag = await change.GetHashAsync(cancellationToken);
+                        string? newETag = await refreshment.GetHashAsync(cancellationToken);
                         if (existingETag == newETag)
                         {
                             changed = change;
@@ -44,20 +44,20 @@ namespace Cod.Channel
                     await changed.InitializeAsync(domain: refreshment, parent: parent, force: true, cancellationToken: cancellationToken);
                 }
 
-                var added = !existings.Any(e =>
+                bool added = !existings.Any(e =>
                     e.PartitionKey == refreshment.PartitionKey
                     && e.RowKey == refreshment.RowKey);
 
                 if (added)
                 {
-                    var vm = (TViewModel)(await createViewModel().InitializeAsync(domain: refreshment, parent: parent, force: false, cancellationToken: cancellationToken));
+                    TViewModel vm = (TViewModel)await createViewModel().InitializeAsync(domain: refreshment, parent: parent, force: false, cancellationToken: cancellationToken);
                     existings.Add(vm);
                 }
             }
 
-            for (var i = existings.Count - 1; i >= 0; i--)
+            for (int i = existings.Count - 1; i >= 0; i--)
             {
-                var removed = !refreshments.Any(e =>
+                bool removed = !refreshments.Any(e =>
                     e.PartitionKey == existings[i].PartitionKey
                     && e.RowKey == existings[i].RowKey);
 

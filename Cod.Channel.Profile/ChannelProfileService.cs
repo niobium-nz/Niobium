@@ -14,9 +14,9 @@ namespace Cod.Channel.Profile
         : GenericProfileService<T>(httpClientFactory, options, logger), IProfileService<T>
             where T : class, IProfile
     {
-        protected async override Task<HttpClient?> ConfigureHttpClientAsync(HttpClient httpClient, CancellationToken cancellationToken)
+        protected override async Task<HttpClient?> ConfigureHttpClientAsync(HttpClient httpClient, CancellationToken cancellationToken)
         {
-            var authenticated = await authenticator.GetAuthenticateStatus(cancellationToken);
+            bool authenticated = await authenticator.GetAuthenticateStatus(cancellationToken);
             if (!authenticated || authenticator.IDToken == null || string.IsNullOrWhiteSpace(authenticator.IDToken.EncodedToken))
             {
                 return null;

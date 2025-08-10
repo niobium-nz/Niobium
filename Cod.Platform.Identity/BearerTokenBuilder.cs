@@ -7,7 +7,7 @@ using System.Text;
 
 namespace Cod.Platform.Identity
 {
-    internal class BearerTokenBuilder(IOptions<IdentityServiceOptions> options) : ITokenBuilder
+    internal sealed class BearerTokenBuilder(IOptions<IdentityServiceOptions> options) : ITokenBuilder
     {
         public Task<string> BuildAsync(
             string mainIdentity,
@@ -26,7 +26,7 @@ namespace Cod.Platform.Identity
             {
                 foreach (KeyValuePair<string, string> entitlement in entitlements)
                 {
-                    var key = entitlement.Key;
+                    string key = entitlement.Key;
                     if (!key.StartsWith(Constants.ClaimKeyPrefix, StringComparison.Ordinal))
                     {
                         key = $"{Constants.ClaimKeyPrefix}{key}";
@@ -37,7 +37,7 @@ namespace Cod.Platform.Identity
 
             if (roles != null)
             {
-                foreach (var role in roles)
+                foreach (string role in roles)
                 {
                     claims.Add(ClaimTypes.Role, role);
                 }
@@ -55,7 +55,7 @@ namespace Cod.Platform.Identity
                     throw new InvalidOperationException($"Either {nameof(options.Value.AccessTokenSecret)} or {nameof(options.Value.IDTokenPrivateKey)} must be provided.");
                 }
 
-                var rsa = RSA.Create();
+                RSA rsa = RSA.Create();
                 if (string.IsNullOrEmpty(options.Value.IDTokenPrivateKeyPasscode))
                 {
                     rsa.ImportFromPem(options.Value.IDTokenPrivateKey);
@@ -76,7 +76,7 @@ namespace Cod.Platform.Identity
                 SigningCredentials = creds,
             };
 
-            var result = new JsonWebTokenHandler().CreateToken(token);
+            string result = new JsonWebTokenHandler().CreateToken(token);
             return Task.FromResult(result);
         }
     }

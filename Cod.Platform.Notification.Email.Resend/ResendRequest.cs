@@ -1,6 +1,6 @@
 ﻿namespace Cod.Platform.Notification.Email.Resend
 {
-    internal class ResendRequest
+    internal sealed class ResendRequest
     {
         public required string From { get; set; }
 

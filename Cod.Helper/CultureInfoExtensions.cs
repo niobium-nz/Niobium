@@ -12,7 +12,7 @@ namespace Cod
             try
             {
                 CultureInfo[] cultures = CultureInfo.GetCultures(CultureTypes.AllCultures & ~CultureTypes.NeutralCultures);
-                var c = cultures.FirstOrDefault(c => c.Name.Equals(cultureCode, StringComparison.OrdinalIgnoreCase));
+                CultureInfo? c = cultures.FirstOrDefault(c => c.Name.Equals(cultureCode, StringComparison.OrdinalIgnoreCase));
                 if (c != null)
                 {
                     culture = c;

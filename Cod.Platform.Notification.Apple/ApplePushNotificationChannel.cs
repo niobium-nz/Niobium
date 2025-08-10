@@ -1,4 +1,3 @@
-using Cod.Platform.Notification;
 using Jose;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
@@ -14,14 +13,12 @@ namespace Cod.Platform.Notification.Apple
 
         protected virtual string ApplePushNotificationHost => "api.sandbox.push.apple.com";
 
-        public async override Task<OperationResult> SendAsync(string brand, Guid user, NotificationContext context, int templateID, IReadOnlyDictionary<string, object> parameters, int level = 0)
+        public override async Task<OperationResult> SendAsync(string brand, Guid user, NotificationContext context, int templateID, IReadOnlyDictionary<string, object> parameters, int level = 0)
         {
-            if (level != (int)OpenIDKind.iOS
-                || context != null && context.Kind != (int)OpenIDKind.iOS)
-            {
-                return new OperationResult(Cod.InternalError.NotAcceptable);
-            }
-            return await base.SendAsync(brand, user, context!, templateID, parameters, level);
+            return level != (int)OpenIDKind.iOS
+                || (context != null && context.Kind != (int)OpenIDKind.iOS)
+                ? new OperationResult(Cod.InternalError.NotAcceptable)
+                : await base.SendAsync(brand, user, context!, templateID, parameters, level);
         }
 
         protected override async Task<OperationResult> SendPushAsync(
@@ -30,26 +27,26 @@ namespace Cod.Platform.Notification.Apple
             int templateID,
             IReadOnlyDictionary<string, object> parameters)
         {
-            var success = true;
-            foreach (var target in targets)
+            bool success = true;
+            foreach (NotificationContext target in targets)
             {
-                var messages = await GetMessagesAsync(brand, templateID, target, parameters);
+                IEnumerable<ApplePushNotification> messages = await GetMessagesAsync(brand, templateID, target, parameters);
                 if (messages == null || !messages.Any())
                 {
                     continue;
                 }
 
-                var token = await cacheStore.Value.GetAsync<string>(target.App, AccessTokenCacheKey);
+                string? token = await cacheStore.Value.GetAsync<string>(target.App, AccessTokenCacheKey);
                 if (string.IsNullOrWhiteSpace(token))
                 {
                     token = await IssueTokenAsync(target);
                     await cacheStore.Value.SetAsync(target.App, AccessTokenCacheKey, token, false, DateTimeOffset.UtcNow.AddMinutes(30));
                 }
 
-                using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
-                foreach (var message in messages)
+                using HttpClient httpclient = new(HttpHandler.GetHandler(), false);
+                foreach (ApplePushNotification message in messages)
                 {
-                    using var request = new HttpRequestMessage(HttpMethod.Post, $"https://{ApplePushNotificationHost}/3/device/{target.Identity}")
+                    using HttpRequestMessage request = new(HttpMethod.Post, $"https://{ApplePushNotificationHost}/3/device/{target.Identity}")
                     {
                         Version = new Version(2, 0)
                     };
@@ -59,11 +56,11 @@ namespace Cod.Platform.Notification.Apple
                     request.Headers.Add("apns-topic", message.Topic);
                     request.Headers.Authorization = new AuthenticationHeaderValue(AuthenticationScheme.BearerLoginScheme, token);
 
-                    var sb = new StringBuilder();
+                    StringBuilder sb = new();
                     if (message.Background)
                     {
                         sb.Append("{\"aps\":{\"content-available\":1},");
-                        var json = JsonSerializer.SerializeObject(message.Message, JsonSerializationFormat.CamelCase);
+                        string json = JsonSerializer.SerializeObject(message.Message, JsonSerializationFormat.CamelCase);
                         sb.Append(json[1..]);
                     }
                     else
@@ -73,27 +70,20 @@ namespace Cod.Platform.Notification.Apple
                         sb.Append("\"}}");
                     }
 
-                    using var content = new StringContent(sb.ToString(), Encoding.UTF8, "application/json");
+                    using StringContent content = new(sb.ToString(), Encoding.UTF8, "application/json");
                     request.Content = content;
-                    using var resp = await httpclient.SendAsync(request);
-                    var status = (int)resp.StatusCode;
-                    if (status < 200 || status >= 400)
+                    using HttpResponseMessage resp = await httpclient.SendAsync(request);
+                    int status = (int)resp.StatusCode;
+                    if (status is < 200 or >= 400)
                     {
                         success = false;
-                        var error = await resp.Content.ReadAsStringAsync();
+                        string error = await resp.Content.ReadAsStringAsync();
                         Logger.Instance?.LogError($"An error occurred while making request to APN with status code {status}: {error}");
                     }
                 }
             }
 
-            if (success)
-            {
-                return OperationResult.Success;
-            }
-            else
-            {
-                return OperationResult.InternalServerError;
-            }
+            return success ? OperationResult.Success : OperationResult.InternalServerError;
         }
 
         protected abstract Task<ApplePushCredential> GetCredentialAsync(NotificationContext context);
@@ -106,22 +96,22 @@ namespace Cod.Platform.Notification.Apple
 
         private async Task<string> IssueTokenAsync(NotificationContext context)
         {
-            var cred = await GetCredentialAsync(context);
-            var iat = DateTimeOffset.UtcNow.AddMinutes(-1).ToUnixTimeSeconds();
-            var exp = DateTimeOffset.UtcNow.AddMinutes(30).ToUnixTimeSeconds();
-            var payload = new Dictionary<string, object>()
+            ApplePushCredential cred = await GetCredentialAsync(context);
+            long iat = DateTimeOffset.UtcNow.AddMinutes(-1).ToUnixTimeSeconds();
+            long exp = DateTimeOffset.UtcNow.AddMinutes(30).ToUnixTimeSeconds();
+            Dictionary<string, object> payload = new()
                 {
                     { "iat", iat },
                     { "exp", exp },
                     { "iss", cred.TeamID },
                 };
-            var extraHeader = new Dictionary<string, object>()
+            Dictionary<string, object> extraHeader = new()
                 {
                     { "alg", "ES256" },
                     { "typ", "JWT" },
                     { "kid", cred.KeyID },
                 };
-            var privateKey = CngKey.Import(Convert.FromBase64String(cred.Key), CngKeyBlobFormat.Pkcs8PrivateBlob);
+            CngKey privateKey = CngKey.Import(Convert.FromBase64String(cred.Key), CngKeyBlobFormat.Pkcs8PrivateBlob);
             return JWT.Encode(payload, privateKey, JwsAlgorithm.ES256, extraHeader);
         }
     }

@@ -6,8 +6,8 @@
         public const string BusinessScopePlaceholder = "{{BUSINESS_SCOPE}}";
         public const string CustomScopePlaceholder = "{{CUSTOM_SCOPE}}";
 
-        public static readonly char[] ScopeSplitor = new[] { ':' };
-        public static readonly char[] ValueSplitor = new[] { ',' };
+        public static readonly char[] ScopeSplitor = [':'];
+        public static readonly char[] ValueSplitor = [','];
         public const string CategoryNamingPrefix = "COD-";
 
         public const string Account = CategoryNamingPrefix + "ACCOUNT";

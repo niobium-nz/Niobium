@@ -40,7 +40,7 @@ namespace Cod
             ];
         }
 
-        public static string UnknownErrorMessage => TryGet(Unknown, out var val) ? val : throw new NotImplementedException();
+        public static string UnknownErrorMessage => TryGet(Unknown, out string? val) ? val : throw new NotImplementedException();
 
         public static void Register(IErrorRetriever retriever)
         {
@@ -66,7 +66,7 @@ namespace Cod
 
         public static string Get(int code)
         {
-            return TryGet(code, out var val) ? val : throw new KeyNotFoundException();
+            return TryGet(code, out string? val) ? val : throw new KeyNotFoundException();
         }
     }
 }

@@ -2,7 +2,7 @@ using System.Security.Claims;
 
 namespace Cod.Platform.Locking
 {
-    internal class ImpedimentControl : IResourceControl
+    internal sealed class ImpedimentControl : IResourceControl
     {
         public bool Grantable(ResourceType type, string resource)
         {

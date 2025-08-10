@@ -10,7 +10,7 @@ namespace Cod.Platform.Finance
         Lazy<IQueryableRepository<Accounting>> accountingRepo,
         Lazy<IEnumerable<IAccountingAuditor>> auditors,
         Lazy<ICacheStore> cacheStore,
-        ILogger logger) 
+        ILogger logger)
         : GenericDomain<T>(repo, eventHandlers), IAccountable
         where T : class
     {
@@ -165,7 +165,7 @@ namespace Cod.Platform.Finance
         {
             if (Tenant != null)
             {
-                foreach (var transaction in transactions)
+                foreach (Transaction transaction in transactions)
                 {
                     transaction.Tenant = Tenant;
                 }
@@ -187,14 +187,14 @@ namespace Cod.Platform.Finance
         public async Task<Transaction?> GetTransactionAsync(DateTimeOffset id)
         {
             string target = AccountingPrincipal;
-            var transaction = await transactionRepo.Value.RetrieveAsync(target, Transaction.BuildRowKey(id));
+            Transaction? transaction = await transactionRepo.Value.RetrieveAsync(target, Transaction.BuildRowKey(id));
             return transaction;
         }
 
         protected async Task InitializeBalanceAsync(CancellationToken cancellationToken = default)
         {
             //REMARK (5he11) 当日的最后一刻转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
-            var time = new DateTimeOffset(DateTimeOffset.UtcNow.UtcDateTime.Date.ToUniversalTime()).AddMilliseconds(-1);
+            DateTimeOffset time = new DateTimeOffset(DateTimeOffset.UtcNow.UtcDateTime.Date.ToUniversalTime()).AddMilliseconds(-1);
             await accountingRepo.Value.CreateAsync(new Accounting
             {
                 PartitionKey = Accounting.BuildPartitionKey(AccountingPrincipal),
@@ -206,7 +206,9 @@ namespace Cod.Platform.Finance
         }
 
         public async Task<AccountBalance> GetBalanceAsync(CancellationToken cancellationToken = default)
-            => await GetBalanceAsync(DateTimeOffset.UtcNow, cancellationToken: cancellationToken);
+        {
+            return await GetBalanceAsync(DateTimeOffset.UtcNow, cancellationToken: cancellationToken);
+        }
 
         public async Task<AccountBalance> GetBalanceAsync(DateTimeOffset input, CancellationToken cancellationToken = default)
         {
@@ -229,7 +231,7 @@ namespace Cod.Platform.Finance
 
             long balance;
             string principal = AccountingPrincipal;
-            var accounting = await accountingRepo.Value.RetrieveAsync(
+            Accounting? accounting = await accountingRepo.Value.RetrieveAsync(
                 Accounting.BuildPartitionKey(principal),
                 Accounting.BuildRowKey(lastAccountDate),
                 cancellationToken: cancellationToken);
@@ -264,7 +266,7 @@ namespace Cod.Platform.Finance
 
         protected async Task InitializeDeltaAsync(CancellationToken cancellationToken = default)
         {
-            var time = new DateTimeOffset(DateTimeOffset.UtcNow.UtcDateTime.Date.ToUniversalTime());
+            DateTimeOffset time = new(DateTimeOffset.UtcNow.UtcDateTime.Date.ToUniversalTime());
             string pk = $"{DeltaKey}-{time.ToSixDigitsDate()}";
             string rk = AccountingPrincipal;
             await cacheStore.Value.SetAsync(pk, rk, 0, false, cancellationToken: cancellationToken);

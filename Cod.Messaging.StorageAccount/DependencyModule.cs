@@ -43,7 +43,7 @@ namespace Cod.Messaging.StorageAccount
                 s.AddAzureClients(clientBuilder =>
                 {
                     IAzureClientBuilder<QueueServiceClient, QueueClientOptions> queueClientBuilder;
-                    if (Uri.TryCreate(options.ServiceEndpoint, UriKind.Absolute, out var endpointUri))
+                    if (Uri.TryCreate(options.ServiceEndpoint, UriKind.Absolute, out Uri? endpointUri))
                     {
                         queueClientBuilder = clientBuilder.AddQueueServiceClient(endpointUri);
                     }

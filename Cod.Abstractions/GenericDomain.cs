@@ -16,7 +16,7 @@
         {
             if (etag == null)
             {
-                var entity = await GetEntityAsync(cancellationToken);
+                T? entity = await GetEntityAsync(cancellationToken);
                 if (entity != null)
                 {
                     etag = EntityMappingHelper.GetField<string>(entity, EntityKeyKind.ETag);
@@ -75,7 +75,7 @@
 
         protected async Task SaveAsync(bool force = false, CancellationToken cancellationToken = default)
         {
-            var input = await GetEntityAsync(cancellationToken);
+            T? input = await GetEntityAsync(cancellationToken);
             if (input != null)
             {
                 await SaveAsync(new[] { input }, force, cancellationToken: cancellationToken);
@@ -93,7 +93,7 @@
 
             if (force)
             {
-                var createdOrReplaced = await Repository.CreateAsync(model, replaceIfExist: true, cancellationToken: cancellationToken);
+                IEnumerable<T> createdOrReplaced = await Repository.CreateAsync(model, replaceIfExist: true, cancellationToken: cancellationToken);
                 results.AddRange(createdOrReplaced);
                 events.AddRange(createdOrReplaced.Select(m => new Func<EntityChangedEventArgs<T>>(() => new EntityChangedEventArgs<T>(EntityChangeType.Created | EntityChangeType.Updated, m))));
             }
@@ -104,15 +104,15 @@
                 {
                     if (group.Key)
                     {
-                        var created = await Repository.CreateAsync(group, cancellationToken: cancellationToken);
+                        IEnumerable<T> created = await Repository.CreateAsync(group, cancellationToken: cancellationToken);
                         results.AddRange(created);
                         events.AddRange(created.Select(m => new Func<EntityChangedEventArgs<T>>(() => new EntityChangedEventArgs<T>(EntityChangeType.Created, m))));
                     }
                     else
                     {
-                        var updated = await Repository.UpdateAsync(group, cancellationToken: cancellationToken);
+                        IEnumerable<T> updated = await Repository.UpdateAsync(group, cancellationToken: cancellationToken);
                         results.AddRange(updated);
-                        foreach (var u in updated)
+                        foreach (T u in updated)
                         {
                             events.Add(new Func<EntityChangedEventArgs<T>>(() =>
                             {
@@ -134,7 +134,7 @@
                 }
             }
 
-            foreach (var changedEvent in events)
+            foreach (Func<EntityChangedEventArgs<T>> changedEvent in events)
             {
                 await OnEvent(changedEvent, cancellationToken);
             }
@@ -143,9 +143,13 @@
         }
 
         protected async Task OnEvent<TEventArgs>(TEventArgs e, CancellationToken cancellationToken = default) where TEventArgs : class
-            => await EventHandlers.InvokeAsync(e, cancellationToken);
+        {
+            await EventHandlers.InvokeAsync(e, cancellationToken);
+        }
 
         protected async Task OnEvent<TEventArgs>(Func<TEventArgs> getEventArgs, CancellationToken cancellationToken = default) where TEventArgs : class
-            => await EventHandlers.InvokeAsync(getEventArgs, cancellationToken);
+        {
+            await EventHandlers.InvokeAsync(getEventArgs, cancellationToken);
+        }
     }
 }

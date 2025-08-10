@@ -29,7 +29,7 @@ namespace Cod.Database.StorageTable
         {
             services.AddSingleton<IRepository<T>>(sp =>
             {
-                var innerRepository = sp.GetRequiredService<CloudTableRepository<T>>();
+                CloudTableRepository<T> innerRepository = sp.GetRequiredService<CloudTableRepository<T>>();
                 return new MemoryCachedRepository<T>(innerRepository);
             });
             return services;

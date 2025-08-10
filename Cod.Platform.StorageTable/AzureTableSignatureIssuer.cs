@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 
 namespace Cod.Platform.StorageTable
 {
-    internal class AzureTableSignatureIssuer(IOptions<StorageTableOptions> options) : ISignatureIssuer
+    internal sealed class AzureTableSignatureIssuer(IOptions<StorageTableOptions> options) : ISignatureIssuer
     {
         public bool CanIssue(ResourceType storageType, StorageControl control)
         {
@@ -51,13 +51,16 @@ namespace Cod.Platform.StorageTable
                 RowKeyStart = control.StartRowKey,
                 RowKeyEnd = control.EndRowKey,
             };
-            var accountName = ParseAccountName(options.Value.FullyQualifiedDomainName!);
-            var cred = new TableSharedKeyCredential(accountName, options.Value.Key);
-            var sas = builder.ToSasQueryParameters(cred);
+            string accountName = ParseAccountName(options.Value.FullyQualifiedDomainName!);
+            TableSharedKeyCredential cred = new(accountName, options.Value.Key);
+            TableSasQueryParameters sas = builder.ToSasQueryParameters(cred);
 
             return Task.FromResult((sas.ToString(), expires));
         }
 
-        private static string ParseAccountName(string fqdn) => fqdn.Split('.').First();
+        private static string ParseAccountName(string fqdn)
+        {
+            return fqdn.Split('.').First();
+        }
     }
 }

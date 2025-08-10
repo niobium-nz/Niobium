@@ -4,15 +4,18 @@ using System.Security.Claims;
 
 namespace Cod.Messaging.ServiceBus
 {
-    internal class DefaultServiceBusQueueControl(IOptions<ServiceBusOptions> options) : IResourceControl
+    internal sealed class DefaultServiceBusQueueControl(IOptions<ServiceBusOptions> options) : IResourceControl
     {
-        public bool Grantable(ResourceType type, string resource) => type == ResourceType.AzureServiceBus && resource == options.Value.FullyQualifiedNamespace;
+        public bool Grantable(ResourceType type, string resource)
+        {
+            return type == ResourceType.AzureServiceBus && resource == options.Value.FullyQualifiedNamespace;
+        }
 
         public Task<StorageControl?> GrantAsync(ClaimsPrincipal principal, ResourceType type, string resource, string? partition, string? row, CancellationToken cancellationToken = default)
         {
             StorageControl? result = null;
-            var permissions = principal.Claims.ToResourcePermissions();
-            var entitlements = permissions
+            IEnumerable<ResourcePermission> permissions = principal.Claims.ToResourcePermissions();
+            IEnumerable<string> entitlements = permissions
                 .Where(p => p.Type == ResourceType.AzureServiceBus
                     && p.Resource == resource
                     && (partition == p.Partition || (partition != null && p.Partition != null && partition.StartsWith(p.Partition))))
@@ -21,7 +24,7 @@ namespace Cod.Messaging.ServiceBus
             if (entitlements != null && entitlements.Any())
             {
                 MessagingPermissions permisson = MessagingPermissions.None;
-                foreach (var entitlement in entitlements)
+                foreach (string? entitlement in entitlements)
                 {
                     if (Enum.TryParse(entitlement, true, out MessagingPermissions p))
                     {

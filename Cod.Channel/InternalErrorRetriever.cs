@@ -2,8 +2,11 @@
 
 namespace Cod.Channel
 {
-    internal class InternalErrorRetriever : IErrorRetriever
+    internal sealed class InternalErrorRetriever : IErrorRetriever
     {
-        public bool TryGet(string key, [NotNullWhen(true)] out string? value) => R.TryGet(key, out value);
+        public bool TryGet(string key, [NotNullWhen(true)] out string? value)
+        {
+            return R.TryGet(key, out value);
+        }
     }
 }

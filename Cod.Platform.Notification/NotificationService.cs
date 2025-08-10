@@ -1,14 +1,8 @@
 namespace Cod.Platform.Notification
 {
-    internal class NotificationService : INotificationService
+    internal sealed class NotificationService(Lazy<IEnumerable<INotificationChannel>> channels) : INotificationService
     {
         private static readonly IReadOnlyDictionary<string, object> EmptyParameters = new Dictionary<string, object>();
-        private readonly Lazy<IEnumerable<INotificationChannel>> channels;
-
-        public NotificationService(Lazy<IEnumerable<INotificationChannel>> channels)
-        {
-            this.channels = channels;
-        }
 
         public async Task<OperationResult<int>> SendAsync(
             string brand,
@@ -55,7 +49,7 @@ namespace Cod.Platform.Notification
             return await SendAsync(brand, user, context, template, parameters, ++level);
         }
 
-        protected virtual Task PostSendAsync(OperationResult result, string brand, Guid user, NotificationContext context, int template, IReadOnlyDictionary<string, object> parameters, int level)
+        private static Task PostSendAsync(OperationResult result, string brand, Guid user, NotificationContext context, int template, IReadOnlyDictionary<string, object> parameters, int level)
         {
             return Task.CompletedTask;
         }

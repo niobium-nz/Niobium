@@ -2,7 +2,7 @@ using System.Security.Claims;
 
 namespace Cod.Platform.Identity
 {
-    internal class SignatureService(
+    internal sealed class SignatureService(
         Lazy<IEnumerable<ISignatureIssuer>> issuers,
         Lazy<IEnumerable<IResourceControl>> controls)
         : ISignatureService

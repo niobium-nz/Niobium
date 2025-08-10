@@ -1,9 +1,9 @@
 ﻿namespace Cod.Channel
 {
     public class DisplayAction(
-        string? displayName, 
-        Func<object, Task> action, 
-        int? order = 0, 
+        string? displayName,
+        Func<object, Task> action,
+        int? order = 0,
         string? description = null)
     {
         public string? DisplayName { get; set; } = displayName;

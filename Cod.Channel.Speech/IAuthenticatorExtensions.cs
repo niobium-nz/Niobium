@@ -6,11 +6,11 @@ namespace Cod.Channel.Speech
     {
         public static async Task<(string, string)> GetSpeechSASAndRegionAsync(this IAuthenticator authenticator, CancellationToken cancellationToken = default)
         {
-            var permissions = await authenticator.GetResourcePermissionsAsync(cancellationToken);
-            var resource = permissions.SingleOrDefault(p => p.Type == ResourceType.AzureSpeechService) ?? throw new ApplicationException(InternalError.Forbidden);
+            IEnumerable<ResourcePermission> permissions = await authenticator.GetResourcePermissionsAsync(cancellationToken);
+            ResourcePermission resource = permissions.SingleOrDefault(p => p.Type == ResourceType.AzureSpeechService) ?? throw new ApplicationException(InternalError.Forbidden);
 
-            var region = ParseAzureSpeechServiceRegion(resource.Resource);
-            var token = await authenticator.RetrieveResourceTokenAsync(ResourceType.AzureSpeechService, resource.Resource, cancellationToken: cancellationToken);
+            string region = ParseAzureSpeechServiceRegion(resource.Resource);
+            string token = await authenticator.RetrieveResourceTokenAsync(ResourceType.AzureSpeechService, resource.Resource, cancellationToken: cancellationToken);
             return (token, region);
         }
 
@@ -21,15 +21,10 @@ namespace Cod.Channel.Speech
                 throw new ArgumentNullException(nameof(azureSpeechServiceEndpoint));
             }
 
-            var parts = azureSpeechServiceEndpoint.Split('.', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length > 0)
-            {
-                return parts[0];
-            }
-            else
-            {
-                throw new ArgumentException($"Invalid {nameof(azureSpeechServiceEndpoint)} found: {azureSpeechServiceEndpoint}");
-            }
+            string[] parts = azureSpeechServiceEndpoint.Split('.', StringSplitOptions.RemoveEmptyEntries);
+            return parts.Length > 0
+                ? parts[0]
+                : throw new ArgumentException($"Invalid {nameof(azureSpeechServiceEndpoint)} found: {azureSpeechServiceEndpoint}");
         }
     }
 }

@@ -4,28 +4,28 @@ using System.Security.Claims;
 
 namespace Cod.Channel.Identity.Blazor
 {
-    class AuthenticationStateAdaptor(IAuthenticator authenticator)
+    internal sealed class AuthenticationStateAdaptor(IAuthenticator authenticator)
         : AuthenticationStateProvider, IDomainEventHandler<IAuthenticator, AuthenticationUpdatedEvent>
     {
-        private readonly static ClaimsIdentity EmptyClaim = new();
-        private readonly static ClaimsPrincipal Unauthenticated = new(EmptyClaim);
+        private static readonly ClaimsIdentity EmptyClaim = new();
+        private static readonly ClaimsPrincipal Unauthenticated = new(EmptyClaim);
 
-        public async override Task<AuthenticationState> GetAuthenticationStateAsync()
+        public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            var claims = await authenticator.GetClaimsAsync();
+            IEnumerable<Claim>? claims = await authenticator.GetClaimsAsync();
             if (claims == null)
             {
                 return new AuthenticationState(Unauthenticated);
             }
 
-            var identity = new ClaimsIdentity(claims, nameof(IAuthenticator));
-            var principal = new ClaimsPrincipal(identity);
+            ClaimsIdentity identity = new(claims, nameof(IAuthenticator));
+            ClaimsPrincipal principal = new(identity);
             return new AuthenticationState(principal);
         }
 
         public async Task HandleAsync(AuthenticationUpdatedEvent e, CancellationToken cancellationToken = default)
         {
-            var state = await GetAuthenticationStateAsync();
+            AuthenticationState state = await GetAuthenticationStateAsync();
             NotifyAuthenticationStateChanged(Task.FromResult(state));
         }
 

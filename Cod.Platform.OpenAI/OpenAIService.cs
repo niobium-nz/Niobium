@@ -6,9 +6,9 @@ using System.Text.Json;
 namespace Cod.Platform.OpenAI
 {
     internal sealed class OpenAIService(
-        IOptions<OpenAIServiceOptions> options, 
-        HttpClient httpClient, 
-        ILogger<OpenAIService> logger) 
+        IOptions<OpenAIServiceOptions> options,
+        HttpClient httpClient,
+        ILogger<OpenAIService> logger)
         : IOpenAIService
     {
         private static readonly JsonSerializerOptions SERIALIZATION_OPTIONS = new(JsonSerializerDefaults.Web);
@@ -16,7 +16,7 @@ namespace Cod.Platform.OpenAI
 
         public async Task<OpenAIConversationAnalysisResult?> AnalyzeSOAPAsync(string id, int kind, string conversation, string? outputLanguage, CancellationToken cancellationToken = default)
         {
-            if (!options.Value.SystemPrompts.TryGetValue(kind, out var systemPrompt))
+            if (!options.Value.SystemPrompts.TryGetValue(kind, out string? systemPrompt))
             {
                 throw new ApplicationException(InternalError.InternalServerError);
             }
@@ -26,9 +26,9 @@ namespace Cod.Platform.OpenAI
                 systemPrompt = $"{systemPrompt} The output language should in {outputLanguage}.";
             }
 
-            var userInput = new List<object>();
-            var lines = conversation.Split('\n');
-            foreach (var line in lines)
+            List<object> userInput = [];
+            string[] lines = conversation.Split('\n');
+            foreach (string line in lines)
             {
                 userInput.Add(new
                 {
@@ -61,9 +61,9 @@ namespace Cod.Platform.OpenAI
                 stream = false
             };
 
-            var json = Serialize(payload);
+            string json = Serialize(payload);
 
-            using var response = await httpClient.PostAsync("chat/completions?api-version=2024-02-15-preview", new StringContent(json, Encoding.UTF8, JSON_CONTENT_TYPE), cancellationToken);
+            using HttpResponseMessage response = await httpClient.PostAsync("chat/completions?api-version=2024-02-15-preview", new StringContent(json, Encoding.UTF8, JSON_CONTENT_TYPE), cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -71,8 +71,8 @@ namespace Cod.Platform.OpenAI
                 return null;
             }
 
-            var respbody = await response.Content.ReadAsStringAsync(cancellationToken);
-            var result = Deserialize<OpenAIConversationAnalysisResult>(respbody);
+            string respbody = await response.Content.ReadAsStringAsync(cancellationToken);
+            OpenAIConversationAnalysisResult result = Deserialize<OpenAIConversationAnalysisResult>(respbody);
             if (result == null)
             {
                 logger.LogError($"Error deserializing OpenAI response: {respbody} on message {id}.");
@@ -82,7 +82,14 @@ namespace Cod.Platform.OpenAI
             return result;
         }
 
-        private static string Serialize(object obj) => System.Text.Json.JsonSerializer.Serialize(obj, SERIALIZATION_OPTIONS);
-        private static T Deserialize<T>(string json) => System.Text.Json.JsonSerializer.Deserialize<T>(json, SERIALIZATION_OPTIONS)!;
+        private static string Serialize(object obj)
+        {
+            return System.Text.Json.JsonSerializer.Serialize(obj, SERIALIZATION_OPTIONS);
+        }
+
+        private static T Deserialize<T>(string json)
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<T>(json, SERIALIZATION_OPTIONS)!;
+        }
     }
 }

@@ -23,7 +23,7 @@ namespace Cod.Table.StorageAccount
         {
             try
             {
-                var table = await GetTableAsync(DatabasePermissions.Query, partitionKey, cancellationToken);
+                TableClient table = await GetTableAsync(DatabasePermissions.Query, partitionKey, cancellationToken);
                 NullableResponse<EntityDictionary> response = await table.GetEntityIfExistsAsync<EntityDictionary>(partitionKey, rowKey, select: minimumSelects, cancellationToken: cancellationToken);
                 return response.HasValue;
             }
@@ -39,17 +39,10 @@ namespace Cod.Table.StorageAccount
         {
             try
             {
-                var table = await GetTableAsync(DatabasePermissions.Query, partitionKey, cancellationToken);
+                TableClient table = await GetTableAsync(DatabasePermissions.Query, partitionKey, cancellationToken);
                 NullableResponse<EntityDictionary> response = await table.GetEntityIfExistsAsync<EntityDictionary>(partitionKey, rowKey, select: fields, cancellationToken: cancellationToken);
 
-                if (response.HasValue)
-                {
-                    return response.Value!.FromTableEntity<T>();
-                }
-                else
-                {
-                    return default;
-                }
+                return response.HasValue ? response.Value!.FromTableEntity<T>() : default;
             }
             catch (RequestFailedException e)
             {
@@ -84,7 +77,7 @@ namespace Cod.Table.StorageAccount
                 tableEntities.Add(DBEntityHelper.ToTableEntity(entity));
             }
 
-            var table = await GetTableAsync(DatabasePermissions.Add, cancellationToken: cancellationToken);
+            TableClient table = await GetTableAsync(DatabasePermissions.Add, cancellationToken: cancellationToken);
             IEnumerable<EntityDictionary> result = replaceIfExist
                 ? await ExecuteBatchWithRetryAsync(
                     DatabasePermissions.Add,
@@ -111,7 +104,7 @@ namespace Cod.Table.StorageAccount
             }
 
             IEnumerable<EntityDictionary> tableEntities = ToTableEntities(entities, preconditionCheck);
-            var table = await GetTableAsync(DatabasePermissions.Update, cancellationToken: cancellationToken);
+            TableClient table = await GetTableAsync(DatabasePermissions.Update, cancellationToken: cancellationToken);
 
             IEnumerable<EntityDictionary> result = await ExecuteBatchWithRetryAsync(
                 DatabasePermissions.Update,
@@ -124,7 +117,8 @@ namespace Cod.Table.StorageAccount
                         mode: mergeIfExists ? TableUpdateMode.Merge : TableUpdateMode.Replace,
                         cancellationToken: cancellationToken);
                 },
-                entity => {
+                entity =>
+                {
                     return new TableTransactionAction(
                         mergeIfExists ? TableTransactionActionType.UpdateMerge : TableTransactionActionType.UpdateReplace,
                         entity,
@@ -144,7 +138,7 @@ namespace Cod.Table.StorageAccount
             }
 
             IEnumerable<EntityDictionary> tableEntities = ToTableEntities(entities, preconditionCheck);
-            var table = await GetTableAsync(DatabasePermissions.Delete, cancellationToken: cancellationToken);
+            TableClient table = await GetTableAsync(DatabasePermissions.Delete, cancellationToken: cancellationToken);
 
             await ExecuteBatchWithRetryAsync(
                 DatabasePermissions.Delete,
@@ -185,8 +179,8 @@ namespace Cod.Table.StorageAccount
         protected virtual async Task<EntityBag<T>> QueryAsync(string? filter, int limit, IList<string>? fields = null, string? continuationToken = null, CancellationToken cancellationToken = default)
         {
             int? maxPerPage = FigureMaxQueryPageSize(limit);
-            var partition = ParsePartitionKey(filter);
-            var table = await GetTableAsync(DatabasePermissions.Query, partition, cancellationToken: cancellationToken);
+            string? partition = ParsePartitionKey(filter);
+            TableClient table = await GetTableAsync(DatabasePermissions.Query, partition, cancellationToken: cancellationToken);
             IAsyncEnumerable<Page<EntityDictionary>> pages = table.QueryAsync<EntityDictionary>(
                     filter: filter,
                     maxPerPage: maxPerPage,
@@ -207,17 +201,17 @@ namespace Cod.Table.StorageAccount
 
         protected virtual async IAsyncEnumerable<T> QueryAsync(string? filter, IList<string>? fields = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var partition = ParsePartitionKey(filter);
-            var table = await GetTableAsync(DatabasePermissions.Query, partition, cancellationToken: cancellationToken);
+            string? partition = ParsePartitionKey(filter);
+            TableClient table = await GetTableAsync(DatabasePermissions.Query, partition, cancellationToken: cancellationToken);
             AsyncPageable<EntityDictionary> result = table.QueryAsync<EntityDictionary>(
                 filter: filter,
                 select: fields,
                 cancellationToken: cancellationToken);
-            await foreach (var item in result)
+            await foreach (EntityDictionary item in result)
             {
                 if (item != null)
                 {
-                    var resultItem = item.FromTableEntity<T>();
+                    T resultItem = item.FromTableEntity<T>();
                     if (resultItem != null)
                     {
                         yield return resultItem;
@@ -320,7 +314,7 @@ namespace Cod.Table.StorageAccount
                 }
             }
 
-            var table = await GetTableAsync(permission, cancellationToken: cancellationToken);
+            TableClient table = await GetTableAsync(permission, cancellationToken: cancellationToken);
             List<Response> result = [];
             foreach (List<TableTransactionAction> batchOperations in batchOperationGroups)
             {
@@ -353,7 +347,7 @@ namespace Cod.Table.StorageAccount
                 TableName = typeof(T).Name;
             }
 
-            var serviceClient = await clientFactory.CreateClientAsync([permission], TableName, partition: partition, cancellationToken: cancellationToken);
+            TableServiceClient serviceClient = await clientFactory.CreateClientAsync([permission], TableName, partition: partition, cancellationToken: cancellationToken);
             return serviceClient.GetTableClient(TableName);
         }
 
@@ -378,7 +372,7 @@ namespace Cod.Table.StorageAccount
         {
             if (!response.IsError && response.Headers.ETag.HasValue)
             {
-                ITableEntity target = response.Headers.TryGetValue("Location", out var location) && TryParseKeys(location, out var pk, out var rk)
+                ITableEntity target = response.Headers.TryGetValue("Location", out string? location) && TryParseKeys(location, out string? pk, out string? rk)
                     ? entities.Single(e => e.PartitionKey == pk && e.RowKey == rk)
                     : entities[responseIndex];
                 target.ETag = response.Headers.ETag.Value;

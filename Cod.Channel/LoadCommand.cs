@@ -28,7 +28,7 @@
 
                 using (NewBusyScope(parameter))
                 {
-                    var singleLoaded = await repository.GetAsync(parameter.PartitionKeyStart!, parameter.RowKeyStart!, forceLoad: parameter.Force, cancellationToken: cancellationToken);
+                    TDomain singleLoaded = await repository.GetAsync(parameter.PartitionKeyStart!, parameter.RowKeyStart!, forceLoad: parameter.Force, cancellationToken: cancellationToken);
                     return new LoadCommandResult<TDomain> { DomainsLoaded = new List<TDomain> { singleLoaded } };
                 }
             }
@@ -37,7 +37,7 @@
             {
                 using (NewBusyScope(parameter))
                 {
-                    var loaded = await repository.GetAsync(parameter.PartitionKeyStart!, forceLoad: false, cancellationToken: cancellationToken).ToListAsync(cancellationToken: cancellationToken);
+                    List<TDomain> loaded = await repository.GetAsync(parameter.PartitionKeyStart!, forceLoad: false, cancellationToken: cancellationToken).ToListAsync(cancellationToken: cancellationToken);
                     return new LoadCommandResult<TDomain> { DomainsLoaded = loaded };
                 }
             }

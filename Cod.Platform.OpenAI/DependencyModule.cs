@@ -31,7 +31,7 @@ namespace Cod.Platform.OpenAI
 
             services.AddHttpClient<IOpenAIService, OpenAIService>((serviceProvider, httpClient) =>
             {
-                var config = serviceProvider.GetRequiredService<IOptions<OpenAIServiceOptions>>();
+                IOptions<OpenAIServiceOptions> config = serviceProvider.GetRequiredService<IOptions<OpenAIServiceOptions>>();
                 httpClient.BaseAddress = new Uri(config.Value.Endpoint);
                 httpClient.DefaultRequestHeaders.Add("api-key", config.Value.Secret);
             })

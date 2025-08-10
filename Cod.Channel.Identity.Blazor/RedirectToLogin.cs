@@ -17,11 +17,11 @@ namespace Cod.Channel.Identity.Blazor
 
         protected override async Task OnInitializedAsync()
         {
-            var isAuthenticated = await Authenticator.GetAuthenticateStatus();
+            bool isAuthenticated = await Authenticator.GetAuthenticateStatus();
             if (!isAuthenticated)
             {
-                var queries = Navigator.GetQueryStrings();
-                var returnUrl = queries.Get(Constants.LoginReturnUrlQueryStringName);
+                System.Collections.Specialized.NameValueCollection queries = Navigator.GetQueryStrings();
+                string? returnUrl = queries.Get(Constants.LoginReturnUrlQueryStringName);
                 if (string.IsNullOrWhiteSpace(returnUrl))
                 {
                     returnUrl = Navigator.CurrentUri;

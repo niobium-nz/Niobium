@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
-namespace Cod.Channel
+﻿namespace Cod.Channel
 {
     public interface INotificationService
     {

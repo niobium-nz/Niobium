@@ -5,7 +5,7 @@ using System.Web;
 
 namespace Cod.Platform.Identity
 {
-    internal class ResourceTokenMiddleware(
+    internal sealed class ResourceTokenMiddleware(
         ISignatureService signatureService,
         PrincipalParser tokenHelper,
         IOptions<IdentityServiceOptions> options)
@@ -13,7 +13,7 @@ namespace Cod.Platform.Identity
     {
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
-            var req = context.Request;
+            HttpRequest req = context.Request;
             if (!req.Path.HasValue)
             {
                 await next(context);
@@ -26,10 +26,10 @@ namespace Cod.Platform.Identity
                 return;
             }
 
-            if (!req.Query.TryGetValue("type", out var typeString)
+            if (!req.Query.TryGetValue("type", out Microsoft.Extensions.Primitives.StringValues typeString)
                 || typeString.Count == 0
-                || !int.TryParse(typeString.Single(), out var type)
-                || !req.Query.TryGetValue("resource", out var resource)
+                || !int.TryParse(typeString.Single(), out int type)
+                || !req.Query.TryGetValue("resource", out Microsoft.Extensions.Primitives.StringValues resource)
                 || resource.Count == 0
                 || string.IsNullOrWhiteSpace(resource.Single()))
             {
@@ -37,18 +37,18 @@ namespace Cod.Platform.Identity
                 return;
             }
 
-            var res = HttpUtility.UrlDecode(resource.Single())!;
-            req.Query.TryGetValue("partition", out var partition);
-            req.Query.TryGetValue("id", out var id);
+            string res = HttpUtility.UrlDecode(resource.Single())!;
+            req.Query.TryGetValue("partition", out Microsoft.Extensions.Primitives.StringValues partition);
+            req.Query.TryGetValue("id", out Microsoft.Extensions.Primitives.StringValues id);
 
-            var principal = await tokenHelper.ParseAsync(req, context.RequestAborted);
+            System.Security.Claims.ClaimsPrincipal principal = await tokenHelper.ParseAsync(req, context.RequestAborted);
             if (principal == null)
             {
                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                 return;
             }
 
-            var result = await signatureService.IssueAsync(principal, (ResourceType)type, res, partition.SingleOrDefault(), id.SingleOrDefault());
+            StorageSignature result = await signatureService.IssueAsync(principal, (ResourceType)type, res, partition.SingleOrDefault(), id.SingleOrDefault());
             context.Response.StatusCode = (int)HttpStatusCode.OK;
             await context.Response.WriteAsJsonAsync(result, cancellationToken: context.RequestAborted);
         }

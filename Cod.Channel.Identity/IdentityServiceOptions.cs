@@ -38,21 +38,21 @@
             IDTokenHost = IDTokenHost.Trim();
             if (IDTokenHost.EndsWith('/'))
             {
-                IDTokenHost = IDTokenHost.Remove(IDTokenHost.Length - 1);
+                IDTokenHost = IDTokenHost[..^1];
             }
 
             ArgumentNullException.ThrowIfNull(AccessTokenHost, nameof(AccessTokenHost));
             AccessTokenHost = AccessTokenHost.Trim();
             if (AccessTokenHost.EndsWith('/'))
             {
-                AccessTokenHost = AccessTokenHost.Remove(AccessTokenHost.Length - 1);
+                AccessTokenHost = AccessTokenHost[..^1];
             }
 
             ArgumentNullException.ThrowIfNull(ResourceTokenHost, nameof(ResourceTokenHost));
             ResourceTokenHost = ResourceTokenHost.Trim();
             if (ResourceTokenHost.EndsWith('/'))
             {
-                ResourceTokenHost = ResourceTokenHost.Remove(ResourceTokenHost.Length - 1);
+                ResourceTokenHost = ResourceTokenHost[..^1];
             }
 
             ArgumentNullException.ThrowIfNull(IDTokenEndpoint, nameof(IDTokenEndpoint));

@@ -1,6 +1,6 @@
 namespace Cod.Platform.Finance.Stripe
 {
-    internal class StripeReport
+    internal sealed class StripeReport
     {
         public const string TypeCharge = "charge.succeeded";
         public const string TypeSetup = "setup_intent.succeeded";
@@ -23,7 +23,7 @@ namespace Cod.Platform.Finance.Stripe
         public bool Livemode { get; set; }
     }
 
-    internal class StripeReportData
+    internal sealed class StripeReportData
     {
         /// <summary>
         /// The object type, e.g. "charge", "setup_intent", "refund"
@@ -31,7 +31,7 @@ namespace Cod.Platform.Finance.Stripe
         public required StripeReportDataObject Object { get; set; }
     }
 
-    internal class StripeReportDataObject
+    internal sealed class StripeReportDataObject
     {
         /// <summary>
         /// The unique identifier for the object, e.g. charge ID, setup intent ID, refund ID

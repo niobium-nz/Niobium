@@ -2,7 +2,7 @@
 
 namespace Cod.Platform.Finance
 {
-    public abstract class AccountDepositRecorder<TDomain, TEntity>(IDomainRepository<TDomain, TEntity> repo) 
+    public abstract class AccountDepositRecorder<TDomain, TEntity>(IDomainRepository<TDomain, TEntity> repo)
         : DomainEventHandler<IDomain<Transaction>, TransactionCreatedEvent>
         where TDomain : AccountableDomain<TEntity>
         where TEntity : class, new()
@@ -15,12 +15,12 @@ namespace Cod.Platform.Finance
                 return;
             }
 
-            var pk = BuildPartitionKey(e.Transaction);
-            var rk = BuildRowKey(e.Transaction);
+            string pk = BuildPartitionKey(e.Transaction);
+            string rk = BuildRowKey(e.Transaction);
             e.Transaction.PartitionKey = pk;
             e.Transaction.RowKey = rk;
 
-            var domain = await repo.GetAsync(pk, rk, cancellationToken: cancellationToken);
+            TDomain domain = await repo.GetAsync(pk, rk, cancellationToken: cancellationToken);
             await domain.MakeTransactionAsync(new[] { e.Transaction });
         }
 

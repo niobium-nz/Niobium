@@ -8,7 +8,7 @@ using System.Net;
 
 namespace Cod.Platform.Finance
 {
-    internal class PaymentRequestMiddleware(IPaymentService paymentService, IOptions<PaymentServiceOptions> options)
+    internal sealed class PaymentRequestMiddleware(IPaymentService paymentService, IOptions<PaymentServiceOptions> options)
         : IMiddleware
     {
         public const string PaymentUserQueryParameter = "user";
@@ -18,7 +18,7 @@ namespace Cod.Platform.Finance
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
-            var req = context.Request;
+            HttpRequest req = context.Request;
             if (!req.Path.HasValue || !req.Path.Value.Equals($"/{options.Value.PaymentRequestEndpoint}", StringComparison.OrdinalIgnoreCase))
             {
                 await next(context);
@@ -31,7 +31,7 @@ namespace Cod.Platform.Finance
                 return;
             }
 
-            if (!req.Query.TryGetValue(PaymentUserQueryParameter, out var u) || !Guid.TryParse(u, out var user))
+            if (!req.Query.TryGetValue(PaymentUserQueryParameter, out Microsoft.Extensions.Primitives.StringValues u) || !Guid.TryParse(u, out Guid user))
             {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 await context.Response.WriteAsync($"Invalid '{PaymentUserQueryParameter}' query parameter.");
@@ -39,7 +39,7 @@ namespace Cod.Platform.Finance
             }
 
             string? order = null;
-            if (req.Query.TryGetValue(PaymentOrderQueryParameter, out var o) )
+            if (req.Query.TryGetValue(PaymentOrderQueryParameter, out Microsoft.Extensions.Primitives.StringValues o))
             {
                 order = o.SingleOrDefault();
                 if (!string.IsNullOrWhiteSpace(order))
@@ -48,21 +48,21 @@ namespace Cod.Platform.Finance
                 }
             }
 
-            if (!req.Query.TryGetValue(PaymentCurrencyQueryParameter, out var c) || !Currency.TryParse(c!, out var currency))
+            if (!req.Query.TryGetValue(PaymentCurrencyQueryParameter, out Microsoft.Extensions.Primitives.StringValues c) || !Currency.TryParse(c!, out Currency currency))
             {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 await context.Response.WriteAsync($"Invalid '{PaymentCurrencyQueryParameter}' query parameter.");
                 return;
             }
 
-            if (!req.Query.TryGetValue(PaymentAmountQueryParameter, out var a) || !long.TryParse(a, out var amount) || amount <= 0 || amount > 100000)
+            if (!req.Query.TryGetValue(PaymentAmountQueryParameter, out Microsoft.Extensions.Primitives.StringValues a) || !long.TryParse(a, out long amount) || amount <= 0 || amount > 100000)
             {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 await context.Response.WriteAsync($"Invalid '{PaymentAmountQueryParameter}' query parameter.");
                 return;
             }
 
-            var chargeRequest = new ChargeRequest
+            ChargeRequest chargeRequest = new()
             {
                 TargetKind = ChargeTargetKind.User,
                 Target = user.ToString(),
@@ -74,8 +74,8 @@ namespace Cod.Platform.Finance
                 Currency = currency,
                 IP = req.GetRemoteIP(),
             };
-            var result = await paymentService.ChargeAsync(chargeRequest);
-            var action = result.MakeResponse(JsonSerializationFormat.CamelCase);
+            OperationResult<ChargeResponse> result = await paymentService.ChargeAsync(chargeRequest);
+            IActionResult action = result.MakeResponse(JsonSerializationFormat.CamelCase);
             await action.ExecuteResultAsync(new ActionContext(context, new RouteData(), new ActionDescriptor()));
         }
     }

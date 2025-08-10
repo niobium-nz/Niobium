@@ -1,18 +1,13 @@
-﻿using Cod.Platform.Notification;
-using Google.Apis.Auth.OAuth2;
+﻿using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Text;
 
 namespace Cod.Platform.Notification.Firebase
 {
-    public abstract class FirebasePushNotificationChannel : PushNotificationChannel
+    public abstract class FirebasePushNotificationChannel(Lazy<INofiticationChannelRepository> repo, Lazy<ICacheStore> cacheStore) : PushNotificationChannel(repo)
     {
-        private readonly Lazy<ICacheStore> cacheStore;
         private const string AccessTokenCacheKey = "GooglePushAccessToken";
-
-        public FirebasePushNotificationChannel(Lazy<INofiticationChannelRepository> repo, Lazy<ICacheStore> cacheStore)
-            : base(repo) => this.cacheStore = cacheStore;
 
         public override async Task<OperationResult> SendAsync(string brand,
             Guid user,
@@ -21,12 +16,10 @@ namespace Cod.Platform.Notification.Firebase
             IReadOnlyDictionary<string, object> parameters,
             int level = 0)
         {
-            if (level != (int)OpenIDKind.GoogleAndroid
-                || context != null && context.Kind != (int)OpenIDKind.GoogleAndroid)
-            {
-                return OperationResult.NotAcceptable;
-            }
-            return await base.SendAsync(brand, user, context!, templateID, parameters, level);
+            return level != (int)OpenIDKind.GoogleAndroid
+                || (context != null && context.Kind != (int)OpenIDKind.GoogleAndroid)
+                ? OperationResult.NotAcceptable
+                : await base.SendAsync(brand, user, context!, templateID, parameters, level);
         }
 
         protected override async Task<OperationResult> SendPushAsync(
@@ -35,56 +28,46 @@ namespace Cod.Platform.Notification.Firebase
             int templateID,
             IReadOnlyDictionary<string, object> parameters)
         {
-            var success = true;
-            foreach (var target in targets)
+            bool success = true;
+            foreach (NotificationContext target in targets)
             {
-                var message = await GetMessageAsync(brand, templateID, target, parameters);
+                ProjectScopeFirebaseMessage message = await GetMessageAsync(brand, templateID, target, parameters);
                 if (message == null || message.Message == null)
                 {
                     continue;
                 }
 
-                var token = await cacheStore.Value.GetAsync<string>(target.App, AccessTokenCacheKey);
+                string? token = await cacheStore.Value.GetAsync<string>(target.App, AccessTokenCacheKey);
                 if (string.IsNullOrWhiteSpace(token))
                 {
-                    var cred = await GetCredentialAsync(target);
-                    var scope = cred.CreateScoped("https://www.googleapis.com/auth/firebase.messaging");
+                    GoogleCredential cred = await GetCredentialAsync(target);
+                    GoogleCredential scope = cred.CreateScoped("https://www.googleapis.com/auth/firebase.messaging");
                     await scope.UnderlyingCredential.GetAccessTokenForRequestAsync();
-                    var t = ((ServiceAccountCredential)scope.UnderlyingCredential).Token;
+                    Google.Apis.Auth.OAuth2.Responses.TokenResponse t = ((ServiceAccountCredential)scope.UnderlyingCredential).Token;
                     if (t.ExpiresInSeconds.HasValue)
                     {
-                        var expiry = DateTimeOffset.UtcNow.AddSeconds(t.ExpiresInSeconds.Value - 1000);
+                        DateTimeOffset expiry = DateTimeOffset.UtcNow.AddSeconds(t.ExpiresInSeconds.Value - 1000);
                         await cacheStore.Value.SetAsync(target.App, AccessTokenCacheKey, t.AccessToken, true, expiry);
                     }
                     token = t.AccessToken;
                 }
 
-                var request = new FirebaseMessageRequest { Message = message.Message };
-                using var httpclient = new HttpClient(HttpHandler.GetHandler(), false);
+                FirebaseMessageRequest request = new() { Message = message.Message };
+                using HttpClient httpclient = new(HttpHandler.GetHandler(), false);
                 httpclient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthenticationScheme.BearerLoginScheme, token);
-                var json = JsonSerializer.SerializeObject(request, JsonSerializationFormat.CamelCase);
-                using var content = new StringContent(json, Encoding.UTF8, "application/json");
-                var resp = await httpclient.PostAsync($"https://fcm.googleapis.com/v1/projects/{message.ProjectID}/messages:send", content);
-                var status = (int)resp.StatusCode;
-                if (status < 200 || status >= 400)
+                string json = JsonSerializer.SerializeObject(request, JsonSerializationFormat.CamelCase);
+                using StringContent content = new(json, Encoding.UTF8, "application/json");
+                HttpResponseMessage resp = await httpclient.PostAsync($"https://fcm.googleapis.com/v1/projects/{message.ProjectID}/messages:send", content);
+                int status = (int)resp.StatusCode;
+                if (status is < 200 or >= 400)
                 {
                     success = false;
-                    var error = await resp.Content.ReadAsStringAsync();
-                    if (Logger.Instance != null)
-                    {
-                        Logger.Instance.LogError($"An error occurred while making request to Firebase with status code {status}: {error}");
-                    }
+                    string error = await resp.Content.ReadAsStringAsync();
+                    Logger.Instance?.LogError($"An error occurred while making request to Firebase with status code {status}: {error}");
                 }
             }
 
-            if (success)
-            {
-                return OperationResult.Success;
-            }
-            else
-            {
-                return OperationResult.InternalServerError;
-            }
+            return success ? OperationResult.Success : OperationResult.InternalServerError;
         }
 
         protected abstract Task<GoogleCredential> GetCredentialAsync(NotificationContext context);

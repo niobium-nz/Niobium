@@ -7,8 +7,8 @@ namespace Cod.Channel.Identity
         [SetsRequiredMembers]
         public TOTPLoginCommandParameter(string username)
         {
-            this.Username = username;
-            this.Remember = false;
+            Username = username;
+            Remember = false;
         }
 
         [SetsRequiredMembers]
@@ -26,10 +26,10 @@ namespace Cod.Channel.Identity
         [SetsRequiredMembers]
         public TOTPLoginCommandParameter(string username, string totp, bool remember, string? returnUrl)
         {
-            this.Username = username;
-            this.TOTP = totp;
-            this.ReturnUrl = returnUrl;
-            this.Remember = remember;
+            Username = username;
+            TOTP = totp;
+            ReturnUrl = returnUrl;
+            Remember = remember;
         }
 
         public required string Username { get; set; }

@@ -92,7 +92,7 @@ namespace Cod
                 : Convert.ToBase64String(publicKeyRsaProvider.Encrypt(Encoding.UTF8.GetBytes(text), RSAEncryptionPadding.Pkcs1));
         }
 
-        private RSA CreateRsaProviderFromPrivateKey(string privateKey)
+        private static RSA CreateRsaProviderFromPrivateKey(string privateKey)
         {
             byte[] privateKeyBits = Convert.FromBase64String(privateKey);
 
@@ -143,7 +143,7 @@ namespace Cod
             return rsa;
         }
 
-        private RSA? CreateRsaProviderFromPublicKey(string publicKeyString)
+        private static RSA? CreateRsaProviderFromPublicKey(string publicKeyString)
         {
             // encoded OID sequence for  PKCS #1 rsaEncryption szOID_RSA_RSA = "1.2.840.113549.1.1.1"
             byte[] seqOid = [0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x01, 0x05, 0x00];
@@ -260,7 +260,7 @@ namespace Cod
             return rsa;
         }
 
-        private int GetIntegerSize(BinaryReader binr)
+        private static int GetIntegerSize(BinaryReader binr)
         {
             byte bt = binr.ReadByte();
             if (bt != 0x02)
@@ -296,7 +296,7 @@ namespace Cod
             return count;
         }
 
-        private bool CompareBytearrays(byte[] a, byte[] b)
+        private static bool CompareBytearrays(byte[] a, byte[] b)
         {
             if (a.Length != b.Length)
             {

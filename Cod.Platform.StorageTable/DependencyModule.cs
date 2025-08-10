@@ -15,7 +15,7 @@ namespace Cod.Platform.StorageTable
         {
             builder.Services.AddDatabase(builder.Configuration.GetSection(nameof(StorageTableOptions)).Bind);
 
-            var isDevelopment = builder.Configuration.IsDevelopmentEnvironment();
+            bool isDevelopment = builder.Configuration.IsDevelopmentEnvironment();
             if (isDevelopment)
             {
                 builder.Services.PostConfigure<StorageTableOptions>(opt => opt.EnableInteractiveIdentity = true);
@@ -56,9 +56,9 @@ namespace Cod.Platform.StorageTable
         {
             return services.AddTransient<IEntitlementDescriptor>(sp =>
             {
-                var role = resolveRole(sp);
-                var table = resolveTableName(sp);
-                var fullyQualifiedDomainName = resolveFullyQualifiedDomainName(sp);
+                string role = resolveRole(sp);
+                string table = resolveTableName(sp);
+                string fullyQualifiedDomainName = resolveFullyQualifiedDomainName(sp);
                 return new RoleBasedEntitlementDescriptor(role, permissions, fullyQualifiedDomainName, table);
             });
         }
@@ -72,20 +72,26 @@ namespace Cod.Platform.StorageTable
         {
             return services.AddTransient<IEntitlementDescriptor>(sp =>
             {
-                var role = resolveRole(sp);
-                var table = resolveTableName(sp);
-                var fullyQualifiedDomainName = resolveFullyQualifiedDomainName(sp);
+                string role = resolveRole(sp);
+                string table = resolveTableName(sp);
+                string fullyQualifiedDomainName = resolveFullyQualifiedDomainName(sp);
                 return new PersonalizedEntitlementDescriptor(role, permissions, fullyQualifiedDomainName, table);
             });
         }
 
         public static IServiceCollection AddDatabaseResourceTokenSupport(this IHostApplicationBuilder builder)
-            => builder.Services.AddDatabaseResourceTokenSupport(builder.Configuration.GetSection(nameof(IdentityServiceOptions)).Bind);
+        {
+            return builder.Services.AddDatabaseResourceTokenSupport(builder.Configuration.GetSection(nameof(IdentityServiceOptions)).Bind);
+        }
 
         public static IServiceCollection GrantDatabaseEntitlementTo(this IServiceCollection services, string role, DatabasePermissions permissions, string tableName, string fullyQualifiedDomainName)
-            => services.GrantDatabaseEntitlementTo(_ => role, permissions, _ => tableName, _ => fullyQualifiedDomainName);
+        {
+            return services.GrantDatabaseEntitlementTo(_ => role, permissions, _ => tableName, _ => fullyQualifiedDomainName);
+        }
 
         public static IServiceCollection GrantDatabasePersonalizedEntitlementTo(this IServiceCollection services, string role, DatabasePermissions permissions, string tableName, string fullyQualifiedDomainName)
-            => services.GrantDatabasePersonalizedEntitlementTo(_ => role, permissions, _ => tableName, _ => fullyQualifiedDomainName);
+        {
+            return services.GrantDatabasePersonalizedEntitlementTo(_ => role, permissions, _ => tableName, _ => fullyQualifiedDomainName);
+        }
     }
 }

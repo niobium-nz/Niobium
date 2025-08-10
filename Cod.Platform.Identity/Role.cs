@@ -3,7 +3,7 @@
 namespace Cod.Platform.Identity
 {
     [method: SetsRequiredMembers]
-    internal class Role() : ITrackable
+    internal sealed class Role() : ITrackable
     {
         [EntityKey(EntityKeyKind.PartitionKey)]
         public required Guid Tenant { get; set; }
@@ -36,7 +36,7 @@ namespace Cod.Platform.Identity
             }
             else
             {
-                List<string> roles = GetRoles().ToList();
+                List<string> roles = [.. GetRoles()];
                 if (!roles.Contains(role))
                 {
                     roles.Add(role);
@@ -57,7 +57,7 @@ namespace Cod.Platform.Identity
             }
             else
             {
-                List<string> roles = GetRoles().ToList();
+                List<string> roles = [.. GetRoles()];
                 if (roles.Remove(role))
                 {
                     Roles = string.Join(",", roles);
@@ -65,7 +65,14 @@ namespace Cod.Platform.Identity
             }
         }
 
-        public static string BuildPartitionKey(Guid tenant) => tenant.ToString();
-        public static string BuildRowKey(Guid user) => user.ToString();
+        public static string BuildPartitionKey(Guid tenant)
+        {
+            return tenant.ToString();
+        }
+
+        public static string BuildRowKey(Guid user)
+        {
+            return user.ToString();
+        }
     }
 }

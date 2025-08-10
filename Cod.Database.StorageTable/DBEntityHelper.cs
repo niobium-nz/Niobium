@@ -15,7 +15,7 @@ namespace Cod.Database.StorageTable
 
             if (source is IEnumerable<KeyValuePair<string, object>> kvs)
             {
-                foreach (var kv in kvs)
+                foreach (KeyValuePair<string, object> kv in kvs)
                 {
                     if (kv.Key == EntityKeyKind.ETag.ToString())
                     {
@@ -42,19 +42,12 @@ namespace Cod.Database.StorageTable
                     continue;
                 }
 
-                var value = m[key].GetValue(source);
+                object? value = m[key].GetValue(source);
                 if (key == EntityKeyKind.PartitionKey.ToString() || key == EntityKeyKind.RowKey.ToString())
                 {
                     if (value != null)
                     {
-                        if (value is DateTimeOffset timeValue)
-                        {
-                            value = DateTimeOffsetExtensions.ToReverseUnixTimestamp(timeValue);
-                        }
-                        else
-                        {
-                            value = value?.ToString();
-                        }
+                        value = value is DateTimeOffset timeValue ? DateTimeOffsetExtensions.ToReverseUnixTimestamp(timeValue) : (value?.ToString());
                     }
                 }
 
@@ -76,12 +69,9 @@ namespace Cod.Database.StorageTable
 
         public static T FromTableEntity<T>(this IDictionary<string, object?> source) where T : class, new()
         {
-            if (typeof(T) == typeof(Dictionary<string, object?>))
-            {
-                return (new Dictionary<string, object?>(source) as T)!;
-            }
-
-            return source.ToObject<T>(AzureTableEntityMapping);
+            return typeof(T) == typeof(Dictionary<string, object?>)
+                ? (T)(object)new Dictionary<string, object?>(source)
+                : source.ToObject<T>(AzureTableEntityMapping);
         }
 
         private static T ToObject<T>(this IDictionary<string, object?> source, Dictionary<string, string> specialMapping)
@@ -89,14 +79,14 @@ namespace Cod.Database.StorageTable
         {
             T obj = new();
             Type type = obj.GetType();
-            var mapping = EntityMappingHelper.GetMapping(type);
+            IReadOnlyDictionary<string, PropertyInfo> mapping = EntityMappingHelper.GetMapping(type);
 
-            foreach (var item in source)
+            foreach (KeyValuePair<string, object?> item in source)
             {
-                string keyName = specialMapping.TryGetValue(item.Key, out var mappedKey) ? mappedKey : item.Key;
-                if (mapping.TryGetValue(keyName, out var value))
+                string keyName = specialMapping.TryGetValue(item.Key, out string? mappedKey) ? mappedKey : item.Key;
+                if (mapping.TryGetValue(keyName, out PropertyInfo? value))
                 {
-                    var itemValue = item.Value;
+                    object? itemValue = item.Value;
                     if (keyName == EntityKeyKind.Timestamp.ToString() && itemValue is long epoch)
                     {
                         itemValue = epoch < 9999999999 ? DateTimeOffset.FromUnixTimeSeconds(epoch) : DateTimeOffset.FromUnixTimeMilliseconds(epoch);
@@ -109,7 +99,7 @@ namespace Cod.Database.StorageTable
                         {
                             if (value.PropertyType == typeof(DateTimeOffset))
                             {
-                                var reverseTimestamp = long.Parse((string)itemValue);
+                                long reverseTimestamp = long.Parse((string)itemValue);
                                 itemValue = DateTimeOffsetExtensions.FromReverseUnixTimeMilliseconds(reverseTimestamp);
                             }
                             else

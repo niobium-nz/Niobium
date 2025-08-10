@@ -13,7 +13,7 @@ namespace Cod.Profile
     {
         private T? profile;
 
-        public virtual string ProfileEndpoint { get => options.Value.ProfileServiceEndpoint; }
+        public virtual string ProfileEndpoint => options.Value.ProfileServiceEndpoint;
 
         public async Task<T?> RetrieveAsync(bool forceRefresh = false, CancellationToken? cancellationToken = null)
         {
@@ -24,13 +24,10 @@ namespace Cod.Profile
                 return profile;
             }
 
-            var httpClient = await this.GetHttpClientAsync(cancellationToken.Value);
-            if (httpClient == null)
-            {
-                return null;
-            }
-
-            return await httpClient.GetFromJsonAsync<T>(ProfileEndpoint, cancellationToken: cancellationToken.Value)
+            HttpClient? httpClient = await GetHttpClientAsync(cancellationToken.Value);
+            return httpClient == null
+                ? null
+                : await httpClient.GetFromJsonAsync<T>(ProfileEndpoint, cancellationToken: cancellationToken.Value)
                 .ContinueWith(t =>
                 {
                     if (t.IsFaulted)
@@ -49,14 +46,14 @@ namespace Cod.Profile
         {
             cancellationToken ??= CancellationToken.None;
 
-            var httpClient = await this.GetHttpClientAsync(cancellationToken.Value);
+            HttpClient? httpClient = await GetHttpClientAsync(cancellationToken.Value);
             if (httpClient == null)
             {
                 return;
             }
 
-            var json = System.Text.Json.JsonSerializer.Serialize(profile);
-            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+            string json = System.Text.Json.JsonSerializer.Serialize(profile);
+            using StringContent content = new(json, Encoding.UTF8, "application/json");
             await httpClient.PutAsync(ProfileEndpoint, content, cancellationToken: cancellationToken.Value)
                 .ContinueWith(t =>
                 {
@@ -75,7 +72,7 @@ namespace Cod.Profile
 
         protected virtual async Task<HttpClient?> GetHttpClientAsync(CancellationToken cancellationToken)
         {
-            var httpClient = httpClientFactory.CreateClient(Cod.Profile.Constants.DefaultHttpClientName);
+            HttpClient httpClient = httpClientFactory.CreateClient(Cod.Profile.Constants.DefaultHttpClientName);
             return await ConfigureHttpClientAsync(httpClient, cancellationToken);
         }
 

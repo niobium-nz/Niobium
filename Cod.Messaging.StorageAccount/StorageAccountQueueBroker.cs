@@ -32,7 +32,7 @@ namespace Cod.Messaging.StorageAccount
 
         public virtual async Task<IEnumerable<MessagingEntry<T>>> DequeueAsync(int limit, TimeSpan? maxWaitTime = default, CancellationToken cancellationToken = default)
         {
-            List<MessagingEntry<T>> result = new();
+            List<MessagingEntry<T>> result = [];
             QueueClient q = await GetQueueAsync(cancellationToken);
             Response<QueueMessage[]> msgs = await q.ReceiveMessagesAsync(maxMessages: limit <= 0 ? null : limit, cancellationToken: cancellationToken);
             if (msgs.Value.Length != 0)
@@ -55,7 +55,7 @@ namespace Cod.Messaging.StorageAccount
         public virtual async Task EnqueueAsync(IEnumerable<MessagingEntry<T>> messages, CancellationToken cancellationToken = default)
         {
             QueueClient q = await GetQueueAsync(cancellationToken);
-            foreach (var message in messages)
+            foreach (MessagingEntry<T> message in messages)
             {
                 TimeSpan? delay = message.Schedule == null ? null : message.Schedule - DateTimeOffset.UtcNow;
                 if (delay.HasValue && delay.Value.TotalSeconds < 0)

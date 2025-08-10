@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 
 namespace Cod.Platform.Blob
 {
-    internal class AzureBlobSignatureIssuer(IOptions<StorageBlobOptions> options) : ISignatureIssuer
+    internal sealed class AzureBlobSignatureIssuer(IOptions<StorageBlobOptions> options) : ISignatureIssuer
     {
         public bool CanIssue(ResourceType storageType, StorageControl control)
         {
@@ -71,17 +71,20 @@ namespace Cod.Platform.Blob
                 throw new ApplicationException(InternalError.Forbidden);
             }
 
-            var builder = new BlobSasBuilder(internalPermissions, expires)
+            BlobSasBuilder builder = new(internalPermissions, expires)
             {
                 BlobContainerName = control.StartPartitionKey
             };
-            var accountName = ParseAccountName(options.Value.FullyQualifiedDomainName);
-            var cred = new StorageSharedKeyCredential(accountName, options.Value.Key);
-            var sas = builder.ToSasQueryParameters(cred);
+            string accountName = ParseAccountName(options.Value.FullyQualifiedDomainName);
+            StorageSharedKeyCredential cred = new(accountName, options.Value.Key);
+            BlobSasQueryParameters sas = builder.ToSasQueryParameters(cred);
 
             return Task.FromResult((sas.ToString(), expires));
         }
 
-        private static string ParseAccountName(string fqdn) => fqdn.Split('.').First();
+        private static string ParseAccountName(string fqdn)
+        {
+            return fqdn.Split('.').First();
+        }
     }
 }

@@ -12,7 +12,7 @@ namespace Cod.Platform
 
         public async Task Invoke(FunctionContext context, FunctionExecutionDelegate next)
         {
-            var httpContext = context.GetHttpContext()
+            HttpContext httpContext = context.GetHttpContext()
                 ?? throw new InvalidOperationException($"FunctionContext on {GetType().Name} does not contain an HttpContext.");
             await middleware.InvokeAsync(httpContext, async (_) => await next(context));
         }

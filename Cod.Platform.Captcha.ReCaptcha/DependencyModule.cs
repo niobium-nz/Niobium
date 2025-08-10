@@ -42,15 +42,10 @@ namespace Cod.Platform.Captcha.ReCaptcha
             services.AddHttpClient<IVisitorRiskAssessor, GoogleReCaptchaRiskAssessor>(new Func<HttpClient, IServiceProvider, GoogleReCaptchaRiskAssessor>(
                 (httpClient, sp) =>
                 {
-                    var captchaOptions = sp.GetRequiredService<IOptions<CaptchaOptions>>().Value;
-                    if (captchaOptions.IsDisabled)
-                    {
-                        return sp.GetRequiredService<DevelopmentRiskAccessor>();
-                    }
-                    else
-                    {
-                        return sp.GetRequiredService<GoogleReCaptchaRiskAssessor>();
-                    }
+                    CaptchaOptions captchaOptions = sp.GetRequiredService<IOptions<CaptchaOptions>>().Value;
+                    return captchaOptions.IsDisabled
+                        ? sp.GetRequiredService<DevelopmentRiskAccessor>()
+                        : sp.GetRequiredService<GoogleReCaptchaRiskAssessor>();
                 }))
             .AddStandardResilienceHandler();
 

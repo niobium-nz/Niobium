@@ -7,7 +7,7 @@ using System.Security.Claims;
 
 namespace Cod.Platform.Identity
 {
-    internal class AccessTokenMiddleware(
+    internal sealed class AccessTokenMiddleware(
         Lazy<IRepository<Role>> repository,
         Lazy<IEnumerable<IEntitlementDescriptor>> descriptors,
         ITokenBuilder tokenBuilder,
@@ -16,28 +16,28 @@ namespace Cod.Platform.Identity
     {
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
-            var req = context.Request;
+            HttpRequest req = context.Request;
             if (!req.Path.HasValue || !req.Path.Value.Equals($"/{options.Value.AccessTokenEndpoint}", StringComparison.OrdinalIgnoreCase))
             {
                 await next(context);
                 return;
             }
 
-            var principal = await principalParser.ParseIDPrincipalAsync(req, options.Value.IDTokenAudience , context.RequestAborted);
+            ClaimsPrincipal principal = await principalParser.ParseIDPrincipalAsync(req, options.Value.IDTokenAudience, context.RequestAborted);
             if (principal == null)
             {
                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                 return;
             }
 
-            if (!principal.TryGetClaim<Guid>(ClaimTypes.NameIdentifier, out var user))
+            if (!principal.TryGetClaim<Guid>(ClaimTypes.NameIdentifier, out Guid user))
             {
                 context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
                 return;
             }
 
             Guid tenant;
-            if (req.Headers.TryGetValue(Constants.TenantIDHeaderKey, out var tenantHeader))
+            if (req.Headers.TryGetValue(Constants.TenantIDHeaderKey, out Microsoft.Extensions.Primitives.StringValues tenantHeader))
             {
                 if (!Guid.TryParse(tenantHeader, out tenant))
                 {
@@ -51,38 +51,38 @@ namespace Cod.Platform.Identity
             }
 
             List<string> roles = [options.Value.DefaultRole];
-            var entity = await repository.Value.RetrieveAsync(Role.BuildPartitionKey(tenant), Role.BuildRowKey(user), cancellationToken: context.RequestAborted);
+            Role? entity = await repository.Value.RetrieveAsync(Role.BuildPartitionKey(tenant), Role.BuildRowKey(user), cancellationToken: context.RequestAborted);
             if (entity != null)
             {
                 roles.AddRange(entity.GetRoles());
             }
 
             List<EntitlementDescription> entitlements = [];
-            var orderedDescriptors = descriptors.Value.OrderBy(d => d.IsHighOverhead);
+            IOrderedEnumerable<IEntitlementDescriptor> orderedDescriptors = descriptors.Value.OrderBy(d => d.IsHighOverhead);
 
-            foreach (var descriptor in orderedDescriptors)
+            foreach (IEntitlementDescriptor? descriptor in orderedDescriptors)
             {
-                foreach (var role in roles)
+                foreach (string role in roles)
                 {
                     if (descriptor.CanDescribe(tenant, user, role))
                     {
-                        var es = await descriptor.DescribeAsync(tenant, user, role);
+                        IEnumerable<EntitlementDescription> es = await descriptor.DescribeAsync(tenant, user, role);
                         entitlements.AddRange(es);
                     }
                 }
             }
 
-            var claims = entitlements.Select(e =>
+            List<KeyValuePair<string, string>> claims = [.. entitlements.Select(e =>
                 new
                 {
                     Resource = $"COD-{(int)e.Type}://{e.Resource}",
                     e.Permission
                 })
                 .GroupBy(e => e.Resource)
-                .Select(e => new KeyValuePair<string, string>(e.Key, string.Join(Entitlements.ValueSplitor[0], e.Select(x => x.Permission)))).ToList();
+                .Select(e => new KeyValuePair<string, string>(e.Key, string.Join(Entitlements.ValueSplitor[0], e.Select(x => x.Permission))))];
 
-            var sid = user.ToKey();
-            var token = await tokenBuilder.BuildAsync(sid, claims, roles: roles);
+            string sid = user.ToKey();
+            string token = await tokenBuilder.BuildAsync(sid, claims, roles: roles);
             req.DeliverToken(token, AuthenticationScheme.BearerLoginScheme);
             context.Response.StatusCode = (int)HttpStatusCode.OK;
         }

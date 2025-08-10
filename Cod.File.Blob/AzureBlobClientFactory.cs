@@ -7,56 +7,56 @@ using System.Collections.Concurrent;
 
 namespace Cod.File.Blob
 {
-    internal class AzureBlobClientFactory(IOptions<StorageBlobOptions> options, Lazy<IAuthenticator> authenticator)
+    internal sealed class AzureBlobClientFactory(IOptions<StorageBlobOptions> options, Lazy<IAuthenticator> authenticator)
     {
         private static readonly ConcurrentDictionary<string, BlobServiceClient> clients = [];
         private static readonly ConcurrentDictionary<string, TokenCredential> credentials = [];
 
         public async Task<BlobServiceClient> CreateClientAsync(IEnumerable<FilePermissions> permissions, string containerName, CancellationToken cancellationToken = default)
         {
-            if (!String.IsNullOrWhiteSpace(options.Value.FullyQualifiedDomainName))
+            if (!string.IsNullOrWhiteSpace(options.Value.FullyQualifiedDomainName))
             {
                 return await CreateClientAsync(cancellationToken);
             }
 
-            var resourcePermissions = await authenticator.Value.GetResourcePermissionsAsync(cancellationToken) ?? [];
-            var permission = resourcePermissions.FirstOrDefault(p => 
-                p.Type == ResourceType.AzureStorageBlob 
+            IEnumerable<ResourcePermission> resourcePermissions = await authenticator.Value.GetResourcePermissionsAsync(cancellationToken) ?? [];
+            ResourcePermission permission = resourcePermissions.FirstOrDefault(p =>
+                p.Type == ResourceType.AzureStorageBlob
                 && permissions.All(m => p.Entitlements.Contains(m.ToString().ToUpperInvariant()))
                 && p.Partition != null
                 && containerName.StartsWith(p.Partition))
                 ?? throw new ApplicationException(InternalError.Forbidden);
-            var sas = await authenticator.Value.RetrieveResourceTokenAsync(ResourceType.AzureStorageBlob, permission.Resource, partition: containerName, cancellationToken: cancellationToken);
-            var builder = new BlobUriBuilder(new Uri($"https://{permission.Resource}"))
+            string sas = await authenticator.Value.RetrieveResourceTokenAsync(ResourceType.AzureStorageBlob, permission.Resource, partition: containerName, cancellationToken: cancellationToken);
+            BlobUriBuilder builder = new(new Uri($"https://{permission.Resource}"))
             {
-                 Query = sas,
+                Query = sas,
             };
-            var serviceUri = builder.ToUri();
+            Uri serviceUri = builder.ToUri();
             return clients.GetOrAdd(containerName, new BlobServiceClient(serviceUri, options: BuildClientOptions(options)));
         }
 
         public Task<BlobServiceClient> CreateClientAsync(CancellationToken cancellationToken = default)
         {
-            if (String.IsNullOrWhiteSpace(options.Value.FullyQualifiedDomainName))
+            if (string.IsNullOrWhiteSpace(options.Value.FullyQualifiedDomainName))
             {
                 throw new ApplicationException(InternalError.InternalServerError);
             }
 
-            var client = clients.GetOrAdd(options.Value.FullyQualifiedDomainName, _ =>
+            BlobServiceClient client = clients.GetOrAdd(options.Value.FullyQualifiedDomainName, _ =>
             {
-                var opt = BuildClientOptions(options);
-                var credential = credentials.GetOrAdd(options.Value.FullyQualifiedDomainName, _ => new DefaultAzureCredential(includeInteractiveCredentials: options.Value.EnableInteractiveIdentity));
-                return Uri.TryCreate($"https://{options.Value.FullyQualifiedDomainName}", UriKind.Absolute, out var endpointUri)
+                BlobClientOptions opt = BuildClientOptions(options);
+                TokenCredential credential = credentials.GetOrAdd(options.Value.FullyQualifiedDomainName, _ => new DefaultAzureCredential(includeInteractiveCredentials: options.Value.EnableInteractiveIdentity));
+                return Uri.TryCreate($"https://{options.Value.FullyQualifiedDomainName}", UriKind.Absolute, out Uri? endpointUri)
                     ? new BlobServiceClient(endpointUri, credential, opt)
                     : throw new ApplicationException(InternalError.InternalServerError);
             });
-            
+
             return Task.FromResult(client);
         }
 
         private static BlobClientOptions BuildClientOptions(IOptions<StorageBlobOptions> options)
         {
-            var opt = new BlobClientOptions();
+            BlobClientOptions opt = new();
             opt.Retry.MaxDelay = options.Value.MaxDelay;
             opt.Retry.MaxRetries = options.Value.MaxRetries;
             if (options.Value.ConnectionIdleTimeout.HasValue)

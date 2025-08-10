@@ -1,8 +1,6 @@
-using System;
 using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
-using System.Threading.Tasks;
 using System.Web;
 
 namespace Cod.Channel
@@ -13,12 +11,12 @@ namespace Cod.Channel
 
         public static async Task CheckAndPerformGotoAsync(this INavigator navigator)
         {
-            var queries = navigator.GetQueryStrings();
-            var go = queries.Get("go");
-            if (!String.IsNullOrWhiteSpace(go))
+            NameValueCollection queries = navigator.GetQueryStrings();
+            string? go = queries.Get("go");
+            if (!string.IsNullOrWhiteSpace(go))
             {
                 queries.Remove("go");
-                var queryString = queries.ToString();
+                string? queryString = queries.ToString();
                 go = WebUtility.UrlDecode(go);
                 await navigator.NavigateToAsync($"{navigator.BaseUri}{go}?{queryString}");
             }
@@ -26,14 +24,14 @@ namespace Cod.Channel
 
         public static NameValueCollection GetQueryStrings(this INavigator navigator)
         {
-            var uri = navigator.CurrentUri;
-            var index = uri.IndexOf('?');
+            string uri = navigator.CurrentUri;
+            int index = uri.IndexOf('?');
             if (index >= 0 && uri.Length > index)
             {
-                var querystringLength = uri.Length - index - 1;
+                int querystringLength = uri.Length - index - 1;
                 if (querystringLength > 0)
                 {
-                    var querystring = uri.Substring(index + 1, querystringLength);
+                    string querystring = uri.Substring(index + 1, querystringLength);
                     return HttpUtility.ParseQueryString(querystring);
                 }
             }
@@ -43,9 +41,9 @@ namespace Cod.Channel
 
         public static bool TryGetQueryString(this INavigator navigator, string key, [NotNullWhen(true)] out string? value)
         {
-            var queries = navigator.GetQueryStrings();
+            NameValueCollection queries = navigator.GetQueryStrings();
             value = queries.Get(key);
-            return !String.IsNullOrWhiteSpace(value);
+            return !string.IsNullOrWhiteSpace(value);
         }
     }
 }

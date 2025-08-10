@@ -4,24 +4,27 @@ using System.Security.Claims;
 
 namespace Cod.Platform.StorageTable
 {
-    internal class DefaultTableControl(IOptions<StorageTableOptions> options) : IResourceControl
+    internal sealed class DefaultTableControl(IOptions<StorageTableOptions> options) : IResourceControl
     {
-        public bool Grantable(ResourceType type, string resource) => type == ResourceType.AzureStorageTable && options.Value.FullyQualifiedDomainName != null && options.Value.Key != null;
+        public bool Grantable(ResourceType type, string resource)
+        {
+            return type == ResourceType.AzureStorageTable && options.Value.FullyQualifiedDomainName != null && options.Value.Key != null;
+        }
 
         public Task<StorageControl?> GrantAsync(ClaimsPrincipal principal, ResourceType type, string resource, string? partition, string? row, CancellationToken cancellationToken = default)
         {
             StorageControl? result = null;
-            var permissions = principal.Claims.ToResourcePermissions();
-            var entitlements = permissions
+            IEnumerable<ResourcePermission> permissions = principal.Claims.ToResourcePermissions();
+            IEnumerable<string> entitlements = permissions
                 .Where(p => p.Type == ResourceType.AzureStorageTable
                             && p.Partition == resource
-                            && (p.Scope != null && partition != null && partition.StartsWith(p.Scope) || (p.Scope == null && partition == null)))
+                            && ((p.Scope != null && partition != null && partition.StartsWith(p.Scope)) || (p.Scope == null && partition == null)))
                 .SelectMany(p => p.Entitlements);
 
             if (entitlements != null && entitlements.Any())
             {
                 DatabasePermissions permisson = DatabasePermissions.None;
-                foreach (var entitlement in entitlements)
+                foreach (string? entitlement in entitlements)
                 {
                     if (Enum.TryParse(entitlement, true, out DatabasePermissions p))
                     {

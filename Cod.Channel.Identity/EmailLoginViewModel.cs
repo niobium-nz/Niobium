@@ -7,7 +7,7 @@ namespace Cod.Channel.Identity
         ICommand<TOTPLoginCommandParameter, LoginResult> loginCommand)
         : TOTPLoginViewModel(loadingStateService, loginCommand)
     {
-        public async override Task OnLogin()
+        public override async Task OnLogin()
         {
             if (!RegexUtilities.IsValidEmail(UserInput.Username))
             {

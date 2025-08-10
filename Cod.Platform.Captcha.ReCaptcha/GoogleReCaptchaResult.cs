@@ -1,6 +1,6 @@
 ﻿namespace Cod.Platform.Captcha.ReCaptcha
 {
-    internal class GoogleReCaptchaResult
+    internal sealed class GoogleReCaptchaResult
     {
         public required bool Success { get; set; }
 

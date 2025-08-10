@@ -21,7 +21,7 @@
 
         public static async Task DeleteAsync<T>(this IRepository<T> repository, string partitionKey, string rowKey, bool successIfNotExist = true, CancellationToken cancellationToken = default)
         {
-            var entity = await repository.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
+            T? entity = await repository.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
             if (entity != null)
             {
                 await repository.DeleteAsync(new[] { entity }, preconditionCheck: false, successIfNotExist: false, cancellationToken: cancellationToken);

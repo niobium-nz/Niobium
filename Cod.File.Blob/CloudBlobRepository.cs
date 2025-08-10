@@ -5,11 +5,11 @@ using System.Runtime.CompilerServices;
 
 namespace Cod.File.Blob
 {
-    internal class CloudBlobRepository(AzureBlobClientFactory clientFactory) : IFileService
+    internal sealed class CloudBlobRepository(AzureBlobClientFactory clientFactory) : IFileService
     {
         public async IAsyncEnumerable<string> GetPartitionsAsync(string? prefix = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var client = await clientFactory.CreateClientAsync(cancellationToken);
+            BlobServiceClient client = await clientFactory.CreateClientAsync(cancellationToken);
             AsyncPageable<BlobContainerItem> containers = client.GetBlobContainersAsync(prefix: prefix, cancellationToken: cancellationToken);
             await foreach (BlobContainerItem container in containers)
             {
@@ -34,7 +34,7 @@ namespace Cod.File.Blob
                 filename = $"/{filename}";
             }
 
-            var permission = FilePermissions.Read;
+            FilePermissions permission = FilePermissions.Read;
             if (createIfNotExist)
             {
                 permission |= FilePermissions.Create;
@@ -42,19 +42,19 @@ namespace Cod.File.Blob
 
             BlobContainerClient container = await GetBlobContainerAsync(permission, partition, createIfNotExist, cancellationToken);
             BlobClient blob = container.GetBlobClient(filename);
-            var exist = await blob.ExistsAsync(cancellationToken);
+            Response<bool> exist = await blob.ExistsAsync(cancellationToken);
             if (!exist.Value)
             {
                 return null;
             }
 
-            var response = await blob.DownloadStreamingAsync(cancellationToken: cancellationToken);
+            Response<BlobDownloadStreamingResult> response = await blob.DownloadStreamingAsync(cancellationToken: cancellationToken);
             if (!response.HasValue)
             {
                 return null;
             }
 
-            var ms = new MemoryStream();
+            MemoryStream ms = new();
             await response.Value.Content.CopyToAsync(ms, cancellationToken);
             ms.Seek(0, SeekOrigin.Begin);
             return ms;
@@ -108,7 +108,7 @@ namespace Cod.File.Blob
             BlobContainerClient container = await GetBlobContainerAsync(FilePermissions.Delete, partition, createIfNotExist, cancellationToken);
             foreach (string blobName in filename)
             {
-                var path = blobName;
+                string path = blobName;
 
                 if (!path.StartsWith('/'))
                 {
@@ -126,9 +126,9 @@ namespace Cod.File.Blob
             }
         }
 
-        protected async Task<BlobContainerClient> GetBlobContainerAsync(FilePermissions permission, string partition, bool createIfNotExist, CancellationToken cancellationToken)
+        private async Task<BlobContainerClient> GetBlobContainerAsync(FilePermissions permission, string partition, bool createIfNotExist, CancellationToken cancellationToken)
         {
-            var client = await clientFactory.CreateClientAsync([permission], partition, cancellationToken);
+            BlobServiceClient client = await clientFactory.CreateClientAsync([permission], partition, cancellationToken);
             BlobContainerClient container = client.GetBlobContainerClient(partition);
             if (createIfNotExist)
             {

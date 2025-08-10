@@ -2,7 +2,7 @@
 
 namespace Cod.Messaging.ServiceBus
 {
-    internal class StringHelper
+    internal sealed class StringHelper
     {
         public static string ToSnakeCase(string text)
         {
@@ -11,7 +11,7 @@ namespace Cod.Messaging.ServiceBus
                 return text.ToLowerInvariant();
             }
 
-            var sb = new StringBuilder();
+            StringBuilder sb = new();
             sb.Append(char.ToLowerInvariant(text[0]));
             for (int i = 1; i < text.Length; ++i)
             {

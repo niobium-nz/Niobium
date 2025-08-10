@@ -35,14 +35,10 @@ namespace Cod.Platform.Finance.Stripe
                     return new OperationResult<ChargeResponse>(Cod.InternalError.BadRequest, "Account information is required for validation.");
                 }
 
-                var instruction = await stripeIntegration.Value.CreateSetupIntentAsync((Guid)request.Account);
-                if (!instruction.IsSuccess)
-                {
-                    return new OperationResult<ChargeResponse>(instruction);
-                }
-                else
-                {
-                    return new OperationResult<ChargeResponse>(
+                OperationResult<SetupIntent> instruction = await stripeIntegration.Value.CreateSetupIntentAsync((Guid)request.Account);
+                return !instruction.IsSuccess
+                    ? new OperationResult<ChargeResponse>(instruction)
+                    : new OperationResult<ChargeResponse>(
                         new ChargeResponse
                         {
                             Amount = request.Amount,
@@ -51,10 +47,9 @@ namespace Cod.Platform.Finance.Stripe
                             UpstreamID = instruction.Result?.Id,
                             Instruction = instruction.Result?.ClientSecret,
                         });
-                }
             }
 
-            var result = new ChargeResponse();
+            ChargeResponse result = new();
             if (request.Operation == PaymentOperationKind.Refund)
             {
                 if (request.Account == null)
@@ -62,7 +57,7 @@ namespace Cod.Platform.Finance.Stripe
                     return new OperationResult<ChargeResponse>(Cod.InternalError.BadRequest, "Account information is required for refund operation.");
                 }
 
-                var transaction = await stripeIntegration.Value.RefundAsync((string)request.Account, request.Amount);
+                OperationResult<Refund> transaction = await stripeIntegration.Value.RefundAsync((string)request.Account, request.Amount);
                 if (!transaction.IsSuccess)
                 {
                     return new OperationResult<ChargeResponse>(transaction);
@@ -106,9 +101,9 @@ namespace Cod.Platform.Finance.Stripe
                     string? stripeCustomer = null;
                     string? stripePaymentMethod = null;
 
-                    if (request.Account != null && request.Account is string paymentInfo)
+                    if (request.Account is not null and string paymentInfo)
                     {
-                        var paymentInfoParts = paymentInfo.Split([PaymentInfoSpliter], StringSplitOptions.RemoveEmptyEntries);
+                        string[] paymentInfoParts = paymentInfo.Split([PaymentInfoSpliter], StringSplitOptions.RemoveEmptyEntries);
 
                         if (paymentInfoParts.Length >= 1)
                         {
@@ -211,7 +206,7 @@ namespace Cod.Platform.Finance.Stripe
                 return new OperationResult<ChargeResult>(Cod.InternalError.NotAcceptable);
             }
 
-            var r = System.Text.Json.JsonSerializer.Deserialize<StripeReport>(notificationJSON, serializationOptions);
+            StripeReport? r = System.Text.Json.JsonSerializer.Deserialize<StripeReport>(notificationJSON, serializationOptions);
 
             if (r == null || !StripeReport.SupportedTypes.Contains(r.Type))
             {
@@ -220,7 +215,7 @@ namespace Cod.Platform.Finance.Stripe
 
             if (r.Type == StripeReport.TypeSetup)
             {
-                var setup = await stripeIntegration.Value.RetriveSetupIntentAsync(r.Data.Object.ID);
+                SetupIntent setup = await StripeIntegration.RetriveSetupIntentAsync(r.Data.Object.ID);
                 if (setup == null)
                 {
                     return new OperationResult<ChargeResult>(Cod.InternalError.NotFound);
@@ -241,9 +236,9 @@ namespace Cod.Platform.Finance.Stripe
                     return new OperationResult<ChargeResult>(Cod.InternalError.PreconditionFailed);
                 }
 
-                var user = setup.Metadata[Constants.MetadataIntentUserID];
-                var pm = await stripeIntegration.Value.RetrivePaymentMethodAsync(setup.PaymentMethodId);
-                var pmkey = $"{setup.CustomerId}{PaymentInfoSpliter}{setup.PaymentMethodId}";
+                string user = setup.Metadata[Constants.MetadataIntentUserID];
+                global::Stripe.PaymentMethod pm = await StripeIntegration.RetrivePaymentMethodAsync(setup.PaymentMethodId);
+                string pmkey = $"{setup.CustomerId}{PaymentInfoSpliter}{setup.PaymentMethodId}";
                 await paymentRepo.Value.CreateAsync(new PaymentMethod
                 {
                     PartitionKey = PaymentMethod.BuildPartitionKey(user),
@@ -274,24 +269,24 @@ namespace Cod.Platform.Finance.Stripe
             // TODO (5he11) 这里要挂个HOOK，让外边可以根据Transaction.Reference（订单号）更新订单上边的Transaction字段；上边操作transaction的其实应该按照status决定删除，还是不管，还是插入
             if (r.Type == StripeReport.TypeCharge)
             {
-                var charge = await stripeIntegration.Value.RetriveChargeAsync(r.Data.Object.ID);
-                var targetKind = (ChargeTargetKind)int.Parse(charge.Metadata[Constants.MetadataTargetKindKey]);
-                var target = charge.Metadata[Constants.MetadataTargetKey];
+                Charge charge = await StripeIntegration.RetriveChargeAsync(r.Data.Object.ID);
+                ChargeTargetKind targetKind = (ChargeTargetKind)int.Parse(charge.Metadata[Constants.MetadataTargetKindKey]);
+                string target = charge.Metadata[Constants.MetadataTargetKey];
                 charge.Metadata.TryGetValue(Constants.MetadataOrderKey, out string? order);
                 charge.Metadata.TryGetValue(Constants.MetadataTenantKey, out string? tenant);
-                var paymentHash = charge.Metadata[Constants.MetadataHashKey];
-                var valueToHash = $"{tenant ?? String.Empty}{target}{order ?? String.Empty}";
-                var serverHash = SHA.SHA256Hash(valueToHash, options.Value.SecretHashKey);
+                string paymentHash = charge.Metadata[Constants.MetadataHashKey];
+                string valueToHash = $"{tenant ?? string.Empty}{target}{order ?? string.Empty}";
+                string serverHash = SHA.SHA256Hash(valueToHash, options.Value.SecretHashKey);
                 if (!serverHash.Equals(paymentHash, StringComparison.OrdinalIgnoreCase))
                 {
                     logger.LogWarning($"Payment hash mismatch for charge {charge.Id}. Expected: {serverHash}, Received: {paymentHash}");
                     return new OperationResult<ChargeResult>(Cod.InternalError.NotAcceptable);
                 }
 
-                var timestamp = new DateTimeOffset(charge.Created);
-                var tpk = Transaction.BuildPartitionKey(target);
-                var trk = Transaction.BuildRowKey(timestamp);
-                var transaction = await transactionRepo.Value.RetrieveAsync(tpk, trk);
+                DateTimeOffset timestamp = new(charge.Created);
+                string tpk = Transaction.BuildPartitionKey(target);
+                string trk = Transaction.BuildRowKey(timestamp);
+                Transaction? transaction = await transactionRepo.Value.RetrieveAsync(tpk, trk);
 
                 transaction ??= new Transaction
                 {
@@ -325,26 +320,26 @@ namespace Cod.Platform.Finance.Stripe
             }
             else if (r.Type == StripeReport.TypeRefund)
             {
-                var refund = await stripeIntegration.Value.RetriveRefundAsync(r.Data.Object.ID);
-                var charge1 = await stripeIntegration.Value.RetriveChargeAsync(refund.ChargeId);
+                Refund refund = await StripeIntegration.RetriveRefundAsync(r.Data.Object.ID);
+                Charge charge1 = await StripeIntegration.RetriveChargeAsync(refund.ChargeId);
 
-                var targetKind = (ChargeTargetKind)int.Parse(charge1.Metadata[Constants.MetadataTargetKindKey]);
-                var target = charge1.Metadata[Constants.MetadataTargetKey];
+                ChargeTargetKind targetKind = (ChargeTargetKind)int.Parse(charge1.Metadata[Constants.MetadataTargetKindKey]);
+                string target = charge1.Metadata[Constants.MetadataTargetKey];
                 charge1.Metadata.TryGetValue(Constants.MetadataOrderKey, out string? order);
                 charge1.Metadata.TryGetValue(Constants.MetadataTenantKey, out string? tenant);
-                var paymentHash = charge1.Metadata[Constants.MetadataHashKey];
-                var valueToHash = $"{tenant ?? String.Empty}{target}{order ?? String.Empty}";
-                var serverHash = SHA.SHA256Hash(valueToHash, options.Value.SecretHashKey);
+                string paymentHash = charge1.Metadata[Constants.MetadataHashKey];
+                string valueToHash = $"{tenant ?? string.Empty}{target}{order ?? string.Empty}";
+                string serverHash = SHA.SHA256Hash(valueToHash, options.Value.SecretHashKey);
                 if (!serverHash.Equals(paymentHash, StringComparison.OrdinalIgnoreCase))
                 {
                     logger.LogWarning($"Payment hash mismatch for charge {charge1.Id}. Expected: {serverHash}, Received: {paymentHash}");
                     return new OperationResult<ChargeResult>(Cod.InternalError.NotAcceptable);
                 }
 
-                var timestamp = new DateTimeOffset(refund.Created);
-                var tpk = Transaction.BuildPartitionKey(target);
-                var trk = Transaction.BuildRowKey(timestamp);
-                var transaction = await transactionRepo.Value.RetrieveAsync(tpk, trk);
+                DateTimeOffset timestamp = new(refund.Created);
+                string tpk = Transaction.BuildPartitionKey(target);
+                string trk = Transaction.BuildRowKey(timestamp);
+                Transaction? transaction = await transactionRepo.Value.RetrieveAsync(tpk, trk);
 
                 transaction ??= new Transaction
                 {
@@ -382,12 +377,15 @@ namespace Cod.Platform.Finance.Stripe
             }
         }
 
-        private static bool Support(ChargeRequest request) => request != null && (request.Channel & PaymentChannels.Cards) == PaymentChannels.Cards;
+        private static bool Support(ChargeRequest request)
+        {
+            return request != null && (request.Channel & PaymentChannels.Cards) == PaymentChannels.Cards;
+        }
 
         private static PaymentMethodKind FigurePaymentMethodType(IEnumerable<string> input)
         {
-            var result = PaymentMethodKind.None;
-            foreach (var item in input)
+            PaymentMethodKind result = PaymentMethodKind.None;
+            foreach (string item in input)
             {
                 result |= FigurePaymentMethodType(item);
             }
@@ -395,24 +393,29 @@ namespace Cod.Platform.Finance.Stripe
         }
 
         private static PaymentMethodKind FigurePaymentMethodType(string input)
-            => input.ToUpperInvariant() switch
+        {
+            return input.ToUpperInvariant() switch
             {
                 "CARD" => PaymentMethodKind.Visa | PaymentMethodKind.MasterCard | PaymentMethodKind.AmericanExpress,
                 "AFTERPAY_CLEARPAY" => PaymentMethodKind.Afterpay,
                 _ => throw new NotImplementedException(),
             };
+        }
 
-        private static PaymentMethodKind FigureCardType(string input) => input.ToUpperInvariant() switch
+        private static PaymentMethodKind FigureCardType(string input)
         {
-            "VISA" => PaymentMethodKind.Visa,
-            "MASTERCARD" => PaymentMethodKind.MasterCard,
-            "AMEX" => PaymentMethodKind.AmericanExpress,
-            "UNIONPAY" => PaymentMethodKind.UnionPay,
-            "DINERS" => PaymentMethodKind.DinnersClub,
-            "DISCOVER" => PaymentMethodKind.Discover,
-            "JCB" => PaymentMethodKind.JCB,
-            _ => throw new NotImplementedException(),
-        };
+            return input.ToUpperInvariant() switch
+            {
+                "VISA" => PaymentMethodKind.Visa,
+                "MASTERCARD" => PaymentMethodKind.MasterCard,
+                "AMEX" => PaymentMethodKind.AmericanExpress,
+                "UNIONPAY" => PaymentMethodKind.UnionPay,
+                "DINERS" => PaymentMethodKind.DinnersClub,
+                "DISCOVER" => PaymentMethodKind.Discover,
+                "JCB" => PaymentMethodKind.JCB,
+                _ => throw new NotImplementedException(),
+            };
+        }
 
         public async Task<OperationResult<ChargeResult>> RetrieveChargeAsync(string transaction, PaymentChannels paymentChannel)
         {
@@ -421,18 +424,18 @@ namespace Cod.Platform.Finance.Stripe
                 return new OperationResult<ChargeResult>(Cod.InternalError.NotAcceptable);
             }
 
-            var charge = await stripeIntegration.Value.RetriveChargeAsync(transaction);
+            Charge charge = await StripeIntegration.RetriveChargeAsync(transaction);
             if (charge == null)
             {
                 return new OperationResult<ChargeResult>(Cod.InternalError.NotFound);
             }
 
-            var targetKind = (ChargeTargetKind)int.Parse(charge.Metadata[Constants.MetadataTargetKindKey]);
-            var target = charge.Metadata[Constants.MetadataTargetKey];
-            var order = charge.Metadata[Constants.MetadataOrderKey];
-            var timestamp = new DateTimeOffset(charge.Created);
+            ChargeTargetKind targetKind = (ChargeTargetKind)int.Parse(charge.Metadata[Constants.MetadataTargetKindKey]);
+            string target = charge.Metadata[Constants.MetadataTargetKey];
+            string order = charge.Metadata[Constants.MetadataOrderKey];
+            DateTimeOffset timestamp = new(charge.Created);
 
-            var result = new ChargeResult
+            ChargeResult result = new()
             {
                 Account = charge.PaymentIntentId,
                 Amount = (int)charge.AmountCaptured,

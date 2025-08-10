@@ -13,13 +13,13 @@ namespace Cod.Platform.Identity
         {
             try
             {
-                var rsa = RSA.Create();
+                RSA rsa = RSA.Create();
                 rsa.ImportFromPem(options.Value.IDTokenPublicKey);
-                var key = new RsaSecurityKey(rsa)
+                RsaSecurityKey key = new(rsa)
                 {
                     KeyId = "0"
                 };
-                var issuer = options.Value.IDTokenIssuer;
+                string issuer = options.Value.IDTokenIssuer;
                 return await ValidateAndDecodeJWTAsync(bearerToken, key, issuer, audience, cancellationToken);
             }
             catch (Exception)
@@ -32,12 +32,12 @@ namespace Cod.Platform.Identity
         {
             try
             {
-                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Value.AccessTokenSecret!))
+                SymmetricSecurityKey key = new(Encoding.UTF8.GetBytes(options.Value.AccessTokenSecret!))
                 {
                     KeyId = "0"
                 };
-                var issuer = options.Value.AccessTokenIssuer;
-                var audience = options.Value.AccessTokenAudience;
+                string issuer = options.Value.AccessTokenIssuer;
+                string audience = options.Value.AccessTokenAudience;
                 return await ValidateAndDecodeJWTAsync(bearerToken, key, issuer, audience, cancellationToken);
             }
             catch (Exception)
@@ -74,12 +74,9 @@ namespace Cod.Platform.Identity
             try
             {
                 TokenValidationResult validationResult = await new JsonWebTokenHandler().ValidateTokenAsync(jwt, validationParameters);
-                if (!validationResult.IsValid)
-                {
-                    throw new ApplicationException(InternalError.AuthenticationRequired, innerException: validationResult.Exception);
-                }
-
-                return new ClaimsPrincipal(validationResult.ClaimsIdentity);
+                return !validationResult.IsValid
+                    ? throw new ApplicationException(InternalError.AuthenticationRequired, innerException: validationResult.Exception)
+                    : new ClaimsPrincipal(validationResult.ClaimsIdentity);
             }
             catch (SecurityTokenValidationException stvex)
             {

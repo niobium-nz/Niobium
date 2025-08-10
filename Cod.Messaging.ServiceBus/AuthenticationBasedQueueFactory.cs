@@ -7,7 +7,7 @@ using System.Collections.Concurrent;
 
 namespace Cod.Messaging.ServiceBus
 {
-    internal class AuthenticationBasedQueueFactory(
+    internal sealed class AuthenticationBasedQueueFactory(
         Lazy<IAuthenticator> authenticator,
         IOptions<ServiceBusOptions> options)
         : IAsyncDisposable
@@ -21,17 +21,7 @@ namespace Cod.Messaging.ServiceBus
 
         public ServiceBusOptions Configuration
         {
-            get
-            {
-                if (configuration != null)
-                {
-                    return configuration;
-                }
-                else
-                {
-                    return options.Value;
-                }
-            }
+            get => configuration ?? options.Value;
             set
             {
                 if (value != null)
@@ -41,7 +31,7 @@ namespace Cod.Messaging.ServiceBus
             }
         }
 
-        protected DefaultAzureCredential Credential
+        private DefaultAzureCredential Credential
         {
             get
             {
@@ -59,26 +49,26 @@ namespace Cod.Messaging.ServiceBus
 
         public async Task<ServiceBusReceiver> CreateReceiverAsync(IEnumerable<MessagingPermissions> permissions, string name, CancellationToken cancellationToken = default)
         {
-            if (receivers.TryGetValue(name, out var cache))
+            if (receivers.TryGetValue(name, out ServiceBusReceiver? cache))
             {
                 return cache;
             }
 
-            var client = await CreateClientAsync(permissions, name, cancellationToken);
-            var receiver = client.CreateReceiver(name);
+            ServiceBusClient client = await CreateClientAsync(permissions, name, cancellationToken);
+            ServiceBusReceiver receiver = client.CreateReceiver(name);
             receivers.Add(name, receiver);
             return receiver;
         }
 
         public async Task<ServiceBusSender> CreateSenderAsync(IEnumerable<MessagingPermissions> permissions, string name, CancellationToken cancellationToken = default)
         {
-            if (senders.TryGetValue(name, out var cache))
+            if (senders.TryGetValue(name, out ServiceBusSender? cache))
             {
                 return cache;
             }
 
-            var client = await CreateClientAsync(permissions, name, cancellationToken);
-            var sender = client.CreateSender(name);
+            ServiceBusClient client = await CreateClientAsync(permissions, name, cancellationToken);
+            ServiceBusSender sender = client.CreateSender(name);
             senders.Add(name, sender);
             return sender;
         }
@@ -94,14 +84,14 @@ namespace Cod.Messaging.ServiceBus
             }
             else
             {
-                var resourcePermissions = (await authenticator.Value.GetResourcePermissionsAsync(cancellationToken)).ToArray();
-                var permission = resourcePermissions.FirstOrDefault(p =>
+                ResourcePermission[] resourcePermissions = [.. await authenticator.Value.GetResourcePermissionsAsync(cancellationToken)];
+                ResourcePermission permission = resourcePermissions.FirstOrDefault(p =>
                         p.Type == ResourceType.AzureServiceBus
                         && permissions.All(m => p.Entitlements.Contains(m.ToString().ToUpperInvariant()))
                         && p.Partition != null
                         && name.StartsWith(p.Partition))
                     ?? throw new ApplicationException(InternalError.Forbidden);
-                var token = await authenticator.Value.RetrieveResourceTokenAsync(ResourceType.AzureServiceBus, permission.Resource, partition: name, cancellationToken: cancellationToken);
+                string token = await authenticator.Value.RetrieveResourceTokenAsync(ResourceType.AzureServiceBus, permission.Resource, partition: name, cancellationToken: cancellationToken);
                 return clients.GetOrAdd(name, new ServiceBusClient(
                     permission.Resource,
                     new AzureSasCredential($"SharedAccessSignature {token}"),
@@ -111,7 +101,7 @@ namespace Cod.Messaging.ServiceBus
 
         private static ServiceBusClientOptions CreateOptions(ServiceBusOptions options)
         {
-            var result = new ServiceBusClientOptions
+            ServiceBusClientOptions result = new()
             {
                 TransportType = options.UseWebSocket ? ServiceBusTransportType.AmqpWebSockets : ServiceBusTransportType.AmqpTcp,
                 RetryOptions = new ServiceBusRetryOptions
@@ -130,23 +120,23 @@ namespace Cod.Messaging.ServiceBus
             return result;
         }
 
-        protected virtual async ValueTask DisposeAsync(bool disposing)
+        private static async ValueTask DisposeAsync(bool disposing)
         {
             if (disposing)
             {
-                foreach (var receiver in receivers.Keys)
+                foreach (string receiver in receivers.Keys)
                 {
                     await receivers[receiver].DisposeAsync();
                 }
                 receivers.Clear();
 
-                foreach (var sender in senders.Keys)
+                foreach (string sender in senders.Keys)
                 {
                     await senders[sender].DisposeAsync();
                 }
                 senders.Clear();
 
-                foreach (var client in clients.Keys)
+                foreach (string client in clients.Keys)
                 {
                     await clients[client].DisposeAsync();
                 }

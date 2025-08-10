@@ -19,9 +19,9 @@ namespace Cod.Channel.Identity
         [SetsRequiredMembers]
         public LoginCommandParameter(string scheme, string identity, bool remember)
         {
-            this.Scheme = scheme;
-            this.Identity = identity;
-            this.Remember = remember;
+            Scheme = scheme;
+            Identity = identity;
+            Remember = remember;
         }
 
         [SetsRequiredMembers]
@@ -33,11 +33,11 @@ namespace Cod.Channel.Identity
         [SetsRequiredMembers]
         public LoginCommandParameter(string scheme, string identity, string credential, bool remember, string? returnUrl)
         {
-            this.Scheme = scheme;
-            this.Identity = identity;
-            this.Credential = credential;
-            this.ReturnUrl = returnUrl;
-            this.Remember = remember;
+            Scheme = scheme;
+            Identity = identity;
+            Credential = credential;
+            ReturnUrl = returnUrl;
+            Remember = remember;
         }
 
         public required string Scheme { get; set; }

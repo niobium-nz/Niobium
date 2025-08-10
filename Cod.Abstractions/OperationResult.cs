@@ -48,7 +48,7 @@ namespace Cod
             getMessage = () =>
             {
                 StringBuilder msg = new();
-                if (InternalError.TryGet(code, out var val))
+                if (InternalError.TryGet(code, out string? val))
                 {
                     msg.Append(val);
                 }

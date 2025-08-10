@@ -10,9 +10,9 @@ namespace Cod.Messaging.ServiceBus
     {
         public static async Task<ClaimsPrincipal?> ParseAsync(this PrincipalParser helper, ServiceBusReceivedMessage message, CancellationToken cancellationToken = default)
         {
-            if (message.ApplicationProperties.TryGetValue(HeaderNames.Authorization, out var authorization)
+            if (message.ApplicationProperties.TryGetValue(HeaderNames.Authorization, out object? authorization)
                 && authorization != null && authorization is string auth
-                && AuthenticationHeaderValue.TryParse(auth, out var authHeader))
+                && AuthenticationHeaderValue.TryParse(auth, out AuthenticationHeaderValue? authHeader))
             {
                 if (authHeader.Scheme == AuthenticationScheme.BearerLoginScheme && !string.IsNullOrWhiteSpace(authHeader.Parameter))
                 {

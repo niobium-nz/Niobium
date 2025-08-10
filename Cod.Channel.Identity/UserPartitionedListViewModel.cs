@@ -13,11 +13,11 @@ namespace Cod.Channel.Identity
     {
         protected string? Partition { get; private set; }
 
-        protected override LoadCommandParameter LoadCommandParameter { get => new(Partition!); }
+        protected override LoadCommandParameter LoadCommandParameter => new(Partition!);
 
-        public async override Task InitializeAsync(CancellationToken cancellationToken = default)
+        public override async Task InitializeAsync(CancellationToken cancellationToken = default)
         {
-            (var success, Partition) = await GetPartitionAsync(cancellationToken);
+            (bool success, Partition) = await GetPartitionAsync(cancellationToken);
             if (!success)
             {
                 return;
@@ -27,9 +27,9 @@ namespace Cod.Channel.Identity
             await base.InitializeAsync(cancellationToken);
         }
 
-        protected async virtual Task<(bool, string?)> GetPartitionAsync(CancellationToken cancellationToken)
+        protected virtual async Task<(bool, string?)> GetPartitionAsync(CancellationToken cancellationToken)
         {
-            var user = await authenticator.GetUserIDAsync(cancellationToken);
+            Guid? user = await authenticator.GetUserIDAsync(cancellationToken);
             return user switch
             {
                 null => (false, null),

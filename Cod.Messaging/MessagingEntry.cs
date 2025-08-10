@@ -6,7 +6,8 @@ namespace Cod.Messaging
     {
         public static MessagingEntry<T> Parse<T>(string json, Type? type = null)
         {
-            var result = new MessagingEntry<T> { Body = json };
+            MessagingEntry<T> result = new()
+            { Body = json };
 
             if (type != null)
             {
@@ -45,7 +46,7 @@ namespace Cod.Messaging
                     }
                     else
                     {
-                        var type = System.Type.GetType(Type);
+                        Type? type = System.Type.GetType(Type);
                         value = (T)System.Text.Json.JsonSerializer.Deserialize(Body, type!, SerializationOptions)!;
                     }
                 }
@@ -78,7 +79,10 @@ namespace Cod.Messaging
             GC.SuppressFinalize(this);
         }
 
-        protected virtual ValueTask DisposeAsync(bool disposing) => ValueTask.CompletedTask;
+        protected virtual ValueTask DisposeAsync(bool disposing)
+        {
+            return ValueTask.CompletedTask;
+        }
 
         internal static string BuildTypeFullName(Type type)
         {

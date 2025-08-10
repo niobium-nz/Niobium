@@ -2,18 +2,18 @@
 {
     public static class IDomainEventHandlerExtensions
     {
-        public async static Task InvokeAsync<TEventArgs, TDomain>(this IEnumerable<IDomainEventHandler<TDomain>> eventHandlers, TEventArgs e, CancellationToken cancellationToken = default)
+        public static async Task InvokeAsync<TEventArgs, TDomain>(this IEnumerable<IDomainEventHandler<TDomain>> eventHandlers, TEventArgs e, CancellationToken cancellationToken = default)
             where TEventArgs : class
         {
             await eventHandlers.InvokeAsync(() => e, cancellationToken);
         }
 
-        internal async static Task InvokeAsync<TEventArgs, TDomain>(this IEnumerable<IDomainEventHandler<TDomain>> eventHandlers, Func<TEventArgs> getEventArgs, CancellationToken cancellationToken = default)
+        internal static async Task InvokeAsync<TEventArgs, TDomain>(this IEnumerable<IDomainEventHandler<TDomain>> eventHandlers, Func<TEventArgs> getEventArgs, CancellationToken cancellationToken = default)
             where TEventArgs : class
         {
             TEventArgs? args = null;
 
-            foreach (var handler in eventHandlers)
+            foreach (IDomainEventHandler<TDomain> handler in eventHandlers)
             {
                 if (handler is IDomainEventHandler<TDomain, TEventArgs> h)
                 {

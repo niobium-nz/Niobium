@@ -24,7 +24,7 @@ namespace Cod
 
         public Task<TDomain> GetAsync(string partitionKey, string rowKey, bool forceLoad = false, CancellationToken? cancellationToken = default)
         {
-            var key = new StorageKey { PartitionKey = partitionKey, RowKey = rowKey };
+            StorageKey key = new() { PartitionKey = partitionKey, RowKey = rowKey };
 
             if (forceLoad)
             {
@@ -33,9 +33,9 @@ namespace Cod
 
             return Task.FromResult(instanceCache.GetOrAdd(key, k =>
                 {
-                    if (partitionCache.TryGetValue(k.PartitionKey, out var partition))
+                    if (partitionCache.TryGetValue(k.PartitionKey, out IList<TDomain>? partition))
                     {
-                        var c = partition.SingleOrDefault(d => d.RowKey == k.RowKey);
+                        TDomain? c = partition.SingleOrDefault(d => d.RowKey == k.RowKey);
                         if (c != null)
                         {
                             return c;
@@ -155,7 +155,7 @@ namespace Cod
 
             if (clearPartitionCache && itemPK != null)
             {
-                var changed = partitionCache.TryRemove(itemPK, out _);
+                bool changed = partitionCache.TryRemove(itemPK, out _);
                 if (changed)
                 {
                     RebuildCache();
@@ -170,8 +170,8 @@ namespace Cod
             cachedPartitions.Clear();
             cachedDomains.Clear();
 
-            var orderedPartitionKeys = partitionCache.Keys.OrderBy(k => k);
-            foreach (var key in orderedPartitionKeys)
+            IOrderedEnumerable<string> orderedPartitionKeys = partitionCache.Keys.OrderBy(k => k);
+            foreach (string? key in orderedPartitionKeys)
             {
                 cachedPartitions.Add(key);
                 cachedDomains.AddRange(partitionCache[key]);

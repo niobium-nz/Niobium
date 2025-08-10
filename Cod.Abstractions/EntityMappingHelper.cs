@@ -22,18 +22,13 @@ namespace Cod
 
         public static T GetField<T>(object source, EntityKeyKind field)
         {
-            if (TryGetField<T>(source, field, out var result))
-            {
-                return result;
-            }
-
-            throw new InvalidDataException($"Cannot get {field} from {source}.");
+            return TryGetField<T>(source, field, out T? result) ? result : throw new InvalidDataException($"Cannot get {field} from {source}.");
         }
 
         public static bool TryGetField<T>(object source, EntityKeyKind field, [NotNullWhen(true)] out T? result)
         {
             Type type = source.GetType();
-            var mapping = GetMapping(type);
+            IReadOnlyDictionary<string, PropertyInfo> mapping = GetMapping(type);
             string key = field.ToString();
             if (!mapping.ContainsKey(key))
             {
@@ -41,7 +36,7 @@ namespace Cod
                 return false;
             }
 
-            var value = mapping[key].GetValue(source);
+            object? value = mapping[key].GetValue(source);
             if (value == null)
             {
                 result = default;
@@ -55,22 +50,13 @@ namespace Cod
                 case EntityKeyKind.Timestamp:
                     if (value is DateTimeOffset time)
                     {
-                        if (typeof(T) == typeof(DateTimeOffset))
-                        {
-                            result = (T)value;
-                        }
-                        else if (typeof(T) == typeof(long))
-                        {
-                            result = (T)(object)time.ToReverseUnixTimeMilliseconds();
-                        }
-                        else if (typeof(T) == typeof(string))
-                        {
-                            result = (T)(object)time.ToReverseUnixTimeMilliseconds().ToString();
-                        }
-                        else
-                        {
-                            throw new InvalidDataContractException($"Property '{key}' on '{type.FullName}' must be of type DateTimeOffset or long.");
-                        }
+                        result = typeof(T) == typeof(DateTimeOffset)
+                            ? (T)value
+                            : typeof(T) == typeof(long)
+                                ? (T)(object)time.ToReverseUnixTimeMilliseconds()
+                                : typeof(T) == typeof(string)
+                                ? (T)(object)time.ToReverseUnixTimeMilliseconds().ToString()
+                                : throw new InvalidDataContractException($"Property '{key}' on '{type.FullName}' must be of type DateTimeOffset or long.");
                     }
                     else
                     {
@@ -91,11 +77,11 @@ namespace Cod
         {
             Dictionary<string, object> dic = [];
             Type type = source.GetType();
-            var mapping = GetMapping(type);
+            IReadOnlyDictionary<string, PropertyInfo> mapping = GetMapping(type);
 
             foreach (string key in mapping.Keys)
             {
-                var value = mapping[key].GetValue(source);
+                object? value = mapping[key].GetValue(source);
                 if (key == EntityKeyKind.Timestamp.ToString() && value is DateTimeOffset time)
                 {
                     value = time.ToUnixTimeSeconds();
@@ -103,7 +89,7 @@ namespace Cod
 
                 if (value != null)
                 {
-                    if (specialMapping.TryGetValue(key, out var mappedKey))
+                    if (specialMapping.TryGetValue(key, out string? mappedKey))
                     {
                         dic.Add(mappedKey, value);
                     }
@@ -123,7 +109,7 @@ namespace Cod
             PropertyInfo[] properties = type.GetProperties(bindingAttr);
             foreach (PropertyInfo property in properties)
             {
-                var key = property.GetCustomAttribute<EntityKeyAttribute>();
+                EntityKeyAttribute? key = property.GetCustomAttribute<EntityKeyAttribute>();
                 if (key != null)
                 {
                     switch (key.Kind)

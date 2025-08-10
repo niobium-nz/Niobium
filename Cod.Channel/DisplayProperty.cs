@@ -3,9 +3,9 @@
     public class DisplayProperty(
         string propertyName,
         string? displayName,
-        Func<object, object?> getValue, 
-        int? order, 
-        int? group, 
+        Func<object, object?> getValue,
+        int? order,
+        int? group,
         string? description,
         PropertyControl? control,
         bool? isSubject)

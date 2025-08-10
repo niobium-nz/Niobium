@@ -15,7 +15,7 @@ namespace Cod
             await cahceLock.WaitAsync(cancellationToken);
             try
             {
-                var result = await innerRepository.CreateAsync(entities, replaceIfExist, expiry, cancellationToken);
+                IEnumerable<T> result = await innerRepository.CreateAsync(entities, replaceIfExist, expiry, cancellationToken);
                 PurgeCache();
                 return result;
             }
@@ -46,7 +46,7 @@ namespace Cod
             {
                 await InitializeCacheAsync(cancellationToken);
 
-                var key = new StorageKey { PartitionKey = partitionKey, RowKey = rowKey };
+                StorageKey key = new() { PartitionKey = partitionKey, RowKey = rowKey };
                 return cache.ContainsKey(key);
             }
             finally
@@ -62,7 +62,8 @@ namespace Cod
             {
                 await InitializeCacheAsync(cancellationToken);
 
-                var result = cache.Values.Take(limit).ToList();
+                List<T> value = [.. cache.Values.Take(limit)];
+                List<T> result = value;
                 return new EntityBag<T>(result, null);
             }
             finally
@@ -78,8 +79,8 @@ namespace Cod
             {
                 await InitializeCacheAsync(cancellationToken);
 
-                var result = new List<T>();
-                foreach (var key in cache.Keys)
+                List<T> result = [];
+                foreach (StorageKey key in cache.Keys)
                 {
                     if (key.PartitionKey == partitionKey)
                     {
@@ -102,7 +103,7 @@ namespace Cod
             {
                 await InitializeCacheAsync(cancellationToken);
 
-                foreach (var item in cache.Values)
+                foreach (T? item in cache.Values)
                 {
                     yield return item;
                 }
@@ -120,8 +121,8 @@ namespace Cod
             {
                 await InitializeCacheAsync(cancellationToken);
 
-                var result = new List<T>();
-                foreach (var key in cache.Keys)
+                List<T> result = [];
+                foreach (StorageKey key in cache.Keys)
                 {
                     if (key.PartitionKey == partitionKey)
                     {
@@ -142,13 +143,8 @@ namespace Cod
             {
                 await InitializeCacheAsync(cancellationToken);
 
-                var key = new StorageKey { PartitionKey = partitionKey, RowKey = rowKey };
-                if (cache.TryGetValue(key, out var entity))
-                {
-                    return entity;
-                }
-
-                return default;
+                StorageKey key = new() { PartitionKey = partitionKey, RowKey = rowKey };
+                return cache.TryGetValue(key, out T? entity) ? entity : default;
             }
             finally
             {
@@ -161,7 +157,7 @@ namespace Cod
             await cahceLock.WaitAsync(cancellationToken);
             try
             {
-                var result = await innerRepository.UpdateAsync(entities, preconditionCheck, mergeIfExists, cancellationToken);
+                IEnumerable<T> result = await innerRepository.UpdateAsync(entities, preconditionCheck, mergeIfExists, cancellationToken);
                 PurgeCache();
                 return result;
             }
@@ -175,14 +171,14 @@ namespace Cod
         {
             if (cache.Count == 0 && DateTimeOffset.UtcNow - lastCacheUpdate > CacheUpdateGap)
             {
-                var entities = innerRepository.GetAsync(cancellationToken: cancellationToken);
-                await foreach (var item in entities)
+                IAsyncEnumerable<T> entities = innerRepository.GetAsync(cancellationToken: cancellationToken);
+                await foreach (T? item in entities)
                 {
                     if (item != null)
                     {
-                        var pk = EntityMappingHelper.GetField<string>(item, EntityKeyKind.PartitionKey);
-                        var rk = EntityMappingHelper.GetField<string>(item, EntityKeyKind.RowKey);
-                        var key = new StorageKey { PartitionKey = pk, RowKey = rk };
+                        string pk = EntityMappingHelper.GetField<string>(item, EntityKeyKind.PartitionKey);
+                        string rk = EntityMappingHelper.GetField<string>(item, EntityKeyKind.RowKey);
+                        StorageKey key = new() { PartitionKey = pk, RowKey = rk };
                         cache.Add(key, item);
                     }
                 }
@@ -191,7 +187,10 @@ namespace Cod
             }
         }
 
-        protected virtual void PurgeCache() => cache.Clear();
+        protected virtual void PurgeCache()
+        {
+            cache.Clear();
+        }
 
         protected virtual void Dispose(bool disposing)
         {

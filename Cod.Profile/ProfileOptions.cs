@@ -12,7 +12,7 @@
             ProfileServiceHost = ProfileServiceHost.Trim();
             if (ProfileServiceHost.EndsWith('/'))
             {
-                ProfileServiceHost = ProfileServiceHost.Remove(ProfileServiceHost.Length - 1);
+                ProfileServiceHost = ProfileServiceHost[..^1];
             }
 
             ArgumentNullException.ThrowIfNull(ProfileServiceEndpoint, nameof(ProfileServiceEndpoint));

@@ -4,7 +4,7 @@ using Cod.Platform;
 
 namespace Cod.Messaging.StorageAccount
 {
-    internal class StorageQueueSignatureIssuer(QueueServiceClient client) : ISignatureIssuer
+    internal sealed class StorageQueueSignatureIssuer(QueueServiceClient client) : ISignatureIssuer
     {
         private readonly QueueServiceClient client = client ?? throw new ArgumentNullException(nameof(client));
 

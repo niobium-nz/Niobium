@@ -9,11 +9,14 @@ namespace Cod.Platform.StorageTable
 
         public bool IsHighOverhead => false;
 
-        public bool CanDescribe(Guid tenant, Guid user, string role) => roleToGrant == role;
+        public bool CanDescribe(Guid tenant, Guid user, string role)
+        {
+            return roleToGrant == role;
+        }
 
         public Task<IEnumerable<EntitlementDescription>> DescribeAsync(Guid tenant, Guid user, string role)
         {
-            var permissionBuilder = new StringBuilder();
+            StringBuilder permissionBuilder = new();
             if (permissions.HasFlag(DatabasePermissions.Query))
             {
                 permissionBuilder.Append(DatabasePermissions.Query.ToString().ToUpperInvariant());
@@ -38,13 +41,13 @@ namespace Cod.Platform.StorageTable
                 permissionBuilder.Append(',');
             }
 
-            var permissionDesc = permissionBuilder.ToString();
+            string permissionDesc = permissionBuilder.ToString();
             if (permissionDesc.Length > 0)
             {
                 permissionDesc = permissionDesc[..^1];
             }
 
-            var result = BuildDescription(tenant, user, role, tableName, permissionDesc);
+            IEnumerable<EntitlementDescription> result = BuildDescription(tenant, user, role, tableName, permissionDesc);
             return Task.FromResult(result);
         }
 

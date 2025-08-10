@@ -17,7 +17,7 @@ namespace Cod.Device.IoTHub
 
         public AzureIoTHubCommander(IConfigurationProvider configuration, ILogger logger)
         {
-            var conn = configuration.GetSettingAsString("IOT_HUB_CONN");
+            string? conn = configuration.GetSettingAsString("IOT_HUB_CONN");
             serviceClient = ServiceClient.CreateFromConnectionString(conn);
             this.logger = logger;
         }

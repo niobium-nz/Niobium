@@ -27,17 +27,12 @@ namespace Cod.Channel
 
         public async Task<string?> GetHashAsync(CancellationToken cancellationToken = default)
         {
-            if (Domain == null)
-            {
-                return null;
-            }
-
-            return await Domain.GetHashAsync(cancellationToken);
+            return Domain == null ? null : await Domain.GetHashAsync(cancellationToken);
         }
 
         public async Task<IViewModel<TDomain, TEntity>> InitializeAsync(TDomain domain, IRefreshable? parent = null, bool force = false, CancellationToken cancellationToken = default)
         {
-            var shouldNotify = false;
+            bool shouldNotify = false;
 
             if (force || !DomainInitialized)
             {

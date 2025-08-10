@@ -18,13 +18,10 @@ namespace Cod.Platform
         /// <returns>The <see cref="HttpContext"/> for the function execution or null if it does not exist.</returns>
         public static HttpContext? GetHttpContext(this FunctionContext context)
         {
-            if (context.Items.TryGetValue(HttpContextKey, out var requestContext)
-                && requestContext is HttpContext httpContext)
-            {
-                return httpContext;
-            }
-
-            return null;
+            return context.Items.TryGetValue(HttpContextKey, out object? requestContext)
+                && requestContext is HttpContext httpContext
+                ? httpContext
+                : null;
         }
 
         /// <summary>
@@ -37,7 +34,7 @@ namespace Cod.Platform
         {
             request = null;
 
-            if (context.Items.TryGetValue(HttpContextKey, out var requestContext)
+            if (context.Items.TryGetValue(HttpContextKey, out object? requestContext)
                 && requestContext is HttpContext httpContext)
             {
                 request = httpContext.Request;

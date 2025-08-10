@@ -6,6 +6,9 @@
 
         public required Dictionary<string, string> DomainScopedAPIKeys { get; set; }
 
-        public bool Validate() => !string.IsNullOrWhiteSpace(GlobalAPIKey) || (DomainScopedAPIKeys != null && DomainScopedAPIKeys.Count > 0);
+        public bool Validate()
+        {
+            return !string.IsNullOrWhiteSpace(GlobalAPIKey) || (DomainScopedAPIKeys != null && DomainScopedAPIKeys.Count > 0);
+        }
     }
 }

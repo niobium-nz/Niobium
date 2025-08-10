@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-namespace Cod.Channel
+﻿namespace Cod.Channel
 {
     public interface ICreatableRepository<TDomain, TEntity, TCreateParams> : IRepository<TDomain, TEntity>
         where TDomain : IDomain<TEntity>

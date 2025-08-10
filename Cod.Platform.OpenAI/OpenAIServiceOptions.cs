@@ -9,8 +9,10 @@
         public required string Secret { get; set; }
 
         public bool Validate()
-           => SystemPrompts.Count > 0
-            && !string.IsNullOrWhiteSpace(Endpoint)
-            && !string.IsNullOrWhiteSpace(Secret);
+        {
+            return SystemPrompts.Count > 0
+                    && !string.IsNullOrWhiteSpace(Endpoint)
+                    && !string.IsNullOrWhiteSpace(Secret);
+        }
     }
 }

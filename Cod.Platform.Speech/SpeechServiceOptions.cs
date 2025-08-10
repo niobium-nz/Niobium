@@ -8,6 +8,9 @@
 
         public string ServiceRegion => FullyQualifiedDomainName.Split('.')[0];
 
-        public bool Validate() => !string.IsNullOrWhiteSpace(FullyQualifiedDomainName) && !string.IsNullOrWhiteSpace(AccessKey);
+        public bool Validate()
+        {
+            return !string.IsNullOrWhiteSpace(FullyQualifiedDomainName) && !string.IsNullOrWhiteSpace(AccessKey);
+        }
     }
 }

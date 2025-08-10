@@ -13,7 +13,7 @@ namespace Cod.Channel.Identity
         {
             using (loadingStateService.SetBusy(BusyGroups.Login))
             {
-                var result = await authenticator.LoginAsync(
+                LoginResult result = await authenticator.LoginAsync(
                             parameter.Scheme,
                             parameter.Identity,
                             parameter.Credential,
@@ -22,13 +22,13 @@ namespace Cod.Channel.Identity
 
                 if (result.IsSuccess)
                 {
-                    var returnUrl = parameter.ReturnUrl;
-                    if (String.IsNullOrEmpty(returnUrl) && navigator.TryGetQueryString(Constants.LoginReturnUrlQueryStringName, out var r))
+                    string? returnUrl = parameter.ReturnUrl;
+                    if (string.IsNullOrEmpty(returnUrl) && navigator.TryGetQueryString(Constants.LoginReturnUrlQueryStringName, out string? r))
                     {
                         returnUrl = WebUtility.UrlDecode(r);
                     }
 
-                    if (!String.IsNullOrEmpty(returnUrl))
+                    if (!string.IsNullOrEmpty(returnUrl))
                     {
                         await navigator.NavigateToAsync(returnUrl, forceLoad: true);
                     }

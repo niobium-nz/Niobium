@@ -5,19 +5,19 @@ using Microsoft.Net.Http.Headers;
 
 namespace Cod.Messaging.ServiceBus
 {
-    internal class ServiceBusQueueBroker<T>(AuthenticationBasedQueueFactory factory, Lazy<IAuthenticator> authenticator) : IMessagingBroker<T> where T : class, IDomainEvent
+    internal sealed class ServiceBusQueueBroker<T>(AuthenticationBasedQueueFactory factory, Lazy<IAuthenticator> authenticator) : IMessagingBroker<T> where T : class, IDomainEvent
     {
         public const string MessageContentType = "application/json";
 
-        protected virtual string QueueName 
-        { 
+        private static string QueueName
+        {
             get
             {
-                var type = typeof(T);
+                Type type = typeof(T);
                 if (type.IsGenericType)
                 {
-                    var arguments = type.GetGenericArguments();
-                    var name = type.Name.Split('`')[0];
+                    Type[] arguments = type.GetGenericArguments();
+                    string name = type.Name.Split('`')[0];
                     return $"{name.ToLowerInvariant()}-{string.Join("-", arguments.Select(arg => arg.Name.ToLowerInvariant()))}";
                 }
                 else
@@ -27,30 +27,27 @@ namespace Cod.Messaging.ServiceBus
             }
         }
 
-        public virtual async Task<MessagingEntry<T>?> DequeueAsync(TimeSpan? maxWaitTime = default, CancellationToken cancellationToken = default)
+        public async Task<MessagingEntry<T>?> DequeueAsync(TimeSpan? maxWaitTime = default, CancellationToken cancellationToken = default)
         {
-            var q = await GetReceiverAsync(MessagingPermissions.ProcessMessages, cancellationToken);
-            var msg = await q.ReceiveMessageAsync(maxWaitTime, cancellationToken);
-            if (msg == null || msg.ContentType != MessageContentType)
-            {
-                return null;
-            }
-
-            return new ServiceBusMessageEntry<T>(msg, async (m) => await q.CompleteMessageAsync(m))
-            {
-                ID = msg.MessageId,
-                Timestamp = msg.EnqueuedTime,
-                Body = msg.Body.ToString(),
-                Type = msg.ApplicationProperties.TryGetValue(HeaderNames.ContentType, out var type) ? type?.ToString() : null,
-            };
+            ServiceBusReceiver q = await GetReceiverAsync(MessagingPermissions.ProcessMessages, cancellationToken);
+            ServiceBusReceivedMessage msg = await q.ReceiveMessageAsync(maxWaitTime, cancellationToken);
+            return msg == null || msg.ContentType != MessageContentType
+                ? null
+                : (MessagingEntry<T>)new ServiceBusMessageEntry<T>(msg, async (m) => await q.CompleteMessageAsync(m))
+                {
+                    ID = msg.MessageId,
+                    Timestamp = msg.EnqueuedTime,
+                    Body = msg.Body.ToString(),
+                    Type = msg.ApplicationProperties.TryGetValue(HeaderNames.ContentType, out object? type) ? type?.ToString() : null,
+                };
         }
 
-        public virtual async Task<IEnumerable<MessagingEntry<T>>> DequeueAsync(int limit, TimeSpan? maxWaitTime = default, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<MessagingEntry<T>>> DequeueAsync(int limit, TimeSpan? maxWaitTime = default, CancellationToken cancellationToken = default)
         {
-            var q = await GetReceiverAsync(MessagingPermissions.ProcessMessages, cancellationToken);
-            var msgs = await q.ReceiveMessagesAsync(limit, maxWaitTime, cancellationToken);
-            var result = new List<MessagingEntry<T>>();
-            foreach (var msg in msgs)
+            ServiceBusReceiver q = await GetReceiverAsync(MessagingPermissions.ProcessMessages, cancellationToken);
+            IReadOnlyList<ServiceBusReceivedMessage> msgs = await q.ReceiveMessagesAsync(limit, maxWaitTime, cancellationToken);
+            List<MessagingEntry<T>> result = [];
+            foreach (ServiceBusReceivedMessage? msg in msgs)
             {
                 if (msg.ContentType != MessageContentType)
                 {
@@ -62,17 +59,17 @@ namespace Cod.Messaging.ServiceBus
                     ID = msg.MessageId,
                     Timestamp = msg.EnqueuedTime,
                     Body = msg.Body.ToString(),
-                    Type = msg.ApplicationProperties.TryGetValue(HeaderNames.ContentType, out var type) ? type?.ToString() : null,
+                    Type = msg.ApplicationProperties.TryGetValue(HeaderNames.ContentType, out object? type) ? type?.ToString() : null,
                 });
             }
 
             return result;
         }
 
-        public virtual async Task EnqueueAsync(IEnumerable<MessagingEntry<T>> messages, CancellationToken cancellationToken = default)
+        public async Task EnqueueAsync(IEnumerable<MessagingEntry<T>> messages, CancellationToken cancellationToken = default)
         {
-            var q = await GetSenderAsync(MessagingPermissions.Add, cancellationToken);
-            foreach (var message in messages)
+            ServiceBusSender q = await GetSenderAsync(MessagingPermissions.Add, cancellationToken);
+            foreach (MessagingEntry<T> message in messages)
             {
                 if (string.IsNullOrWhiteSpace(message.ID))
                 {
@@ -114,17 +111,17 @@ namespace Cod.Messaging.ServiceBus
             }
         }
 
-        public virtual async Task<IEnumerable<MessagingEntry<T>>> PeekAsync(int? limit, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<MessagingEntry<T>>> PeekAsync(int? limit, CancellationToken cancellationToken = default)
         {
-            var q = await GetReceiverAsync(MessagingPermissions.ProcessMessages, cancellationToken);
-            var msgs = await q.PeekMessagesAsync(limit ?? 1000, cancellationToken: cancellationToken);
+            ServiceBusReceiver q = await GetReceiverAsync(MessagingPermissions.ProcessMessages, cancellationToken);
+            IReadOnlyList<ServiceBusReceivedMessage> msgs = await q.PeekMessagesAsync(limit ?? 1000, cancellationToken: cancellationToken);
             if (msgs == null)
             {
                 return [];
             }
 
-            var result = new List<MessagingEntry<T>>();
-            foreach (var msg in msgs)
+            List<MessagingEntry<T>> result = [];
+            foreach (ServiceBusReceivedMessage? msg in msgs)
             {
                 if (msg == null)
                 {
@@ -136,7 +133,7 @@ namespace Cod.Messaging.ServiceBus
                     throw new ApplicationException(InternalError.BadRequest);
                 }
 
-                if (msg.TryParse<T>(out var entry))
+                if (msg.TryParse<T>(out MessagingEntry<T>? entry))
                 {
                     result.Add(entry);
                 }
@@ -149,10 +146,14 @@ namespace Cod.Messaging.ServiceBus
             return result;
         }
 
-        protected virtual Task<ServiceBusReceiver> GetReceiverAsync(MessagingPermissions permission, CancellationToken cancellationToken)
-            => factory.CreateReceiverAsync([permission], QueueName, cancellationToken);
+        private Task<ServiceBusReceiver> GetReceiverAsync(MessagingPermissions permission, CancellationToken cancellationToken)
+        {
+            return factory.CreateReceiverAsync([permission], QueueName, cancellationToken);
+        }
 
-        protected virtual Task<ServiceBusSender> GetSenderAsync(MessagingPermissions permission, CancellationToken cancellationToken)
-            => factory.CreateSenderAsync([permission], QueueName, cancellationToken);
+        private Task<ServiceBusSender> GetSenderAsync(MessagingPermissions permission, CancellationToken cancellationToken)
+        {
+            return factory.CreateSenderAsync([permission], QueueName, cancellationToken);
+        }
     }
 }

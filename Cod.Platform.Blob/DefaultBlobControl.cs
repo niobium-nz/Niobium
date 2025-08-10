@@ -5,14 +5,17 @@ using System.Security.Claims;
 
 namespace Cod.Platform.Blob
 {
-    internal class DefaultBlobControl(IOptions<StorageBlobOptions> options) : IResourceControl
+    internal sealed class DefaultBlobControl(IOptions<StorageBlobOptions> options) : IResourceControl
     {
-        public bool Grantable(ResourceType type, string resource) => type == ResourceType.AzureStorageBlob && options.Value.FullyQualifiedDomainName == resource && options.Value.Key != null;
+        public bool Grantable(ResourceType type, string resource)
+        {
+            return type == ResourceType.AzureStorageBlob && options.Value.FullyQualifiedDomainName == resource && options.Value.Key != null;
+        }
 
         public Task<StorageControl?> GrantAsync(ClaimsPrincipal principal, ResourceType type, string resource, string? partition, string? row, CancellationToken cancellationToken = default)
         {
             StorageControl? result = null;
-            var entitlements = principal.Claims.ToResourcePermissions()
+            IEnumerable<string> entitlements = principal.Claims.ToResourcePermissions()
                 .Where(p => p.Type == ResourceType.AzureStorageBlob
                     && p.Resource == resource
                     && (partition == p.Partition || (partition != null && p.Partition != null && partition.StartsWith(p.Partition))))
@@ -21,7 +24,7 @@ namespace Cod.Platform.Blob
             if (entitlements != null && entitlements.Any())
             {
                 FilePermissions permisson = FilePermissions.None;
-                foreach (var entitlement in entitlements)
+                foreach (string? entitlement in entitlements)
                 {
                     if (Enum.TryParse(entitlement, true, out FilePermissions p))
                     {

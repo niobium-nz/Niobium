@@ -3,15 +3,18 @@ using System.Text;
 
 namespace Cod.Messaging.ServiceBus
 {
-    internal class RoleBasedSendEntitlementDescriptor(string roleToGrant, string fullyQualifiedNamespace, string queueName, MessagingPermissions permissions) : IEntitlementDescriptor
+    internal sealed class RoleBasedSendEntitlementDescriptor(string roleToGrant, string fullyQualifiedNamespace, string queueName, MessagingPermissions permissions) : IEntitlementDescriptor
     {
         public bool IsHighOverhead => false;
 
-        public bool CanDescribe(Guid tenant, Guid user, string role) => roleToGrant == role;
+        public bool CanDescribe(Guid tenant, Guid user, string role)
+        {
+            return roleToGrant == role;
+        }
 
         public Task<IEnumerable<EntitlementDescription>> DescribeAsync(Guid tenant, Guid user, string role)
         {
-            var permissionBuilder = new StringBuilder();
+            StringBuilder permissionBuilder = new();
             if (permissions.HasFlag(MessagingPermissions.Read))
             {
                 permissionBuilder.Append(MessagingPermissions.Read.ToString().ToUpperInvariant());
@@ -36,7 +39,7 @@ namespace Cod.Messaging.ServiceBus
                 permissionBuilder.Append(',');
             }
 
-            var permissionDesc = permissionBuilder.ToString();
+            string permissionDesc = permissionBuilder.ToString();
             if (permissionDesc.Length > 0)
             {
                 permissionDesc = permissionDesc[..^1];

@@ -1,25 +1,17 @@
 ﻿namespace Cod.Platform.Notification
 {
-    public class NotificationContext
+    public class NotificationContext(
+        int kind,
+        string app,
+        Guid user,
+        string identity)
     {
-        public NotificationContext(
-            int kind,
-            string app,
-            Guid user,
-            string identity)
-        {
-            Kind = kind;
-            App = app;
-            User = user;
-            Identity = identity;
-        }
+        public int Kind { get; private set; } = kind;
 
-        public int Kind { get; private set; }
+        public string App { get; private set; } = app;
 
-        public string App { get; private set; }
+        public Guid User { get; private set; } = user;
 
-        public Guid User { get; private set; }
-
-        public string Identity { get; private set; }
+        public string Identity { get; private set; } = identity;
     }
 }

@@ -2,7 +2,7 @@
 {
     public interface IAccountable
     {
-        public string AccountingPrincipal { get; }
+        string AccountingPrincipal { get; }
 
         IAsyncEnumerable<Transaction> GetTransactionsAsync(DateTimeOffset fromInclusive, DateTimeOffset toInclusive);
 

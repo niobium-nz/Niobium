@@ -2,19 +2,16 @@
 
 namespace Cod.Platform
 {
-    internal class FunctionContextAccessor : IHttpContextAccessor
+    internal sealed class FunctionContextAccessor : IHttpContextAccessor
     {
         private static readonly AsyncLocal<FunctionContextRedirect> _currentContext = new();
 
         public HttpContext? HttpContext
         {
-            get
-            {
-                return _currentContext.Value?.HeldContext;
-            }
+            get => _currentContext.Value?.HeldContext;
             set
             {
-                var holder = _currentContext.Value;
+                FunctionContextRedirect? holder = _currentContext.Value;
                 if (holder != null)
                 {
                     // Clear current context trapped in the AsyncLocals, as its done.
@@ -30,7 +27,7 @@ namespace Cod.Platform
             }
         }
 
-        private class FunctionContextRedirect
+        private sealed class FunctionContextRedirect
         {
             public HttpContext? HeldContext;
         }

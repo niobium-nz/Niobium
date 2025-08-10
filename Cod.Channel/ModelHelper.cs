@@ -13,10 +13,10 @@ namespace Cod.Channel
                 return null;
             }
 
-            var type = value.GetType();
+            Type type = value.GetType();
             if (type.IsEnum)
             {
-                var memberInfo = type.GetMember(value.ToString() ?? string.Empty).FirstOrDefault();
+                MemberInfo? memberInfo = type.GetMember(value.ToString() ?? string.Empty).FirstOrDefault();
                 if (memberInfo != null)
                 {
                     if (memberInfo.GetCustomAttributes(typeof(DisplayAttribute), false).FirstOrDefault() is DisplayAttribute displayAttribute)
@@ -26,18 +26,15 @@ namespace Cod.Channel
                 }
             }
 
-            if (type.IsPrimitive || type == typeof(string) || type == typeof(decimal) || type == typeof(DateTime) || type == typeof(DateTimeOffset) || type == typeof(TimeSpan))
-            {
-                return value;
-            }
-
-            return value.ToString();
+            return type.IsPrimitive || type == typeof(string) || type == typeof(decimal) || type == typeof(DateTime) || type == typeof(DateTimeOffset) || type == typeof(TimeSpan)
+                ? value
+                : value.ToString();
         }
 
         public static IEnumerable<IGrouping<int, DisplayProperty>> GetDisplayProperies(object model)
         {
-            var type = model.GetType();
-            var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            Type type = model.GetType();
+            PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
             return properties
                 .Select(p => new
                 {
@@ -51,7 +48,7 @@ namespace Cod.Channel
                     x.Display?.GetName(),
                     instance => x.Property.GetValue(instance),
                     order: x.Display?.GetOrder(),
-                    group: int.TryParse(x.Display?.GroupName, out var g) ? g : int.MaxValue,
+                    group: int.TryParse(x.Display?.GroupName, out int g) ? g : int.MaxValue,
                     description: x.Display?.GetDescription(),
                     isSubject: x.Control?.IsSubject,
                     control: x.Control?.Control))
@@ -61,22 +58,22 @@ namespace Cod.Channel
 
         private static EditProperty TransformIntoEditProperty(EditPropertyInfo info, object model, IEnumerable<IEditModeValueProvider> valueProviders)
         {
-            var displayName = info.Display?.GetName();
-            var propertyName = info.Property.Name;
-            var propertyType = info.Property.PropertyType;
+            string? displayName = info.Display?.GetName();
+            string propertyName = info.Property.Name;
+            Type propertyType = info.Property.PropertyType;
             Func<object, object?> getValue = info.Property.GetValue;
             Action<object, object?> setValue = info.Property.SetValue;
-            var order = info.Display?.GetOrder();
-            var group = int.TryParse(info.Display?.GroupName, out var g) ? g : int.MaxValue;
-            var description = info.Display?.GetDescription();
-            var isReadOnly = info.Control?.IsReadOnly;
-            var isRequired = info.Control?.IsRequired;
-            var control = info.Control?.Control;
+            int? order = info.Display?.GetOrder();
+            int group = int.TryParse(info.Display?.GroupName, out int g) ? g : int.MaxValue;
+            string? description = info.Display?.GetDescription();
+            bool? isReadOnly = info.Control?.IsReadOnly;
+            bool? isRequired = info.Control?.IsRequired;
+            PropertyControl? control = info.Control?.Control;
 
             if (info.Control?.Control == PropertyControl.Dropdown)
             {
                 IEnumerable<EditOption>? options = null;
-                foreach (var provider in valueProviders)
+                foreach (IEditModeValueProvider provider in valueProviders)
                 {
                     options = provider.GetValue(model, info.Property.Name, nameof(EditOptionalProperty.Options)) as IEnumerable<EditOption>;
                     if (options != null)
@@ -103,7 +100,7 @@ namespace Cod.Channel
             else if (info.Control?.Control == PropertyControl.Calendar)
             {
                 CalendarKind? kind = null;
-                foreach (var provider in valueProviders)
+                foreach (IEditModeValueProvider provider in valueProviders)
                 {
                     kind = provider.GetValue(model, info.Property.Name, nameof(EditDateTimeProperty.Calendar)) as CalendarKind?;
                     if (kind.HasValue)
@@ -155,13 +152,13 @@ namespace Cod.Channel
                 return [];
             }
 
-            var isBitFlagEnum = propertyType.GetCustomAttributes(typeof(FlagsAttribute), false).Length > 0;
-            var options = new List<EditOption>();
-            var enumMembers = Enum.GetValues(propertyType).Cast<Enum>();
-            var actualValue = getValue(model);
-            foreach (var enumMember in enumMembers)
+            bool isBitFlagEnum = propertyType.GetCustomAttributes(typeof(FlagsAttribute), false).Length > 0;
+            List<EditOption> options = [];
+            IEnumerable<Enum> enumMembers = Enum.GetValues(propertyType).Cast<Enum>();
+            object? actualValue = getValue(model);
+            foreach (Enum enumMember in enumMembers)
             {
-                var memberInfo = propertyType.GetMember(enumMember.ToString()).Single();
+                MemberInfo memberInfo = propertyType.GetMember(enumMember.ToString()).Single();
                 string? memberDisplayName = null;
                 if (memberInfo.GetCustomAttributes(typeof(DisplayAttribute), false).FirstOrDefault() is DisplayAttribute attr)
                 {
@@ -169,14 +166,14 @@ namespace Cod.Channel
                 }
 
                 memberDisplayName ??= enumMember.ToString();
-                var memberValue = Convert.ToInt32(enumMember);
-                var isSelected = false;
-                if (actualValue != null && actualValue is IConvertible)
+                int memberValue = Convert.ToInt32(enumMember);
+                bool isSelected = false;
+                if (actualValue is not null and IConvertible)
                 {
                     isSelected = Convert.ToInt32(getValue(model)) == memberValue;
                 }
 
-                var option = new EditOption(
+                EditOption option = new(
                     memberDisplayName,
                     memberValue.ToString(),
                     isSelected,
@@ -184,8 +181,8 @@ namespace Cod.Channel
                     {
                         if (isBitFlagEnum)
                         {
-                            var existingValue = getValue(model);
-                            if (existingValue != null && existingValue is int i)
+                            object? existingValue = getValue(model);
+                            if (existingValue is not null and int i)
                             {
                                 if (isSelected)
                                 {
@@ -212,20 +209,22 @@ namespace Cod.Channel
         }
 
         public static IEnumerable<IGrouping<int, EditProperty>> GetEditProperies(object model, IEnumerable<IEditModeValueProvider> valueProviders)
-          => model.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Select(p => new EditPropertyInfo(
-                    p.GetCustomAttributes(typeof(DisplayAttribute), false).FirstOrDefault() as DisplayAttribute,
-                    p.GetCustomAttributes(typeof(EditModeAttribute), false).FirstOrDefault() as EditModeAttribute,
-                    p))
-                .Where(x => x.Display != null)
-                .Select(x => TransformIntoEditProperty(x, model, valueProviders))
-                .OrderBy(p => p.Order)
-                .GroupBy(p => p.Group);
+        {
+            return model.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                        .Select(p => new EditPropertyInfo(
+                            p.GetCustomAttributes(typeof(DisplayAttribute), false).FirstOrDefault() as DisplayAttribute,
+                            p.GetCustomAttributes(typeof(EditModeAttribute), false).FirstOrDefault() as EditModeAttribute,
+                            p))
+                        .Where(x => x.Display != null)
+                        .Select(x => TransformIntoEditProperty(x, model, valueProviders))
+                        .OrderBy(p => p.Order)
+                        .GroupBy(p => p.Group);
+        }
 
         public static IEnumerable<DisplayAction> GetDisplayActions(object model)
         {
-            var type = model.GetType();
-            var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance);
+            Type type = model.GetType();
+            MethodInfo[] methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance);
             return methods
                 .Select(p => new
                 {
@@ -237,12 +236,8 @@ namespace Cod.Channel
                     x.Action?.GetName(),
                     (i) =>
                     {
-                        var r = x.Method.Invoke(i, null);
-                        if (r is Task task)
-                        {
-                            return task;
-                        }
-                        return Task.CompletedTask;
+                        object? r = x.Method.Invoke(i, null);
+                        return r is Task task ? task : Task.CompletedTask;
                     },
                     description: x.Action?.GetDescription(),
                     order: x.Action?.GetOrder()))
@@ -251,7 +246,7 @@ namespace Cod.Channel
 
         public static string GetDisplayName(Type type)
         {
-            var attr = type.GetCustomAttributes(typeof(DisplayAttribute), false).FirstOrDefault() as DisplayAttribute;
+            DisplayAttribute? attr = type.GetCustomAttributes(typeof(DisplayAttribute), false).FirstOrDefault() as DisplayAttribute;
             return attr?.GetName() ?? type.Name;
         }
 
@@ -259,31 +254,36 @@ namespace Cod.Channel
         public static string GetDisplayName<TModel, TProperty>(this TModel model, Expression<Func<TModel, TProperty>> expression)
         {
             // Get the property info from the lambda expression
-            var member = expression.Body as MemberExpression;
+            MemberExpression? member = expression.Body as MemberExpression;
 
             if (member == null)
             {
                 // Handle cases where the member expression may be nested in a Convert expression (e.g., boxing)
-                var unary = expression.Body as UnaryExpression;
+                UnaryExpression? unary = expression.Body as UnaryExpression;
                 member = unary?.Operand as MemberExpression;
             }
 
             if (member == null)
+            {
                 throw new ArgumentException("Expression is not a valid member expression", nameof(expression));
+            }
 
             // Get the property information for the specified property
-            var property = member.Member as PropertyInfo;
+            PropertyInfo? property = member.Member as PropertyInfo;
 
-            if (property == null) return member.Member.Name; // If property is not found, return the name
+            if (property == null)
+            {
+                return member.Member.Name; // If property is not found, return the name
+            }
 
             // Get the DisplayAttribute from the property, if available
-            var displayAttribute = property.GetCustomAttributes(typeof(DisplayAttribute), true)
+            DisplayAttribute? displayAttribute = property.GetCustomAttributes(typeof(DisplayAttribute), true)
                                            .FirstOrDefault() as DisplayAttribute;
 
             // Return the display name if found, otherwise return the property name
             return displayAttribute?.Name ?? property.Name;
         }
 
-        private record EditPropertyInfo(DisplayAttribute? Display, EditModeAttribute? Control, PropertyInfo Property);
+        private sealed record EditPropertyInfo(DisplayAttribute? Display, EditModeAttribute? Control, PropertyInfo Property);
     }
 }

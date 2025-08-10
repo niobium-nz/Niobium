@@ -32,7 +32,7 @@ namespace Cod.Platform.Speech
             services.AddTransient<IResourceControl, SpeechServiceControl>();
             services.AddHttpClient<ISignatureIssuer, SpeechServiceSignatureIssuer>((serviceProvider, httpClient) =>
                 {
-                    var options = serviceProvider.GetRequiredService<IOptions<SpeechServiceOptions>>();
+                    IOptions<SpeechServiceOptions> options = serviceProvider.GetRequiredService<IOptions<SpeechServiceOptions>>();
                     httpClient.BaseAddress = new Uri($"https://{options.Value.ServiceRegion}.api.cognitive.microsoft.com/");
                     httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", options.Value.AccessKey);
                 })
@@ -42,16 +42,22 @@ namespace Cod.Platform.Speech
         }
 
         public static IServiceCollection GrantSpeechTranscribeEntitlementToDefaultRole(this IServiceCollection services)
-            => services.GrantSpeechTranscribeEntitlementTo(sp => sp.GetRequiredService<IOptions<IdentityServiceOptions>>().Value.DefaultRole);
+        {
+            return services.GrantSpeechTranscribeEntitlementTo(sp => sp.GetRequiredService<IOptions<IdentityServiceOptions>>().Value.DefaultRole);
+        }
 
         public static IServiceCollection GrantSpeechTranscribeEntitlementTo(this IServiceCollection services, Func<IServiceProvider, string> resolveRole)
-            => services.AddTransient<IEntitlementDescriptor>(sp =>
-            {
-                var role = resolveRole(sp);
-                return new RoleBasedTranscribeEntitlementDescriptor(role, sp.GetRequiredService<IOptions<SpeechServiceOptions>>());
-            });
+        {
+            return services.AddTransient<IEntitlementDescriptor>(sp =>
+                    {
+                        string role = resolveRole(sp);
+                        return new RoleBasedTranscribeEntitlementDescriptor(role, sp.GetRequiredService<IOptions<SpeechServiceOptions>>());
+                    });
+        }
 
         public static IServiceCollection GrantSpeechTranscribeEntitlementTo(this IServiceCollection services, string role)
-            => services.AddTransient<IEntitlementDescriptor>(sp => new RoleBasedTranscribeEntitlementDescriptor(role, sp.GetRequiredService<IOptions<SpeechServiceOptions>>()));
+        {
+            return services.AddTransient<IEntitlementDescriptor>(sp => new RoleBasedTranscribeEntitlementDescriptor(role, sp.GetRequiredService<IOptions<SpeechServiceOptions>>()));
+        }
     }
 }

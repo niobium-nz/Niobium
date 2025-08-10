@@ -3,7 +3,7 @@ using Azure.Data.Tables;
 
 namespace Cod.Database.StorageTable
 {
-    internal class EntityDictionary : Dictionary<string, object?>, ITableEntity
+    internal sealed class EntityDictionary : Dictionary<string, object?>, ITableEntity
     {
         public string PartitionKey { get => Get<string>(nameof(PartitionKey))!; set => Set(nameof(PartitionKey), value); }
 
@@ -15,7 +15,7 @@ namespace Cod.Database.StorageTable
 
         private T? Get<T>(string key)
         {
-            return TryGetValue(key, out var value) ? value is T t ? t : default : default;
+            return TryGetValue(key, out object? value) ? value is T t ? t : default : default;
         }
 
         private void Set(string key, object? value)

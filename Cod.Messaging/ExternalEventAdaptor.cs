@@ -1,16 +1,9 @@
 ﻿namespace Cod.Messaging
 {
-    internal class ExternalEventAdaptor<TEntity, TEvent> : IExternalEventAdaptor<TEntity, TEvent>
+    internal sealed class ExternalEventAdaptor<TEntity, TEvent>(IEnumerable<IDomainEventHandler<IDomain<TEntity>>> eventHandlers) : IExternalEventAdaptor<TEntity, TEvent>
         where TEntity : class
         where TEvent : class, IDomainEvent
     {
-        private readonly IEnumerable<IDomainEventHandler<IDomain<TEntity>>> eventHandlers;
-
-        public ExternalEventAdaptor(IEnumerable<IDomainEventHandler<IDomain<TEntity>>> eventHandlers)
-        {
-            this.eventHandlers = eventHandlers;
-        }
-
         public async Task OnEvent(TEvent e, CancellationToken cancellationToken = default)
         {
             e.Source = DomainEventAudience.External;

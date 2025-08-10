@@ -6,7 +6,7 @@ namespace Cod
     public static class StringHelper
     {
         private static readonly Encoding encoding = Encoding.GetEncoding(936);
-        private static readonly int[] areacode = { 45217, 45253, 45761, 46318, 46826, 47010, 47297, 47614, 48119, 48119, 49062, 49324, 49896, 50371, 50614, 50622, 50906, 51387, 51446, 52218, 52698, 52698, 52698, 52980, 53689, 54481 };
+        private static readonly int[] areacode = [45217, 45253, 45761, 46318, 46826, 47010, 47297, 47614, 48119, 48119, 49062, 49324, 49896, 50371, 50614, 50622, 50906, 51387, 51446, 52218, 52698, 52698, 52698, 52980, 53689, 54481];
 
         public static string GetChineseInitial(string cnChar)
         {
@@ -33,7 +33,7 @@ namespace Cod
 
                     if (areacode[i] <= code && code < max)
                     {
-                        return encoding.GetString(new byte[] { (byte)(65 + i) });
+                        return encoding.GetString([(byte)(65 + i)]);
                     }
                 }
 

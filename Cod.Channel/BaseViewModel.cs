@@ -10,7 +10,7 @@
 
         public EventHandler? RefreshRequested { get; set; }
 
-        public async virtual Task RefreshAsync(CancellationToken cancellationToken = default)
+        public virtual async Task RefreshAsync(CancellationToken cancellationToken = default)
         {
             if (Parent != null)
             {
@@ -29,6 +29,9 @@
             return Task.CompletedTask;
         }
 
-        protected virtual void OnRefreshRequested() => RefreshRequested?.Invoke(this, EventArgs.Empty);
+        protected virtual void OnRefreshRequested()
+        {
+            RefreshRequested?.Invoke(this, EventArgs.Empty);
+        }
     }
 }

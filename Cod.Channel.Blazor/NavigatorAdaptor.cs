@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace Cod.Channel.Blazor
 {
-    internal class NavigatorAdaptor(NavigationManager manager) : INavigator
+    internal sealed class NavigatorAdaptor(NavigationManager manager) : INavigator
     {
         public string BaseUri => manager.BaseUri;
 

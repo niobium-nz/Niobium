@@ -223,12 +223,7 @@ namespace Cod.Finance
         public static Currency Parse(string code)
         {
             _ = code ?? throw new ArgumentNullException(nameof(code));
-            if (!TryParse(code, out var result))
-            {
-                throw new NotSupportedException($"The currency code '{code}' is not supported.");
-            }
-
-            return result;
+            return !TryParse(code, out Currency result) ? throw new NotSupportedException($"The currency code '{code}' is not supported.") : result;
         }
 
         public static CultureInfo GetCulture(Currency currency)
@@ -265,9 +260,15 @@ namespace Cod.Finance
             return Code;
         }
 
-        public static implicit operator string(Currency currency) => currency.Code;
+        public static implicit operator string(Currency currency)
+        {
+            return currency.Code;
+        }
 
-        public static implicit operator Currency(string code) => Parse(code);
+        public static implicit operator Currency(string code)
+        {
+            return Parse(code);
+        }
 
         public static bool operator ==(Currency left, Currency right)
         {

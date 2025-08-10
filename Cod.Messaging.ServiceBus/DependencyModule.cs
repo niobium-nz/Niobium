@@ -29,12 +29,12 @@ namespace Cod.Messaging.ServiceBus
         {
             services.AddTransient<IMessagingBroker<T>>(sp =>
             {
-                var factory = sp.GetRequiredService<AuthenticationBasedQueueFactory>();
+                AuthenticationBasedQueueFactory factory = sp.GetRequiredService<AuthenticationBasedQueueFactory>();
                 ServiceBusOptions config = new();
                 options?.Invoke(config);
                 factory.Configuration = config;
-                var authenticator = new Lazy<IAuthenticator>(() => sp.GetRequiredService<IAuthenticator>());
-                var broker = new ServiceBusQueueBroker<T>(factory, authenticator);
+                Lazy<IAuthenticator> authenticator = new(() => sp.GetRequiredService<IAuthenticator>());
+                ServiceBusQueueBroker<T> broker = new(factory, authenticator);
                 return broker;
             });
             return services;

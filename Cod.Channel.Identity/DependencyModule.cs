@@ -22,15 +22,15 @@ namespace Cod.Channel.Identity
 
             services.Configure<IdentityServiceOptions>(o => { options?.Invoke(o); o.Validate(); });
 
-            var httpClientBuilder = services.AddHttpClient<IdentityService>();
+            IHttpClientBuilder httpClientBuilder = services.AddHttpClient<IdentityService>();
             if (!testMode)
             {
                 httpClientBuilder.AddStandardResilienceHandler();
             }
 
-            var httpClientBuilder2 = services.AddHttpClient(Constants.PlatformAPIHttpClientName, (sp, httpClient) =>
+            IHttpClientBuilder httpClientBuilder2 = services.AddHttpClient(Constants.PlatformAPIHttpClientName, (sp, httpClient) =>
             {
-                var identityOptions = sp.GetRequiredService<IOptions<IdentityServiceOptions>>().Value;
+                IdentityServiceOptions identityOptions = sp.GetRequiredService<IOptions<IdentityServiceOptions>>().Value;
                 if (identityOptions.PlatformAPIEndpoint != null && !string.IsNullOrWhiteSpace(identityOptions.PlatformAPIEndpoint))
                 {
                     httpClient.BaseAddress = new Uri(identityOptions.PlatformAPIEndpoint);
@@ -39,12 +39,12 @@ namespace Cod.Channel.Identity
                 httpClient.DefaultRequestHeaders.Accept.Clear();
                 httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-                var authenticator = sp.GetRequiredService<IAuthenticator>();
+                IAuthenticator authenticator = sp.GetRequiredService<IAuthenticator>();
                 if (authenticator.AccessToken != null)
                 {
                     if (authenticator.IDToken != null)
                     {
-                        var idTokenHeader = new AuthenticationHeaderValue(AuthenticationScheme.BearerLoginScheme, authenticator.IDToken.EncodedToken);
+                        AuthenticationHeaderValue idTokenHeader = new(AuthenticationScheme.BearerLoginScheme, authenticator.IDToken.EncodedToken);
                         httpClient.DefaultRequestHeaders.TryAddWithoutValidation(Cod.Identity.Constants.IDTokenHeaderKey, idTokenHeader.ToString());
                     }
 

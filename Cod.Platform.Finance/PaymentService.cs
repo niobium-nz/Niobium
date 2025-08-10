@@ -2,7 +2,7 @@ using Cod.Finance;
 
 namespace Cod.Platform.Finance
 {
-    public class PaymentService(Lazy<IEnumerable<IPaymentProcessor>> processors, IEnumerable<IDomainEventHandler<IDomain<Transaction>>> eventHandlers) 
+    public class PaymentService(Lazy<IEnumerable<IPaymentProcessor>> processors, IEnumerable<IDomainEventHandler<IDomain<Transaction>>> eventHandlers)
         : IPaymentService
     {
         public virtual async Task<OperationResult<ChargeResult>> RetrieveChargeAsync(string transaction, PaymentChannels paymentChannel)

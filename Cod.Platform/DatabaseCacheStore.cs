@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace Cod.Platform
 {
-    internal class DatabaseCacheStore(IRepository<Cache> cacheRepo) : ICacheStore
+    internal sealed class DatabaseCacheStore(IRepository<Cache> cacheRepo) : ICacheStore
     {
         private readonly ConcurrentDictionary<string, object> memoryCache = new();
         private readonly ConcurrentDictionary<string, DateTimeOffset> memoryCacheExpiry = new();
@@ -16,7 +16,7 @@ namespace Cod.Platform
             memoryCache.TryRemove(memkey, out _);
             memoryCacheExpiry.TryRemove(memkey, out _);
 
-            var cache = await cacheRepo.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
+            Cache? cache = await cacheRepo.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
             if (cache != null)
             {
                 await cacheRepo.DeleteAsync(cache, preconditionCheck: false, successIfNotExist: true, cancellationToken: cancellationToken);
@@ -28,13 +28,13 @@ namespace Cod.Platform
             partitionKey = partitionKey.Trim();
             rowKey = rowKey.Trim();
             string memkey = $"{partitionKey}@{rowKey}";
-            if (memoryCache.TryGetValue(memkey, out var value))
+            if (memoryCache.TryGetValue(memkey, out object? value))
             {
                 if (memoryCacheExpiry.TryGetValue(memkey, out DateTimeOffset t) && t < DateTimeOffset.UtcNow)
                 {
                     memoryCache.TryRemove(memkey, out _);
                     memoryCacheExpiry.TryRemove(memkey, out _);
-                    var expiredcache = await cacheRepo.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
+                    Cache? expiredcache = await cacheRepo.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
                     if (expiredcache != null)
                     {
                         await cacheRepo.DeleteAsync(expiredcache, preconditionCheck: false, successIfNotExist: true, cancellationToken: cancellationToken);
@@ -44,7 +44,7 @@ namespace Cod.Platform
                 return (T)value;
             }
 
-            var cache = await cacheRepo.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
+            Cache? cache = await cacheRepo.RetrieveAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
             if (cache != null)
             {
                 if (cache.Expiry < DateTimeOffset.UtcNow)

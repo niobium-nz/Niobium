@@ -8,7 +8,7 @@ namespace Cod
         private readonly Func<string> getMessage = () =>
             {
                 StringBuilder msg = new();
-                if (InternalError.TryGet(errorCode, out var val))
+                if (InternalError.TryGet(errorCode, out string? val))
                 {
                     msg.Append(val);
                 }

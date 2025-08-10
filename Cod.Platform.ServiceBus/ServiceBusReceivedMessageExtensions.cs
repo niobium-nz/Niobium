@@ -28,45 +28,33 @@ namespace Cod.Messaging.ServiceBus
             }
 
             request = Deserialize<T>(rawbody);
-            if (request == null)
-            {
-                return false;
-            }
-
-            return true;
+            return request != null;
         }
 
         public static async Task<Guid> TryGetUserIDAsync(this ServiceBusReceivedMessage message, PrincipalParser principalParser, CancellationToken cancellationToken = default)
         {
-            var claim = await message.TryGetClaimAsync<string>(principalParser, ClaimTypes.NameIdentifier, cancellationToken);
-            if (claim == null || !Guid.TryParse(claim, out var userID))
-            {
-                throw new ApplicationException(InternalError.Forbidden);
-            }
-
-            return userID;
+            string? claim = await message.TryGetClaimAsync<string>(principalParser, ClaimTypes.NameIdentifier, cancellationToken);
+            return claim == null || !Guid.TryParse(claim, out Guid userID) ? throw new ApplicationException(InternalError.Forbidden) : userID;
         }
 
         public static async Task<T?> TryGetClaimAsync<T>(this ServiceBusReceivedMessage message, PrincipalParser principalParser, string key, CancellationToken cancellationToken = default)
         {
-            var claims = await message.TryGetClaimsAsync<T>(principalParser, key, cancellationToken);
+            IEnumerable<T> claims = await message.TryGetClaimsAsync<T>(principalParser, key, cancellationToken);
             return claims.SingleOrDefault();
         }
 
         public static async Task<IEnumerable<T>> TryGetClaimsAsync<T>(this ServiceBusReceivedMessage message, PrincipalParser principalParser, string key, CancellationToken cancellationToken = default)
         {
-            var principal = await principalParser.ParseAsync(message, cancellationToken: cancellationToken)
+            ClaimsPrincipal principal = await principalParser.ParseAsync(message, cancellationToken: cancellationToken)
                 ?? throw new ApplicationException(InternalError.AuthenticationRequired);
 
-            var claims = principal.Claims.Where(c => c.Type == key);
-            if (!claims.Any())
-            {
-                return [];
-            }
-
-            return claims.Select(c => TypeConverter.Convert<T>(c.Value));
+            IEnumerable<Claim> claims = principal.Claims.Where(c => c.Type == key);
+            return !claims.Any() ? [] : claims.Select(c => TypeConverter.Convert<T>(c.Value));
         }
 
-        private static T Deserialize<T>(string json) => System.Text.Json.JsonSerializer.Deserialize<T>(json, SerializationOptions)!;
+        private static T Deserialize<T>(string json)
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<T>(json, SerializationOptions)!;
+        }
     }
 }

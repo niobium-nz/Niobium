@@ -37,7 +37,7 @@ namespace Cod.Platform
                 }
             }
 
-            var v = GetSetting(key);
+            string? v = GetSetting(key);
 
             if (cache && v != null)
             {

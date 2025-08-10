@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 
 namespace Cod.Channel.Identity
 {
-    internal class TOTPLoginCommand(
+    internal sealed class TOTPLoginCommand(
         IAuthenticator authenticator,
         INavigator navigator,
         ILoadingStateService loadingStateService,
@@ -13,14 +13,14 @@ namespace Cod.Channel.Identity
     {
         public async Task<LoginResult> ExecuteAsync(TOTPLoginCommandParameter parameter, CancellationToken cancellationToken = default)
         {
-            var identity = IdentityHelper.BuildIdentity(options.Value.App, parameter.Username);
-            var p = new LoginCommandParameter(AuthenticationScheme.BasicLoginScheme, identity)
+            string identity = IdentityHelper.BuildIdentity(options.Value.App, parameter.Username);
+            LoginCommandParameter p = new(AuthenticationScheme.BasicLoginScheme, identity)
             {
                 Credential = parameter.TOTP == null ? null : IdentityHelper.BuildTOTPCredential(parameter.TOTP),
                 Remember = parameter.Remember,
                 ReturnUrl = parameter.ReturnUrl,
             };
-            return await this.ExecuteAsync(p, cancellationToken);
+            return await ExecuteAsync(p, cancellationToken);
         }
     }
 }

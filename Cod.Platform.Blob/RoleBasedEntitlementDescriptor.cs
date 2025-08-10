@@ -8,11 +8,14 @@ namespace Cod.Platform.Blob
     {
         public bool IsHighOverhead => false;
 
-        public bool CanDescribe(Guid tenant, Guid user, string role) => roleToGrant == role;
+        public bool CanDescribe(Guid tenant, Guid user, string role)
+        {
+            return roleToGrant == role;
+        }
 
         public Task<IEnumerable<EntitlementDescription>> DescribeAsync(Guid tenant, Guid user, string role)
         {
-            var permissionBuilder = new StringBuilder();
+            StringBuilder permissionBuilder = new();
             if (permissions.HasFlag(FilePermissions.Read))
             {
                 permissionBuilder.Append(FilePermissions.Read.ToString().ToUpperInvariant());
@@ -49,13 +52,13 @@ namespace Cod.Platform.Blob
                 permissionBuilder.Append(',');
             }
 
-            var permissionDesc = permissionBuilder.ToString();
+            string permissionDesc = permissionBuilder.ToString();
             if (permissionDesc.Length > 0)
             {
                 permissionDesc = permissionDesc[..^1];
             }
 
-            var result = BuildDescription(tenant, user, role, containerName, permissionDesc);
+            IEnumerable<EntitlementDescription> result = BuildDescription(tenant, user, role, containerName, permissionDesc);
             return Task.FromResult(result);
         }
 

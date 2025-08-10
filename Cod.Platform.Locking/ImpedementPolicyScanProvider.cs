@@ -1,6 +1,6 @@
 ﻿namespace Cod.Platform.Locking
 {
-    internal class ImpedementPolicyScanProvider(Lazy<IQueryableRepository<Impediment>> repo) : IImpedimentPolicy
+    internal sealed class ImpedementPolicyScanProvider(Lazy<IQueryableRepository<Impediment>> repo) : IImpedimentPolicy
     {
         public IAsyncEnumerable<Impediment> GetImpedimentsAsync(IImpedimentContext context, CancellationToken cancellationToken = default)
         {

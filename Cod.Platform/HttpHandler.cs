@@ -68,14 +68,14 @@ namespace Cod.Platform
                 else
                 {
                     ConfigurationProvider cfg = new();
-                    var proxyHost = await cfg.GetSettingAsStringAsync(Constants.HTTP_PROXY_HOST);
+                    string? proxyHost = await cfg.GetSettingAsStringAsync(Constants.HTTP_PROXY_HOST);
                     if (string.IsNullOrWhiteSpace(proxyHost))
                     {
                         throw new InvalidOperationException("No suitable proxy HTTP handler can be found.");
                     }
 
-                    var proxyUsername = await cfg.GetSettingAsStringAsync(Constants.HTTP_PROXY_USERNAME);
-                    var proxyPassword = await cfg.GetSettingAsStringAsync(Constants.HTTP_PROXY_PASSWORD);
+                    string? proxyUsername = await cfg.GetSettingAsStringAsync(Constants.HTTP_PROXY_USERNAME);
+                    string? proxyPassword = await cfg.GetSettingAsStringAsync(Constants.HTTP_PROXY_PASSWORD);
                     proxy = new WebProxy
                     {
                         Address = new Uri(proxyHost),

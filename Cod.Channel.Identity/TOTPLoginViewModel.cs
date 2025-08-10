@@ -25,7 +25,7 @@ namespace Cod.Channel.Identity
 
         public virtual async Task OnLogin()
         {
-            if (!UserInput.TryValidate(out var r))
+            if (!UserInput.TryValidate(out ValidationState? r))
             {
                 UserInputValidation = r;
                 return;
@@ -40,24 +40,24 @@ namespace Cod.Channel.Identity
                 else
                 {
                     UserInputValidation.Clear();
-                    var result = await loginCommand.ExecuteAsync(new TOTPLoginCommandParameter(UserInput.Username!));
-                    this.IsChallenged = !result.IsSuccess && result.Challenge != null;
-                    this.IsFailed = !this.IsChallenged;
+                    LoginResult result = await loginCommand.ExecuteAsync(new TOTPLoginCommandParameter(UserInput.Username!));
+                    IsChallenged = !result.IsSuccess && result.Challenge != null;
+                    IsFailed = !IsChallenged;
                 }
             }
             else
             {
-                var result = await loginCommand.ExecuteAsync(new TOTPLoginCommandParameter(UserInput.Username!, UserInput.Password, true));
-                this.IsChallenged = !result.IsSuccess;
-                this.IsFailed = !(!this.IsChallenged && result.IsSuccess);
+                LoginResult result = await loginCommand.ExecuteAsync(new TOTPLoginCommandParameter(UserInput.Username!, UserInput.Password, true));
+                IsChallenged = !result.IsSuccess;
+                IsFailed = !(!IsChallenged && result.IsSuccess);
             }
         }
 
         public virtual Task OnCancel()
         {
-            this.IsChallenged = false;
-            this.IsFailed = false;
-            this.UserInput.Password = null;
+            IsChallenged = false;
+            IsFailed = false;
+            UserInput.Password = null;
             return Task.CompletedTask;
         }
     }

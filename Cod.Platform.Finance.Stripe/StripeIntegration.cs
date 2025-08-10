@@ -10,11 +10,11 @@ namespace Cod.Platform.Finance.Stripe
     {
         public async Task<OperationResult<SetupIntent>> CreateSetupIntentAsync(Guid user)
         {
-            var options = new CustomerCreateOptions();
-            var service = new CustomerService();
-            var customer = await service.CreateAsync(options);
+            CustomerCreateOptions options = new();
+            CustomerService service = new();
+            Customer customer = await service.CreateAsync(options);
 
-            var setupIntentOptions = new SetupIntentCreateOptions
+            SetupIntentCreateOptions setupIntentOptions = new()
             {
                 Customer = customer.Id,
                 Metadata = new Dictionary<string, string>
@@ -22,10 +22,10 @@ namespace Cod.Platform.Finance.Stripe
                     { Constants.MetadataIntentUserID, user.ToString() }
                 }
             };
-            var setupIntentService = new SetupIntentService();
+            SetupIntentService setupIntentService = new();
             try
             {
-                var intent = await setupIntentService.CreateAsync(setupIntentOptions);
+                SetupIntent intent = await setupIntentService.CreateAsync(setupIntentOptions);
                 return new OperationResult<SetupIntent>(intent);
             }
             catch (StripeException se)
@@ -35,7 +35,7 @@ namespace Cod.Platform.Finance.Stripe
             }
         }
 
-        public async Task<SetupIntent> RetriveSetupIntentAsync(string id)
+        public static async Task<SetupIntent> RetriveSetupIntentAsync(string id)
         {
             ArgumentNullException.ThrowIfNull(id);
 
@@ -43,26 +43,26 @@ namespace Cod.Platform.Finance.Stripe
             {
                 id = id.Split(["_secret_"], StringSplitOptions.RemoveEmptyEntries)[0];
             }
-            var service = new SetupIntentService();
+            SetupIntentService service = new();
 
             return await service.GetAsync(id);
         }
 
-        public async Task<Charge> RetriveChargeAsync(string id)
+        public static async Task<Charge> RetriveChargeAsync(string id)
         {
-            var service = new ChargeService();
+            ChargeService service = new();
             return await service.GetAsync(id);
         }
 
-        public async Task<Refund> RetriveRefundAsync(string id)
+        public static async Task<Refund> RetriveRefundAsync(string id)
         {
-            var service = new RefundService();
+            RefundService service = new();
             return await service.GetAsync(id);
         }
 
-        public async Task<global::Stripe.PaymentMethod> RetrivePaymentMethodAsync(string id)
+        public static async Task<global::Stripe.PaymentMethod> RetrivePaymentMethodAsync(string id)
         {
-            var service = new PaymentMethodService();
+            PaymentMethodService service = new();
             return await service.GetAsync(id);
         }
 
@@ -70,7 +70,7 @@ namespace Cod.Platform.Finance.Stripe
             ChargeTargetKind targetKind,
             string target,
             Currency currency,
-            long amount,            
+            long amount,
             string? order = null,
             string? reference = null,
             string? tenant = null,
@@ -85,9 +85,9 @@ namespace Cod.Platform.Finance.Stripe
 
             try
             {
-                var valueToHash = $"{tenant ?? String.Empty}{target}{order ?? String.Empty}";
-                var hash = SHA.SHA256Hash(valueToHash, options.Value.SecretHashKey);
-                var metadata = new Dictionary<string, string>
+                string valueToHash = $"{tenant ?? string.Empty}{target}{order ?? string.Empty}";
+                string hash = SHA.SHA256Hash(valueToHash, options.Value.SecretHashKey);
+                Dictionary<string, string> metadata = new()
                 {
                     { Constants.MetadataTargetKindKey, ((int)targetKind).ToString() },
                     { Constants.MetadataTargetKey, target },
@@ -109,7 +109,7 @@ namespace Cod.Platform.Finance.Stripe
                     metadata.Add(Constants.MetadataTenantKey, tenant);
                 }
 
-                var intentOptions = new PaymentIntentCreateOptions
+                PaymentIntentCreateOptions intentOptions = new()
                 {
                     Amount = amount,
                     Currency = currency.ToString().ToLowerInvariant(),
@@ -132,8 +132,8 @@ namespace Cod.Platform.Finance.Stripe
                     intentOptions.Confirm = true;
                 }
 
-                var service = new PaymentIntentService();
-                var result = await service.CreateAsync(intentOptions);
+                PaymentIntentService service = new();
+                PaymentIntent result = await service.CreateAsync(intentOptions);
                 return new OperationResult<PaymentIntent>(result);
 
             }
@@ -170,8 +170,8 @@ namespace Cod.Platform.Finance.Stripe
 
             try
             {
-                var service = new RefundService();
-                var result = await service.CreateAsync(new RefundCreateOptions { Charge = chargeID, Amount = amount });
+                RefundService service = new();
+                Refund result = await service.CreateAsync(new RefundCreateOptions { Charge = chargeID, Amount = amount });
                 return new OperationResult<Refund>(result);
             }
             catch (StripeException se)
@@ -207,8 +207,8 @@ namespace Cod.Platform.Finance.Stripe
 
             try
             {
-                var service = new PaymentIntentService();
-                var result = await service.CaptureAsync(paymentIntentID, options: new PaymentIntentCaptureOptions { AmountToCapture = amountToCapture });
+                PaymentIntentService service = new();
+                PaymentIntent result = await service.CaptureAsync(paymentIntentID, options: new PaymentIntentCaptureOptions { AmountToCapture = amountToCapture });
                 return new OperationResult<PaymentIntent>(result);
 
             }
@@ -244,8 +244,8 @@ namespace Cod.Platform.Finance.Stripe
 
             try
             {
-                var service = new PaymentIntentService();
-                var result = await service.CancelAsync(paymentIntentID);
+                PaymentIntentService service = new();
+                PaymentIntent result = await service.CancelAsync(paymentIntentID);
                 return new OperationResult<PaymentIntent>(result);
 
             }
@@ -290,7 +290,7 @@ namespace Cod.Platform.Finance.Stripe
             try
             {
 
-                var metadata = new Dictionary<string, string>
+                Dictionary<string, string> metadata = new()
                 {
                     { Constants.MetadataTargetKindKey, ((int)targetKind).ToString() },
                     { Constants.MetadataTargetKey, target },
@@ -311,8 +311,8 @@ namespace Cod.Platform.Finance.Stripe
                     metadata.Add(Constants.MetadataTenantKey, tenant);
                 }
 
-                var service = new PaymentIntentService();
-                var result = await service.CreateAsync(new PaymentIntentCreateOptions
+                PaymentIntentService service = new();
+                PaymentIntent result = await service.CreateAsync(new PaymentIntentCreateOptions
                 {
                     Amount = amount,
                     Currency = currency.ToString().ToLowerInvariant(),
@@ -356,8 +356,8 @@ namespace Cod.Platform.Finance.Stripe
 
             if (!string.IsNullOrWhiteSpace(stripeError.Code) && !string.IsNullOrWhiteSpace(stripeError.DeclineCode))
             {
-                var code = stripeError.Code.Trim();
-                var declineCode = stripeError.DeclineCode.Trim();
+                string code = stripeError.Code.Trim();
+                string declineCode = stripeError.DeclineCode.Trim();
                 if (code == "card_declined" && declineCode == "incorrect_cvc")
                 {
                     return new OperationResult<T>(InternalError.PaymentErrorIncorrectCVC);

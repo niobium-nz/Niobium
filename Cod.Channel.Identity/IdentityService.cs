@@ -19,8 +19,8 @@ namespace Cod.Channel.Identity
             string authValue;
             if (scheme == AuthenticationScheme.BasicLoginScheme)
             {
-                var cred = credential == null ? string.Empty : credential.Trim();
-                var buffer = Encoding.ASCII.GetBytes($"{identity.Trim()}:{cred}");
+                string cred = credential == null ? string.Empty : credential.Trim();
+                byte[] buffer = Encoding.ASCII.GetBytes($"{identity.Trim()}:{cred}");
                 authValue = Convert.ToBase64String(buffer);
             }
             else
@@ -28,13 +28,13 @@ namespace Cod.Channel.Identity
                 authValue = identity;
             }
 
-            var url = new Uri($"{options.Value.IDTokenHost}{options.Value.IDTokenEndpoint}");
-            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            Uri url = new($"{options.Value.IDTokenHost}{options.Value.IDTokenEndpoint}");
+            HttpRequestMessage request = new(HttpMethod.Get, url);
             request.Headers.Authorization = new AuthenticationHeaderValue(scheme, authValue);
 
-            var response = await httpClient.SendAsync(request, cancellationToken.Value);
-            var result = new AccessTokenResponse { StatusCode = response.StatusCode };
-            if (!TryGetToken(response, out var token))
+            HttpResponseMessage response = await httpClient.SendAsync(request, cancellationToken.Value);
+            AccessTokenResponse result = new() { StatusCode = response.StatusCode };
+            if (!TryGetToken(response, out string? token))
             {
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
@@ -43,7 +43,7 @@ namespace Cod.Channel.Identity
 
                 if (response.StatusCode == HttpStatusCode.Forbidden)
                 {
-                    var challenge = response.Headers.WwwAuthenticate.SingleOrDefault();
+                    AuthenticationHeaderValue? challenge = response.Headers.WwwAuthenticate.SingleOrDefault();
                     if (challenge != null)
                     {
                         _ = Enum.TryParse(challenge.Scheme, out AuthenticationKind challengeKind);
@@ -65,12 +65,12 @@ namespace Cod.Channel.Identity
         public async Task<AccessTokenResponse> RefreshAccessTokenAsync(string idToken, CancellationToken? cancellationToken)
         {
             cancellationToken ??= CancellationToken.None;
-            var url = new Uri($"{options.Value.AccessTokenHost}{options.Value.AccessTokenEndpoint}");
-            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            Uri url = new($"{options.Value.AccessTokenHost}{options.Value.AccessTokenEndpoint}");
+            HttpRequestMessage request = new(HttpMethod.Get, url);
             request.Headers.Authorization = new AuthenticationHeaderValue(AuthenticationScheme.BearerLoginScheme, idToken);
-            var response = await httpClient.SendAsync(request, cancellationToken.Value);
-            var result = new AccessTokenResponse { StatusCode = response.StatusCode };
-            if (TryGetToken(response, out var token))
+            HttpResponseMessage response = await httpClient.SendAsync(request, cancellationToken.Value);
+            AccessTokenResponse result = new() { StatusCode = response.StatusCode };
+            if (TryGetToken(response, out string? token))
             {
                 result.Token = token;
             }
@@ -82,23 +82,23 @@ namespace Cod.Channel.Identity
         {
             cancellationToken ??= CancellationToken.None;
 
-            var uri = new StringBuilder($"{options.Value.ResourceTokenHost}{options.Value.ResourceTokenEndpoint}?type={(int)type}&resource={resource.Trim()}");
-            if (!String.IsNullOrWhiteSpace(partition))
+            StringBuilder uri = new($"{options.Value.ResourceTokenHost}{options.Value.ResourceTokenEndpoint}?type={(int)type}&resource={resource.Trim()}");
+            if (!string.IsNullOrWhiteSpace(partition))
             {
                 uri.Append("&partition=");
                 uri.Append(partition);
             }
 
-            if (!String.IsNullOrWhiteSpace(id))
+            if (!string.IsNullOrWhiteSpace(id))
             {
                 uri.Append("&id=");
                 uri.Append(id);
             }
 
-            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(uri.ToString()));
+            HttpRequestMessage request = new(HttpMethod.Get, new Uri(uri.ToString()));
             request.Headers.Authorization = new AuthenticationHeaderValue(AuthenticationScheme.BearerLoginScheme, accessToken);
-            var response = await httpClient.SendAsync(request, cancellationToken.Value);
-            var result = new ResourceTokenResponse { StatusCode = response.StatusCode };
+            HttpResponseMessage response = await httpClient.SendAsync(request, cancellationToken.Value);
+            ResourceTokenResponse result = new() { StatusCode = response.StatusCode };
             if (!response.IsSuccessStatusCode)
             {
                 return result;
@@ -116,9 +116,9 @@ namespace Cod.Channel.Identity
         private static bool TryGetToken(HttpResponseMessage response, [NotNullWhen(true)] out string? token)
         {
             if (response.IsSuccessStatusCode
-                && response.Headers.TryGetValues(HeaderNames.Authorization, out var authHeaders)
+                && response.Headers.TryGetValues(HeaderNames.Authorization, out IEnumerable<string>? authHeaders)
                 && !string.IsNullOrWhiteSpace(authHeaders?.SingleOrDefault())
-                && AuthenticationHeaderValue.TryParse(authHeaders!.Single(), out var authHeader)
+                && AuthenticationHeaderValue.TryParse(authHeaders!.Single(), out AuthenticationHeaderValue? authHeader)
                 && !string.IsNullOrWhiteSpace(authHeader.Parameter))
             {
                 token = authHeader.Parameter;

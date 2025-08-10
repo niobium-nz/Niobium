@@ -8,11 +8,7 @@
 
         public override string ToString()
         {
-            if (string.IsNullOrWhiteSpace(DisplayName))
-            {
-                return Address;
-            }
-            return $"{DisplayName} <{Address}>";
+            return string.IsNullOrWhiteSpace(DisplayName) ? Address : $"{DisplayName} <{Address}>";
         }
     }
 }

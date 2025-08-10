@@ -15,8 +15,8 @@ namespace Cod.Platform.Notification.Email
                 return false;
             }
 
-            var tos = recipients.Select(r => r.Trim().ToLowerInvariant());
-            foreach (var recipient in tos)
+            IEnumerable<string> tos = recipients.Select(r => r.Trim().ToLowerInvariant());
+            foreach (string? recipient in tos)
             {
                 if (!RegexUtilities.IsValidEmail(recipient))
                 {

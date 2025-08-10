@@ -11,6 +11,6 @@
         AzureCosmosDB = 6,
         AzureIoTHub = 7,
         AzureIoTDevice = 8,
-        AzureSpeechService  = 9,
+        AzureSpeechService = 9,
     }
 }

@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-
-namespace Cod.Channel
+﻿namespace Cod.Channel
 {
     public static class IRepositoryExtensions
     {
@@ -13,6 +10,8 @@ namespace Cod.Channel
             bool continueToLoadMore = false)
             where TDomain : IDomain<TEntity>
             where TEntity : class, new()
-            => await repository.LoadAsync(partitionKeyPrefix, $"{partitionKeyPrefix}~", count, force, continueToLoadMore);
+        {
+            return await repository.LoadAsync(partitionKeyPrefix, $"{partitionKeyPrefix}~", count, force, continueToLoadMore);
+        }
     }
 }

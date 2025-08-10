@@ -24,12 +24,12 @@ namespace Cod.Channel
             return services;
         }
 
-        public async static Task InitializeAsync(this IServiceProvider services)
+        public static async Task InitializeAsync(this IServiceProvider services)
         {
-            var bootstrappers = services.GetService<IEnumerable<IBootstrapper>>();
+            IEnumerable<IBootstrapper>? bootstrappers = services.GetService<IEnumerable<IBootstrapper>>();
             if (bootstrappers != null)
             {
-                foreach (var bootstrapper in bootstrappers)
+                foreach (IBootstrapper bootstrapper in bootstrappers)
                 {
                     await bootstrapper.InitializeAsync();
                 }

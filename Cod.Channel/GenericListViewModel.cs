@@ -14,11 +14,11 @@ namespace Cod.Channel
 
         protected IList<TViewModel> ViewModels { get; set; } = [];
 
-        public IEnumerable<TViewModel> Children { get => ViewModels; }
+        public IEnumerable<TViewModel> Children => ViewModels;
 
         public bool IsBusy => loadingStateService.IsBusy(typeof(TEntity).Name);
 
-        public virtual IRefreshable? Parent { get => null; }
+        public virtual IRefreshable? Parent => null;
 
         public bool IsInitialized { get; private set; }
 
@@ -32,12 +32,18 @@ namespace Cod.Channel
 
         public virtual async Task RefreshAsync(CancellationToken cancellationToken = default)
         {
-            var result = await loadCommand.ExecuteAsync(LoadCommandParameter, cancellationToken);
+            LoadCommandResult<TDomain> result = await loadCommand.ExecuteAsync(LoadCommandParameter, cancellationToken);
             ViewModels = await ViewModels.RefreshAsync(result.DomainsLoaded, createViewModel, default(TEntity), parent: this, cancellationToken: cancellationToken);
         }
 
-        public IEnumerator<IViewModel> GetEnumerator() => Children.GetEnumerator();
+        public IEnumerator<IViewModel> GetEnumerator()
+        {
+            return Children.GetEnumerator();
+        }
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 }

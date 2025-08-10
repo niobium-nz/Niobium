@@ -2,7 +2,7 @@
 
 namespace Cod.Platform
 {
-    internal class InternalErrorRetriever : IErrorRetriever
+    internal sealed class InternalErrorRetriever : IErrorRetriever
     {
         public bool TryGet(string key, [NotNullWhen(true)] out string? value)
         {

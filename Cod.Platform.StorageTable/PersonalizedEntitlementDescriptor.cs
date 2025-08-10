@@ -2,7 +2,7 @@
 
 namespace Cod.Platform.StorageTable
 {
-    internal class PersonalizedEntitlementDescriptor(string roleToGrant, DatabasePermissions permissions, string fullyQualifiedDomainName, string tableName)
+    internal sealed class PersonalizedEntitlementDescriptor(string roleToGrant, DatabasePermissions permissions, string fullyQualifiedDomainName, string tableName)
         : RoleBasedEntitlementDescriptor(roleToGrant, permissions, fullyQualifiedDomainName, tableName)
     {
         protected override IEnumerable<EntitlementDescription> BuildDescription(Guid tenant, Guid user, string role, string tableName, string permissionDescription)

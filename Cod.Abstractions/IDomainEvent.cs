@@ -2,12 +2,12 @@
 {
     public interface IDomainEvent
     {
-        public string ID { get; set; }
+        string ID { get; set; }
 
-        public DateTimeOffset Occurried { get; set; }
+        DateTimeOffset Occurried { get; set; }
 
-        public DomainEventAudience Source { get; set; }
+        DomainEventAudience Source { get; set; }
 
-        public DomainEventAudience Target { get; set; }
+        DomainEventAudience Target { get; set; }
     }
 }

@@ -35,7 +35,7 @@ namespace Cod.Channel.Speech.Blazor
                     break;
                 case "onCanceled":
                     Instance.IsRunning = false;
-                    var canceled = Deserialize<SpeechRecognitionCanceledEventArgs>(parameter);
+                    SpeechRecognitionCanceledEventArgs? canceled = Deserialize<SpeechRecognitionCanceledEventArgs>(parameter);
                     if (canceled != null)
                     {
                         CreateNewSession(canceled.SessionID);
@@ -45,18 +45,18 @@ namespace Cod.Channel.Speech.Blazor
                     await Instance.OnChangedAsync(SpeechRecognizerChangedType.Canceled);
                     break;
                 case "onRecognizing":
-                    var recognizing = Deserialize<SpeechRecognitionEventArgs>(parameter);
+                    SpeechRecognitionEventArgs? recognizing = Deserialize<SpeechRecognitionEventArgs>(parameter);
                     if (recognizing != null)
                     {
                         CreateNewSession(recognizing.SessionID);
                         Instance.Preview = ExtractLine(recognizing);
                     }
-                    
+
                     await Instance.OnChangedAsync(SpeechRecognizerChangedType.Recognizing);
                     break;
                 case "onRecognized":
                     Instance.Preview = null;
-                    var recognized = Deserialize<SpeechRecognitionEventArgs>(parameter);
+                    SpeechRecognitionEventArgs? recognized = Deserialize<SpeechRecognitionEventArgs>(parameter);
                     if (recognized != null)
                     {
                         CreateNewSession(recognized.SessionID);
@@ -71,12 +71,12 @@ namespace Cod.Channel.Speech.Blazor
                             await StopRecognitionIfExceedSilentTimeoutAsync();
                         }
                     }
-                    
+
                     break;
             }
         }
 
-        private async static Task StopRecognitionIfExceedSilentTimeoutAsync()
+        private static async Task StopRecognitionIfExceedSilentTimeoutAsync()
         {
             if (Instance?.Current == null)
             {
@@ -90,7 +90,7 @@ namespace Cod.Channel.Speech.Blazor
             }
             else
             {
-                var lastLineCreatedAt = Instance.Current.Lines.OrderByDescending(l => l.CreatedAt).First().CreatedAt;
+                DateTimeOffset lastLineCreatedAt = Instance.Current.Lines.OrderByDescending(l => l.CreatedAt).First().CreatedAt;
                 shouldStop = DateTimeOffset.Now - lastLineCreatedAt > silenceTimeout;
             }
 
@@ -109,7 +109,7 @@ namespace Cod.Channel.Speech.Blazor
                 return null;
             }
 
-            var line = new ConversationLine
+            ConversationLine line = new()
             {
                 Text = e.Result.Text,
                 CreatedAt = DateTimeOffset.Now,
@@ -117,7 +117,7 @@ namespace Cod.Channel.Speech.Blazor
 
             if (e.Result.Translations != null)
             {
-                var translation = e.Result.Translations.SingleOrDefault(t => t.Language == "en");
+                SpeechTranslationPair? translation = e.Result.Translations.SingleOrDefault(t => t.Language == "en");
                 if (translation != null)
                 {
                     line.Translation = translation.Text;

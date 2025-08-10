@@ -30,7 +30,7 @@ namespace Cod
 
         public static T GetClaim<T>(this ClaimsPrincipal principal, string key)
         {
-            return !principal.TryGetClaim<T>(key, out var result)
+            return !principal.TryGetClaim<T>(key, out T? result)
                 ? throw new KeyNotFoundException($"The specified claim does not exist: {key}.")
                 : result!;
         }
@@ -50,7 +50,7 @@ namespace Cod
 
         public static bool TryGetClaims<T>(this ClaimsPrincipal principal, string key, [NotNullWhen(true)] out IEnumerable<T>? result)
         {
-            var claim = principal.Claims.Where(c => c.Type == key);
+            IEnumerable<Claim> claim = principal.Claims.Where(c => c.Type == key);
             if (!claim.Any())
             {
                 result = default;

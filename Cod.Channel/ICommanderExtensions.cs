@@ -5,13 +5,23 @@
         private static readonly string groupBusyPlaceholder = "$_$GROUP_BUSY_PLACEHOLDER$_$";
 
         public static bool IsBusy(this ILoadingStateService service, string group)
-            => service.State.ContainsKey(group);
+        {
+            return service.State.ContainsKey(group);
+        }
 
         public static bool IsBusy(this ILoadingStateService service, string group, string name)
-            => service.State.ContainsKey(group) && service.State[group].Contains(name);
+        {
+            return service.State.ContainsKey(group) && service.State[group].Contains(name);
+        }
 
-        public static IDisposable SetBusy(this ILoadingStateService service, string group) => service.SetBusy(group, groupBusyPlaceholder);
+        public static IDisposable SetBusy(this ILoadingStateService service, string group)
+        {
+            return service.SetBusy(group, groupBusyPlaceholder);
+        }
 
-        public static void UnsetBusy(this ILoadingStateService service, string group) => service.UnsetBusy(group);
+        public static void UnsetBusy(this ILoadingStateService service, string group)
+        {
+            service.UnsetBusy(group);
+        }
     }
 }

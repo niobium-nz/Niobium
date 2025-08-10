@@ -38,8 +38,8 @@ namespace Cod.Channel.Speech.Blazor
         {
             try
             {
-                var t = await recognizer.Value;
-                var result = await t.InvokeAsync<string>("getInputSources", cancellationToken: cancellationToken);
+                IJSObjectReference t = await recognizer.Value;
+                string result = await t.InvokeAsync<string>("getInputSources", cancellationToken: cancellationToken);
                 return Deserialize<InputSourceDevice[]>(result)!;
             }
             catch
@@ -65,7 +65,7 @@ namespace Cod.Channel.Speech.Blazor
 
             try
             {
-                var t = await recognizer.Value;
+                IJSObjectReference t = await recognizer.Value;
                 IsRunning = await t.InvokeAsync<bool>("startRecognition", cancellationToken, [deviceID ?? string.Empty, language, token, region, translateIntoEnglish]);
                 if (!IsRunning)
                 {
@@ -87,7 +87,7 @@ namespace Cod.Channel.Speech.Blazor
         {
             try
             {
-                var t = await recognizer.Value;
+                IJSObjectReference t = await recognizer.Value;
                 await t.InvokeVoidAsync("stopRecognition");
                 ContinueOnPrevious = false;
             }
@@ -118,7 +118,7 @@ namespace Cod.Channel.Speech.Blazor
         {
             if (recognizer.IsValueCreated)
             {
-                var t = await recognizer.Value;
+                IJSObjectReference t = await recognizer.Value;
                 await t.DisposeAsync();
             }
 

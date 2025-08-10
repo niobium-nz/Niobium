@@ -2,7 +2,7 @@
 
 namespace Cod.Messaging.ServiceBus
 {
-    internal class ServiceBusMessageEntry<T>(ServiceBusReceivedMessage message, Func<ServiceBusReceivedMessage, Task> completeMessage) : MessagingEntry<T>
+    internal sealed class ServiceBusMessageEntry<T>(ServiceBusReceivedMessage message, Func<ServiceBusReceivedMessage, Task> completeMessage) : MessagingEntry<T>
     {
         private ServiceBusReceivedMessage? message = message;
         private Func<ServiceBusReceivedMessage, Task>? completeMessage = completeMessage;

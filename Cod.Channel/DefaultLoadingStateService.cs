@@ -1,19 +1,19 @@
 ﻿namespace Cod.Channel
 {
-    internal class DefaultLoadingStateService : ILoadingStateService
+    internal sealed class DefaultLoadingStateService : ILoadingStateService
     {
         private readonly Dictionary<string, IReadOnlyCollection<string>> state = [];
 
-        public IReadOnlyDictionary<string, IReadOnlyCollection<string>> State => this.state;
+        public IReadOnlyDictionary<string, IReadOnlyCollection<string>> State => state;
 
         public IDisposable SetBusy(string group, string name)
         {
-            if (!state.TryGetValue(group, out var values))
+            if (!state.TryGetValue(group, out IReadOnlyCollection<string>? values))
             {
                 values = new List<string>();
-                this.state.Add(group, values);
+                state.Add(group, values);
             }
-            var list = (List<string>)values;
+            List<string> list = (List<string>)values;
             if (!list.Contains(name))
             {
                 list.Add(name);
@@ -23,14 +23,14 @@
 
         public void UnsetBusy(string group, string name)
         {
-            if (state.TryGetValue(group, out var value))
+            if (state.TryGetValue(group, out IReadOnlyCollection<string>? value))
             {
-                var list = (List<string>)value;
+                List<string> list = (List<string>)value;
                 list.Remove(name);
 
                 if (list.Count == 0)
                 {
-                    this.state.Remove(group);
+                    state.Remove(group);
                 }
             }
         }

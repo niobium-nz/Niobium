@@ -10,6 +10,9 @@
 
         public bool CreateQueueIfNotExist { get; set; } = true;
 
-        public bool Validate() => !string.IsNullOrEmpty(ServiceEndpoint);
+        public bool Validate()
+        {
+            return !string.IsNullOrEmpty(ServiceEndpoint);
+        }
     }
 }

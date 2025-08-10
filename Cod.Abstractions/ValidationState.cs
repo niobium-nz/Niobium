@@ -35,7 +35,7 @@ namespace Cod
 
         public bool TryGetValue(string key, [NotNullWhen(true)] out IReadOnlyCollection<string>? value)
         {
-            bool b = errors.TryGetValue(key, out var result);
+            bool b = errors.TryGetValue(key, out List<string>? result);
             value = result;
             return b;
         }
@@ -45,6 +45,9 @@ namespace Cod
             return errors.ToDictionary(kv => kv.Key, kv => kv.Value.AsEnumerable());
         }
 
-        public void Clear() => errors.Clear();
+        public void Clear()
+        {
+            errors.Clear();
+        }
     }
 }

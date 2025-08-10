@@ -6,8 +6,8 @@ namespace Cod.Messaging
     {
         protected DomainEvent()
         {
-            this.Source = Cod.DomainEventAudience.Internal;
-            this.Target = Cod.DomainEventAudience.Internal;
+            Source = Cod.DomainEventAudience.Internal;
+            Target = Cod.DomainEventAudience.Internal;
         }
 
         public string ID { get; set; } = Guid.NewGuid().ToString();

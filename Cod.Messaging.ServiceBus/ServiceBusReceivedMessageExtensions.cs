@@ -24,7 +24,7 @@ namespace Cod.Messaging.ServiceBus
             try
             {
                 Type? type = null;
-                if (message.ApplicationProperties.TryGetValue(HeaderNames.ContentType, out var v))
+                if (message.ApplicationProperties.TryGetValue(HeaderNames.ContentType, out object? v))
                 {
                     try
                     {
@@ -35,7 +35,7 @@ namespace Cod.Messaging.ServiceBus
                     }
                 }
 
-                var json = message.Body.ToString();
+                string json = message.Body.ToString();
                 result = MessagingEntry.Parse<T>(json, type);
 
                 if (result == null)
