@@ -2,13 +2,13 @@
 {
     public abstract class BaseViewModel : IViewModel
     {
-        public IRefreshable Parent { get; private set; }
+        public IRefreshable? Parent { get; private set; }
 
-        public bool IsInitialized { get; private set; }
+        public virtual bool IsInitialized { get; protected set; }
 
         public abstract bool IsBusy { get; }
 
-        public EventHandler RefreshRequested { get; set; }
+        public EventHandler? RefreshRequested { get; set; }
 
         public async virtual Task RefreshAsync(CancellationToken cancellationToken = default)
         {
@@ -22,7 +22,7 @@
             }
         }
 
-        protected Task InitializeAsync(IRefreshable parent = null, CancellationToken cancellationToken = default)
+        protected Task InitializeAsync(IRefreshable? parent = null, CancellationToken cancellationToken = default)
         {
             Parent = parent;
             IsInitialized = true;

@@ -6,7 +6,7 @@ namespace Cod.Channel
 {
     public static class ModelHelper
     {
-        public static object GetDisplayValue(object value)
+        public static object? GetDisplayValue(object? value)
         {
             if (value == null)
             {
@@ -48,11 +48,11 @@ namespace Cod.Channel
                 .Where(x => x.Display != null)
                 .Select(x => new DisplayProperty(
                     x.Property.Name,
-                    x.Display.GetName(),
+                    x.Display?.GetName(),
                     instance => x.Property.GetValue(instance),
-                    order: x.Display.GetOrder(),
-                    group: int.TryParse(x.Display.GroupName, out var g) ? g : int.MaxValue,
-                    description: x.Display.GetDescription(),
+                    order: x.Display?.GetOrder(),
+                    group: int.TryParse(x.Display?.GroupName, out var g) ? g : int.MaxValue,
+                    description: x.Display?.GetDescription(),
                     isSubject: x.Control?.IsSubject,
                     control: x.Control?.Control))
                 .OrderBy(p => p.Order)
@@ -61,21 +61,21 @@ namespace Cod.Channel
 
         private static EditProperty TransformIntoEditProperty(EditPropertyInfo info, object model, IEnumerable<IEditModeValueProvider> valueProviders)
         {
-            var displayName = info.Display.GetName();
+            var displayName = info.Display?.GetName();
             var propertyName = info.Property.Name;
             var propertyType = info.Property.PropertyType;
-            Func<object, object> getValue = info.Property.GetValue;
-            Action<object, object> setValue = info.Property.SetValue;
-            var order = info.Display.GetOrder();
-            var group = int.TryParse(info.Display.GroupName, out var g) ? g : int.MaxValue;
-            var description = info.Display.GetDescription();
+            Func<object, object?> getValue = info.Property.GetValue;
+            Action<object, object?> setValue = info.Property.SetValue;
+            var order = info.Display?.GetOrder();
+            var group = int.TryParse(info.Display?.GroupName, out var g) ? g : int.MaxValue;
+            var description = info.Display?.GetDescription();
             var isReadOnly = info.Control?.IsReadOnly;
             var isRequired = info.Control?.IsRequired;
             var control = info.Control?.Control;
 
             if (info.Control?.Control == PropertyControl.Dropdown)
             {
-                IEnumerable<EditOption> options = null;
+                IEnumerable<EditOption>? options = null;
                 foreach (var provider in valueProviders)
                 {
                     options = provider.GetValue(model, info.Property.Name, nameof(EditOptionalProperty.Options)) as IEnumerable<EditOption>;
@@ -147,7 +147,7 @@ namespace Cod.Channel
         private static List<EditOption> GetEnumOptions(
             object model,
             Type propertyType,
-            Func<object, object> getValue,
+            Func<object, object?> getValue,
             Action<object, object> setValue)
         {
             if (!propertyType.IsEnum)
@@ -162,15 +162,13 @@ namespace Cod.Channel
             foreach (var enumMember in enumMembers)
             {
                 var memberInfo = propertyType.GetMember(enumMember.ToString()).Single();
-                string memberDisplayName;
+                string? memberDisplayName = null;
                 if (memberInfo.GetCustomAttributes(typeof(DisplayAttribute), false).FirstOrDefault() is DisplayAttribute attr)
                 {
                     memberDisplayName = attr.GetName();
                 }
-                else
-                {
-                    memberDisplayName = enumMember.ToString();
-                }
+
+                memberDisplayName ??= enumMember.ToString();
                 var memberValue = Convert.ToInt32(enumMember);
                 var isSelected = false;
                 if (actualValue != null && actualValue is IConvertible)
@@ -186,18 +184,23 @@ namespace Cod.Channel
                     {
                         if (isBitFlagEnum)
                         {
-                            var existingValue = (int)getValue(model);
-                            if (isSelected)
+                            var existingValue = getValue(model);
+                            if (existingValue != null && existingValue is int i)
                             {
+                                if (isSelected)
+                                {
+                                    setValue(model, memberValue | i);
+                                }
+                                else
+                                {
+                                    setValue(model, memberValue ^ i);
+                                }
 
-                                setValue(model, memberValue | existingValue);
-                            }
-                            else
-                            {
-                                setValue(model, memberValue ^ existingValue);
+                                return;
                             }
                         }
-                        else if (isSelected)
+
+                        if (isSelected)
                         {
                             setValue(model, memberValue);
                         }
@@ -231,14 +234,18 @@ namespace Cod.Channel
                 })
                 .Where(x => x.Action != null)
                 .Select(x => new DisplayAction(
-                    x.Action.GetName(),
+                    x.Action?.GetName(),
                     (i) =>
                     {
                         var r = x.Method.Invoke(i, null);
-                        return (Task)r;
+                        if (r is Task task)
+                        {
+                            return task;
+                        }
+                        return Task.CompletedTask;
                     },
-                    description: x.Action.GetDescription(),
-                    order: x.Action.GetOrder()))
+                    description: x.Action?.GetDescription(),
+                    order: x.Action?.GetOrder()))
                 .OrderBy(p => p.Order);
         }
 
@@ -277,6 +284,6 @@ namespace Cod.Channel
             return displayAttribute?.Name ?? property.Name;
         }
 
-        private record EditPropertyInfo(DisplayAttribute Display, EditModeAttribute Control, PropertyInfo Property);
+        private record EditPropertyInfo(DisplayAttribute? Display, EditModeAttribute? Control, PropertyInfo Property);
     }
 }

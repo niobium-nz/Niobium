@@ -9,7 +9,7 @@ namespace Cod.Channel
 {
     public static class INavigatorExtensions
     {
-        private static readonly NameValueCollection EmptyQueryString = new NameValueCollection();
+        private static readonly NameValueCollection EmptyQueryString = [];
 
         public static async Task CheckAndPerformGotoAsync(this INavigator navigator)
         {
@@ -41,7 +41,7 @@ namespace Cod.Channel
             return EmptyQueryString;
         }
 
-        public static bool TryGetQueryString(this INavigator navigator, string key, out string value)
+        public static bool TryGetQueryString(this INavigator navigator, string key, [NotNullWhen(true)] out string? value)
         {
             var queries = navigator.GetQueryStrings();
             value = queries.Get(key);

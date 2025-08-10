@@ -2,12 +2,7 @@
 {
     public class LoadCommandParameter
     {
-        public LoadCommandParameter()
-        {
-        }
-
         public LoadCommandParameter(string partitionKey)
-            : this()
         {
             PartitionKeyStart = partitionKey;
             PartitionKeyEnd = partitionKey;
@@ -24,9 +19,9 @@
 
         public string PartitionKeyEnd { get; set; }
 
-        public string RowKeyStart { get; set; }
+        public string? RowKeyStart { get; set; }
 
-        public string RowKeyEnd { get; set; }
+        public string? RowKeyEnd { get; set; }
 
         public bool Force { get; set; }
     }

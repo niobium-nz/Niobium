@@ -1,6 +1,6 @@
 ﻿namespace Cod.Channel
 {
-    public class Notification(string subject, string body, NotificationLevel level, bool blocked, NotificationHandleOption options, INotificationHandler handler)
+    public class Notification(string subject, string body, NotificationLevel level, bool blocked, NotificationHandleOption options, INotificationHandler? handler)
     {
         public Notification(string subject, string body)
             : this(subject, body, NotificationLevel.Information, false, NotificationHandleOption.None, null)
@@ -34,6 +34,6 @@
 
         public NotificationHandleOption Options { get; set; } = options;
 
-        public INotificationHandler Handler { get; set; } = handler;
+        public INotificationHandler? Handler { get; set; } = handler;
     }
 }

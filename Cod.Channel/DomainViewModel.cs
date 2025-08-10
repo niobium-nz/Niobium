@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Cod.Channel
 {
     public abstract class DomainViewModel<TDomain, TEntity>(ILoadingStateService loadingStateService)
@@ -5,26 +7,34 @@ namespace Cod.Channel
             where TDomain : IDomain<TEntity>
             where TEntity : class
     {
-        public string PartitionKey => this.Domain.PartitionKey;
+        [MemberNotNullWhen(true, nameof(PartitionKey), nameof(RowKey), nameof(Domain), nameof(Entity))]
+        public override bool IsInitialized => base.IsInitialized && DomainInitialized && UIRefreshableInitialized;
 
-        public string RowKey => this.Domain.RowKey;
+        public string? PartitionKey => Domain?.PartitionKey;
+
+        public string? RowKey => Domain?.RowKey;
 
         public override bool IsBusy => loadingStateService.IsBusy(typeof(TEntity).Name, new StorageKey { PartitionKey = PartitionKey, RowKey = RowKey }.ToString());
 
-        public TDomain Domain { get; private set; }
+        public TDomain? Domain { get; private set; }
 
-        public TEntity Entity { get; private set; }
+        public TEntity? Entity { get; private set; }
 
         protected bool UIRefreshableInitialized { get; private set; }
 
         protected bool DomainInitialized { get; private set; }
 
-        public async Task<string> GetHashAsync(CancellationToken cancellationToken = default)
+        public async Task<string?> GetHashAsync(CancellationToken cancellationToken = default)
         {
+            if (Domain == null)
+            {
+                return null;
+            }
+
             return await Domain.GetHashAsync(cancellationToken);
         }
 
-        public async Task<IViewModel<TDomain, TEntity>> InitializeAsync(TDomain domain, IRefreshable parent = null, bool force = false, CancellationToken cancellationToken = default)
+        public async Task<IViewModel<TDomain, TEntity>> InitializeAsync(TDomain domain, IRefreshable? parent = null, bool force = false, CancellationToken cancellationToken = default)
         {
             var shouldNotify = false;
 
@@ -41,7 +51,13 @@ namespace Cod.Channel
                 UIRefreshableInitialized = true;
             }
 
-            Entity = await Domain.GetEntityAsync(cancellationToken);
+            if (Domain == null)
+            {
+                throw new InvalidOperationException("Domain cannot be initialized with valid value.");
+            }
+
+            Entity = await Domain.GetEntityAsync(cancellationToken)
+                ?? throw new InvalidOperationException("Domain entity cannot be initialized with valid value.");
 
             await InitializeAsync(parent, cancellationToken);
 

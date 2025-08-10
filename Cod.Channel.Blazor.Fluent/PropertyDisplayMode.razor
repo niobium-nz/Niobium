@@ -24,5 +24,17 @@
     [Parameter]
     public required DisplayProperty Property { get; set; }
 
-    private object PropertyValue => ModelHelper.GetDisplayValue(Property.GetValue(ViewModel));
+    private object? PropertyValue
+    {
+        get
+        {
+            var value = Property.GetValue(ViewModel);
+            if (value != null)
+            {
+                return ModelHelper.GetDisplayValue(value);
+            }
+            
+            return null;
+        }
+    }
 }

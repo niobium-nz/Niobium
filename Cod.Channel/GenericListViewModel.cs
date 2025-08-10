@@ -18,11 +18,11 @@ namespace Cod.Channel
 
         public bool IsBusy => loadingStateService.IsBusy(typeof(TEntity).Name);
 
-        public virtual IRefreshable Parent { get => null; }
+        public virtual IRefreshable? Parent { get => null; }
 
         public bool IsInitialized { get; private set; }
 
-        public EventHandler RefreshRequested { get; set; }
+        public EventHandler? RefreshRequested { get; set; }
 
         public virtual Task InitializeAsync(CancellationToken cancellationToken = default)
         {

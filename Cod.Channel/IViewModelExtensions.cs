@@ -6,8 +6,8 @@ namespace Cod.Channel
             this IList<TViewModel> existings,
             IEnumerable<TDomain> refreshments,
             Func<TViewModel> createViewModel,
-            TEntity dummy,
-            IRefreshable parent = null,
+            TEntity? _,
+            IRefreshable? parent = null,
             CancellationToken cancellationToken = default)
                 where TViewModel : class, IViewModel<TDomain, TEntity>
                 where TDomain : IDomain<TEntity>
@@ -16,7 +16,7 @@ namespace Cod.Channel
 
             foreach (var refreshment in refreshments)
             {
-                TViewModel changed = null;
+                TViewModel? changed = null;
                 var changes = existings.Where(e =>
                     e.PartitionKey == refreshment.PartitionKey
                     && e.RowKey == refreshment.RowKey);

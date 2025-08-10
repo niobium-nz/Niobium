@@ -3,14 +3,14 @@
     public class EditProperty : DisplayProperty
     {
         public EditProperty(
-            string displayName,
+            string? displayName,
             string propertyName,
             Type propertyType,
-            Func<object, object> getValue,
-            Action<object, object> setValue,
+            Func<object, object?> getValue,
+            Action<object, object?> setValue,
             int? order,
             int? group,
-            string description,
+            string? description,
             PropertyControl? control,
             bool? isReadOnly,
             bool? isRequired)
@@ -29,6 +29,6 @@
 
         public bool IsReadOnly { get; }
 
-        public Action<object, object> SetValue { get; }
+        public Action<object, object?> SetValue { get; }
     }
 }

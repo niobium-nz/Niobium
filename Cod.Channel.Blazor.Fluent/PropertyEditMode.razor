@@ -101,7 +101,7 @@ else if (Property.Control == PropertyControl.NumberField)
     }
     else
     {
-        throw new InvalidOperationException($"Unsupported type for number field binding: {propertyValue.GetType()}");
+        throw new InvalidOperationException($"Unsupported type for number field binding: {fieldName}");
     }
 
     <FluentValidationMessage TValue="EditProperty" Field="@fieldIdentifier" />
@@ -150,12 +150,12 @@ else if (Property.Control == PropertyControl.Calendar && Property is EditDateTim
 
 @code {
 
-    private string fieldDisplayName => Property.DisplayName;
-    private object fieldDisplayValue => ModelHelper.GetDisplayValue(propertyValue);
+    private string? fieldDisplayName => Property?.DisplayName;
+    private object? fieldDisplayValue => ModelHelper.GetDisplayValue(propertyValue);
     private string fieldName => Property.PropertyName;
     private Microsoft.AspNetCore.Components.Forms.FieldIdentifier fieldIdentifier
         => new FieldIdentifier(ViewModel, fieldName);
-    private object propertyValue => Property.GetValue(ViewModel);
+    private object? propertyValue => Property.GetValue(ViewModel);
 
     private string? textBindValue => fieldDisplayValue?.ToString();
 

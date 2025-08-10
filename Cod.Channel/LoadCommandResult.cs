@@ -2,6 +2,6 @@
 {
     public class LoadCommandResult<TDomain>
     {
-        public IEnumerable<TDomain> DomainsLoaded { get; set; }
+        public required IEnumerable<TDomain> DomainsLoaded { get; set; }
     }
 }

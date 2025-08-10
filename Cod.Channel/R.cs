@@ -1,10 +1,11 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace Cod.Channel
 {
     internal static class R
     {
-        public static bool TryGet(string key, out string value)
+        public static bool TryGet(string key, [NotNullWhen(true)] out string? value)
         {
             var str = Localization.ResourceManager.GetString(key, CultureInfo.CurrentUICulture);
             if (str != null)
