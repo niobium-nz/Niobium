@@ -24,16 +24,38 @@ namespace Cod.Channel
 
         public EventHandler? RefreshRequested { get; set; }
 
+        public string? ErrorMessage { get; protected set; }
+
         public virtual Task InitializeAsync(CancellationToken cancellationToken = default)
         {
-            IsInitialized = true;
-            return Task.CompletedTask;
+            try
+            {
+                IsInitialized = true;
+                return Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                SetError(ex, "initializing the list");
+                return Task.CompletedTask;
+            }
         }
 
         public virtual async Task RefreshAsync(CancellationToken cancellationToken = default)
         {
-            LoadCommandResult<TDomain> result = await loadCommand.ExecuteAsync(LoadCommandParameter, cancellationToken);
-            ViewModels = await ViewModels.RefreshAsync(result.DomainsLoaded, createViewModel, default(TEntity), parent: this, cancellationToken: cancellationToken);
+            try
+            {
+                LoadCommandResult<TDomain> result = await loadCommand.ExecuteAsync(LoadCommandParameter, cancellationToken);
+                ViewModels = await ViewModels.RefreshAsync(result.DomainsLoaded, createViewModel, default(TEntity), parent: this, cancellationToken: cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                SetError(ex, "refreshing the list");
+            }
+        }
+
+        protected void SetError(Exception ex, string context)
+        {
+            ErrorMessage = $"An error occurred while {context}: {ex.Message}";
         }
 
         public IEnumerator<IViewModel> GetEnumerator()

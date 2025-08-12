@@ -1,40 +1,25 @@
-﻿@if (Property.Control == PropertyControl.Label)
+﻿@if (Property.IsSubject)
 {
-    if (Property.IsSubject)
-    {
-        <FluentGridItem lg="12">
+    <div class="property-row property-row-subject">
+        <div class="property-subject-value">
             <FluentLabel Typo="Typography.Subject" Color="@Color.Accent">@PropertyValue</FluentLabel>
-        </FluentGridItem>
-    }
-    else
-    {
-        <FluentGridItem lg="2">
-            <FluentLabel Typo="Typography.Body">@Property.DisplayName</FluentLabel>
-        </FluentGridItem>
-        <FluentGridItem lg="10">
+        </div>
+    </div>
+}
+else
+{
+    <div class="property-row">
+        <div class="property-label">@Property.DisplayName</div>
+        <div class="property-value">
             <FluentLabel Typo="Typography.Body">@PropertyValue</FluentLabel>
-        </FluentGridItem>
-    }
+        </div>
+    </div>
 }
 
 @code {
     [Parameter]
     public required object ViewModel { get; set; }
-
     [Parameter]
     public required DisplayProperty Property { get; set; }
-
-    private object? PropertyValue
-    {
-        get
-        {
-            var value = Property.GetValue(ViewModel);
-            if (value != null)
-            {
-                return ModelHelper.GetDisplayValue(value);
-            }
-            
-            return null;
-        }
-    }
+    private object? PropertyValue => ModelHelper.GetDisplayValue(Property.GetValue(ViewModel));
 }

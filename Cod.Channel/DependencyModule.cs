@@ -21,6 +21,7 @@ namespace Cod.Channel
             services.AddSingleton<ILoadingStateService, DefaultLoadingStateService>();
             services.AddSingleton<INotificationService, NotificationService>();
             services.AddTransient<IEditModeValueProviderFactory>(sp => new DefaultEditModeValueProviderFactory(sp));
+            services.AddSingleton<IBootstrapper, ReflectionCacheBootstrapper>();
             return services;
         }
 

@@ -1,76 +1,86 @@
-﻿@if (!Data.IsBusy)
-{
-    <EditForm Model="@Data">
-        <DataAnnotationsValidator />
-        <FluentValidationSummary />
+﻿@inherits Cod.Channel.Blazor.Fluent.ViewModelComponentBase<IViewModel>
 
-        <FluentStack Orientation="Orientation.Vertical">
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div class="fluent-error-message">
+        <span class="fluent-error-icon">&#9888;</span>
+        @ErrorMessage
+    </div>
+}
+else if (!IsBusy)
+{
+    <FluentCard Class="edit-form-card">
+        <EditForm Model="@this.Data">
+            <DataAnnotationsValidator />
+            <FluentValidationSummary />
             @if (properties != null)
             {
+                var subject = properties.SelectMany(g => g).FirstOrDefault(p => p.IsSubject);
+                if (subject != null)
+                {
+                    <PropertyEditMode ViewModel="this.Data" Property="subject" />
+                }
                 foreach (var group in properties)
                 {
-                    foreach (var property in group)
+                    <div class="edit-section-fields">
+                        @foreach (var property in group)
+                        {
+                            if (!property.IsSubject)
+                            {
+                                <PropertyEditMode ViewModel="this.Data" Property="property" />
+                            }
+                        }
+                    </div>
+                    @if (group != properties.Last())
                     {
-                        <PropertyEditMode ViewModel="Data" Property="property" />
+                        <div class="card-section-divider"></div>
                     }
-
-                    <FluentGridItem lg="12">
-                        <FluentDivider />
-                    </FluentGridItem>
                 }
             }
-
-            @if (actions != null)
-            {
-                foreach (var action in actions)
+            <div class="edit-actions edit-actions-bottom">
+                @if (actions != null)
                 {
-                    <FluentButton Appearance="Appearance.Accent"
-                                  IconStart="@(new Icons.Regular.Size16.Money())"
-                                  OnClick="@(async () => await action.Action.Invoke(Data))">
-                        @action.DisplayName
-                    </FluentButton>
+                    foreach (var action in actions)
+                    {
+                        <FluentButton Appearance="Appearance.Accent"
+                                      Class="card-action-btn"
+                                      IconStart="@(new Icons.Regular.Size16.Money())"
+                                      OnClick="@(async () => await action.Action.Invoke(this.Data))">
+                            @action.DisplayName
+                        </FluentButton>
+                    }
                 }
-            }
-        </FluentStack>
-    </EditForm>
+            </div>
+        </EditForm>
+    </FluentCard>
 }
 else
 {
-    <FluentProgressRing />
+    <div class="loading-container-large">
+        <FluentProgressRing />
+    </div>
 }
 
 @code {
-    private bool disposed;
     private IEnumerable<IEditModeValueProvider> valueProviders = [];
-    private IEnumerable<IGrouping<int, EditProperty>>? properties => ModelHelper.GetEditProperies(Data, valueProviders);
-    private IEnumerable<DisplayAction>? actions => ModelHelper.GetDisplayActions(Data);
-
-    [Parameter]
-    public required IViewModel Data { get; set; }
+    private IEnumerable<IGrouping<int, EditProperty>>? properties;
+    private IEnumerable<DisplayAction>? actions;
 
     [Inject]
     public required IEditModeValueProviderFactory ValueProviderFactory { get; set; }
 
-    protected async override Task OnInitializedAsync()
+    protected override async Task InitializeViewModelAsync()
     {
-        Data.RefreshRequested += Data_RefreshRequested;
-        valueProviders = ValueProviderFactory.Create(Data.GetType());
-        await base.OnInitializedAsync();
-    }
-
-    private void Data_RefreshRequested(object? sender, EventArgs e)
-    {
-        StateHasChanged();
-    }
-
-    public void Dispose()
-    {
-        if (!disposed)
+        try
         {
-            Data.RefreshRequested -= Data_RefreshRequested;
-            disposed = true;
+            valueProviders = ValueProviderFactory.Create(this.Data.GetType());
+            properties = ModelHelper.GetEditProperties(this.Data, valueProviders);
+            actions = ModelHelper.GetDisplayActions(this.Data);
         }
-
-        GC.SuppressFinalize(this);
+        catch (Exception ex)
+        {
+            ErrorMessage = $"An error occurred while initializing the view: {ex.Message}";
+        }
+        await base.InitializeViewModelAsync();
     }
 }

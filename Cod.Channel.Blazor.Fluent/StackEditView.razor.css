@@ -1,0 +1,65 @@
+.edit-form-card {
+    max-width: 540px;
+    margin: 32px auto 0 auto;
+    padding: 24px 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-radius: 16px;
+    background: #fff;
+    min-height: unset;
+    height: auto;
+    display: block;
+}
+.edit-section-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+.card-section-divider {
+    height: 1px;
+    background: linear-gradient(to right, #eee 0%, #ccc 50%, #eee 100%);
+    margin: 18px 0;
+    border-radius: 1px;
+}
+.edit-actions {
+    margin-top: 24px;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+}
+.edit-actions-bottom {
+    border-top: 1px solid #eee;
+    padding-top: 16px;
+}
+.card-action-btn {
+    min-width: 120px;
+    font-weight: 500;
+}
+@media (max-width: 600px) {
+    .edit-form-card {
+        max-width: 100vw;
+        margin: 8px 0 0 0;
+        padding: 12px 4px;
+        border-radius: 8px;
+        min-height: unset;
+        height: auto;
+        display: block;
+    }
+    .edit-section-fields {
+        gap: 6px;
+    }
+    .edit-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        justify-content: flex-start;
+    }
+    .card-section-divider {
+        margin: 12px 0;
+    }
+    .card-action-btn {
+        width: 100%;
+        min-width: unset;
+    }
+}

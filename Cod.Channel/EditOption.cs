@@ -7,6 +7,7 @@
         public string Value { get; set; } = value;
 
         public bool IsSelected { get; } = isSelected;
+
         public Action<bool> OnSelected { get; } = onSelected;
     }
 }

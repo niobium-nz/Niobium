@@ -10,6 +10,8 @@
 
         public EventHandler? RefreshRequested { get; set; }
 
+        public string? ErrorMessage { get; protected set; }
+
         public virtual async Task RefreshAsync(CancellationToken cancellationToken = default)
         {
             if (Parent != null)
@@ -32,6 +34,11 @@
         protected virtual void OnRefreshRequested()
         {
             RefreshRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        protected void SetError(string message)
+        {
+            ErrorMessage = message;
         }
     }
 }

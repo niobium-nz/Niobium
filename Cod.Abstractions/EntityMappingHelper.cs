@@ -43,33 +43,20 @@ namespace Cod
                 return false;
             }
 
-            switch (field)
+            result = field switch
             {
-                case EntityKeyKind.PartitionKey:
-                case EntityKeyKind.RowKey:
-                case EntityKeyKind.Timestamp:
-                    if (value is DateTimeOffset time)
-                    {
-                        result = typeof(T) == typeof(DateTimeOffset)
-                            ? (T)value
-                            : typeof(T) == typeof(long)
-                                ? (T)(object)time.ToReverseUnixTimeMilliseconds()
-                                : typeof(T) == typeof(string)
-                                ? (T)(object)time.ToReverseUnixTimeMilliseconds().ToString()
-                                : throw new InvalidDataContractException($"Property '{key}' on '{type.FullName}' must be of type DateTimeOffset or long.");
-                    }
-                    else
-                    {
-                        result = (T)(object)value.ToString()!;
-                    }
-                    break;
-                case EntityKeyKind.ETag:
-                    result = (T)(object)value.ToString()!;
-                    break;
-                default:
-                    throw new NotSupportedException($"Converting '{value}' to type '{typeof(T)}' is not supported.");
-            }
-
+                EntityKeyKind.PartitionKey or EntityKeyKind.RowKey or EntityKeyKind.Timestamp => value is DateTimeOffset time
+                                        ? typeof(T) == typeof(DateTimeOffset)
+                                            ? (T)value
+                                            : typeof(T) == typeof(long)
+                                                ? (T)(object)time.ToReverseUnixTimeMilliseconds()
+                                                : typeof(T) == typeof(string)
+                                                ? (T)(object)time.ToReverseUnixTimeMilliseconds().ToString()
+                                                : throw new InvalidDataContractException($"Property '{key}' on '{type.FullName}' must be of type DateTimeOffset or long.")
+                                        : (T)(object)value.ToString()!,
+                EntityKeyKind.ETag => (T)(object)value.ToString()!,
+                _ => throw new NotSupportedException($"Converting '{value}' to type '{typeof(T)}' is not supported."),
+            };
             return true;
         }
 

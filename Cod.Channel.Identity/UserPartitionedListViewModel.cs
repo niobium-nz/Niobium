@@ -1,9 +1,7 @@
-﻿using Cod.Identity;
-
-namespace Cod.Channel.Identity
+﻿namespace Cod.Channel.Identity
 {
     public class UserPartitionedListViewModel<TViewModel, TDomain, TEntity>(
-        IAuthenticator authenticator,
+        IPartitionResolver partitionResolver,
         ILoadingStateService loadingStateService,
         ICommand<LoadCommandParameter, LoadCommandResult<TDomain>> loadCommand,
         Func<TViewModel> createViewModel)
@@ -17,7 +15,7 @@ namespace Cod.Channel.Identity
 
         public override async Task InitializeAsync(CancellationToken cancellationToken = default)
         {
-            (bool success, Partition) = await GetPartitionAsync(cancellationToken);
+            (bool success, Partition) = await partitionResolver.ResolvePartitionAsync(cancellationToken);
             if (!success)
             {
                 return;
@@ -25,17 +23,6 @@ namespace Cod.Channel.Identity
 
             await RefreshAsync(cancellationToken);
             await base.InitializeAsync(cancellationToken);
-        }
-
-        protected virtual async Task<(bool, string?)> GetPartitionAsync(CancellationToken cancellationToken)
-        {
-            Guid? user = await authenticator.GetUserIDAsync(cancellationToken);
-            return user switch
-            {
-                null => (false, null),
-                var id when id == Guid.Empty => (false, null),
-                var id => (true, id.Value.ToKey())
-            };
         }
     }
 }

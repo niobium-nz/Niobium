@@ -1,96 +1,95 @@
-﻿@if (!IsBusy)
+﻿@inherits Cod.Channel.Blazor.Fluent.ViewModelComponentBase<IListViewModel>
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
 {
-    <FluentStack AdaptiveRendering="true">
+    <div class="fluent-error-message">
+        <span class="fluent-error-icon">&#9888;</span>
+        @ErrorMessage
+    </div>
+}
+else if (!IsBusy)
+{
+    <div class="card-list-grid">
         @if (Data.IsInitialized)
         {
             @foreach (var item in Data)
             {
-                <FluentCard Width="500px">
-                    @if (item.IsBusy)
+                <FluentCard Class="card-list-item" Width="100%">
+                    @if (properties != null)
                     {
-                        <FluentProgressRing />
-                    }
-                    else
-                    {
-                        <FluentGrid Spacing="20" AdaptiveRendering="true" Justify="JustifyContent.FlexStart">
-
-                            @if (properties != null)
-                            {
-                                foreach (var group in properties)
+                        var subject = properties.SelectMany(g => g).FirstOrDefault(p => p.IsSubject);
+                        if (subject != null)
+                        {
+                            <PropertyDisplayMode ViewModel="item" Property="subject" />
+                        }
+                        foreach (var group in properties)
+                        {
+                            <div class="card-section-fields">
+                                @foreach (var property in group)
                                 {
-                                    foreach (var property in group)
+                                    if (!property.IsSubject)
                                     {
                                         <PropertyDisplayMode ViewModel="item" Property="property" />
                                     }
-
-                                    <FluentGridItem lg="12">
-                                        <FluentDivider />
-                                    </FluentGridItem>
                                 }
-                            }
-
-                            @if (actions != null)
+                            </div>
+                            @if (group != properties.Last())
                             {
-                                foreach (var action in actions)
-                                {
-                                    <FluentButton Appearance="Appearance.Accent"
-                                                  IconStart="@(new Icons.Regular.Size16.Money())"
-                                                  OnClick="@(async () => await action.Action.Invoke(item))">
-                                        @action.DisplayName
-                                    </FluentButton>
-                                }
+                                <div class="card-section-divider"></div>
                             }
-
-                        </FluentGrid>
+                        }
                     }
+                    @if (item.IsBusy)
+                    {
+                        <div class="loading-container">
+                            <FluentProgressRing />
+                        </div>
+                    }
+                    <div class="card-actions">
+                        @if (actions != null)
+                        {
+                            foreach (var action in actions)
+                            {
+                                <FluentButton Appearance="Appearance.Accent"
+                                              Class="card-action-btn"
+                                              IconStart="@(new Icons.Regular.Size16.Money())"
+                                              OnClick="@(async () => await action.Action.Invoke(item))">
+                                    @action.DisplayName
+                                </FluentButton>
+                            }
+                        }
+                    </div>
                 </FluentCard>
             }
         }
-    </FluentStack>
+    </div>
 }
 else
 {
-    <FluentProgressRing />
+    <div class="loading-container-large">
+        <FluentProgressRing />
+    </div>
 }
 
 @code {
-    private bool disposed;
     private IEnumerable<IGrouping<int, DisplayProperty>>? properties;
     private IEnumerable<DisplayAction>? actions;
 
-    [Parameter]
-    public required IListViewModel Data { get; set; }
-
-    private bool IsBusy => Data.IsBusy;
-
-    protected async override Task OnInitializedAsync() 
+    protected override async Task InitializeViewModelAsync()
     {
-        Data.RefreshRequested += Data_RefreshRequested;
-        await Data.InitializeAsync();
-
-        var any = Data.FirstOrDefault();
-        if (any != null)
+        try
         {
-            properties = ModelHelper.GetDisplayProperies(any);
-            actions = ModelHelper.GetDisplayActions(any);
+            await Data.InitializeAsync();
+            var any = Data.FirstOrDefault();
+            if (any != null)
+            {
+                properties = ModelHelper.GetDisplayProperties(any);
+                actions = ModelHelper.GetDisplayActions(any);
+            }
         }
-
-        await base.OnInitializedAsync();
-    }
-
-    private void Data_RefreshRequested(object? sender, EventArgs e)
-    {
-        StateHasChanged();
-    }
-
-    public void Dispose()
-    {
-        if (!disposed)
+        catch (Exception ex)
         {
-            Data.RefreshRequested -= Data_RefreshRequested;
-            disposed = true;
+            ErrorMessage = $"An error occurred while initializing the view: {ex.Message}";
         }
-
-        GC.SuppressFinalize(this);
     }
 }

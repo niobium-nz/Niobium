@@ -10,12 +10,9 @@
         {
             string ua = await browser.GetUserAgentAsync();
             ua = ua.ToUpperInvariant();
-            if (string.IsNullOrWhiteSpace(ua))
-            {
-                return BrowserType.Unknown;
-            }
-
-            return ua.Contains(WechatUserAgent)
+            return string.IsNullOrWhiteSpace(ua)
+                ? BrowserType.Unknown
+                : ua.Contains(WechatUserAgent)
                 ? BrowserType.Wechat
                 : ua.Contains(AndroidUserAgent)
                 ? BrowserType.Android
