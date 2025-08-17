@@ -5,7 +5,7 @@ namespace Cod.Channel
         public static async Task<IList<TViewModel>> RefreshAsync<TEntity, TViewModel, TDomain>(
             this IList<TViewModel> existings,
             IEnumerable<TDomain> refreshments,
-            Func<TViewModel> createViewModel,
+            ObjectFactory<TViewModel> viewModelFactory,
             TEntity? _,
             IRefreshable? parent = null,
             CancellationToken cancellationToken = default)
@@ -50,7 +50,7 @@ namespace Cod.Channel
 
                 if (added)
                 {
-                    TViewModel vm = (TViewModel)await createViewModel().InitializeAsync(domain: refreshment, parent: parent, force: false, cancellationToken: cancellationToken);
+                    TViewModel vm = (TViewModel)await viewModelFactory.Build().InitializeAsync(domain: refreshment, parent: parent, force: false, cancellationToken: cancellationToken);
                     existings.Add(vm);
                 }
             }

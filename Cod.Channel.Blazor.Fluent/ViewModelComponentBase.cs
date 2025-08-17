@@ -11,19 +11,10 @@ namespace Cod.Channel.Blazor.Fluent
 
         protected virtual bool IsBusy => Data.IsBusy;
 
-        protected string? ErrorMessage { get; set; }
-
         protected override async Task OnInitializedAsync()
         {
             Data.RefreshRequested += OnDataRefreshRequested;
-            try
-            {
-                await InitializeViewModelAsync();
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage = $"An error occurred during initialization: {ex.Message}";
-            }
+            await InitializeViewModelAsync();
             await base.OnInitializedAsync();
         }
 

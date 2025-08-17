@@ -5,7 +5,7 @@ namespace Cod.Channel
     public abstract class GenericListViewModel<TViewModel, TDomain, TEntity>(
         ILoadingStateService loadingStateService,
         ICommand<LoadCommandParameter, LoadCommandResult<TDomain>> loadCommand,
-        Func<TViewModel> createViewModel)
+        ObjectFactory<TViewModel> viewModelFactory)
         : IListViewModel<TViewModel, TDomain, TEntity>
             where TViewModel : class, IViewModel<TDomain, TEntity>
             where TDomain : IDomain<TEntity>
@@ -45,7 +45,7 @@ namespace Cod.Channel
             try
             {
                 LoadCommandResult<TDomain> result = await loadCommand.ExecuteAsync(LoadCommandParameter, cancellationToken);
-                ViewModels = await ViewModels.RefreshAsync(result.DomainsLoaded, createViewModel, default(TEntity), parent: this, cancellationToken: cancellationToken);
+                ViewModels = await ViewModels.RefreshAsync(result.DomainsLoaded, viewModelFactory, default(TEntity), parent: this, cancellationToken: cancellationToken);
             }
             catch (Exception ex)
             {

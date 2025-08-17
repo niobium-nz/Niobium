@@ -1,13 +1,6 @@
 ﻿@inherits Cod.Channel.Blazor.Fluent.ViewModelComponentBase<IViewModel>
 
-@if (!string.IsNullOrEmpty(ErrorMessage))
-{
-    <div class="fluent-error-message">
-        <span class="fluent-error-icon">&#9888;</span>
-        @ErrorMessage
-    </div>
-}
-else if (!IsBusy)
+@if (!IsBusy)
 {
     <FluentCard Class="edit-form-card">
         <EditForm Model="@this.Data">
@@ -40,14 +33,17 @@ else if (!IsBusy)
             <div class="edit-actions edit-actions-bottom">
                 @if (actions != null)
                 {
-                    foreach (var action in actions)
+                    foreach (var group in actions)
                     {
-                        <FluentButton Appearance="Appearance.Accent"
-                                      Class="card-action-btn"
-                                      IconStart="@(new Icons.Regular.Size16.Money())"
-                                      OnClick="@(async () => await action.Action.Invoke(this.Data))">
-                            @action.DisplayName
-                        </FluentButton>
+                        foreach (var action in group)
+                        {
+                            <FluentButton Appearance="Appearance.Accent"
+                                          Class="card-action-btn"
+                                          IconStart="@(new Icons.Regular.Size16.Money())"
+                                          OnClick="@(async () => await action.Action.Invoke(this.Data))">
+                                @action.DisplayName
+                            </FluentButton>
+                        }
                     }
                 }
             </div>
@@ -64,23 +60,16 @@ else
 @code {
     private IEnumerable<IEditModeValueProvider> valueProviders = [];
     private IEnumerable<IGrouping<int, EditProperty>>? properties;
-    private IEnumerable<DisplayAction>? actions;
+    private IEnumerable<IGrouping<int, DisplayAction>>? actions;
 
     [Inject]
     public required IEditModeValueProviderFactory ValueProviderFactory { get; set; }
 
     protected override async Task InitializeViewModelAsync()
     {
-        try
-        {
-            valueProviders = ValueProviderFactory.Create(this.Data.GetType());
-            properties = ModelHelper.GetEditProperties(this.Data, valueProviders);
-            actions = ModelHelper.GetDisplayActions(this.Data);
-        }
-        catch (Exception ex)
-        {
-            ErrorMessage = $"An error occurred while initializing the view: {ex.Message}";
-        }
         await base.InitializeViewModelAsync();
+        valueProviders = ValueProviderFactory.Create(this.Data.GetType());
+        properties = ModelHelper.GetEditProperties(this.Data);
+        actions = ModelHelper.GetDisplayActions(this.Data);
     }
 }

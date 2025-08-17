@@ -118,11 +118,12 @@ else
                               OptionSelected="@(i => i!.IsSelected)"
                               SelectedOptionChanged="OnSelectedOptionChanged"
                               SelectedOptionsChanged="OnSelectedOptionsChanged"
-                              Required="@Property.IsRequired" />
+                Required="@Property.IsRequired" />
             }
             else if (Property.Control == PropertyControl.Calendar && Property is EditDateTimeProperty p)
             {
-                @switch (p.Calendar)
+                var kind = p.GetCalendarKind(ViewModel);
+                @switch (kind)
                 {
                     case CalendarKind.Day:
                         <FluentDatePicker Name="@fieldName"
@@ -151,7 +152,7 @@ else
 @code {
 
     private string? fieldDisplayName => Property?.DisplayName;
-    private object? fieldDisplayValue => ModelHelper.GetDisplayValue(propertyValue);
+    private object? fieldDisplayValue => ModelHelper.GetFieldDisplayValue(propertyValue);
     private string fieldName => Property.PropertyName;
     private Microsoft.AspNetCore.Components.Forms.FieldIdentifier fieldIdentifier
         => new FieldIdentifier(ViewModel, fieldName);
@@ -161,7 +162,7 @@ else
 
     private bool isMultipleSelect => false;
 
-    private IEnumerable<EditOption> options => (Property as EditOptionalProperty)?.Options ?? Enumerable.Empty<EditOption>();
+    private IEnumerable<EditOption> options => (Property as EditOptionalProperty)?.GetOptions(ViewModel) ?? [];
 
     private DateTime? calendarBindValue
     {

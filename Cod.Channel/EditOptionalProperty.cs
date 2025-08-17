@@ -12,7 +12,7 @@
         PropertyControl? control,
         bool? isReadOnly,
         bool? isRequired,
-        IEnumerable<EditOption> options)
+        Func<object, IEnumerable<EditOption>> getOptions)
         : EditProperty(
             displayName,
             propertyName,
@@ -26,6 +26,6 @@
             isReadOnly,
             isRequired)
     {
-        public IEnumerable<EditOption> Options { get; } = options ?? [];
+        public IEnumerable<EditOption> GetOptions(object viewModel) => getOptions(viewModel);
     }
 }

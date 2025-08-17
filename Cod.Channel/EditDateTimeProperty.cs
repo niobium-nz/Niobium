@@ -12,7 +12,7 @@
         PropertyControl? control,
         bool? isReadOnly,
         bool? isRequired,
-        CalendarKind? calendar)
+        Func<object, CalendarKind?> getCalendarKind)
         : EditProperty(
             displayName,
             propertyName,
@@ -26,6 +26,9 @@
             isReadOnly,
             isRequired)
     {
-        public CalendarKind Calendar { get; } = calendar ?? CalendarKind.Default;
+        public CalendarKind GetCalendarKind(object viewModel)
+        {
+            return getCalendarKind(viewModel) ?? CalendarKind.Default;
+        }
     }
 }

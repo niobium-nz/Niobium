@@ -18,10 +18,11 @@ namespace Cod.Channel
             InternalError.Register(new InternalErrorRetriever());
             services.AddOptions();
             services.AddTransient(typeof(Lazy<>), typeof(LazyWrapper<>));
+            services.AddTransient(typeof(ObjectFactory<>));
             services.AddSingleton<ILoadingStateService, DefaultLoadingStateService>();
             services.AddSingleton<INotificationService, NotificationService>();
             services.AddTransient<IEditModeValueProviderFactory>(sp => new DefaultEditModeValueProviderFactory(sp));
-            services.AddSingleton<IBootstrapper, ReflectionCacheBootstrapper>();
+            services.AddSingleton<IBootstrapper, DynamicUICache>();
             return services;
         }
 

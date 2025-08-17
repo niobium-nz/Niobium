@@ -1,11 +1,13 @@
-﻿namespace Cod.Channel.Identity
+﻿using Cod.Identity;
+
+namespace Cod.Channel.Identity
 {
     public class UserPartitionedListViewModel<TViewModel, TDomain, TEntity>(
-        IPartitionResolver partitionResolver,
+        IAuthenticator authenticator,
         ILoadingStateService loadingStateService,
         ICommand<LoadCommandParameter, LoadCommandResult<TDomain>> loadCommand,
-        Func<TViewModel> createViewModel)
-        : GenericListViewModel<TViewModel, TDomain, TEntity>(loadingStateService, loadCommand, createViewModel)
+        ObjectFactory<TViewModel> viewModelFactory)
+        : GenericListViewModel<TViewModel, TDomain, TEntity>(loadingStateService, loadCommand, viewModelFactory)
             where TViewModel : class, IViewModel<TDomain, TEntity>
             where TDomain : IDomain<TEntity>
     {
@@ -15,12 +17,13 @@
 
         public override async Task InitializeAsync(CancellationToken cancellationToken = default)
         {
-            (bool success, Partition) = await partitionResolver.ResolvePartitionAsync(cancellationToken);
-            if (!success)
+            Guid? user = await authenticator.GetUserIDAsync(cancellationToken);
+            if (user == null || user == Guid.Empty)
             {
                 return;
             }
 
+            Partition = user.Value.ToKey();
             await RefreshAsync(cancellationToken);
             await base.InitializeAsync(cancellationToken);
         }

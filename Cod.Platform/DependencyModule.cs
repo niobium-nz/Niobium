@@ -24,6 +24,7 @@ namespace Cod.Platform
             Cod.InternalError.Register(new Cod.Platform.InternalErrorRetriever());
             services.AddOptions();
             services.AddTransient(typeof(Lazy<>), typeof(LazyWrapper<>));
+            services.AddTransient(typeof(ObjectFactory<>));
 
             services.AddTransient<AppInsights>();
 
