@@ -27,7 +27,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="\"/>
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -36,7 +36,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.15.0" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.25.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.8" />
     <ProjectReference Include="..\Cod.File\Cod.File.csproj" />
+    <ProjectReference Include="..\Cod.Identity\Cod.Identity.csproj" />
   </ItemGroup>
 
 </Project>
