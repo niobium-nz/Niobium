@@ -16,7 +16,9 @@ namespace Cod
 
     public interface IDomain<T> : IDomain
     {
-        Task<T?> GetEntityAsync(CancellationToken cancellationToken = default);
+        Task<T?> TryGetEntityAsync(CancellationToken cancellationToken = default);
+
+        Task<T> GetEntityAsync(CancellationToken cancellationToken = default);
 
         IDomain<T> Initialize(T entity);
 

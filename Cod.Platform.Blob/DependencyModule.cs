@@ -31,7 +31,12 @@ namespace Cod.Platform.Blob
             return Cod.File.Blob.DependencyModule.AddFile(services, options);
         }
 
-        public static IServiceCollection AddBlobResourceTokenSupport(this IServiceCollection services, Action<IdentityServiceOptions> options)
+        public static IServiceCollection AddBlobResourceTokenSupport(this IHostApplicationBuilder builder)
+        {
+            return builder.Services.AddBlobResourceTokenSupport(builder.Configuration.GetSection(nameof(IdentityServiceOptions)).Bind);
+        }
+
+        public static IServiceCollection AddBlobResourceTokenSupport(this IServiceCollection services, Action<IdentityServiceOptions>? options = null)
         {
             services.AddIdentity(options);
             services.AddTransient<ISignatureIssuer, AzureBlobSignatureIssuer>();

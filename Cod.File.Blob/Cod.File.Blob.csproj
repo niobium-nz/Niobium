@@ -19,18 +19,24 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version Condition=" '$(BUILD_BUILDNUMBER)' == '' ">1.0.0.0-prerelease</Version>
+    <Authors>Cod</Authors>
+    <Description>Azure Blob Storage file integration for .NET applications.</Description>
+    <Copyright>Copyright (c) 2025 COD</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Version Condition=" '$(BUILD_BUILDNUMBER)' == '' ">1.0.0.0</Version>
     <Version Condition=" '$(BUILD_BUILDNUMBER)' != '' ">$(BUILD_BUILDNUMBER)</Version>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Azure" Version="1.12.0" />
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.25.0" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Cod.File\Cod.File.csproj" />
-    <ProjectReference Include="..\Cod.Identity\Cod.Identity.csproj" />
   </ItemGroup>
 
 </Project>

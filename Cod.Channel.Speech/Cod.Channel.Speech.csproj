@@ -20,7 +20,19 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version Condition=" '$(BUILD_BUILDNUMBER)' == '' ">1.0.0.0-prerelease</Version>
+    <Authors>Cod</Authors>
+    <Description>Speech recognition and synthesis for .NET voice features.</Description>
+    <Copyright>Copyright (c) 2025 COD</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Version Condition=" '$(BUILD_BUILDNUMBER)' == '' ">1.0.0.0</Version>
     <Version Condition=" '$(BUILD_BUILDNUMBER)' != '' ">$(BUILD_BUILDNUMBER)</Version>
   </PropertyGroup>
 
@@ -31,6 +43,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Cod.Channel.Identity\Cod.Channel.Identity.csproj" />
     <ProjectReference Include="..\Cod.Channel\Cod.Channel.csproj" />
+    <ProjectReference Include="..\Cod.Messaging\Cod.Messaging.csproj" />
   </ItemGroup>
 
 </Project>

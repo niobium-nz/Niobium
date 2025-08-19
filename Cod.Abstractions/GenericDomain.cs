@@ -1,4 +1,6 @@
-﻿namespace Cod
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Cod
 {
     public abstract class GenericDomain<T>(Lazy<IRepository<T>> repository, IEnumerable<IDomainEventHandler<IDomain<T>>> eventHandlers) : IDomain<T> where T : class
     {
@@ -6,6 +8,7 @@
         private Func<CancellationToken, Task<T?>>? getEntity;
         private string? etag;
 
+        [MemberNotNullWhen(true, nameof(PartitionKey), nameof(RowKey))]
         public bool Initialized { get; protected set; }
 
         public string? PartitionKey { get; private set; }
@@ -30,7 +33,30 @@
 
         protected IEnumerable<IDomainEventHandler<IDomain<T>>> EventHandlers { get; } = eventHandlers;
 
-        public async Task<T?> GetEntityAsync(CancellationToken cancellationToken = default)
+        private ApplicationException EntityNotFoundException
+        {
+            get
+            {
+                var ex = new ApplicationException(InternalError.NotFound, $"{this.GetType().Name} not found.");
+                if (!string.IsNullOrWhiteSpace(PartitionKey) && !string.IsNullOrWhiteSpace(RowKey))
+                {
+                    ex.Reference = new StorageKey(PartitionKey, RowKey).ToString();
+                }
+
+                return ex;
+            }
+        }
+
+        [MemberNotNull(nameof(PartitionKey), nameof(RowKey))]
+        protected void CheckInitialized()
+        {
+            if (!Initialized || PartitionKey == null || RowKey == null)
+            {
+                throw new InvalidOperationException("Domain must be initialized before accessing the entity or keys.");
+            }
+        }
+
+        public async Task<T?> TryGetEntityAsync(CancellationToken cancellationToken = default)
         {
             if (cache == null && getEntity != null)
             {
@@ -38,6 +64,11 @@
             }
 
             return cache;
+        }
+
+        public async Task<T> GetEntityAsync(CancellationToken cancellationToken = default)
+        {
+            return await TryGetEntityAsync(cancellationToken) ?? throw EntityNotFoundException;
         }
 
         public IDomain<T> Initialize(string partitionKey, string rowKey)

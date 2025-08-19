@@ -26,7 +26,19 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version Condition=" '$(BUILD_BUILDNUMBER)' == '' ">1.0.0.0-prerelease</Version>
+    <Authors>Cod</Authors>
+    <Description>Fluent UI components for rapid, modern Blazor business apps.</Description>
+    <Copyright>Copyright (c) 2025 COD</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Version Condition=" '$(BUILD_BUILDNUMBER)' == '' ">1.0.0.0</Version>
     <Version Condition=" '$(BUILD_BUILDNUMBER)' != '' ">$(BUILD_BUILDNUMBER)</Version>
   </PropertyGroup>
 
@@ -47,5 +59,4 @@
   <ItemGroup>
     <Folder Include="wwwroot\" />
   </ItemGroup>
-
 </Project>

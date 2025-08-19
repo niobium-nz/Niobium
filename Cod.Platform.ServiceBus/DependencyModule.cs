@@ -38,7 +38,12 @@ namespace Cod.Platform.ServiceBus
             return Cod.Messaging.ServiceBus.DependencyModule.AddMessaging(services, options);
         }
 
-        public static IServiceCollection AddServiceBusResourceTokenSupport(this IServiceCollection services, Action<IdentityServiceOptions> options)
+        public static IServiceCollection AddServiceBusResourceTokenSupport(this IHostApplicationBuilder builder)
+        {
+            return builder.Services.AddServiceBusResourceTokenSupport(builder.Configuration.GetSection(nameof(IdentityServiceOptions)).Bind);
+        }
+
+        public static IServiceCollection AddServiceBusResourceTokenSupport(this IServiceCollection services, Action<IdentityServiceOptions>? options = null)
         {
             services.AddIdentity(options);
             services.AddTransient<ISignatureIssuer, ServiceBusSignatureIssuer>();

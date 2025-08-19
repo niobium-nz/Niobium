@@ -1,4 +1,6 @@
-﻿namespace Cod.Channel.Speech
+﻿using Cod.Messaging;
+
+namespace Cod.Channel.Speech
 {
     public interface ISpeechService
     {
@@ -19,11 +21,15 @@
         void Reset();
     }
 
-    public class SpeechServiceRecognizedEventArgs(string id, string conversation)
+    public class SpeechServiceRecognizedEventArgs : DomainEvent
     {
-        public string ID { get; } = id;
+        public SpeechServiceRecognizedEventArgs(string id, string conversation)
+        {
+            ID = id;
+            Conversation = conversation;
+        }
 
-        public string Conversation { get; } = conversation;
+        public string Conversation { get; }
     }
 
     public class SpeechServiceUpdatedEventArgs { }
