@@ -1,0 +1,167 @@
+﻿using Microsoft.JSInterop;
+using System.Text.Json;
+
+namespace Niobium.Channel.Speech.Blazor
+{
+    public static class SpeechRecognizerInterop
+    {
+        private static readonly TimeSpan silenceTimeout = TimeSpan.FromMinutes(1);
+        private static readonly JsonSerializerOptions options = new(JsonSerializerDefaults.Web);
+
+        public static JSSpeechRecognizer? Instance { get; set; }
+
+        [JSInvokable]
+        public static async Task OnSpeechRecognizerChangedAsync(string eventName, string parameter)
+        {
+            if (Instance == null || string.IsNullOrWhiteSpace(eventName) || string.IsNullOrWhiteSpace(parameter))
+            {
+                return;
+            }
+
+            switch (eventName)
+            {
+                case "onSessionStarted":
+                    DestoryCurrentSession();
+                    Instance.IsRunning = true;
+                    if (Instance.Current != null)
+                    {
+                        Instance.Current.ErrorMessage = null;
+                    }
+                    await Instance.OnChangedAsync(SpeechRecognizerChangedType.SessionStarted);
+                    break;
+                case "onSessionStopped":
+                    Instance.IsRunning = false;
+                    await Instance.OnChangedAsync(SpeechRecognizerChangedType.SessionStopped);
+                    break;
+                case "onCanceled":
+                    Instance.IsRunning = false;
+                    SpeechRecognitionCanceledEventArgs? canceled = Deserialize<SpeechRecognitionCanceledEventArgs>(parameter);
+                    if (canceled != null)
+                    {
+                        CreateNewSession(canceled.SessionID);
+                        Instance.Current!.ErrorMessage = $"Connection Lost. Reconnecting...";
+                    }
+
+                    await Instance.OnChangedAsync(SpeechRecognizerChangedType.Canceled);
+                    break;
+                case "onRecognizing":
+                    SpeechRecognitionEventArgs? recognizing = Deserialize<SpeechRecognitionEventArgs>(parameter);
+                    if (recognizing != null)
+                    {
+                        CreateNewSession(recognizing.SessionID);
+                        Instance.Preview = ExtractLine(recognizing);
+                    }
+
+                    await Instance.OnChangedAsync(SpeechRecognizerChangedType.Recognizing);
+                    break;
+                case "onRecognized":
+                    Instance.Preview = null;
+                    SpeechRecognitionEventArgs? recognized = Deserialize<SpeechRecognitionEventArgs>(parameter);
+                    if (recognized != null)
+                    {
+                        CreateNewSession(recognized.SessionID);
+                        ConversationLine? line = ExtractLine(recognized);
+                        if (line != null)
+                        {
+                            Instance.Current!.Lines.Add(line);
+                            await Instance.OnChangedAsync(SpeechRecognizerChangedType.Recognized);
+                        }
+                        else
+                        {
+                            await StopRecognitionIfExceedSilentTimeoutAsync();
+                        }
+                    }
+
+                    break;
+            }
+        }
+
+        private static async Task StopRecognitionIfExceedSilentTimeoutAsync()
+        {
+            if (Instance?.Current == null)
+            {
+                return;
+            }
+
+            bool shouldStop;
+            if (Instance.Current.Lines.Count == 0)
+            {
+                shouldStop = DateTimeOffset.Now - Instance.Current.CreatedAt > silenceTimeout;
+            }
+            else
+            {
+                DateTimeOffset lastLineCreatedAt = Instance.Current.Lines.OrderByDescending(l => l.CreatedAt).First().CreatedAt;
+                shouldStop = DateTimeOffset.Now - lastLineCreatedAt > silenceTimeout;
+            }
+
+            if (shouldStop)
+            {
+                Instance.Current.ErrorMessage = "The conversation has timed out due to silence, or there might be an issue with your audio. Please check your audio input settings and start a new conversation.";
+                await Instance.StopRecognitionAsync();
+                await Instance.OnChangedAsync(SpeechRecognizerChangedType.Recognized);
+            }
+        }
+
+        private static ConversationLine? ExtractLine(SpeechRecognitionEventArgs e)
+        {
+            if (string.IsNullOrEmpty(e.Result.Text))
+            {
+                return null;
+            }
+
+            ConversationLine line = new()
+            {
+                Text = e.Result.Text,
+                CreatedAt = DateTimeOffset.Now,
+            };
+
+            if (e.Result.Translations != null)
+            {
+                SpeechTranslationPair? translation = e.Result.Translations.SingleOrDefault(t => t.Language == "en");
+                if (translation != null)
+                {
+                    line.Translation = translation.Text;
+                    line.TargetLanguage = translation.Language;
+                }
+            }
+
+            return line;
+        }
+
+        private static void CreateNewSession(string sessionID)
+        {
+            if (Instance != null)
+            {
+                Instance.Current ??= new Conversation
+                {
+                    CreatedAt = DateTimeOffset.Now,
+                    ID = sessionID,
+                    Lines = []
+                };
+
+                if (Instance.ContinueOnPrevious && Instance.Current.ID != sessionID)
+                {
+                    Instance.Current.ID = sessionID;
+                }
+            }
+        }
+
+        private static void DestoryCurrentSession()
+        {
+            if (Instance != null)
+            {
+                if (!Instance.ContinueOnPrevious)
+                {
+                    Instance.Preview = null;
+                    Instance.Current = null;
+                }
+            }
+
+        }
+
+        private static T? Deserialize<T>(string json) where T : class
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<T>(json, options);
+        }
+    }
+}

@@ -1,4 +1,4 @@
-# COD Platform for .NET
+# Niobium Platform for .NET
 
 **COD** is a .NET framework designed to accelerate the development of modern cloud-based applications. It provides ready-to-use integrations with popular PaaS services like Azure Storage Table, Azure Service Bus, Azure Functions, IoT Hub, and more. The framework also features built-in role-based authentication via JWT backed by a cloud-based identity service.
 
@@ -9,7 +9,7 @@
 ## Nuget Package
 
 ```bash
-Install-Package Cod.Platform.StorageTable
+Install-Package Niobium.Platform.StorageTable
 ```
 
 ## Getting Started
@@ -80,7 +80,7 @@ await repo.DeleteAsync(user);
 ## Nuget Package
 
 ```bash
-Install-Package Cod.Platform.ServiceBus
+Install-Package Niobium.Platform.ServiceBus
 ```
 
 ## Getting Started
@@ -126,7 +126,7 @@ await sender.EnqueueAsync(new MessagingEntry<UserCreated>
 ## Nuget Package
 
 ```bash
-Install-Package Cod.Platform.Notification.Email.Resend
+Install-Package Niobium.Platform.Notification.Email.Resend
 ```
 
 ## Getting Started
@@ -155,7 +155,7 @@ await sender.SendAsync("noreply@example.com", ["recipient@example.com"], "Hello"
 
 # Authentication & Authorization
 
-COD provides a full authentication flow with support for:
+Niobium provides a full authentication flow with support for:
 
 - **ID Tokens** (issued by central Identity API)
 - **Access Tokens** (issued by tenant applications)
@@ -166,7 +166,7 @@ COD provides a full authentication flow with support for:
 ### Nuget Package
 
 ```bash
-Install-Package Cod.Platform.Identity
+Install-Package Niobium.Platform.Identity
 ```
 
 ### Configure in `Program.cs`
@@ -190,19 +190,19 @@ Host.CreateDefaultBuilder(args)
             // Optional. The URL for hosting the endpoint in the current web app so clients cloud request for resource token. Default value: "rsas". For resource authorization only.
             options.ResourceTokenEndpoint = "rsas";
 
-            // The audience of the ID token issued. It should be defined as a unique ID that could be used to identify an unique tenant application to the centralized Cod.Platform.Identity.API service.
+            // The audience of the ID token issued. It should be defined as a unique ID that could be used to identify an unique tenant application to the centralized Niobium.Platform.Identity.API service.
             options.IDTokenAudience = "00000000-1111-2222-3333-444444444444";
 
-            // Optional. The audience of the access token issued to the client of the current application. Default value: "cod.client".
+            // Optional. The audience of the access token issued to the client of the current application. Default value: "niobium.client".
             options.AccessTokenAudience = "myapp.client";
 
-            // Optional. The issuer of the access token issued to the client of the current application. Default value: "cod.platform".
+            // Optional. The issuer of the access token issued to the client of the current application. Default value: "niobium.platform".
             options.AccessTokenIssuer = "myapp.API";
 
             // The secret used to issue access token to the client.
             options.AccessTokenSecret = "01223456789012234567890122345678912";
 
-            // Please use this value when integrating to the Cod.Platform.Identity.API service. This public key is used to verify the ID token issued by the Cod.Platform.Identity.API service to the client of the current application to exchange for access token issued by the current application.
+            // Please use this value when integrating to the Niobium.Platform.Identity.API service. This public key is used to verify the ID token issued by the Niobium.Platform.Identity.API service to the client of the current application to exchange for access token issued by the current application.
             options.IDTokenPublicKey = "-----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlmuIHhRUT+IvTdTajuOEdPZ75pqJrajOyDdJqf42siofTKHCPCZqtWaftL8Jae5VMHUNCflXzm9aKTLgerAxrGyCL3BkZj/dj4KjbeFoY1Akz5EJd5qjRNtzdoqUkDsuaigJTDDhyHvdVKRHzYAJSKgiw9CLRkzyKDZAp1Fxm2xICzRoF9OfH0jv5Qn11gkMHrkVkB6nv7QD3EGS2rnDwKudjnlsvgjpoNMMNvY7EHqkuxjHdGh4Hy7M3UXl50Bft9ky3gKeCgpvVYRPXHdT6k3e+81J7liEJYdVb5taPeNf3wB8WCP8Xc7FO6vod9ziDIkJv+xqUWYtlyGZBGTBrQIDAQAB-----END PUBLIC KEY-----";
         });
     })
@@ -218,7 +218,7 @@ Define your own authentication endpoint as a placeholder for Azure Function app 
 public class Placeholder
 {
     [Function(nameof(Auth))]
-    public IActionResult Auth([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = Cod.Identity.Constants.DefaultAccessTokenEndpoint)] HttpRequest req) => new OkResult();
+    public IActionResult Auth([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = Niobium.Identity.Constants.DefaultAccessTokenEndpoint)] HttpRequest req) => new OkResult();
 }
 ```
 
@@ -233,7 +233,7 @@ services.AddDatabase(...dbOptions...)
     // Optionally grant query permission to a specific role to query a specific table on records where PartitionKey == <user-id>
     .GrantDatabasePersonalizedEntitlementTo(
         "<role-to-grant-permission-to>",
-        Cod.DatabasePermissions.Query,
+        Niobium.DatabasePermissions.Query,
         "<table-to-grant-permission-to>",
         "<fully-qualified-domain-name-to-storage-account>");
 ```
@@ -244,7 +244,7 @@ Define your own resource token endpoint as a placeholder for Azure Function app 
 public class Placeholder
 {
     [Function(nameof(RSAS))]
-    public IActionResult RSAS([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = Cod.Identity.Constants.DefaultResourceTokenEndpoint)] HttpRequest req) => new OkResult();
+    public IActionResult RSAS([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = Niobium.Identity.Constants.DefaultResourceTokenEndpoint)] HttpRequest req) => new OkResult();
 }
 ```
 
@@ -255,7 +255,7 @@ public class Placeholder
 ### Nuget Package
 
 ```bash
-Install-Package Cod.Channel.Identity.Blazor
+Install-Package Niobium.Channel.Identity.Blazor
 ```
 
 ### Configure in `Program.cs`
@@ -265,7 +265,7 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.Services.AddIdentityBlazor(options =>
 {
     options.App = Guid.Parse("<same-as-IDTokenAudience>");
-    options.IDTokenHost = "<URL-to-Cod.Platform.Identity.API>";
+    options.IDTokenHost = "<URL-to-Niobium.Platform.Identity.API>";
     options.AccessTokenHost = "<tenant-server-url>";
     options.ResourceTokenHost = "<tenant-server-url>";
 });
@@ -280,8 +280,8 @@ await app.RunAsync();
 ```razor
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
-@using Cod.Channel.Identity
-@using Cod.Channel.Identity.Blazor
+@using Niobium.Channel.Identity
+@using Niobium.Channel.Identity.Blazor
 @attribute [Authorize]
 ```
 

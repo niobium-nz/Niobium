@@ -1,0 +1,11 @@
+﻿@using Niobium.Channel.Speech
+<script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
+@code {
+    [Inject]
+    public required ISpeechService Service { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Service.InitializeAsync();
+    }
+}
