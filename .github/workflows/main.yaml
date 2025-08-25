@@ -9,8 +9,5 @@ on:
 jobs:
   build:
     uses: niobium-nz/Niobium.DevOps/.github/workflows/generic_dotnet_build.yml@main
-    # with:
-    #   nugetFeedUrl: 'https://api.nuget.org/v3/index.json'
-    #   nugetApiKey: ${{ secrets.NUGET_API_KEY }}
-    # secrets:
-    #   NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+    with:
+      nugetApiKey: ${{ secrets.NUGET_API_KEY }}
