@@ -1,0 +1,15 @@
+﻿namespace Niobium.Profile
+{
+    public static class IProfileExtensions
+    {
+        public static Guid GetTenant(this IProfile profile)
+        {
+            return profile.PartitionKey;
+        }
+
+        public static Guid GetUser(this IProfile profile)
+        {
+            return profile.RowKey;
+        }
+    }
+}

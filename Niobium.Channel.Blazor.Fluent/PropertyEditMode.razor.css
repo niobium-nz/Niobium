@@ -1,0 +1,81 @@
+.property-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    width: 100%;
+    line-height: 1.35;
+}
+.property-label {
+    flex: 0 0 140px;
+    font-weight: 500;
+    color: #444;
+    text-align: left;
+    white-space: nowrap;
+    padding-right: 8px;
+    display: flex;
+    align-items: center;
+    min-height: 28px;
+}
+.property-value {
+    flex: 1 1 0;
+    min-width: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    min-height: 28px;
+}
+.property-value > * {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    max-width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+.property-row-subject {
+    width: 100%;
+    margin-bottom: 16px;
+    display: flex;
+}
+.property-subject-value {
+    width: 100%;
+    display: flex;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #0078d4;
+    justify-content: flex-start;
+    align-items: center;
+    min-height: 32px;
+}
+.property-row-subject .property-label {
+    display: none;
+}
+@media (max-width: 600px) {
+    .property-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+        margin-bottom: 8px;
+    }
+    .property-label {
+        text-align: left;
+        padding-right: 0;
+        margin-bottom: 0;
+        min-height: 24px;
+    }
+    .property-value {
+        min-height: 24px;
+    }
+    .property-value > * {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .property-row-subject {
+        margin-bottom: 12px;
+        flex-direction: column;
+    }
+    .property-subject-value {
+        min-height: 28px;
+    }
+}

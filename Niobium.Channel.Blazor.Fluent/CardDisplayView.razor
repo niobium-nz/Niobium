@@ -1,0 +1,84 @@
+﻿@inherits ViewModelComponentBase<IListViewModel>
+
+@if (!IsBusy)
+{
+    <div class="card-list-grid">
+        @if (Data.IsInitialized)
+        {
+            @foreach (var item in Data)
+            {
+                <FluentCard Class="card-list-item" Width="100%">
+                    @if (properties != null)
+                    {
+                        var subject = properties.SelectMany(g => g).FirstOrDefault(p => p.IsSubject);
+                        if (subject != null)
+                        {
+                            <PropertyDisplayMode ViewModel="item" Property="subject" />
+                        }
+                        foreach (var group in properties)
+                        {
+                            <div class="card-section-fields">
+                                @foreach (var property in group)
+                                {
+                                    if (!property.IsSubject)
+                                    {
+                                        <PropertyDisplayMode ViewModel="item" Property="property" />
+                                    }
+                                }
+                            </div>
+                            @if (group != properties.Last())
+                            {
+                                <div class="card-section-divider"></div>
+                            }
+                        }
+                    }
+                    @if (item.IsBusy)
+                    {
+                        <div class="loading-container">
+                            <FluentProgressRing />
+                        </div>
+                    }
+                    <div class="card-actions">
+                        @if (actions != null)
+                        {
+                            foreach (var group in actions)
+                            {
+                                foreach (var action in group)
+                                {
+                                    <FluentButton Appearance="Appearance.Accent"
+                                                  Class="card-action-btn"
+                                                  IconStart="@(new Icons.Regular.Size16.Money())"
+                                                  OnClick="@(async () => await action.Action.Invoke(item))">
+                                        @action.DisplayName
+                                    </FluentButton>
+                                }
+                            }
+                        }
+                    </div>
+                </FluentCard>
+            }
+        }
+    </div>
+}
+else
+{
+    <div class="loading-container-large">
+        <FluentProgressRing />
+    </div>
+}
+
+@code {
+    private IEnumerable<IGrouping<int, DisplayProperty>>? properties;
+    private IEnumerable<IGrouping<int, DisplayAction>>? actions;
+
+    protected override async Task InitializeViewModelAsync()
+    {
+        await Data.InitializeAsync();
+        var any = Data.FirstOrDefault();
+        if (any != null)
+        {
+            properties = ModelHelper.GetDisplayProperties(any);
+            actions = ModelHelper.GetDisplayActions(any);
+        }
+    }
+}

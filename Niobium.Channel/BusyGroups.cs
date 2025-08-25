@@ -1,0 +1,7 @@
+﻿namespace Niobium.Channel
+{
+    public abstract class BusyGroups
+    {
+        public const string Login = nameof(Login);
+    }
+}

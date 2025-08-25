@@ -1,0 +1,25 @@
+﻿@if (Property.IsSubject)
+{
+    <div class="property-row property-row-subject">
+        <div class="property-subject-value">
+            <FluentLabel Typo="Typography.Subject" Color="@Color.Accent">@PropertyValue</FluentLabel>
+        </div>
+    </div>
+}
+else
+{
+    <div class="property-row">
+        <div class="property-label">@Property.DisplayName</div>
+        <div class="property-value">
+            <FluentLabel Typo="Typography.Body">@PropertyValue</FluentLabel>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public required object ViewModel { get; set; }
+    [Parameter]
+    public required DisplayProperty Property { get; set; }
+    private object? PropertyValue => ModelHelper.GetFieldDisplayValue(Property.GetValue(ViewModel));
+}

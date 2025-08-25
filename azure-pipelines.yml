@@ -1,0 +1,24 @@
+name: '3.2$(Rev:.r)'
+trigger:
+- master
+
+variables:
+  buildAgentVmImage: 'windows-latest'
+
+pool:
+  vmImage: $(buildAgentVmImage)
+
+resources: 
+  repositories:
+  - repository: devops
+    type: git
+    name: cod/Cod.Infrastructures
+    ref: master
+
+stages:
+- stage: Production
+  jobs:
+  - template: pipelines/jobs/GenericDotnetBuild.yml@devops
+    parameters:
+      nugetVSTSFeedID: 'cod/cod'
+      dotnetVersion: '9.x'
