@@ -79,7 +79,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Niobium.Profile", "Niobium.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Niobium.Channel.Profile", "Niobium.Channel.Profile\Niobium.Channel.Profile.csproj", "{B8045479-0D07-482C-8D4E-A2262D90EEBF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Niobium.Platform.Captcha.ReCaptcha", "Niobium.Platform.Captcha.Recaptcha\Niobium.Platform.Captcha.ReCaptcha.csproj", "{91DA3B3F-34DB-45B2-8C67-EBA0CDC8EAE1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Niobium.Platform.Captcha.ReCaptcha", "Niobium.Platform.Captcha.ReCaptcha\Niobium.Platform.Captcha.ReCaptcha.csproj", "{91DA3B3F-34DB-45B2-8C67-EBA0CDC8EAE1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Niobium.Finance", "Niobium.Finance\Niobium.Finance.csproj", "{08CAD8ED-C4A9-416C-A171-D1FCF9E43B66}"
 EndProject
