@@ -1,16 +1,16 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Niobium.Device
 {
     public sealed class IoTCommandResult
     {
-        [JsonProperty("s")]
+        [JsonPropertyName("s")]
         public int Status { get; set; }
 
-        [JsonProperty("j")]
+        [JsonPropertyName("j")]
         public required string PayloadJSON { get; set; }
 
-        [JsonProperty("t")]
+        [JsonPropertyName("t")]
         public DateTimeOffset ExecutedAt { get; set; }
     }
 }

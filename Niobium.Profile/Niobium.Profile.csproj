@@ -44,6 +44,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Niobium.Abstractions\Niobium.Abstractions.csproj" />
+    <ProjectReference Include="..\Niobium.Helper\Niobium.Helper.csproj" />
   </ItemGroup>
 
 </Project>

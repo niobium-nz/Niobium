@@ -4,7 +4,7 @@ using Niobium.Platform.Identity;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 
-namespace Niobium.Messaging.ServiceBus
+namespace Niobium.Platform.ServiceBus
 {
     public static class PrincipalParserExtensions
     {

@@ -12,9 +12,13 @@ namespace Niobium.Platform
 
         public async Task Invoke(FunctionContext context, FunctionExecutionDelegate next)
         {
-            HttpContext httpContext = context.GetHttpContext()
-                ?? throw new InvalidOperationException($"FunctionContext on {GetType().Name} does not contain an HttpContext.");
-            await middleware.InvokeAsync(httpContext, async (_) => await next(context));
+            HttpContext? httpContext = context.GetHttpContext();
+            if (httpContext != null)
+            {
+                await middleware.InvokeAsync(httpContext, async (_) => await next(context));
+            }
+
+            await next(context);
         }
     }
 }

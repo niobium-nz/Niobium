@@ -33,20 +33,6 @@ namespace Niobium
 
         protected IEnumerable<IDomainEventHandler<IDomain<T>>> EventHandlers { get; } = eventHandlers;
 
-        private ApplicationException EntityNotFoundException
-        {
-            get
-            {
-                ApplicationException ex = new(InternalError.NotFound, $"{GetType().Name} not found.");
-                if (!string.IsNullOrWhiteSpace(PartitionKey) && !string.IsNullOrWhiteSpace(RowKey))
-                {
-                    ex.Reference = new StorageKey(PartitionKey, RowKey).ToString();
-                }
-
-                return ex;
-            }
-        }
-
         [MemberNotNull(nameof(PartitionKey), nameof(RowKey))]
         protected void CheckInitialized()
         {
@@ -68,7 +54,7 @@ namespace Niobium
 
         public async Task<T> GetEntityAsync(CancellationToken cancellationToken = default)
         {
-            return await TryGetEntityAsync(cancellationToken) ?? throw EntityNotFoundException;
+            return await TryGetEntityAsync(cancellationToken) ?? throw EntityNotFoundException();
         }
 
         public IDomain<T> Initialize(string partitionKey, string rowKey)
@@ -181,6 +167,17 @@ namespace Niobium
         protected async Task OnEvent<TEventArgs>(Func<TEventArgs> getEventArgs, CancellationToken cancellationToken = default) where TEventArgs : class
         {
             await EventHandlers.InvokeAsync(getEventArgs, cancellationToken);
+        }
+
+        private ApplicationException EntityNotFoundException()
+        {
+            ApplicationException ex = new(InternalError.NotFound, $"{GetType().Name} not found.");
+            if (!string.IsNullOrWhiteSpace(PartitionKey) && !string.IsNullOrWhiteSpace(RowKey))
+            {
+                ex.Reference = new StorageKey(PartitionKey, RowKey).ToString();
+            }
+
+            return ex;
         }
     }
 }

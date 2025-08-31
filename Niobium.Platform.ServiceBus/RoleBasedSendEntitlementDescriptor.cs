@@ -1,7 +1,8 @@
 ﻿using Niobium.Identity;
+using Niobium.Messaging;
 using System.Text;
 
-namespace Niobium.Messaging.ServiceBus
+namespace Niobium.Platform.ServiceBus
 {
     internal sealed class RoleBasedSendEntitlementDescriptor(string roleToGrant, string fullyQualifiedNamespace, string queueName, MessagingPermissions permissions) : IEntitlementDescriptor
     {

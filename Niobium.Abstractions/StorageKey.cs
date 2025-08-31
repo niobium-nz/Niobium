@@ -5,6 +5,7 @@ namespace Niobium
     [method: SetsRequiredMembers]
     public struct StorageKey(string partitionKey, string rowKey) : IEquatable<StorageKey>
     {
+        private const char Separator = '%';
         public const string MinKey = "!";
         public const string MaxKey = "~";
 
@@ -39,7 +40,30 @@ namespace Niobium
 
         public override string ToString()
         {
-            return this.BuildFullID();
+            return $"{PartitionKey}{Separator}{RowKey}";
+        }
+
+        public static bool TryParse(string fullID, [NotNullWhen(true)] out StorageKey? result)
+        {
+            string[] splited = fullID.Split(Separator, StringSplitOptions.RemoveEmptyEntries);
+            if (splited.Length == 2)
+            {
+                result = new StorageKey { PartitionKey = splited[0], RowKey = splited[1] };
+                return true;
+            }
+            else
+            {
+                result = null;
+                return false;
+            }
+
+        }
+
+        public static StorageKey Parse(string fullID)
+        {
+            return !TryParse(fullID, out StorageKey? result)
+                ? throw new InvalidDataException($"Invalid data found for {nameof(StorageKey)}: {fullID}")
+                : result.Value;
         }
     }
 }

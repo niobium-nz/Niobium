@@ -1,9 +1,10 @@
 ﻿using Microsoft.Extensions.Options;
+using Niobium.Messaging.ServiceBus;
 using Niobium.Platform;
 using System.Globalization;
 using System.Web;
 
-namespace Niobium.Messaging.ServiceBus
+namespace Niobium.Platform.ServiceBus
 {
     internal sealed class ServiceBusSignatureIssuer(IOptions<ServiceBusOptions> options) : ISignatureIssuer
     {
@@ -23,7 +24,7 @@ namespace Niobium.Messaging.ServiceBus
                 || string.IsNullOrWhiteSpace(queue)
                 || control.StartPartitionKey != control.EndPartitionKey
                 || !options.Value.Keys.TryGetValue(keyName, out string? key)
-                ? throw new ApplicationException(InternalError.InternalServerError)
+                ? throw new ApplicationException(Niobium.InternalError.InternalServerError)
                 : (Task<(string, DateTimeOffset)>)Task.FromResult((CreateToken(fdqn, queue, keyName, key, expires), expires));
         }
 

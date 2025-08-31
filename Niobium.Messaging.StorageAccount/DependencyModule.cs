@@ -23,7 +23,7 @@ namespace Niobium.Messaging.StorageAccount
                 s.AddAzureClients(clientBuilder =>
                 {
                     clientBuilder.AddQueueServiceClient(tableConfiguration)
-                        .WithCredential(new DefaultAzureCredential(includeInteractiveCredentials: enableInteractiveIdentity));
+                        .WithCredential(enableInteractiveIdentity ? new InteractiveBrowserCredential() : new DefaultAzureCredential());
 
                     if (azureClientDefaults != null)
                     {
@@ -56,7 +56,7 @@ namespace Niobium.Messaging.StorageAccount
                         }
                     }
 
-                    queueClientBuilder.WithCredential(new DefaultAzureCredential(includeInteractiveCredentials: options.EnableInteractiveIdentity));
+                    queueClientBuilder.WithCredential(options.EnableInteractiveIdentity ? new InteractiveBrowserCredential() : new DefaultAzureCredential());
                     if (azureClientDefaults != null)
                     {
                         clientBuilder.ConfigureDefaults(azureClientDefaults);

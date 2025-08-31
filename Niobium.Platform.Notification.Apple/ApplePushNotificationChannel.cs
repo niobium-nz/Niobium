@@ -60,7 +60,7 @@ namespace Niobium.Platform.Notification.Apple
                     if (message.Background)
                     {
                         sb.Append("{\"aps\":{\"content-available\":1},");
-                        string json = JsonSerializer.SerializeObject(message.Message, JsonSerializationFormat.CamelCase);
+                        string json = JsonMarshaller.Marshall(message.Message, JsonMarshallingFormat.CamelCase);
                         sb.Append(json[1..]);
                     }
                     else

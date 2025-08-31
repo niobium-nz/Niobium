@@ -11,6 +11,6 @@ jobs:
     uses: niobium-nz/Niobium.DevOps/.github/workflows/generic_dotnet_build.yml@main
     with:
       pushPackage: true
-      buildVersion: "3.0"
+      buildVersion: "3.2"
     secrets:
       NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}

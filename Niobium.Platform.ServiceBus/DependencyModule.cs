@@ -2,18 +2,20 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Niobium.Identity;
-using Niobium.Platform;
+using Niobium.Messaging;
+using Niobium.Messaging.ServiceBus;
 using Niobium.Platform.Identity;
 
-namespace Niobium.Messaging.ServiceBus
+namespace Niobium.Platform.ServiceBus
 {
     public static class DependencyModule
     {
         private static volatile bool loaded;
 
-        public static void AddMessaging(this IHostApplicationBuilder builder)
+        public static void AddMessaging(this IHostApplicationBuilder builder, Action<ServiceBusOptions>? options = null)
         {
-            AddMessaging(builder.Services, builder.Configuration.GetSection(nameof(ServiceBusOptions)).Bind);
+            options ??= builder.Configuration.GetSection(nameof(ServiceBusOptions)).Bind;
+            builder.Services.AddMessaging(options);
 
             if (builder.Configuration.IsDevelopmentEnvironment())
             {
@@ -34,7 +36,7 @@ namespace Niobium.Messaging.ServiceBus
             loaded = true;
 
             services.AddPlatform();
-            return AddMessaging(services, options);
+            return Messaging.ServiceBus.DependencyModule.AddMessaging(services, options);
         }
 
         public static IServiceCollection AddServiceBusResourceTokenSupport(this IHostApplicationBuilder builder)

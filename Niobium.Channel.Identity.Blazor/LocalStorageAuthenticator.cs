@@ -50,14 +50,14 @@ namespace Niobium.Channel.Identity.Blazor
             IJSObjectReference js = await localStorageModule.Value;
             string json = await js.InvokeAsync<string>(JSInteropGet, ResourceTokensCacheKey);
             return !string.IsNullOrWhiteSpace(json)
-                ? JsonSerializer.DeserializeObject<Dictionary<string, StorageSignature>>(json)
+                ? JsonMarshaller.Unmarshall<Dictionary<string, StorageSignature>>(json)
                 : EmptySignatures;
         }
 
         protected override async Task SaveResourceTokensAsync(IDictionary<string, StorageSignature> resourceTokens)
         {
             IJSObjectReference js = await localStorageModule.Value;
-            await js.InvokeVoidAsync(JSInteropSet, ResourceTokensCacheKey, JsonSerializer.SerializeObject(resourceTokens));
+            await js.InvokeVoidAsync(JSInteropSet, ResourceTokensCacheKey, JsonMarshaller.Marshall(resourceTokens));
         }
 
         protected override async ValueTask DisposeAsync(bool disposing)

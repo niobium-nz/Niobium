@@ -8,6 +8,7 @@ namespace Niobium.Messaging
         {
             Source = DomainEventAudience.Internal;
             Target = DomainEventAudience.Internal;
+            Occurried = DateTimeOffset.UtcNow;
         }
 
         public string ID { get; set; } = Guid.NewGuid().ToString();

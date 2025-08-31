@@ -15,7 +15,6 @@ namespace Niobium.Messaging.ServiceBus
         private static readonly ConcurrentDictionary<string, ServiceBusClient> clients = [];
         private static readonly Dictionary<string, ServiceBusSender> senders = [];
         private static readonly Dictionary<string, ServiceBusReceiver> receivers = [];
-        private DefaultAzureCredential? defaultCredential;
         private ServiceBusOptions? configuration;
         private bool disposed;
 
@@ -27,22 +26,6 @@ namespace Niobium.Messaging.ServiceBus
                 if (value != null)
                 {
                     configuration = value;
-                }
-            }
-        }
-
-        private DefaultAzureCredential Credential
-        {
-            get
-            {
-                defaultCredential ??= new(includeInteractiveCredentials: Configuration.EnableInteractiveIdentity);
-                return defaultCredential;
-            }
-            set
-            {
-                if (value != null)
-                {
-                    defaultCredential = value;
                 }
             }
         }
@@ -77,9 +60,9 @@ namespace Niobium.Messaging.ServiceBus
         {
             if (!string.IsNullOrWhiteSpace(Configuration.FullyQualifiedNamespace))
             {
-                return clients.GetOrAdd(name, new ServiceBusClient(
+                return clients.GetOrAdd(Configuration.FullyQualifiedNamespace, new ServiceBusClient(
                     Configuration.FullyQualifiedNamespace,
-                    Credential,
+                    Configuration.EnableInteractiveIdentity ? new InteractiveBrowserCredential() : new DefaultAzureCredential(),
                     options: CreateOptions(Configuration)));
             }
             else

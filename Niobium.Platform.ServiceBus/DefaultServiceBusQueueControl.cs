@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.Options;
+using Niobium.Messaging;
+using Niobium.Messaging.ServiceBus;
 using Niobium.Platform;
 using System.Security.Claims;
 
-namespace Niobium.Messaging.ServiceBus
+namespace Niobium.Platform.ServiceBus
 {
     internal sealed class DefaultServiceBusQueueControl(IOptions<ServiceBusOptions> options) : IResourceControl
     {
@@ -18,7 +20,7 @@ namespace Niobium.Messaging.ServiceBus
             IEnumerable<string> entitlements = permissions
                 .Where(p => p.Type == ResourceType.AzureServiceBus
                     && p.Resource == resource
-                    && (partition == p.Partition || (partition != null && p.Partition != null && partition.StartsWith(p.Partition))))
+                    && (partition == p.Partition || partition != null && p.Partition != null && partition.StartsWith(p.Partition)))
                 .SelectMany(p => p.Entitlements);
 
             if (entitlements != null && entitlements.Any())

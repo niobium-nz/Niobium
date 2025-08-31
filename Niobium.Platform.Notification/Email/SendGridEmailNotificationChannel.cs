@@ -68,7 +68,7 @@ namespace Niobium.Platform.Notification.Email
             IReadOnlyDictionary<string, object> parameters)
         {
             SendGridEmailRequest requestObj = await MakeRequestAsync(brand, email, context, templateID, parameters);
-            string requestData = JsonSerializer.SerializeObject(requestObj, JsonSerializationFormat.UnderstoreCase);
+            string requestData = JsonMarshaller.Marshall(requestObj, JsonMarshallingFormat.SnakeCase);
             using HttpClient httpclient = new(HttpHandler.GetHandler(), false);
             httpclient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthenticationScheme.BearerLoginScheme, Key);
             using StringContent content = new(requestData, Encoding.UTF8, "application/json");

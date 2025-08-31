@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Text.Json;
 
 namespace Niobium.Platform.Captcha.ReCaptcha
 {
@@ -13,12 +12,14 @@ namespace Niobium.Platform.Captcha.ReCaptcha
         : IVisitorRiskAssessor
     {
         private const string recaptchaAPI = "https://www.google.com/recaptcha/api/siteverify";
-        private static readonly JsonSerializerOptions GoogleRechptchaSerializationOptions = new()
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
-        };
 
-        public virtual async Task<bool> AssessAsync(string token, string? requestID = null, string? tenant = null, string? clientIP = null, bool throwsExceptionWhenFail = true, CancellationToken cancellationToken = default)
+        public virtual async Task<bool> AssessAsync(
+            string token, 
+            string? requestID = null,
+            string? tenant = null, 
+            string? clientIP = null,
+            bool throwsExceptionWhenFail = true,
+            CancellationToken cancellationToken = default)
         {
             requestID ??= Guid.NewGuid().ToString();
             if (string.IsNullOrWhiteSpace(token))
@@ -60,7 +61,7 @@ namespace Niobium.Platform.Captcha.ReCaptcha
             }
 
             string respbody = await response.Content.ReadAsStringAsync(cancellationToken);
-            GoogleReCaptchaResult result = Deserialize<GoogleReCaptchaResult>(respbody);
+            GoogleReCaptchaResult result = JsonMarshaller.Unmarshall<GoogleReCaptchaResult>(respbody, JsonMarshallingFormat.SnakeCase);
             if (result == null)
             {
                 logger.LogError($"Error deserializing Google ReCaptcha response: {respbody} on request {requestID}.");
@@ -75,11 +76,6 @@ namespace Niobium.Platform.Captcha.ReCaptcha
             }
 
             return lowrisk;
-        }
-
-        private static T Deserialize<T>(string json)
-        {
-            return System.Text.Json.JsonSerializer.Deserialize<T>(json, GoogleRechptchaSerializationOptions)!;
         }
     }
 }

@@ -2,6 +2,16 @@
 {
     public static class IRepositoryExtensions
     {
+        public static async Task<bool> ExistsAsync<T>(this IRepository<T> repository, StorageKey key, CancellationToken cancellationToken = default)
+        {
+            return await repository.ExistsAsync(key.PartitionKey, key.RowKey, cancellationToken);
+        }
+
+        public static async Task<T?> RetrieveAsync<T>(this IRepository<T> repository, StorageKey key, IList<string>? fields = null, CancellationToken cancellationToken = default)
+        {
+            return await repository.RetrieveAsync(key.PartitionKey, key.RowKey, fields: fields, cancellationToken: cancellationToken);
+        }
+
         public static async Task<T> CreateAsync<T>(this IRepository<T> repository, T entity, bool replaceIfExist = false, DateTimeOffset? expiry = null, CancellationToken cancellationToken = default)
         {
             IEnumerable<T> result = await repository.CreateAsync(new[] { entity }, replaceIfExist: replaceIfExist, expiry: expiry, cancellationToken: cancellationToken);

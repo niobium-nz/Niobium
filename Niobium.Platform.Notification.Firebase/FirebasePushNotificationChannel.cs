@@ -55,7 +55,7 @@ namespace Niobium.Platform.Notification.Firebase
                 FirebaseMessageRequest request = new() { Message = message.Message };
                 using HttpClient httpclient = new(HttpHandler.GetHandler(), false);
                 httpclient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthenticationScheme.BearerLoginScheme, token);
-                string json = JsonSerializer.SerializeObject(request, JsonSerializationFormat.CamelCase);
+                string json = JsonMarshaller.Marshall(request, JsonMarshallingFormat.CamelCase);
                 using StringContent content = new(json, Encoding.UTF8, "application/json");
                 HttpResponseMessage resp = await httpclient.PostAsync($"https://fcm.googleapis.com/v1/projects/{message.ProjectID}/messages:send", content);
                 int status = (int)resp.StatusCode;

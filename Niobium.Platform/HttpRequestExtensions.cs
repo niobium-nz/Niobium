@@ -133,7 +133,7 @@ namespace Niobium.Platform
             HttpStatusCode? statusCode = null,
             object? payload = null,
             string? contentType = null,
-            JsonSerializationFormat? serializationFormat = null)
+            JsonMarshallingFormat serializationFormat = JsonMarshallingFormat.CamelCase)
         {
             int? code = null;
             if (statusCode.HasValue)
@@ -157,7 +157,7 @@ namespace Niobium.Platform
             }
             else
             {
-                result.Content = JsonSerializer.SerializeObject(payload, serializationFormat);
+                result.Content = JsonMarshaller.Marshall(payload, serializationFormat);
                 result.ContentType = JsonMediaType;
             }
 

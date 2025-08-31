@@ -75,7 +75,7 @@ namespace Niobium.Platform.Finance
                 IP = req.GetRemoteIP(),
             };
             OperationResult<ChargeResponse> result = await paymentService.ChargeAsync(chargeRequest);
-            IActionResult action = result.MakeResponse(JsonSerializationFormat.CamelCase);
+            IActionResult action = result.MakeResponse(JsonMarshallingFormat.CamelCase);
             await action.ExecuteResultAsync(new ActionContext(context, new RouteData(), new ActionDescriptor()));
         }
     }

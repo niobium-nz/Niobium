@@ -35,7 +35,7 @@ namespace Niobium.Platform.Finance
             using StreamReader reader = new(req.Body);
             string json = await reader.ReadToEndAsync();
             OperationResult<ChargeResult> result = await paymentService.ReportAsync(json);
-            IActionResult action = result.MakeResponse();
+            IActionResult action = result.MakeResponse(JsonMarshallingFormat.CamelCase);
             await action.ExecuteResultAsync(new ActionContext(context, new RouteData(), new ActionDescriptor()));
         }
     }

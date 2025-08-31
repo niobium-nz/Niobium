@@ -41,9 +41,10 @@ namespace Niobium.Database.StorageTable
             TableServiceClient client = clients.GetOrAdd(options.Value.FullyQualifiedDomainName, _ =>
             {
                 TableClientOptions opt = BuildClientOptions(options);
-                TokenCredential credential = credentials.GetOrAdd(options.Value.FullyQualifiedDomainName, _ => new DefaultAzureCredential(includeInteractiveCredentials: options.Value.EnableInteractiveIdentity));
+                TokenCredential credential = credentials.GetOrAdd(options.Value.FullyQualifiedDomainName, 
+                    _ => options.Value.EnableInteractiveIdentity ? new InteractiveBrowserCredential() : new DefaultAzureCredential());
                 return Uri.TryCreate($"https://{options.Value.FullyQualifiedDomainName}", UriKind.Absolute, out Uri? endpointUri)
-                    ? new TableServiceClient(endpointUri, new DefaultAzureCredential(includeInteractiveCredentials: options.Value.EnableInteractiveIdentity), opt)
+                    ? new TableServiceClient(endpointUri, credential, opt)
                     : throw new ApplicationException(InternalError.InternalServerError);
             });
 

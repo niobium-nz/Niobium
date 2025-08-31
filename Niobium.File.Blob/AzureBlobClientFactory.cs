@@ -45,7 +45,8 @@ namespace Niobium.File.Blob
             BlobServiceClient client = clients.GetOrAdd(options.Value.FullyQualifiedDomainName, _ =>
             {
                 BlobClientOptions opt = BuildClientOptions(options);
-                TokenCredential credential = credentials.GetOrAdd(options.Value.FullyQualifiedDomainName, _ => new DefaultAzureCredential(includeInteractiveCredentials: options.Value.EnableInteractiveIdentity));
+                TokenCredential credential = credentials.GetOrAdd(options.Value.FullyQualifiedDomainName,
+                    _ => options.Value.EnableInteractiveIdentity ? new InteractiveBrowserCredential() : new DefaultAzureCredential());
                 return Uri.TryCreate($"https://{options.Value.FullyQualifiedDomainName}", UriKind.Absolute, out Uri? endpointUri)
                     ? new BlobServiceClient(endpointUri, credential, opt)
                     : throw new ApplicationException(InternalError.InternalServerError);

@@ -52,7 +52,7 @@ namespace Niobium.Profile
                 return;
             }
 
-            string json = System.Text.Json.JsonSerializer.Serialize(profile);
+            string json = JsonMarshaller.Marshall(profile);
             using StringContent content = new(json, Encoding.UTF8, "application/json");
             await httpClient.PutAsync(ProfileEndpoint, content, cancellationToken: cancellationToken.Value)
                 .ContinueWith(t =>

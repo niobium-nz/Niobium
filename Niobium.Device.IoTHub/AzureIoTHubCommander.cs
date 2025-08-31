@@ -24,7 +24,7 @@ namespace Niobium.Device.IoTHub
 
         public async Task<IoTCommandResult?> ExecuteAsync(string device, object command, bool fireAndForget = true)
         {
-            string msg = command is string str ? str : JsonSerializer.SerializeObject(command);
+            string msg = command is string str ? str : JsonMarshaller.Marshall(command);
             if (fireAndForget)
             {
                 await SendCloudToDeviceMessageAsync(device, msg);

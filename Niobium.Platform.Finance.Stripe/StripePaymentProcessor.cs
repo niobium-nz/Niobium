@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Niobium.Finance;
 using Stripe;
-using System.Text.Json;
 using PaymentMethod = Niobium.Finance.PaymentMethod;
 
 namespace Niobium.Platform.Finance.Stripe
@@ -15,7 +14,6 @@ namespace Niobium.Platform.Finance.Stripe
         ILogger<StripePaymentProcessor> logger)
         : IPaymentProcessor
     {
-        private static readonly JsonSerializerOptions serializationOptions = new(JsonSerializerDefaults.Web);
         private static readonly TimeSpan ValidTransactionMaxDelay = TimeSpan.FromMinutes(5);
         public const string PaymentInfoSpliter = "|";
 
@@ -206,7 +204,7 @@ namespace Niobium.Platform.Finance.Stripe
                 return new OperationResult<ChargeResult>(Niobium.InternalError.NotAcceptable);
             }
 
-            StripeReport? r = System.Text.Json.JsonSerializer.Deserialize<StripeReport>(notificationJSON, serializationOptions);
+            StripeReport? r = JsonMarshaller.Unmarshall<StripeReport>(notificationJSON);
 
             if (r == null || !StripeReport.SupportedTypes.Contains(r.Type))
             {

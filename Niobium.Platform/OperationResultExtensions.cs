@@ -5,7 +5,7 @@ namespace Niobium.Platform
 {
     public static class OperationResultExtensions
     {
-        public static IActionResult MakeResponse<T>(this OperationResult<T> operationResult, JsonSerializationFormat? serializationFormat = null)
+        public static IActionResult MakeResponse<T>(this OperationResult<T> operationResult, JsonMarshallingFormat serializationFormat = JsonMarshallingFormat.CamelCase)
         {
             object? payload = operationResult;
             HttpStatusCode? code;
@@ -22,7 +22,7 @@ namespace Niobium.Platform
             return HttpRequestExtensions.MakeResponse(null, statusCode: code, payload: payload, serializationFormat: serializationFormat);
         }
 
-        public static IActionResult MakeResponse(this OperationResult operationResult, object? successPayload = null, JsonSerializationFormat? serializationFormat = null)
+        public static IActionResult MakeResponse(this OperationResult operationResult, object? successPayload = null, JsonMarshallingFormat serializationFormat = JsonMarshallingFormat.CamelCase)
         {
             object? payload = operationResult;
             HttpStatusCode? code;

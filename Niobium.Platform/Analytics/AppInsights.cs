@@ -29,7 +29,7 @@ namespace Niobium.Platform.Analytics
             }
 
             string body = await response.Content.ReadAsStringAsync();
-            AppInsightsQueryResult result = JsonSerializer.DeserializeObject<AppInsightsQueryResult>(body);
+            AppInsightsQueryResult result = JsonMarshaller.Unmarshall<AppInsightsQueryResult>(body);
             result.Success = true;
             return result;
         }

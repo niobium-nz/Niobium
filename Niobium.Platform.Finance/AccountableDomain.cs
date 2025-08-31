@@ -60,15 +60,15 @@ namespace Niobium.Platform.Finance
                       Transaction.BuildRowKey(fromInclusive));
         }
 
-        public async Task<long> GetFrozenAsync()
+        public async Task<long> GetFrozenAsync(CancellationToken cancellationToken = default)
         {
             string pk = FrozenKey;
             string rk = AccountingPrincipal;
-            long result = await cacheStore.Value.GetAsync<long>(pk, rk);
+            long result = await cacheStore.Value.GetAsync<long>(pk, rk, cancellationToken);
             return result;
         }
 
-        public async Task<long> FreezeAsync(long amount)
+        public async Task<long> FreezeAsync(long amount, CancellationToken cancellationToken = default)
         {
             if (amount < 0)
             {
@@ -76,21 +76,21 @@ namespace Niobium.Platform.Finance
             }
             string pk = FrozenKey;
             string rk = AccountingPrincipal;
-            long currentValue = await cacheStore.Value.GetAsync<long>(pk, rk);
+            long currentValue = await cacheStore.Value.GetAsync<long>(pk, rk, cancellationToken);
             long result = currentValue + amount;
-            await cacheStore.Value.SetAsync(pk, rk, result, false);
+            await cacheStore.Value.SetAsync(pk, rk, result, false, cancellationToken: cancellationToken);
             return result;
         }
 
-        public async Task<long> UnfreezeAsync()
+        public async Task<long> UnfreezeAsync(CancellationToken cancellationToken = default)
         {
             string pk = FrozenKey;
             string rk = AccountingPrincipal;
-            await cacheStore.Value.DeleteAsync(pk, rk);
+            await cacheStore.Value.DeleteAsync(pk, rk, cancellationToken);
             return 0;
         }
 
-        public async Task<long> UnfreezeAsync(long amount)
+        public async Task<long> UnfreezeAsync(long amount, CancellationToken cancellationToken = default)
         {
             if (amount < 0)
             {
@@ -98,9 +98,9 @@ namespace Niobium.Platform.Finance
             }
             string pk = FrozenKey;
             string rk = AccountingPrincipal;
-            long currentValue = await cacheStore.Value.GetAsync<long>(pk, rk);
+            long currentValue = await cacheStore.Value.GetAsync<long>(pk, rk, cancellationToken);
             long result = currentValue - amount;
-            await cacheStore.Value.SetAsync(pk, rk, result, false);
+            await cacheStore.Value.SetAsync(pk, rk, result, false, cancellationToken: cancellationToken);
             return result;
         }
 
@@ -214,7 +214,7 @@ namespace Niobium.Platform.Finance
         {
             //REMARK (5he11) 将输入限制为仅取其日期的当日的最后一刻并转化为UTC时间，规范后的值如：2018-08-08 23:59:59.999 +00:00
             input = new DateTimeOffset(input.UtcDateTime.Date.ToUniversalTime()).AddDays(1).AddMilliseconds(-1);
-            long frozen = await GetFrozenAsync();
+            long frozen = await GetFrozenAsync(cancellationToken);
             bool queryCache;
             DateTimeOffset lastAccountDate = input;
             if (input.UtcDateTime.Date.ToUniversalTime() != DateTimeOffset.UtcNow.UtcDateTime.Date.ToUniversalTime())

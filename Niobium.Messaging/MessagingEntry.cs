@@ -20,7 +20,7 @@ namespace Niobium.Messaging
 
     public class MessagingEntry<T> : IAsyncDisposable
     {
-        public static readonly JsonSerializerOptions SerializationOptions = new(JsonSerializerDefaults.Web);
+        private static readonly JsonSerializerOptions SerializationOptions = new(JsonSerializerDefaults.Web);
         private T? value;
         private bool disposed;
 

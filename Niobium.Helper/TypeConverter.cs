@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using System.Collections;
+﻿using System.Collections;
 using System.ComponentModel;
 
 namespace Niobium
@@ -40,7 +39,7 @@ namespace Niobium
             }
             else
             {
-                obj = JsonConvert.DeserializeObject(input, targetType)!;
+                obj = JsonMarshaller.Unmarshall(input, targetType)!;
             }
 
             return obj;
