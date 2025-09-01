@@ -27,7 +27,7 @@ namespace Niobium
                     var entityType = domainType.GetGenericArguments()[0];
                     var addDomainMethod = typeof(IServiceCollectionExtensions)
                         .GetMethod(nameof(AddDomain), BindingFlags.Public | BindingFlags.Static)!
-                        .MakeGenericMethod(domainType, entityType);
+                        .MakeGenericMethod(implementation, entityType);
                     addDomainMethod.Invoke(null, [services, false]);
                 }
             }
