@@ -26,16 +26,11 @@ namespace Niobium.Platform.Finance
             return services;
         }
 
-        public static IFunctionsWorkerApplicationBuilder UsePlatformPayment<TDepositHandler, TAccountableDomain, TAccountableEntity>(this IFunctionsWorkerApplicationBuilder builder)
-            where TDepositHandler : AccountDepositRecorder<TAccountableDomain, TAccountableEntity>
-            where TAccountableDomain : AccountableDomain<TAccountableEntity>
-            where TAccountableEntity : class, new()
+        public static IFunctionsWorkerApplicationBuilder UsePlatformPayment(this IFunctionsWorkerApplicationBuilder builder)
         {
             builder.UsePlatform();
             builder.UseWhen<FunctionMiddlewareAdaptor<PaymentRequestMiddleware>>(FunctionMiddlewarePredicates.IsHttp);
             builder.UseWhen<FunctionMiddlewareAdaptor<PaymentWebhookMiddleware>>(FunctionMiddlewarePredicates.IsHttp);
-
-            builder.Services.AddDomainEventHandler<TDepositHandler, Transaction>();
             return builder;
         }
 

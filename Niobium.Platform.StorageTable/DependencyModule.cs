@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Niobium.Database.StorageTable;
 using Niobium.Identity;
 using Niobium.Platform.Identity;
@@ -92,6 +93,24 @@ namespace Niobium.Platform.StorageTable
         public static IServiceCollection GrantDatabasePersonalizedEntitlementTo(this IServiceCollection services, string role, DatabasePermissions permissions, string tableName, string fullyQualifiedDomainName)
         {
             return services.GrantDatabasePersonalizedEntitlementTo(_ => role, permissions, _ => tableName, _ => fullyQualifiedDomainName);
+        }
+
+        public static IServiceCollection GrantDatabasePersonalizedEntitlementTo(this IServiceCollection services, string table, DatabasePermissions permissions = DatabasePermissions.Query)
+        {
+            return services.GrantDatabasePersonalizedEntitlementTo(
+                sp => sp.GetRequiredService<IOptions<IdentityServiceOptions>>().Value.DefaultRole,
+                permissions,
+                sp => table,
+                sp => sp.GetRequiredService<IOptions<StorageTableOptions>>().Value.FullyQualifiedDomainName!);
+        }
+
+        public static IServiceCollection GrantDatabaseEntitlementTo(this IServiceCollection services, string table, DatabasePermissions permissions = DatabasePermissions.Query)
+        {
+            return services.GrantDatabaseEntitlementTo(
+                sp => sp.GetRequiredService<IOptions<IdentityServiceOptions>>().Value.DefaultRole,
+                permissions,
+                sp => table,
+                sp => sp.GetRequiredService<IOptions<StorageTableOptions>>().Value.FullyQualifiedDomainName!);
         }
     }
 }

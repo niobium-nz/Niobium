@@ -161,7 +161,16 @@ namespace Niobium.Platform.Finance
             return await MakeTransactionAsync(transactions);
         }
 
-        public async Task<IEnumerable<Transaction>> MakeTransactionAsync(IEnumerable<Transaction> transactions)
+        public async Task<IEnumerable<Transaction>> MakeTransactionAsync(
+            Transaction transaction,
+            bool replaceIfExist = false,
+            CancellationToken cancellationToken = default)
+            => await MakeTransactionAsync([transaction], replaceIfExist, cancellationToken);
+
+        public async Task<IEnumerable<Transaction>> MakeTransactionAsync(
+            IEnumerable<Transaction> transactions,
+            bool replaceIfExist = false, 
+            CancellationToken cancellationToken = default)
         {
             if (Tenant != null)
             {
@@ -171,15 +180,15 @@ namespace Niobium.Platform.Finance
                 }
             }
 
-            await transactionRepo.Value.CreateAsync(transactions);
+            await transactionRepo.Value.CreateAsync(transactions, replaceIfExist: replaceIfExist, cancellationToken: cancellationToken);
             string now = DateTimeOffset.UtcNow.ToSixDigitsDate();
             foreach (Transaction transaction in transactions)
             {
                 string pk = $"{DeltaKey}-{now}";
                 string rk = transaction.GetOwner();
-                long currentValue = await cacheStore.Value.GetAsync<long>(pk, rk);
+                long currentValue = await cacheStore.Value.GetAsync<long>(pk, rk, cancellationToken);
                 long result = currentValue + transaction.Delta;
-                await cacheStore.Value.SetAsync(pk, rk, result, false);
+                await cacheStore.Value.SetAsync(pk, rk, result, false, cancellationToken: cancellationToken);
             }
             return transactions;
         }

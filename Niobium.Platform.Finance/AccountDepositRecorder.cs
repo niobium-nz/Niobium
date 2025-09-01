@@ -21,7 +21,7 @@ namespace Niobium.Platform.Finance
             e.Transaction.RowKey = rk;
 
             TDomain domain = await repo.GetAsync(pk, rk, cancellationToken: cancellationToken);
-            await domain.MakeTransactionAsync(new[] { e.Transaction });
+            await domain.MakeTransactionAsync(e.Transaction, replaceIfExist: true, cancellationToken);
         }
 
         protected abstract string BuildPartitionKey(Transaction transaction);
