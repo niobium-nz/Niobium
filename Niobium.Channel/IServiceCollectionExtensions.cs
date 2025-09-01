@@ -7,14 +7,19 @@ namespace Niobium.Channel
         public static IServiceCollection ScanAssemblyForViewModel(this IServiceCollection services, Type anyTypeFromAssembly)
         {
             IEnumerable<Type> types = anyTypeFromAssembly.Assembly.GetTypes()
-                .Where(t => t.IsClass && !t.IsAbstract && typeof(IViewModel).IsAssignableFrom(t));
+                .Where(t => t.IsClass && !t.IsAbstract);
 
             foreach (Type type in types)
             {
-                services.AddTransient(type);
-                services.AddTransient(typeof(IViewModel), sp => (IViewModel)sp.GetRequiredService(type));
+                if (typeof(IViewModel).IsAssignableFrom(type))
+                {
+                    services.AddTransient(type);
+                    services.AddTransient(typeof(IViewModel), sp => (IViewModel)sp.GetRequiredService(type));
+                }
 
-                if (typeof(IEditModeValueProvider<>).IsAssignableFrom(type))
+                var isValueProvider = type.GetInterfaces().Any(i => 
+                    i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEditModeValueProvider<>));
+                if (isValueProvider)
                 {
                     services.AddEditModeValueProvider(type);
                 }
@@ -42,24 +47,23 @@ namespace Niobium.Channel
 
         public static IServiceCollection AddEditModeValueProvider(this IServiceCollection services, Type valueProviderType)
         {
-            if (typeof(IEditModeValueProvider<>).IsAssignableFrom(valueProviderType))
-            {
-                throw new ArgumentException("Value provider type must implement IEditModeValueProvider<TViewModel>.");
-            }
+            var serviceType = valueProviderType.GetInterfaces().SingleOrDefault(i =>
+                    i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEditModeValueProvider<>))
+                ?? throw new ArgumentException("Value provider type must implement IEditModeValueProvider<TViewModel>.");
+
             if (!valueProviderType.IsClass || valueProviderType.IsAbstract)
             {
                 throw new ArgumentException("Value provider type must be a non-abstract class.");
             }
-            if (!typeof(IViewModel).IsAssignableFrom(valueProviderType.GetGenericArguments()[0]))
+
+            if (!typeof(IViewModel).IsAssignableFrom(serviceType.GetGenericArguments()[0]))
             {
                 throw new ArgumentException("Value provider type must implement IViewModel.");
             }
 
-            Type viewModelType = valueProviderType.GetGenericArguments()[0];
-            Type implementationType = typeof(IEditModeValueProvider<>).MakeGenericType(viewModelType);
-            services.AddTransient(implementationType, valueProviderType);
-            services.AddTransient(typeof(IEditModeValueProvider), sp => sp.GetRequiredService(implementationType));
-            services.AddTransient(typeof(IEditModeValueProvider<>).MakeGenericType(viewModelType), sp => sp.GetRequiredService(implementationType));
+            services.AddTransient(valueProviderType);
+            services.AddTransient(typeof(IEditModeValueProvider), sp => sp.GetRequiredService(valueProviderType));
+            services.AddTransient(serviceType, sp => sp.GetRequiredService(valueProviderType));
 
             return services;
         }

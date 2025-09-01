@@ -17,8 +17,10 @@ namespace Niobium.Platform
             {
                 await middleware.InvokeAsync(httpContext, async (_) => await next(context));
             }
-
-            await next(context);
+            else
+            {
+                await next(context);
+            }
         }
     }
 }

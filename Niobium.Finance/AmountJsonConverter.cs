@@ -7,13 +7,17 @@ namespace Niobium.Finance
     {
         public override Amount Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            string json = reader.GetString() ?? throw new JsonException("Amount cannot be null or empty.");
-            AmountPrototype prototype = JsonSerializer.Deserialize<AmountPrototype>(json, options) ?? throw new JsonException("Failed to deserialize Amount.");
-            return new Amount
+            using (var jsonDoc = JsonDocument.ParseValue(ref reader))
             {
-                Cents = prototype.Cents,
-                Currency = prototype.Currency
-            };
+                var json = jsonDoc.RootElement.GetRawText();
+                AmountPrototype prototype = JsonSerializer.Deserialize<AmountPrototype>(json, options) ?? throw new JsonException("Failed to deserialize Amount.");
+                return new Amount
+                {
+                    Cents = prototype.Cents,
+                    Currency = prototype.Currency
+                };
+            }
+            
         }
 
         public override void Write(Utf8JsonWriter writer, Amount value, JsonSerializerOptions options)

@@ -8,7 +8,7 @@
 
         public static readonly char[] ScopeSplitor = [':'];
         public static readonly char[] ValueSplitor = [','];
-        public const string CategoryNamingPrefix = "COD-";
+        public const string CategoryNamingPrefix = "NB-";
 
         public const string Account = CategoryNamingPrefix + "ACCOUNT";
         public const string AccountList = "ACCOUNT_LIST";

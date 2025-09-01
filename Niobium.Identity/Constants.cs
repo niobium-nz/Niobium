@@ -1,6 +1,6 @@
 ﻿namespace Niobium.Identity
 {
-    public abstract class Constants
+    public abstract class Constants : Niobium.Constants
     {
         public const string DefaultIDTokenEndpoint = "auth";
         public const string DefaultAccessTokenEndpoint = "token";

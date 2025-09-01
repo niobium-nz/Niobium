@@ -75,7 +75,7 @@ namespace Niobium.Platform.Identity
             List<KeyValuePair<string, string>> claims = [.. entitlements.Select(e =>
                 new
                 {
-                    Resource = $"COD-{(int)e.Type}://{e.Resource}",
+                    Resource = $"{Constants.CustomClaimPrefix}{(int)e.Type}://{e.Resource}",
                     e.Permission
                 })
                 .GroupBy(e => e.Resource)

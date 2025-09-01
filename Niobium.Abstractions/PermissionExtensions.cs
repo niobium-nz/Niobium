@@ -114,16 +114,16 @@ namespace Niobium
 
         public static IEnumerable<ResourcePermission> ToResourcePermissions(this IEnumerable<Claim> input)
         {
-            return input.Where(c => !string.IsNullOrWhiteSpace(c.Type) && !string.IsNullOrWhiteSpace(c.Value) && c.Type.StartsWith("COD-"))
+            return input.Where(c => !string.IsNullOrWhiteSpace(c.Type) && !string.IsNullOrWhiteSpace(c.Value) && c.Type.StartsWith(Constants.CustomClaimPrefix))
                 .Select(c => new
                 {
                     Parts = c.Type.Split(["://"], StringSplitOptions.RemoveEmptyEntries),
                     Entitlements = c.Value.Split([','], StringSplitOptions.RemoveEmptyEntries),
                 })
-                .Where(c => c.Parts.Length == 2 && c.Parts[0].Length > "COD-".Length)
+                .Where(c => c.Parts.Length == 2 && c.Parts[0].Length > Constants.CustomClaimPrefix.Length)
                 .Select(c => new
                 {
-                    Scheme = c.Parts[0]["COD-".Length..],
+                    Scheme = c.Parts[0][Constants.CustomClaimPrefix.Length..],
                     Parts = c.Parts[1].Split(['/'], StringSplitOptions.RemoveEmptyEntries),
                     c.Entitlements,
                 })
