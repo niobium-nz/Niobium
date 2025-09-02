@@ -6,13 +6,13 @@ using System.Net.Http.Headers;
 
 namespace Niobium.Platform.Profile
 {
-    public class PlatformProfileService<T>(
+    internal sealed class ClientTokenProfileService<T>(
         IHttpContextAccessor httpContextAccessor,
         IHttpClientFactory httpClientFactory,
         IOptions<ProfileOptions> options,
         ILogger<GenericProfileService<T>> logger)
-        : GenericProfileService<T>(httpClientFactory, options, logger), IProfileService<T>
-        where T : class, IProfile
+            : GenericProfileService<T>(httpClientFactory, options, logger), IProfileService<T>
+            where T : class, IProfile
     {
         protected override Task<HttpClient?> ConfigureHttpClientAsync(HttpClient httpClient, CancellationToken cancellationToken)
         {

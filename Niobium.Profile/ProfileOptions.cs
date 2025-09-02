@@ -6,6 +6,8 @@
 
         public required string ProfileServiceEndpoint { get; set; } = Constants.DefaultProfileEndpoint;
 
+        public string? ProfileAppID { get; set; }
+
         public void Validate()
         {
             ArgumentNullException.ThrowIfNull(ProfileServiceHost, nameof(ProfileServiceHost));

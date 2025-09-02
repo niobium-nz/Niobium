@@ -1,8 +1,7 @@
 ﻿namespace Niobium.Profile
 {
-    public abstract class Constants
+    public abstract class Constants : Identity.Constants
     {
-        public const string DefaultHttpClientName = "IdentityAPIClient";
-        public const string DefaultProfileEndpoint = "/profile";
+        public const string DefaultHttpClientName = "ProfileAPIClient";
     }
 }

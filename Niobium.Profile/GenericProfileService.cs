@@ -15,7 +15,9 @@ namespace Niobium.Profile
 
         public virtual string ProfileEndpoint => options.Value.ProfileServiceEndpoint;
 
-        public async Task<T?> RetrieveAsync(bool forceRefresh = false, CancellationToken? cancellationToken = null)
+        protected IOptions<ProfileOptions> Options { get => options; }
+
+        public async Task<T?> RetrieveAsync(Guid tenant, Guid user, bool forceRefresh = false, CancellationToken? cancellationToken = null)
         {
             cancellationToken ??= CancellationToken.None;
 
@@ -27,7 +29,7 @@ namespace Niobium.Profile
             HttpClient? httpClient = await GetHttpClientAsync(cancellationToken.Value);
             return httpClient == null
                 ? null
-                : await httpClient.GetFromJsonAsync<T>(ProfileEndpoint, cancellationToken: cancellationToken.Value)
+                : await httpClient.GetFromJsonAsync<T>($"{ProfileEndpoint}/{tenant}/{user}", cancellationToken: cancellationToken.Value)
                 .ContinueWith(t =>
                 {
                     if (t.IsFaulted)
@@ -42,7 +44,7 @@ namespace Niobium.Profile
                 }, cancellationToken.Value);
         }
 
-        public async Task MergeAsync(T profile, CancellationToken? cancellationToken = null)
+        public async Task MergeAsync(Guid tenant, Guid user, T profile, CancellationToken? cancellationToken = null)
         {
             cancellationToken ??= CancellationToken.None;
 
@@ -54,7 +56,7 @@ namespace Niobium.Profile
 
             string json = JsonMarshaller.Marshall(profile);
             using StringContent content = new(json, Encoding.UTF8, "application/json");
-            await httpClient.PutAsync(ProfileEndpoint, content, cancellationToken: cancellationToken.Value)
+            await httpClient.PutAsync($"{ProfileEndpoint}/{tenant}/{user}", content, cancellationToken: cancellationToken.Value)
                 .ContinueWith(t =>
                 {
                     if (t.IsFaulted)

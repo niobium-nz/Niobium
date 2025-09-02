@@ -8,28 +8,30 @@ namespace Niobium.Platform.Profile
     public static class DependencyModule
     {
         private static volatile bool loaded;
-        private static bool isDevelopment;
 
-        public static void AddProfile(this IHostApplicationBuilder builder)
-        {
-            isDevelopment = builder.Environment.IsDevelopment();
-            builder.Services.AddProfile(builder.Configuration.GetSection(nameof(ProfileOptions)).Bind);
-        }
-
-        public static IServiceCollection AddProfile(
-            this IServiceCollection services,
-            Action<ProfileOptions>? options)
+        public static void AddProfile(this IHostApplicationBuilder builder, bool useServicePrincipalAuthentication = false)
         {
             if (loaded)
             {
-                return services;
+                return;
             }
 
             loaded = true;
 
-            Niobium.Profile.DependencyModule.AddProfile(services, options, isDevelopment);
-            services.AddTransient(typeof(IProfileService<>), typeof(PlatformProfileService<>));
-            return services;
+            bool isDevelopment = builder.Environment.IsDevelopment();
+            Niobium.Profile.DependencyModule.AddProfile(
+                builder.Services,
+                builder.Configuration.GetSection(nameof(ProfileOptions)).Bind,
+                isDevelopment);
+
+            if (useServicePrincipalAuthentication)
+            {
+                builder.Services.AddTransient(typeof(IProfileService<>), typeof(ServicePrincipalProfileService<>));
+            }
+            else
+            {
+                builder.Services.AddTransient(typeof(IProfileService<>), typeof(ClientTokenProfileService<>));
+            }
         }
     }
 }
