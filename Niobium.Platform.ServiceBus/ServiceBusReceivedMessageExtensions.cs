@@ -31,8 +31,14 @@ namespace Niobium.Platform.ServiceBus
 
         public static async Task<Guid> TryGetUserIDAsync(this ServiceBusReceivedMessage message, PrincipalParser principalParser, CancellationToken cancellationToken = default)
         {
-            string? claim = await message.TryGetClaimAsync<string>(principalParser, ClaimTypes.NameIdentifier, cancellationToken);
+            string? claim = await message.TryGetClaimAsync<string>(principalParser, ClaimTypes.Sid, cancellationToken);
             return claim == null || !Guid.TryParse(claim, out Guid userID) ? throw new ApplicationException(Niobium.InternalError.Forbidden) : userID;
+        }
+
+        public static async Task<Guid> TryGetTenantIDAsync(this ServiceBusReceivedMessage message, PrincipalParser principalParser, CancellationToken cancellationToken = default)
+        {
+            string? claim = await message.TryGetClaimAsync<string>(principalParser, ClaimTypes.GroupSid, cancellationToken);
+            return claim == null || !Guid.TryParse(claim, out Guid tenantID) ? throw new ApplicationException(Niobium.InternalError.Forbidden) : tenantID;
         }
 
         public static async Task<T?> TryGetClaimAsync<T>(this ServiceBusReceivedMessage message, PrincipalParser principalParser, string key, CancellationToken cancellationToken = default)

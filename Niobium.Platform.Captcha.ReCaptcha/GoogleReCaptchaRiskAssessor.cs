@@ -16,7 +16,7 @@ namespace Niobium.Platform.Captcha.ReCaptcha
         public virtual async Task<bool> AssessAsync(
             string token, 
             string? requestID = null,
-            string? tenant = null, 
+            string? hostname = null, 
             string? clientIP = null,
             bool throwsExceptionWhenFail = true,
             CancellationToken cancellationToken = default)
@@ -27,10 +27,10 @@ namespace Niobium.Platform.Captcha.ReCaptcha
                 throw new ApplicationException(Niobium.InternalError.BadRequest, "Missing captcha token in request.");
             }
 
-            if (string.IsNullOrWhiteSpace(tenant))
+            if (string.IsNullOrWhiteSpace(hostname))
             {
-                tenant = httpContextAccessor.Value.HttpContext?.Request.GetTenant()
-                    ?? throw new ApplicationException(Niobium.InternalError.BadRequest, "Missing tenant information in request.");
+                hostname = httpContextAccessor.Value.HttpContext?.Request.GetSourceHostname()
+                    ?? throw new ApplicationException(Niobium.InternalError.BadRequest, "Cannot retrieve hostname from request.");
             }
 
             if (string.IsNullOrWhiteSpace(clientIP))
@@ -39,8 +39,8 @@ namespace Niobium.Platform.Captcha.ReCaptcha
                     ?? throw new ApplicationException(Niobium.InternalError.BadRequest, "unable to get client IP from request.");
             }
 
-            string secret = options.Value.Secrets[tenant]
-                ?? throw new ApplicationException(Niobium.InternalError.InternalServerError, $"Missing tenant secret: {tenant}");
+            string secret = options.Value.Secrets[hostname]
+                ?? throw new ApplicationException(Niobium.InternalError.InternalServerError, $"Missing tenant secret: {hostname}");
 
             List<KeyValuePair<string, string>> parameters = new([
                 new KeyValuePair<string, string>("secret", secret),
@@ -68,7 +68,7 @@ namespace Niobium.Platform.Captcha.ReCaptcha
                 return false;
             }
 
-            bool lowrisk = result.Success && result.Hostname.Equals(tenant, StringComparison.OrdinalIgnoreCase);
+            bool lowrisk = result.Success && result.Hostname.Equals(hostname, StringComparison.OrdinalIgnoreCase);
             if (throwsExceptionWhenFail && !lowrisk)
             {
                 logger?.LogWarning($"{clientIP} is considered high risk for request {requestID}");

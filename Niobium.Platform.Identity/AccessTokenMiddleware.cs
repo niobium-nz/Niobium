@@ -30,24 +30,16 @@ namespace Niobium.Platform.Identity
                 return;
             }
 
-            if (!principal.TryGetClaim(ClaimTypes.NameIdentifier, out Guid user))
+            if (!principal.TryGetClaim(ClaimTypes.Sid, out Guid user))
             {
                 context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
                 return;
             }
 
-            Guid tenant;
-            if (req.Headers.TryGetValue(Niobium.Identity.Constants.TenantIDHeaderKey, out Microsoft.Extensions.Primitives.StringValues tenantHeader))
+            if (!principal.TryGetClaim(ClaimTypes.GroupSid, out Guid tenant))
             {
-                if (!Guid.TryParse(tenantHeader, out tenant))
-                {
-                    context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                    return;
-                }
-            }
-            else
-            {
-                tenant = Guid.Empty;
+                context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+                return;
             }
 
             List<string> roles = [options.Value.DefaultRole];

@@ -20,12 +20,12 @@ namespace Niobium.Platform.StorageTable
 
         protected virtual string BuildStartPartitionKey(ClaimsPrincipal principal)
         {
-            return principal.GetClaim<string>(ClaimTypes.NameIdentifier);
+            return principal.GetClaim<string>(ClaimTypes.Sid);
         }
 
         protected virtual string BuildEndPartitionKey(ClaimsPrincipal principal)
         {
-            return principal.GetClaim<string>(ClaimTypes.NameIdentifier);
+            return principal.GetClaim<string>(ClaimTypes.Sid);
         }
     }
 }

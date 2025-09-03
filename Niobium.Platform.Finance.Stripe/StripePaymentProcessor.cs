@@ -128,7 +128,7 @@ namespace Niobium.Platform.Finance.Stripe
                             request.Amount,
                             order: request.Order,
                             reference: request.Reference,
-                            tenant: request.Source,
+                            tenant: request.Tenant,
                             stripeCustomerID: stripeCustomer,
                             stripePaymentMethodID: stripePaymentMethod);
                         if (!transaction.IsSuccess)
@@ -146,7 +146,7 @@ namespace Niobium.Platform.Finance.Stripe
                             request.Amount,
                             order: request.Order,
                             reference: request.Reference,
-                            tenant: request.Source,
+                            tenant: request.Tenant,
                             stripeCustomerID: stripeCustomer,
                             stripePaymentMethodID: stripePaymentMethod);
                         if (!transaction.IsSuccess)

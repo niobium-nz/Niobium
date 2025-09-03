@@ -13,7 +13,6 @@
         public const string DefaultRole = "User";
 
         public const string ClaimKeyPrefix = "NB-";
-        public const string TenantIDHeaderKey = "X-Tenant";
         public const string IDTokenHeaderKey = "X-IDT";
     }
 }

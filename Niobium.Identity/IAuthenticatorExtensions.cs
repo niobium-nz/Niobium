@@ -64,7 +64,19 @@ namespace Niobium.Identity
                 return null;
             }
 
-            string? id = await authenticator.GetClaimAsync(ClaimTypes.NameIdentifier, cancellationToken.Value);
+            string? id = await authenticator.GetClaimAsync(ClaimTypes.Sid, cancellationToken.Value);
+            return !string.IsNullOrWhiteSpace(id) && Guid.TryParse(id, out Guid result) ? result : null;
+        }
+        public static async Task<Guid?> GetTenantIDAsync(this IAuthenticator authenticator, CancellationToken? cancellationToken = null)
+        {
+            cancellationToken ??= CancellationToken.None;
+            bool authenticated = await authenticator.GetAuthenticateStatus(cancellationToken.Value);
+            if (!authenticated)
+            {
+                return null;
+            }
+
+            string? id = await authenticator.GetClaimAsync(ClaimTypes.GroupSid, cancellationToken.Value);
             return !string.IsNullOrWhiteSpace(id) && Guid.TryParse(id, out Guid result) ? result : null;
         }
     }

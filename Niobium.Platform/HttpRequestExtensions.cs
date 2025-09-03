@@ -1,7 +1,11 @@
+using Microsoft.AspNetCore.Components.RenderTree;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Headers;
 
@@ -122,10 +126,27 @@ namespace Niobium.Platform
             return request.GetRemoteIPs().FirstOrDefault();
         }
 
-        public static string? GetTenant(this HttpRequest request)
+        public static string? GetSourceHostname(this HttpRequest request)
         {
-            string? referer = request.Headers.Referer.SingleOrDefault();
-            return referer != null && Uri.TryCreate(referer, UriKind.Absolute, out Uri? refererUri) ? (refererUri?.Host.ToLowerInvariant()) : null;
+            string? origin = request.Headers.Origin.SingleOrDefault();
+            origin ??= request.Headers.Referer.SingleOrDefault();
+            return origin != null && Uri.TryCreate(origin, UriKind.Absolute, out Uri? refererUri) ? (refererUri?.Host.ToLowerInvariant()) : null;
+        }
+
+        public static bool TryGetTenant(this HttpRequest request, IReadOnlyDictionary<string, string> tenantMapping, [NotNullWhen(true)] out Guid? tenant)
+        {
+            var origin = request.GetSourceHostname();
+            if (String.IsNullOrWhiteSpace(origin)
+                || !tenantMapping.TryGetValue(origin, out var t)
+                || !Guid.TryParse(t, out var id)
+                || id == Guid.Empty)
+            {
+                tenant = null;
+                return false;
+            }
+
+            tenant = id;
+            return true;
         }
 
         public static IActionResult MakeResponse(

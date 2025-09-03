@@ -10,7 +10,7 @@
 
         public PaymentOperationKind Operation { get; set; }
 
-        public string? Source { get; set; }
+        public string? Tenant { get; set; }
 
         public string? Order { get; set; }
 

@@ -68,7 +68,7 @@ namespace Niobium.Platform.Finance
                 Target = user.ToString(),
                 Channel = PaymentChannels.Cards,
                 Operation = PaymentOperationKind.Charge,
-                Source = req.Headers.Origin,
+                Tenant = req.GetSourceHostname(),
                 Order = order,
                 Amount = amount,
                 Currency = currency,

@@ -17,10 +17,14 @@ namespace Niobium.Platform.Identity
         {
             Dictionary<string, object> claims = new()
             {
-                { ClaimTypes.NameIdentifier, mainIdentity.Trim() },
                 { ClaimTypes.Sid, mainIdentity.Trim() },
                 { "kid", "0" }, // for security reasons, newer version of JWT library expects the KID claim exist when validating the token.
             };
+
+            if (!string.IsNullOrWhiteSpace(audience))
+            {
+                claims.Add(ClaimTypes.GroupSid, audience);
+            }
 
             if (entitlements != null)
             {
