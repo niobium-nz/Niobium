@@ -40,10 +40,10 @@ namespace Niobium.Platform.Profile
                 {
                     if (string.IsNullOrWhiteSpace(Options.Value.ProfileAppID))
                     {
-                        throw new NotSupportedException($"{Options.Value.ProfileAppID} must be configured in order to use Entra ID authentication based profile service.");
+                        throw new NotSupportedException($"{nameof(Options.Value.ProfileAppID)} must be configured in order to use Entra ID authentication based profile service.");
                     }
 
-                    DefaultAzureCredential credential = new();
+                    TokenCredential credential = Options.Value.TestMode ? new InteractiveBrowserCredential() : new DefaultAzureCredential();
                     token = await credential.GetTokenAsync(new TokenRequestContext([$"api://{Options.Value.ProfileAppID}/.default"]), cancellationToken);
                 }
             }

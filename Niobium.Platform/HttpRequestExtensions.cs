@@ -133,7 +133,7 @@ namespace Niobium.Platform
             return origin != null && Uri.TryCreate(origin, UriKind.Absolute, out Uri? refererUri) ? (refererUri?.Host.ToLowerInvariant()) : null;
         }
 
-        public static bool TryGetTenant(this HttpRequest request, IReadOnlyDictionary<string, string> tenantMapping, [NotNullWhen(true)] out Guid? tenant)
+        public static bool TryGetTenantFromRequest(this HttpRequest request, IReadOnlyDictionary<string, string> tenantMapping, [NotNullWhen(true)] out Guid? tenant)
         {
             var origin = request.GetSourceHostname();
             if (String.IsNullOrWhiteSpace(origin)

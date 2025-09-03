@@ -21,7 +21,11 @@ namespace Niobium.Platform.Profile
             bool isDevelopment = builder.Environment.IsDevelopment();
             Niobium.Profile.DependencyModule.AddProfile(
                 builder.Services,
-                builder.Configuration.GetSection(nameof(ProfileOptions)).Bind,
+                options => 
+                {
+                    builder.Configuration.GetSection(nameof(ProfileOptions)).Bind(options);
+                    options.TestMode = isDevelopment;
+                },
                 isDevelopment);
 
             if (useServicePrincipalAuthentication)
