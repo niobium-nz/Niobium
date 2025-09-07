@@ -6,7 +6,7 @@ namespace Niobium.Platform.Notification.Email
     {
         protected ILogger Logger { get; } = logger;
 
-        public async Task<bool> SendAsync(EmailAddress from, IEnumerable<string> recipients, string subject, string body, CancellationToken cancellationToken = default)
+        public async Task<bool> SendAsync(EmailAddress from, IEnumerable<EmailAddress> recipients, string subject, string body, CancellationToken cancellationToken = default)
         {
             from.Address = from.Address.Trim().ToLowerInvariant();
             if (!RegexUtilities.IsValidEmail(from.Address))
@@ -15,10 +15,11 @@ namespace Niobium.Platform.Notification.Email
                 return false;
             }
 
-            IEnumerable<string> tos = recipients.Select(r => r.Trim().ToLowerInvariant());
-            foreach (string? recipient in tos)
+            foreach (var recipient in recipients)
             {
-                if (!RegexUtilities.IsValidEmail(recipient))
+                recipient.Address = recipient.Address.Trim().ToLowerInvariant();
+
+                if (!RegexUtilities.IsValidEmail(recipient.Address))
                 {
                     logger.LogError($"Email address validation failed: {recipient}");
                     return false;
@@ -39,9 +40,9 @@ namespace Niobium.Platform.Notification.Email
             }
             body = body.Trim();
 
-            return await SendCoreAsync(from, tos, subject, body, cancellationToken);
+            return await SendCoreAsync(from, recipients, subject, body, cancellationToken);
         }
 
-        protected abstract Task<bool> SendCoreAsync(EmailAddress from, IEnumerable<string> recipients, string subject, string body, CancellationToken cancellationToken = default);
+        protected abstract Task<bool> SendCoreAsync(EmailAddress from, IEnumerable<EmailAddress> recipients, string subject, string body, CancellationToken cancellationToken = default);
     }
 }

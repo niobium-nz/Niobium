@@ -7,7 +7,7 @@ namespace Niobium.Messaging.ServiceBus
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddMessaging(this IServiceCollection services, Action<ServiceBusOptions>? options)
+        public static IServiceCollection AddMessaging(this IServiceCollection services, bool testMode = false, Action<ServiceBusOptions>? options = null)
         {
             if (loaded)
             {
@@ -16,27 +16,35 @@ namespace Niobium.Messaging.ServiceBus
 
             loaded = true;
 
-            services.AddMessaging();
+            Messaging.DependencyModule.AddMessaging(services);
             services.Configure<ServiceBusOptions>(o => options?.Invoke(o));
             services.AddTransient<AuthenticationBasedQueueFactory>();
-            services.AddTransient(typeof(IMessagingBroker<>), typeof(ServiceBusQueueBroker<>));
+
+            if (!testMode)
+            {
+                services.AddTransient(typeof(IMessagingBroker<>), typeof(ServiceBusQueueBroker<>));
+            }
 
             return services;
         }
 
-        public static IServiceCollection AddMessagingBroker<T>(this IServiceCollection services, Action<ServiceBusOptions>? options = null)
+        public static IServiceCollection AddMessagingBroker<T>(this IServiceCollection services, bool testMode = false, Action<ServiceBusOptions>? options = null)
             where T : class, IDomainEvent
         {
-            services.AddTransient<IMessagingBroker<T>>(sp =>
+            if (!testMode)
             {
-                AuthenticationBasedQueueFactory factory = sp.GetRequiredService<AuthenticationBasedQueueFactory>();
-                ServiceBusOptions config = new();
-                options?.Invoke(config);
-                factory.Configuration = config;
-                Lazy<IAuthenticator> authenticator = new(() => sp.GetRequiredService<IAuthenticator>());
-                ServiceBusQueueBroker<T> broker = new(factory, authenticator);
-                return broker;
-            });
+                services.AddTransient<IMessagingBroker<T>>(sp =>
+                {
+                    AuthenticationBasedQueueFactory factory = sp.GetRequiredService<AuthenticationBasedQueueFactory>();
+                    ServiceBusOptions config = new();
+                    options?.Invoke(config);
+                    factory.Configuration = config;
+                    Lazy<IAuthenticator> authenticator = new(() => sp.GetRequiredService<IAuthenticator>());
+                    ServiceBusQueueBroker<T> broker = new(factory, authenticator);
+                    return broker;
+                });
+            }
+            
             return services;
         }
     }

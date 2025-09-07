@@ -15,7 +15,7 @@ namespace Niobium.Platform.Notification.Email.Resend
         private const string JSON_CONTENT_TYPE = "application/json";
         private static readonly JsonSerializerOptions SERIALIZATION_OPTIONS = new(JsonSerializerDefaults.Web);
 
-        protected override async Task<bool> SendCoreAsync(EmailAddress from, IEnumerable<string> recipients, string subject, string body, CancellationToken cancellationToken = default)
+        protected override async Task<bool> SendCoreAsync(EmailAddress from, IEnumerable<EmailAddress> recipients, string subject, string body, CancellationToken cancellationToken = default)
         {
             string fromDomain = from.Address.Split('@')[1].Trim();
             if (string.IsNullOrWhiteSpace(fromDomain))
@@ -33,7 +33,7 @@ namespace Niobium.Platform.Notification.Email.Resend
                 From = string.IsNullOrWhiteSpace(from.DisplayName) ? from.Address : $"{from.DisplayName.Trim()} <{from.Address}>",
                 Html = body,
                 Subject = subject,
-                To = [.. recipients],
+                To = [.. recipients.Select(r => string.IsNullOrWhiteSpace(r.DisplayName) ? r.Address : $"{r.DisplayName.Trim()} <{r.Address}>")],
             });
 
             using HttpResponseMessage response = await httpClient.PostAsync("emails", new StringContent(json, Encoding.UTF8, JSON_CONTENT_TYPE), cancellationToken);

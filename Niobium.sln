@@ -37,8 +37,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Niobium.Platform.Identity",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Niobium.Platform.Notification", "Niobium.Platform.Notification\Niobium.Platform.Notification.csproj", "{4CE11963-1D68-4D1C-B4E3-7FFC0CED858C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Niobium.Platform.Locking", "Niobium.Platform.Locking\Niobium.Platform.Locking.csproj", "{9C826BB1-C70E-4BF3-9565-7A55E8FE3948}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Niobium.Platform.Speech", "Niobium.Platform.Speech\Niobium.Platform.Speech.csproj", "{DF6CA7B1-D2CB-4B33-909C-388322D28DC3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Niobium.Platform.OpenAI", "Niobium.Platform.OpenAI\Niobium.Platform.OpenAI.csproj", "{3E2A4FD5-376C-4585-813C-E741EB45D635}"
@@ -253,18 +251,6 @@ Global
 		{4CE11963-1D68-4D1C-B4E3-7FFC0CED858C}.Release|x64.Build.0 = Release|Any CPU
 		{4CE11963-1D68-4D1C-B4E3-7FFC0CED858C}.Release|x86.ActiveCfg = Release|Any CPU
 		{4CE11963-1D68-4D1C-B4E3-7FFC0CED858C}.Release|x86.Build.0 = Release|Any CPU
-		{9C826BB1-C70E-4BF3-9565-7A55E8FE3948}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9C826BB1-C70E-4BF3-9565-7A55E8FE3948}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9C826BB1-C70E-4BF3-9565-7A55E8FE3948}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{9C826BB1-C70E-4BF3-9565-7A55E8FE3948}.Debug|x64.Build.0 = Debug|Any CPU
-		{9C826BB1-C70E-4BF3-9565-7A55E8FE3948}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{9C826BB1-C70E-4BF3-9565-7A55E8FE3948}.Debug|x86.Build.0 = Debug|Any CPU
-		{9C826BB1-C70E-4BF3-9565-7A55E8FE3948}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9C826BB1-C70E-4BF3-9565-7A55E8FE3948}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9C826BB1-C70E-4BF3-9565-7A55E8FE3948}.Release|x64.ActiveCfg = Release|Any CPU
-		{9C826BB1-C70E-4BF3-9565-7A55E8FE3948}.Release|x64.Build.0 = Release|Any CPU
-		{9C826BB1-C70E-4BF3-9565-7A55E8FE3948}.Release|x86.ActiveCfg = Release|Any CPU
-		{9C826BB1-C70E-4BF3-9565-7A55E8FE3948}.Release|x86.Build.0 = Release|Any CPU
 		{DF6CA7B1-D2CB-4B33-909C-388322D28DC3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DF6CA7B1-D2CB-4B33-909C-388322D28DC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DF6CA7B1-D2CB-4B33-909C-388322D28DC3}.Debug|x64.ActiveCfg = Debug|Any CPU

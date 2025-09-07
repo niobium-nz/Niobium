@@ -15,7 +15,8 @@ namespace Niobium.Platform.ServiceBus
         public static void AddMessaging(this IHostApplicationBuilder builder, Action<ServiceBusOptions>? options = null)
         {
             options ??= builder.Configuration.GetSection(nameof(ServiceBusOptions)).Bind;
-            builder.Services.AddMessaging(options);
+            var testMode = builder.Configuration.IsDevelopmentEnvironment();
+            builder.Services.AddMessaging(testMode: testMode, options: options);
 
             if (builder.Configuration.IsDevelopmentEnvironment())
             {
@@ -26,7 +27,7 @@ namespace Niobium.Platform.ServiceBus
             }
         }
 
-        public static IServiceCollection AddMessaging(this IServiceCollection services, Action<ServiceBusOptions>? options)
+        public static IServiceCollection AddMessaging(this IServiceCollection services, bool testMode = false, Action<ServiceBusOptions>? options = null)
         {
             if (loaded)
             {
@@ -36,7 +37,7 @@ namespace Niobium.Platform.ServiceBus
             loaded = true;
 
             services.AddPlatform();
-            return Messaging.ServiceBus.DependencyModule.AddMessaging(services, options);
+            return Messaging.ServiceBus.DependencyModule.AddMessaging(services, testMode: testMode, options: options);
         }
 
         public static IServiceCollection AddServiceBusResourceTokenSupport(this IHostApplicationBuilder builder)

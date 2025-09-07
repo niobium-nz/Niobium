@@ -6,7 +6,7 @@ namespace Niobium.Messaging
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddMessaging(this IServiceCollection services)
+        public static IServiceCollection AddMessaging(this IServiceCollection services, bool testMode = false)
         {
             if (loaded)
             {
@@ -16,6 +16,11 @@ namespace Niobium.Messaging
             loaded = true;
 
             services.AddTransient(typeof(IExternalEventAdaptor<,>), typeof(ExternalEventAdaptor<,>));
+
+            if (testMode)
+            {
+                services.AddTransient(typeof(IMessagingBroker<>), typeof(DevelopmentMessagingBroker<>));
+            }
 
             return services;
         }
