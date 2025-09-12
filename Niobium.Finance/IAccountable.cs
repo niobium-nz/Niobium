@@ -8,11 +8,11 @@
 
         Task<TransactionRequest> BuildTransactionAsync(long delta, int reason, string remark, string reference, string? id = null, string? corelation = null);
 
-        Task<IEnumerable<Transaction>> MakeTransactionAsync(long delta, int reason, string remark, string reference, string? id = null, string? corelation = null);
+        Task<IEnumerable<Transaction>> MakeTransactionAsync(long delta, int reason, string remark, string reference, string? id = null, string? corelation = null, bool replaceIfExist = false);
 
-        Task<IEnumerable<Transaction>> MakeTransactionAsync(TransactionRequest request);
+        Task<IEnumerable<Transaction>> MakeTransactionAsync(TransactionRequest request, bool replaceIfExist = false);
 
-        Task<IEnumerable<Transaction>> MakeTransactionAsync(IEnumerable<TransactionRequest> requests);
+        Task<IEnumerable<Transaction>> MakeTransactionAsync(IEnumerable<TransactionRequest> requests, bool replaceIfExist = false);
 
         Task<Transaction?> GetTransactionAsync(DateTimeOffset id);
 

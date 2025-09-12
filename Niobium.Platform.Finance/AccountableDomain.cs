@@ -120,18 +120,18 @@ namespace Niobium.Platform.Finance
         }
 
         public async Task<IEnumerable<Transaction>> MakeTransactionAsync(
-            long delta, int reason, string remark, string reference, string? id = null, string? corelation = null)
+            long delta, int reason, string remark, string reference, string? id = null, string? corelation = null, bool replaceIfExist = false)
         {
-            return await MakeTransactionAsync(new[] { await BuildTransactionAsync(delta, reason, remark, reference, id, corelation) });
+            return await MakeTransactionAsync(new[] { await BuildTransactionAsync(delta, reason, remark, reference, id, corelation) }, replaceIfExist: replaceIfExist);
         }
 
-        public async Task<IEnumerable<Transaction>> MakeTransactionAsync(TransactionRequest request)
+        public async Task<IEnumerable<Transaction>> MakeTransactionAsync(TransactionRequest request, bool replaceIfExist = false)
         {
-            return await MakeTransactionAsync(new[] { request });
+            return await MakeTransactionAsync(new[] { request }, replaceIfExist: replaceIfExist);
         }
 
         //TODO (5he11) 此方法要加锁并且实现事务
-        public async Task<IEnumerable<Transaction>> MakeTransactionAsync(IEnumerable<TransactionRequest> requests)
+        public async Task<IEnumerable<Transaction>> MakeTransactionAsync(IEnumerable<TransactionRequest> requests, bool replaceIfExist = false)
         {
             List<Transaction> transactions = [];
             int count = 0;
@@ -158,7 +158,7 @@ namespace Niobium.Platform.Finance
                 count++;
             }
 
-            return await MakeTransactionAsync(transactions);
+            return await MakeTransactionAsync(transactions, replaceIfExist: replaceIfExist);
         }
 
         public async Task<IEnumerable<Transaction>> MakeTransactionAsync(

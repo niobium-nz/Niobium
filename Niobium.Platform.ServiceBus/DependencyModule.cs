@@ -15,10 +15,10 @@ namespace Niobium.Platform.ServiceBus
         public static void AddMessaging(this IHostApplicationBuilder builder, Action<ServiceBusOptions>? options = null)
         {
             options ??= builder.Configuration.GetSection(nameof(ServiceBusOptions)).Bind;
-            var testMode = builder.Configuration.IsDevelopmentEnvironment();
+            var testMode = builder.Configuration.IsPreProductionEnvironment();
             builder.Services.AddMessaging(testMode: testMode, options: options);
 
-            if (builder.Configuration.IsDevelopmentEnvironment())
+            if (builder.Configuration.IsPreProductionEnvironment())
             {
                 builder.Services.PostConfigure<ServiceBusOptions>(options =>
                 {

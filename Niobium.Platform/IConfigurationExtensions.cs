@@ -4,12 +4,17 @@ namespace Niobium.Platform
 {
     public static class IConfigurationExtensions
     {
-        public static bool IsDevelopmentEnvironment(this IConfiguration configuration)
+        public static bool IsPreProductionEnvironment(this IConfiguration configuration)
+        {
+            return configuration.IsDevelopmentEnvironment() || configuration.IsStagingEnvironment();
+        }
+
+        private static bool IsDevelopmentEnvironment(this IConfiguration configuration)
         {
             return configuration.GetValue<string>(Constants.ServiceEnvironment) == Constants.DevelopmentEnvironment;
         }
 
-        public static bool IsStagingEnvironment(this IConfiguration configuration)
+        private static bool IsStagingEnvironment(this IConfiguration configuration)
         {
             return configuration.GetValue<string>(Constants.ServiceEnvironment) == Constants.StagingEnvironment;
         }

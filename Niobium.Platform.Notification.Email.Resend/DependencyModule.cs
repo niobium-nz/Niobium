@@ -13,7 +13,7 @@ namespace Niobium.Platform.Notification.Email.Resend
             builder.Services.AddNotification(builder.Configuration.GetSection(nameof(ResendServiceOptions)).Bind);
 
 
-            if (builder.Configuration.IsDevelopmentEnvironment())
+            if (builder.Configuration.IsPreProductionEnvironment())
             {
                 builder.Services.AddTransient<IEmailNotificationClient, DevelopmentEmailNotificationClient>();
             }

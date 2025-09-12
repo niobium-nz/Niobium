@@ -14,9 +14,9 @@ namespace Niobium.Platform.Captcha.ReCaptcha
         private const string recaptchaAPI = "https://www.google.com/recaptcha/api/siteverify";
 
         public virtual async Task<bool> AssessAsync(
-            string token, 
+            string token,
             string? requestID = null,
-            string? hostname = null, 
+            string? hostname = null,
             string? clientIP = null,
             bool throwsExceptionWhenFail = true,
             CancellationToken cancellationToken = default)
@@ -39,8 +39,10 @@ namespace Niobium.Platform.Captcha.ReCaptcha
                     ?? throw new ApplicationException(Niobium.InternalError.BadRequest, "unable to get client IP from request.");
             }
 
-            string secret = options.Value.Secrets[hostname]
-                ?? throw new ApplicationException(Niobium.InternalError.InternalServerError, $"Missing tenant secret: {hostname}");
+            if (!options.Value.Secrets.TryGetValue(hostname, out string? secret))
+            {
+                throw new ApplicationException(Niobium.InternalError.InternalServerError, $"Missing tenant secret: {hostname}");
+            }
 
             List<KeyValuePair<string, string>> parameters = new([
                 new KeyValuePair<string, string>("secret", secret),

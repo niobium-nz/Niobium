@@ -18,7 +18,7 @@ namespace Niobium.Platform.Captcha.ReCaptcha
 
             builder.Services.AddCaptcha(builder.Configuration.GetSection(nameof(CaptchaOptions)).Bind);
 
-            if (builder.Configuration.IsDevelopmentEnvironment())
+            if (builder.Configuration.IsPreProductionEnvironment())
             {
                 builder.Services.AddTransient<IVisitorRiskAssessor, DevelopmentRiskAccessor>();
             }

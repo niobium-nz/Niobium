@@ -62,7 +62,7 @@ namespace Niobium.Messaging.ServiceBus
             {
                 return clients.GetOrAdd(Configuration.FullyQualifiedNamespace, new ServiceBusClient(
                     Configuration.FullyQualifiedNamespace,
-                    Configuration.EnableInteractiveIdentity ? new InteractiveBrowserCredential() : new DefaultAzureCredential(),
+                    new DefaultAzureCredential(includeInteractiveCredentials: Configuration.EnableInteractiveIdentity),
                     options: CreateOptions(Configuration)));
             }
             else

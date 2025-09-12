@@ -43,7 +43,7 @@ namespace Niobium.Platform.Profile
                         throw new NotSupportedException($"{nameof(Options.Value.ProfileAppID)} must be configured in order to use Entra ID authentication based profile service.");
                     }
 
-                    TokenCredential credential = Options.Value.TestMode ? new InteractiveBrowserCredential() : new DefaultAzureCredential();
+                    TokenCredential credential = new DefaultAzureCredential(includeInteractiveCredentials: Options.Value.TestMode);
                     token = await credential.GetTokenAsync(new TokenRequestContext([$"api://{Options.Value.ProfileAppID}/.default"]), cancellationToken);
                 }
             }

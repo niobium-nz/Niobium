@@ -16,7 +16,7 @@ namespace Niobium.Messaging.ServiceBus
 
             loaded = true;
 
-            Messaging.DependencyModule.AddMessaging(services);
+            Messaging.DependencyModule.AddMessaging(services, testMode: testMode);
             services.Configure<ServiceBusOptions>(o => options?.Invoke(o));
             services.AddTransient<AuthenticationBasedQueueFactory>();
 
