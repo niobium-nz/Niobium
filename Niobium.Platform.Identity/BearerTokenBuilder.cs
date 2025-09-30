@@ -10,6 +10,7 @@ namespace Niobium.Platform.Identity
     internal sealed class BearerTokenBuilder(IOptions<IdentityServiceOptions> options) : ITokenBuilder
     {
         public Task<string> BuildAsync(
+            Guid tenant,
             string mainIdentity,
             IEnumerable<KeyValuePair<string, string>>? entitlements = null,
             string? audience = null,
@@ -18,6 +19,7 @@ namespace Niobium.Platform.Identity
             Dictionary<string, object> claims = new()
             {
                 { ClaimTypes.Sid, mainIdentity.Trim() },
+                { ClaimTypes.GroupSid, tenant.ToString() },
                 { "kid", "0" }, // for security reasons, newer version of JWT library expects the KID claim exist when validating the token.
             };
 

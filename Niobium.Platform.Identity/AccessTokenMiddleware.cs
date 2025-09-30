@@ -74,7 +74,7 @@ namespace Niobium.Platform.Identity
                 .Select(e => new KeyValuePair<string, string>(e.Key, string.Join(Entitlements.ValueSplitor[0], e.Select(x => x.Permission))))];
 
             string sid = user.ToKey();
-            string token = await tokenBuilder.BuildAsync(sid, claims, roles: roles);
+            string token = await tokenBuilder.BuildAsync(tenant, sid, claims, roles: roles);
             req.DeliverToken(token, AuthenticationScheme.BearerLoginScheme);
             context.Response.StatusCode = (int)HttpStatusCode.OK;
         }
