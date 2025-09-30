@@ -33,5 +33,17 @@ namespace Niobium.Database.StorageTable
             });
             return services;
         }
+
+        public static IServiceCollection AddRepository<T>(this IServiceCollection services, string tableName)
+             where T : class, new()
+        {
+            services.AddTransient<IRepository<T>>(sp =>
+            {
+                CloudTableRepository<T> repo = sp.GetRequiredService<CloudTableRepository<T>>();
+                repo.TableName = tableName.Trim();
+                return repo;
+            });
+            return services;
+        }
     }
 }
