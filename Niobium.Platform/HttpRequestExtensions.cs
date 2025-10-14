@@ -78,39 +78,45 @@ namespace Niobium.Platform
         public static List<string> GetRemoteIPs(this HttpRequest request)
         {
             List<string> result = [];
-
-            if (request.Headers.TryGetValue("X-Forwarded-For", out StringValues values))
+            if (request.Headers.TryGetValue("CF-Connecting-IP", out var ip))
             {
-                result.AddRange(values.Where(v => !string.IsNullOrWhiteSpace(v))
-                    .SelectMany(v => v!.Split(commaSeparator, StringSplitOptions.RemoveEmptyEntries))
-                    .Select(v => v.Split(colonSeparator, StringSplitOptions.RemoveEmptyEntries).First()));
+                result.Add(ip.ToString());
             }
-
-            if (request.Headers.TryGetValue("x-forwarded-for", out StringValues values2))
+            else
             {
-                result.AddRange(values2.Where(v => !string.IsNullOrWhiteSpace(v))
-                    .SelectMany(v => v!.Split(commaSeparator, StringSplitOptions.RemoveEmptyEntries))
-                    .Select(v => v.Split(colonSeparator, StringSplitOptions.RemoveEmptyEntries).First()));
-            }
+                if (request.Headers.TryGetValue("X-Forwarded-For", out StringValues values))
+                {
+                    result.AddRange(values.Where(v => !string.IsNullOrWhiteSpace(v))
+                        .SelectMany(v => v!.Split(commaSeparator, StringSplitOptions.RemoveEmptyEntries))
+                        .Select(v => v.Split(colonSeparator, StringSplitOptions.RemoveEmptyEntries).First()));
+                }
 
-            if (request.Headers.TryGetValue("CLIENT-IP", out StringValues values3))
-            {
-                result.AddRange(values3.Where(v => !string.IsNullOrWhiteSpace(v))
-                    .SelectMany(v => v!.Split(commaSeparator, StringSplitOptions.RemoveEmptyEntries))
-                    .Select(v => v.Split(colonSeparator, StringSplitOptions.RemoveEmptyEntries).First()));
-            }
+                if (request.Headers.TryGetValue("x-forwarded-for", out StringValues values2))
+                {
+                    result.AddRange(values2.Where(v => !string.IsNullOrWhiteSpace(v))
+                        .SelectMany(v => v!.Split(commaSeparator, StringSplitOptions.RemoveEmptyEntries))
+                        .Select(v => v.Split(colonSeparator, StringSplitOptions.RemoveEmptyEntries).First()));
+                }
 
-            if (request.Headers.TryGetValue("client-ip", out StringValues values4))
-            {
-                result.AddRange(values4.Where(v => !string.IsNullOrWhiteSpace(v))
-                    .SelectMany(v => v!.Split(commaSeparator, StringSplitOptions.RemoveEmptyEntries))
-                    .Select(v => v.Split(colonSeparator, StringSplitOptions.RemoveEmptyEntries).First()));
-            }
+                if (request.Headers.TryGetValue("CLIENT-IP", out StringValues values3))
+                {
+                    result.AddRange(values3.Where(v => !string.IsNullOrWhiteSpace(v))
+                        .SelectMany(v => v!.Split(commaSeparator, StringSplitOptions.RemoveEmptyEntries))
+                        .Select(v => v.Split(colonSeparator, StringSplitOptions.RemoveEmptyEntries).First()));
+                }
 
-            result = [.. result.Where(i => IPv4ReservedIPPrefix.All(p => !i.StartsWith(p, StringComparison.InvariantCulture)))];
-            if (request.HttpContext.Connection.RemoteIpAddress != null)
-            {
-                result.Add(request.HttpContext.Connection.RemoteIpAddress.ToString());
+                if (request.Headers.TryGetValue("client-ip", out StringValues values4))
+                {
+                    result.AddRange(values4.Where(v => !string.IsNullOrWhiteSpace(v))
+                        .SelectMany(v => v!.Split(commaSeparator, StringSplitOptions.RemoveEmptyEntries))
+                        .Select(v => v.Split(colonSeparator, StringSplitOptions.RemoveEmptyEntries).First()));
+                }
+
+                result = [.. result.Where(i => IPv4ReservedIPPrefix.All(p => !i.StartsWith(p, StringComparison.InvariantCulture)))];
+                if (request.HttpContext.Connection.RemoteIpAddress != null)
+                {
+                    result.Add(request.HttpContext.Connection.RemoteIpAddress.ToString());
+                }
             }
 
             if (result.Count > 0)
