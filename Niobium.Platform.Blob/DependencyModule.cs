@@ -16,6 +16,12 @@ namespace Niobium.Platform.Blob
         public static void AddFile(this IHostApplicationBuilder builder)
         {
             builder.Services.AddFile(builder.Configuration.GetSection(nameof(StorageBlobOptions)).Bind);
+
+            bool isDevelopment = builder.Configuration.IsPreProductionEnvironment();
+            if (isDevelopment)
+            {
+                builder.Services.PostConfigure<StorageBlobOptions>(opt => opt.EnableInteractiveIdentity = true);
+            }
         }
 
         public static IServiceCollection AddFile(this IServiceCollection services, Action<StorageBlobOptions>? options = null)
