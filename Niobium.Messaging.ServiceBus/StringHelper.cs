@@ -2,9 +2,9 @@
 
 namespace Niobium.Messaging.ServiceBus
 {
-    internal sealed class StringHelper
+    public static class StringHelper
     {
-        public static string ToSnakeCase(string text)
+        public static string ToSnakeCase(this string text)
         {
             if (text.Length < 2)
             {
@@ -29,7 +29,7 @@ namespace Niobium.Messaging.ServiceBus
             return sb.ToString();
         }
 
-        public static string ToSnakeCaseKeepCommonAbbreviations(string text)
+        public static string ToSnakeCaseKeepCommonAbbreviations(this string text)
         {
             if (string.IsNullOrEmpty(text))
             {
