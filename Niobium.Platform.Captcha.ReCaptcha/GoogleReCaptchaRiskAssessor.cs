@@ -73,7 +73,7 @@ namespace Niobium.Platform.Captcha.ReCaptcha
             bool lowrisk = result.Success && result.Hostname.Equals(hostname, StringComparison.OrdinalIgnoreCase);
             if (throwsExceptionWhenFail && !lowrisk)
             {
-                logger?.LogWarning($"{clientIP} is considered high risk for request {requestID}");
+                logger?.LogWarning($"{clientIP} is considered high risk for request {requestID}: {respbody}");
                 throw new UnauthorizedAccessException();
             }
 
