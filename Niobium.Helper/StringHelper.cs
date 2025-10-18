@@ -70,5 +70,37 @@ namespace Niobium
         {
             return IsChineseOrEnglishCharacter(input) || IsNumberCharacter(input);
         }
+
+        public static string ToSnakeCase(this string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return string.Empty;
+            }
+
+            var sb = new StringBuilder(text.Length * 2);
+            sb.Append(char.ToUpperInvariant(text[0]));
+
+            for (int i = 1; i < text.Length; i++)
+            {
+                char current = text[i];
+                char previous = text[i - 1];
+                char? next = i + 1 < text.Length ? text[i + 1] : (char?)null;
+
+                bool isUpper = char.IsUpper(current);
+                bool prevIsUpper = char.IsUpper(previous);
+                bool prevIsLower = char.IsLower(previous);
+                bool nextIsLower = next.HasValue && char.IsLower(next.Value);
+
+                if (isUpper && (prevIsLower || (prevIsUpper && nextIsLower)))
+                {
+                    sb.Append('_');
+                }
+
+                sb.Append(char.ToUpperInvariant(current));
+            }
+
+            return sb.ToString();
+        }
     }
 }
