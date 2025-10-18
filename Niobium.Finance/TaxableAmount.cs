@@ -49,5 +49,9 @@ namespace Niobium.Finance
         {
             return !(left == right);
         }
+
+        public static TaxableAmount Parse(Tax tax, Amount amount) => new(tax, amount);
+
+        public static TaxableAmount Parse(Amount amount) => new(amount);
     }
 }

@@ -54,5 +54,7 @@ namespace Niobium.Finance
         {
             return Math.Round(tax.Rate / 10000d, 2);
         }
+
+        public static Tax Parse(long rate, TaxKind kind) => new(rate, kind);
     }
 }

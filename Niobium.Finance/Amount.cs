@@ -30,12 +30,12 @@ namespace Niobium.Finance
             Cents = (long)Math.Round(dollars * 100, 0);
         }
 
-        public Amount(double cents, Currency currency) : this(cents)
+        public Amount(double dollars, Currency currency) : this(dollars)
         {
             Currency = currency;
         }
 
-        public Amount(double cents, string currency) : this(cents, Currency.Parse(currency))
+        public Amount(double dollars, string currency) : this(dollars, Currency.Parse(currency))
         {
         }
 
@@ -83,5 +83,17 @@ namespace Niobium.Finance
         {
             return Math.Round(input.Cents / 100d, 2);
         }
+
+        public static Amount Parse(long cents) => new(cents);
+
+        public static Amount Parse(long cents, Currency currency) => new(cents, currency);
+
+        public static Amount Parse(long cents, string currency) => new(cents, currency);
+
+        public static Amount Parse(double dollars) => new(dollars);
+
+        public static Amount Parse(double dollars, Currency currency) => new(dollars, currency);
+
+        public static Amount Parse(double dollars, string currency) => new(dollars, currency);
     }
 }
