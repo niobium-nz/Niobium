@@ -9,20 +9,31 @@ namespace Niobium.Finance
         {
         }
 
-        public TaxableAmount(Amount amount)
+        public TaxableAmount(Amount amountIncludeTax)
         {
-            Amount = amount;
+            Amount = amountIncludeTax;
         }
 
-        public TaxableAmount(Tax tax, Amount amount)
-            : this(amount)
+        public TaxableAmount(Tax tax, Amount amountIncludeTax)
+            : this(amountIncludeTax)
         {
             Tax = tax;
         }
 
+        /// <summary>
+        /// The tax applied to the amount.
+        /// </summary>
         public Tax Tax { get; set; } = Tax.None;
 
+        /// <summary>
+        /// The amount including tax.
+        /// </summary>
         public Amount Amount { get; set; } = Amount.Zero;
+
+        /// <summary>
+        /// The amount before tax.
+        /// </summary>
+        public readonly Amount AmountBeforeTax => Amount.Parse(Tax.FigureCentsBeforeTax(Amount), Amount.Currency);
 
         public override bool Equals(object? obj)
         {
@@ -50,8 +61,8 @@ namespace Niobium.Finance
             return !(left == right);
         }
 
-        public static TaxableAmount Parse(Tax tax, Amount amount) => new(tax, amount);
+        public static TaxableAmount Parse(Tax tax, Amount amountIncludeTax) => new(tax, amountIncludeTax);
 
-        public static TaxableAmount Parse(Amount amount) => new(amount);
+        public static TaxableAmount Parse(Amount amountIncludeTax) => new(amountIncludeTax);
     }
 }

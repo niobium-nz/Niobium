@@ -19,6 +19,12 @@ namespace Niobium.Finance
 
         public TaxKind Kind { get; set; } = TaxKind.None;
 
+        public long FigureTax(long centsBeforeTax) => (long)((centsBeforeTax * Rate) / 10000m).ChineseRound(0);
+
+        public long FigureTotal(long centsBeforeTax) => centsBeforeTax + FigureTax(centsBeforeTax);
+
+        public long FigureCentsBeforeTax(long centsIncludeTax) => (long)((centsIncludeTax * 10000) / (10000m + Rate)).ChineseRound(0);
+
         public override bool Equals(object? obj)
         {
             return obj is Tax tax && Equals(tax);
