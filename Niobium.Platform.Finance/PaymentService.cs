@@ -5,11 +5,11 @@ namespace Niobium.Platform.Finance
     public class PaymentService(Lazy<IEnumerable<IPaymentProcessor>> processors, IEnumerable<IDomainEventHandler<IDomain<Transaction>>> eventHandlers)
         : IPaymentService
     {
-        public virtual async Task<OperationResult<ChargeResult>> RetrieveChargeAsync(string transaction, PaymentChannels paymentChannel)
+        public virtual async Task<OperationResult<ChargeResult>> RetrieveChargeAsync(string tenant, string transaction, PaymentChannels paymentChannel)
         {
             foreach (IPaymentProcessor processor in processors.Value)
             {
-                OperationResult<ChargeResult> result = await processor.RetrieveChargeAsync(transaction, paymentChannel);
+                OperationResult<ChargeResult> result = await processor.RetrieveChargeAsync(tenant, transaction, paymentChannel);
                 if (result.Code == Niobium.InternalError.NotAcceptable)
                 {
                     continue;
@@ -37,11 +37,11 @@ namespace Niobium.Platform.Finance
             throw new NotSupportedException();
         }
 
-        public virtual async Task<OperationResult<ChargeResult>> ReportAsync(string notificationJSON)
+        public virtual async Task<OperationResult<ChargeResult>> ReportAsync(string tenant, string notificationJSON)
         {
             foreach (IPaymentProcessor processor in processors.Value)
             {
-                OperationResult<ChargeResult> result = await processor.ReportAsync(notificationJSON);
+                OperationResult<ChargeResult> result = await processor.ReportAsync(tenant, notificationJSON);
                 if (result.Code == Niobium.InternalError.NotAcceptable)
                 {
                     continue;

@@ -6,7 +6,7 @@ using PaymentMethod = Niobium.Finance.PaymentMethod;
 
 namespace Niobium.Platform.Finance.Stripe
 {
-    public class StripePaymentProcessor(
+    internal sealed class StripePaymentProcessor(
         Lazy<IRepository<PaymentMethod>> paymentRepo,
         Lazy<IRepository<Transaction>> transactionRepo,
         Lazy<StripeIntegration> stripeIntegration,
@@ -17,7 +17,7 @@ namespace Niobium.Platform.Finance.Stripe
         private static readonly TimeSpan ValidTransactionMaxDelay = TimeSpan.FromMinutes(5);
         public const string PaymentInfoSpliter = "|";
 
-        public virtual async Task<OperationResult<ChargeResponse>> ChargeAsync(ChargeRequest request)
+        public async Task<OperationResult<ChargeResponse>> ChargeAsync(ChargeRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
 
@@ -33,7 +33,7 @@ namespace Niobium.Platform.Finance.Stripe
                     return new OperationResult<ChargeResponse>(Niobium.InternalError.BadRequest, "Account information is required for validation.");
                 }
 
-                OperationResult<SetupIntent> instruction = await stripeIntegration.Value.CreateSetupIntentAsync((Guid)request.Account);
+                OperationResult<SetupIntent> instruction = await stripeIntegration.Value.CreateSetupIntentAsync(request.Tenant, (Guid)request.Account);
                 return !instruction.IsSuccess
                     ? new OperationResult<ChargeResponse>(instruction)
                     : new OperationResult<ChargeResponse>(
@@ -55,7 +55,7 @@ namespace Niobium.Platform.Finance.Stripe
                     return new OperationResult<ChargeResponse>(Niobium.InternalError.BadRequest, "Account information is required for refund operation.");
                 }
 
-                OperationResult<Refund> transaction = await stripeIntegration.Value.RefundAsync((string)request.Account, request.Amount);
+                OperationResult<Refund> transaction = await stripeIntegration.Value.RefundAsync(request.Tenant, (string)request.Account, request.Amount);
                 if (!transaction.IsSuccess)
                 {
                     return new OperationResult<ChargeResponse>(transaction);
@@ -73,7 +73,7 @@ namespace Niobium.Platform.Finance.Stripe
                         return new OperationResult<ChargeResponse>(Niobium.InternalError.BadRequest, "Account information is required for completion operation.");
                     }
 
-                    transaction = await stripeIntegration.Value.CompleteAsync((string)request.Account, request.Amount);
+                    transaction = await stripeIntegration.Value.CompleteAsync(request.Tenant, (string)request.Account, request.Amount);
                     if (!transaction.IsSuccess)
                     {
                         return new OperationResult<ChargeResponse>(transaction);
@@ -87,7 +87,7 @@ namespace Niobium.Platform.Finance.Stripe
                         return new OperationResult<ChargeResponse>(Niobium.InternalError.BadRequest, "Account information is required for void operation.");
                     }
 
-                    transaction = await stripeIntegration.Value.VoidAsync((string)request.Account);
+                    transaction = await stripeIntegration.Value.VoidAsync(request.Tenant, (string)request.Account);
                     if (!transaction.IsSuccess)
                     {
                         return new OperationResult<ChargeResponse>(transaction);
@@ -122,13 +122,13 @@ namespace Niobium.Platform.Finance.Stripe
                         }
 
                         transaction = await stripeIntegration.Value.AuthorizeAsync(
+                            request.Tenant,
                             request.TargetKind,
                             request.Target,
                             request.Currency,
                             request.Amount,
                             order: request.Order,
                             reference: request.Reference,
-                            tenant: request.Tenant,
                             stripeCustomerID: stripeCustomer,
                             stripePaymentMethodID: stripePaymentMethod);
                         if (!transaction.IsSuccess)
@@ -140,13 +140,13 @@ namespace Niobium.Platform.Finance.Stripe
                     else if (request.Operation == PaymentOperationKind.Charge)
                     {
                         transaction = await stripeIntegration.Value.ChargeAsync(
+                            request.Tenant,
                             request.TargetKind,
                             request.Target,
                             request.Currency,
                             request.Amount,
                             order: request.Order,
                             reference: request.Reference,
-                            tenant: request.Tenant,
                             stripeCustomerID: stripeCustomer,
                             stripePaymentMethodID: stripePaymentMethod);
                         if (!transaction.IsSuccess)
@@ -197,7 +197,7 @@ namespace Niobium.Platform.Finance.Stripe
             return new OperationResult<ChargeResponse>(result);
         }
 
-        public virtual async Task<OperationResult<ChargeResult>> ReportAsync(string notificationJSON)
+        public async Task<OperationResult<ChargeResult>> ReportAsync(string tenant, string notificationJSON)
         {
             if (string.IsNullOrWhiteSpace(notificationJSON))
             {
@@ -213,7 +213,7 @@ namespace Niobium.Platform.Finance.Stripe
 
             if (r.Type == StripeReport.TypeSetup)
             {
-                SetupIntent setup = await StripeIntegration.RetriveSetupIntentAsync(r.Data.Object.ID);
+                SetupIntent setup = await stripeIntegration.Value.RetriveSetupIntentAsync(tenant, r.Data.Object.ID);
                 if (setup == null)
                 {
                     return new OperationResult<ChargeResult>(Niobium.InternalError.NotFound);
@@ -235,7 +235,7 @@ namespace Niobium.Platform.Finance.Stripe
                 }
 
                 string user = setup.Metadata[Constants.MetadataIntentUserID];
-                global::Stripe.PaymentMethod pm = await StripeIntegration.RetrivePaymentMethodAsync(setup.PaymentMethodId);
+                global::Stripe.PaymentMethod pm = await stripeIntegration.Value.RetrivePaymentMethodAsync(tenant, setup.PaymentMethodId);
                 string pmkey = $"{setup.CustomerId}{PaymentInfoSpliter}{setup.PaymentMethodId}";
                 await paymentRepo.Value.CreateAsync(new PaymentMethod
                 {
@@ -267,14 +267,20 @@ namespace Niobium.Platform.Finance.Stripe
             // TODO (5he11) 这里要挂个HOOK，让外边可以根据Transaction.Reference（订单号）更新订单上边的Transaction字段；上边操作transaction的其实应该按照status决定删除，还是不管，还是插入
             if (r.Type == StripeReport.TypeCharge)
             {
-                Charge charge = await StripeIntegration.RetriveChargeAsync(r.Data.Object.ID);
+                Charge charge = await stripeIntegration.Value.RetriveChargeAsync(tenant, r.Data.Object.ID);
                 ChargeTargetKind targetKind = (ChargeTargetKind)int.Parse(charge.Metadata[Constants.MetadataTargetKindKey]);
                 string target = charge.Metadata[Constants.MetadataTargetKey];
                 charge.Metadata.TryGetValue(Constants.MetadataOrderKey, out string? order);
-                charge.Metadata.TryGetValue(Constants.MetadataTenantKey, out string? tenant);
                 string paymentHash = charge.Metadata[Constants.MetadataHashKey];
-                string valueToHash = $"{tenant ?? string.Empty}{target}{order ?? string.Empty}";
-                string serverHash = SHA.SHA256Hash(valueToHash, options.Value.SecretHashKey);
+                string valueToHash = $"{tenant}{target}{order ?? string.Empty}";
+
+                if (!options.Value.Hashes.TryGetValue(tenant, out var hashKey))
+                {
+                    logger.LogError($"No hash key configured for tenant {tenant}.");
+                    return new OperationResult<ChargeResult>(Niobium.InternalError.InternalServerError);
+                }
+
+                string serverHash = SHA.SHA256Hash(valueToHash, hashKey);
                 if (!serverHash.Equals(paymentHash, StringComparison.OrdinalIgnoreCase))
                 {
                     logger.LogWarning($"Payment hash mismatch for charge {charge.Id}. Expected: {serverHash}, Received: {paymentHash}");
@@ -318,16 +324,22 @@ namespace Niobium.Platform.Finance.Stripe
             }
             else if (r.Type == StripeReport.TypeRefund)
             {
-                Refund refund = await StripeIntegration.RetriveRefundAsync(r.Data.Object.ID);
-                Charge charge1 = await StripeIntegration.RetriveChargeAsync(refund.ChargeId);
+                Refund refund = await stripeIntegration.Value.RetriveRefundAsync(tenant, r.Data.Object.ID);
+                Charge charge1 = await stripeIntegration.Value.RetriveChargeAsync(tenant, refund.ChargeId);
 
                 ChargeTargetKind targetKind = (ChargeTargetKind)int.Parse(charge1.Metadata[Constants.MetadataTargetKindKey]);
                 string target = charge1.Metadata[Constants.MetadataTargetKey];
                 charge1.Metadata.TryGetValue(Constants.MetadataOrderKey, out string? order);
-                charge1.Metadata.TryGetValue(Constants.MetadataTenantKey, out string? tenant);
                 string paymentHash = charge1.Metadata[Constants.MetadataHashKey];
-                string valueToHash = $"{tenant ?? string.Empty}{target}{order ?? string.Empty}";
-                string serverHash = SHA.SHA256Hash(valueToHash, options.Value.SecretHashKey);
+                string valueToHash = $"{tenant}{target}{order ?? string.Empty}";
+
+
+                if (!options.Value.Hashes.TryGetValue(tenant, out var hashKey))
+                {
+                    logger.LogError($"No hash key configured for tenant {tenant}.");
+                    return new OperationResult<ChargeResult>(Niobium.InternalError.InternalServerError);
+                }
+                string serverHash = SHA.SHA256Hash(valueToHash, hashKey);
                 if (!serverHash.Equals(paymentHash, StringComparison.OrdinalIgnoreCase))
                 {
                     logger.LogWarning($"Payment hash mismatch for charge {charge1.Id}. Expected: {serverHash}, Received: {paymentHash}");
@@ -415,14 +427,14 @@ namespace Niobium.Platform.Finance.Stripe
             };
         }
 
-        public async Task<OperationResult<ChargeResult>> RetrieveChargeAsync(string transaction, PaymentChannels paymentChannel)
+        public async Task<OperationResult<ChargeResult>> RetrieveChargeAsync(string tenant, string transaction, PaymentChannels paymentChannel)
         {
             if (paymentChannel != PaymentChannels.Cards)
             {
                 return new OperationResult<ChargeResult>(Niobium.InternalError.NotAcceptable);
             }
 
-            Charge charge = await StripeIntegration.RetriveChargeAsync(transaction);
+            Charge charge = await stripeIntegration.Value.RetriveChargeAsync(tenant, transaction);
             if (charge == null)
             {
                 return new OperationResult<ChargeResult>(Niobium.InternalError.NotFound);

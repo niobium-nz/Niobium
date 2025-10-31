@@ -6,12 +6,12 @@ using System.Net.Sockets;
 
 namespace Niobium.Platform.Finance.Stripe
 {
-    public class StripeIntegration(IOptions<PaymentServiceOptions> options, ILogger<StripeIntegration> logger)
+    internal sealed class StripeIntegration(ServiceManager serviceManager, IOptions<PaymentServiceOptions> serviceOptions, ILogger<StripeIntegration> logger)
     {
-        public async Task<OperationResult<SetupIntent>> CreateSetupIntentAsync(Guid user)
+        public async Task<OperationResult<SetupIntent>> CreateSetupIntentAsync(string tenant, Guid user)
         {
             CustomerCreateOptions options = new();
-            CustomerService service = new();
+            CustomerService service = serviceManager.GetService<CustomerService>(tenant);
             Customer customer = await service.CreateAsync(options);
 
             SetupIntentCreateOptions setupIntentOptions = new()
@@ -22,7 +22,7 @@ namespace Niobium.Platform.Finance.Stripe
                     { Constants.MetadataIntentUserID, user.ToString() }
                 }
             };
-            SetupIntentService setupIntentService = new();
+            SetupIntentService setupIntentService = serviceManager.GetService<SetupIntentService>(tenant);
             try
             {
                 SetupIntent intent = await setupIntentService.CreateAsync(setupIntentOptions);
@@ -35,7 +35,7 @@ namespace Niobium.Platform.Finance.Stripe
             }
         }
 
-        public static async Task<SetupIntent> RetriveSetupIntentAsync(string id)
+        public async Task<SetupIntent> RetriveSetupIntentAsync(string tenant, string id)
         {
             ArgumentNullException.ThrowIfNull(id);
 
@@ -43,37 +43,36 @@ namespace Niobium.Platform.Finance.Stripe
             {
                 id = id.Split(["_secret_"], StringSplitOptions.RemoveEmptyEntries)[0];
             }
-            SetupIntentService service = new();
-
+            SetupIntentService service = serviceManager.GetService<SetupIntentService>(tenant);
             return await service.GetAsync(id);
         }
 
-        public static async Task<Charge> RetriveChargeAsync(string id)
+        public async Task<Charge> RetriveChargeAsync(string tenant, string id)
         {
-            ChargeService service = new();
+            ChargeService service = serviceManager.GetService<ChargeService>(tenant);
             return await service.GetAsync(id);
         }
 
-        public static async Task<Refund> RetriveRefundAsync(string id)
+        public async Task<Refund> RetriveRefundAsync(string tenant, string id)
         {
-            RefundService service = new();
+            RefundService service = serviceManager.GetService<RefundService>(tenant);
             return await service.GetAsync(id);
         }
 
-        public static async Task<global::Stripe.PaymentMethod> RetrivePaymentMethodAsync(string id)
+        public async Task<global::Stripe.PaymentMethod> RetrivePaymentMethodAsync(string tenant, string id)
         {
-            PaymentMethodService service = new();
+            PaymentMethodService service = serviceManager.GetService<PaymentMethodService>(tenant);
             return await service.GetAsync(id);
         }
 
         public async Task<OperationResult<PaymentIntent>> ChargeAsync(
+            string tenant,
             ChargeTargetKind targetKind,
             string target,
             Currency currency,
             long amount,
             string? order = null,
             string? reference = null,
-            string? tenant = null,
             string? stripeCustomerID = null,
             string? stripePaymentMethodID = null,
             int retryCount = 3)
@@ -83,10 +82,15 @@ namespace Niobium.Platform.Finance.Stripe
                 return new OperationResult<PaymentIntent>(Niobium.InternalError.BadGateway);
             }
 
+            if (!serviceOptions.Value.Hashes.TryGetValue(tenant, out var hashKey))
+            {
+                return new OperationResult<PaymentIntent>(Niobium.InternalError.InternalServerError);
+            }
+
             try
             {
-                string valueToHash = $"{tenant ?? string.Empty}{target}{order ?? string.Empty}";
-                string hash = SHA.SHA256Hash(valueToHash, options.Value.SecretHashKey);
+                string valueToHash = $"{tenant}{target}{order ?? string.Empty}";
+                string hash = SHA.SHA256Hash(valueToHash, hashKey);
                 Dictionary<string, string> metadata = new()
                 {
                     { Constants.MetadataTargetKindKey, ((int)targetKind).ToString() },
@@ -104,10 +108,7 @@ namespace Niobium.Platform.Finance.Stripe
                     metadata.Add(Constants.MetadataReferenceKey, reference);
                 }
 
-                if (tenant != null)
-                {
-                    metadata.Add(Constants.MetadataTenantKey, tenant);
-                }
+                metadata.Add(Constants.MetadataTenantKey, tenant);
 
                 PaymentIntentCreateOptions intentOptions = new()
                 {
@@ -132,7 +133,7 @@ namespace Niobium.Platform.Finance.Stripe
                     intentOptions.Confirm = true;
                 }
 
-                PaymentIntentService service = new();
+                PaymentIntentService service = serviceManager.GetService<PaymentIntentService>(tenant);
                 PaymentIntent result = await service.CreateAsync(intentOptions);
                 return new OperationResult<PaymentIntent>(result);
 
@@ -155,10 +156,11 @@ namespace Niobium.Platform.Finance.Stripe
             {
             }
 
-            return await ChargeAsync(targetKind, target, currency, amount, order, reference, tenant, stripeCustomerID, stripePaymentMethodID, --retryCount);
+            return await ChargeAsync(tenant, targetKind, target, currency, amount, order, reference, stripeCustomerID, stripePaymentMethodID, --retryCount);
         }
 
         public async Task<OperationResult<Refund>> RefundAsync(
+            string tenant,
             string chargeID,
             long? amount,
             int retryCount = 3)
@@ -170,7 +172,7 @@ namespace Niobium.Platform.Finance.Stripe
 
             try
             {
-                RefundService service = new();
+                RefundService service = serviceManager.GetService<RefundService>(tenant);
                 Refund result = await service.CreateAsync(new RefundCreateOptions { Charge = chargeID, Amount = amount });
                 return new OperationResult<Refund>(result);
             }
@@ -192,10 +194,11 @@ namespace Niobium.Platform.Finance.Stripe
             {
             }
 
-            return await RefundAsync(chargeID, amount, --retryCount);
+            return await RefundAsync(tenant, chargeID, amount, --retryCount);
         }
 
         public async Task<OperationResult<PaymentIntent>> CompleteAsync(
+            string tenant,
             string paymentIntentID,
             long? amountToCapture,
             int retryCount = 3)
@@ -207,7 +210,7 @@ namespace Niobium.Platform.Finance.Stripe
 
             try
             {
-                PaymentIntentService service = new();
+                PaymentIntentService service = serviceManager.GetService<PaymentIntentService>(tenant);
                 PaymentIntent result = await service.CaptureAsync(paymentIntentID, options: new PaymentIntentCaptureOptions { AmountToCapture = amountToCapture });
                 return new OperationResult<PaymentIntent>(result);
 
@@ -230,10 +233,11 @@ namespace Niobium.Platform.Finance.Stripe
             {
             }
 
-            return await VoidAsync(paymentIntentID, --retryCount);
+            return await VoidAsync(tenant, paymentIntentID, --retryCount);
         }
 
         public async Task<OperationResult<PaymentIntent>> VoidAsync(
+            string tenant,
             string paymentIntentID,
             int retryCount = 3)
         {
@@ -244,7 +248,7 @@ namespace Niobium.Platform.Finance.Stripe
 
             try
             {
-                PaymentIntentService service = new();
+                PaymentIntentService service = serviceManager.GetService<PaymentIntentService>(tenant);
                 PaymentIntent result = await service.CancelAsync(paymentIntentID);
                 return new OperationResult<PaymentIntent>(result);
 
@@ -267,17 +271,17 @@ namespace Niobium.Platform.Finance.Stripe
             {
             }
 
-            return await VoidAsync(paymentIntentID, --retryCount);
+            return await VoidAsync(tenant, paymentIntentID, --retryCount);
         }
 
         public async Task<OperationResult<PaymentIntent>> AuthorizeAsync(
+            string tenant,
             ChargeTargetKind targetKind,
             string target,
             Currency currency,
             long amount,
             string? order = null,
             string? reference = null,
-            string? tenant = null,
             string? stripeCustomerID = null,
             string? stripePaymentMethodID = null,
             int retryCount = 3)
@@ -306,12 +310,9 @@ namespace Niobium.Platform.Finance.Stripe
                     metadata.Add(Constants.MetadataReferenceKey, reference);
                 }
 
-                if (tenant != null)
-                {
-                    metadata.Add(Constants.MetadataTenantKey, tenant);
-                }
+                metadata.Add(Constants.MetadataTenantKey, tenant);
 
-                PaymentIntentService service = new();
+                PaymentIntentService service = serviceManager.GetService<PaymentIntentService>(tenant);
                 PaymentIntent result = await service.CreateAsync(new PaymentIntentCreateOptions
                 {
                     Amount = amount,
@@ -344,7 +345,7 @@ namespace Niobium.Platform.Finance.Stripe
             {
             }
 
-            return await AuthorizeAsync(targetKind, target, currency, amount, order, reference, tenant, stripeCustomerID, stripePaymentMethodID, --retryCount);
+            return await AuthorizeAsync(tenant, targetKind, target, currency, amount, order, reference, stripeCustomerID, stripePaymentMethodID, --retryCount);
         }
 
         private static OperationResult<T> ConvertStripeError<T>(StripeError stripeError)

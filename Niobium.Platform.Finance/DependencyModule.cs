@@ -10,7 +10,7 @@ namespace Niobium.Platform.Finance
     {
         private static volatile bool loaded;
 
-        public static IServiceCollection AddFinance(this IServiceCollection services)
+        public static IServiceCollection AddFinance(this IServiceCollection services, Action<PaymentServiceOptions> options)
         {
             if (loaded)
             {
@@ -18,6 +18,8 @@ namespace Niobium.Platform.Finance
             }
 
             loaded = true;
+
+            services.Configure<PaymentServiceOptions>(o => options(o));
 
             services.AddPlatform();
             services.AddTransient<IPaymentService, PaymentService>();

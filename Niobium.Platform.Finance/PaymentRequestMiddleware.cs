@@ -11,6 +11,7 @@ namespace Niobium.Platform.Finance
     internal sealed class PaymentRequestMiddleware(IPaymentService paymentService, IOptions<PaymentServiceOptions> options)
         : IMiddleware
     {
+        public const string PaymentTenantQueryParameter = "tenant";
         public const string PaymentUserQueryParameter = "user";
         public const string PaymentOrderQueryParameter = "order";
         public const string PaymentCurrencyQueryParameter = "currency";
@@ -48,6 +49,14 @@ namespace Niobium.Platform.Finance
                 }
             }
 
+            if (!req.Query.TryGetValue(PaymentTenantQueryParameter, out Microsoft.Extensions.Primitives.StringValues t))
+            {
+                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                await context.Response.WriteAsync($"Invalid '{PaymentTenantQueryParameter}' query parameter.");
+                return;
+            }
+            var tenant = t.First()!;
+
             if (!req.Query.TryGetValue(PaymentCurrencyQueryParameter, out Microsoft.Extensions.Primitives.StringValues c) || !Currency.TryParse(c!, out Currency currency))
             {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
@@ -68,7 +77,7 @@ namespace Niobium.Platform.Finance
                 Target = user.ToString(),
                 Channel = PaymentChannels.Cards,
                 Operation = PaymentOperationKind.Charge,
-                Tenant = req.GetSourceHostname(),
+                Tenant = tenant,
                 Order = order,
                 Amount = amount,
                 Currency = currency,

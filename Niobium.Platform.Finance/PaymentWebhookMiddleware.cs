@@ -2,13 +2,14 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Niobium.Finance;
 using System.Net;
 
 namespace Niobium.Platform.Finance
 {
-    internal sealed class PaymentWebhookMiddleware(IPaymentService paymentService, IOptions<PaymentServiceOptions> options)
+    internal sealed class PaymentWebhookMiddleware(IPaymentService paymentService, IOptions<PaymentServiceOptions> options, ILogger<PaymentWebhookMiddleware> logger)
         : IMiddleware
     {
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
@@ -32,9 +33,18 @@ namespace Niobium.Platform.Finance
                 return;
             }
 
+            if (!req.Query.TryGetValue(PaymentRequestMiddleware.PaymentTenantQueryParameter, out Microsoft.Extensions.Primitives.StringValues t))
+            {
+                logger.LogWarning("Payment webhook request missing tenant query parameter.");
+                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                await context.Response.WriteAsync($"Invalid '{PaymentRequestMiddleware.PaymentTenantQueryParameter}' query parameter.");
+                return;
+            }
+            var tenant = t.First()!;
+
             using StreamReader reader = new(req.Body);
             string json = await reader.ReadToEndAsync();
-            OperationResult<ChargeResult> result = await paymentService.ReportAsync(json);
+            OperationResult<ChargeResult> result = await paymentService.ReportAsync(tenant, json);
             IActionResult action = result.MakeResponse(JsonMarshallingFormat.CamelCase);
             await action.ExecuteResultAsync(new ActionContext(context, new RouteData(), new ActionDescriptor()));
         }

@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Stripe;
 
 namespace Niobium.Platform.Finance.Stripe
 {
@@ -23,16 +22,11 @@ namespace Niobium.Platform.Finance.Stripe
 
             loaded = true;
 
-            services.AddFinance();
+            services.AddFinance(options);
 
             Niobium.InternalError.Register(new InternalErrorRetriever());
 
-            services.Configure<PaymentServiceOptions>(o =>
-            {
-                options(o);
-                StripeConfiguration.ApiKey = o.SecretAPIKey;
-            });
-
+            services.AddSingleton<ServiceManager>();
             services.AddTransient<StripeIntegration>();
             services.AddTransient<IPaymentProcessor, StripePaymentProcessor>();
 

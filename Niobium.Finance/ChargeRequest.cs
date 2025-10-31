@@ -2,6 +2,8 @@
 {
     public class ChargeRequest
     {
+        public required string Tenant { get; set; }
+
         public ChargeTargetKind TargetKind { get; set; }
 
         public required string Target { get; set; }
@@ -9,8 +11,6 @@
         public PaymentChannels Channel { get; set; }
 
         public PaymentOperationKind Operation { get; set; }
-
-        public string? Tenant { get; set; }
 
         public string? Order { get; set; }
 

@@ -6,8 +6,8 @@
 
         public string PaymentRequestEndpoint { get; set; } = Constants.DefaultPaymentRequestEndpoint;
 
-        public required string SecretAPIKey { get; set; }
+        public required Dictionary<string, string> Secrets { get; set; }
 
-        public required string SecretHashKey { get; set; }
+        public required Dictionary<string, string> Hashes { get; set; }
     }
 }
