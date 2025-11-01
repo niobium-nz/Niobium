@@ -1,8 +1,9 @@
-﻿using Stripe;
+﻿using Microsoft.Extensions.Options;
+using Stripe;
 
 namespace Niobium.Platform.Finance.Stripe
 {
-    internal sealed class ServiceManager(PaymentServiceOptions options)
+    internal sealed class ServiceManager(IOptions<PaymentServiceOptions> options)
     {
         private static readonly object syncroot = new();
         private readonly Dictionary<string, Dictionary<Type, global::Stripe.Service>> services = [];
@@ -16,7 +17,7 @@ namespace Niobium.Platform.Finance.Stripe
                 {
                     if (!services.ContainsKey(tenant))
                     {
-                        StripeConfiguration.ApiKey = options.Secrets[tenant];
+                        StripeConfiguration.ApiKey = options.Value.Secrets[tenant];
                         var client = StripeConfiguration.StripeClient!;
                         StripeConfiguration.StripeClient = null;
                         services[tenant] = [];
