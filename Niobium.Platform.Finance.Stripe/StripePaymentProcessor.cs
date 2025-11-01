@@ -392,24 +392,32 @@ namespace Niobium.Platform.Finance.Stripe
             return request != null && (request.Channel & PaymentChannels.Cards) == PaymentChannels.Cards;
         }
 
-        private static PaymentMethodKind FigurePaymentMethodType(IEnumerable<string> input)
+        private PaymentMethodKind FigurePaymentMethodType(IEnumerable<string> input)
         {
             PaymentMethodKind result = PaymentMethodKind.None;
             foreach (string item in input)
             {
-                result |= FigurePaymentMethodType(item);
+                var r = FigurePaymentMethodType(item);
+                if (r.HasValue)
+                { 
+                    result |= r.Value;
+                }
             }
             return result;
         }
 
-        private static PaymentMethodKind FigurePaymentMethodType(string input)
+        private PaymentMethodKind? FigurePaymentMethodType(string input)
         {
-            return input.ToUpperInvariant() switch
+            switch (input.ToUpperInvariant())
             {
-                "CARD" => PaymentMethodKind.Visa | PaymentMethodKind.MasterCard | PaymentMethodKind.AmericanExpress,
-                "AFTERPAY_CLEARPAY" => PaymentMethodKind.Afterpay,
-                _ => throw new NotImplementedException(),
-            };
+                case "CARD":
+                    return PaymentMethodKind.Visa | PaymentMethodKind.MasterCard | PaymentMethodKind.AmericanExpress;
+                case "AFTERPAY_CLEARPAY":
+                    return PaymentMethodKind.Afterpay;
+                default:
+                    logger.LogWarning($"Unsupported payment method type: {input}");
+                    return null;
+            }
         }
 
         private static PaymentMethodKind FigureCardType(string input)
