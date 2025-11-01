@@ -22,7 +22,7 @@ namespace Niobium.Platform.Finance.Stripe
 
             loaded = true;
 
-            services.AddFinance(options);
+            Niobium.Platform.Finance.DependencyModule.AddFinance(services, options);
 
             Niobium.InternalError.Register(new InternalErrorRetriever());
 
