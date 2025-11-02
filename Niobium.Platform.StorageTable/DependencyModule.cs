@@ -16,7 +16,7 @@ namespace Niobium.Platform.StorageTable
         {
             builder.Services.AddDatabase(builder.Configuration.GetSection(nameof(StorageTableOptions)).Bind);
 
-            bool isDevelopment = builder.Configuration.IsPreProductionEnvironment();
+            bool isDevelopment = builder.Configuration.IsDevelopmentEnvironment();
             if (isDevelopment)
             {
                 builder.Services.PostConfigure<StorageTableOptions>(opt => opt.EnableInteractiveIdentity = true);

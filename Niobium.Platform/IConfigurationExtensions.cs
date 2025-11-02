@@ -9,12 +9,12 @@ namespace Niobium.Platform
             return configuration.IsDevelopmentEnvironment() || configuration.IsStagingEnvironment();
         }
 
-        private static bool IsDevelopmentEnvironment(this IConfiguration configuration)
+        public static bool IsDevelopmentEnvironment(this IConfiguration configuration)
         {
             return configuration.GetValue<string>(Constants.ServiceEnvironment) == Constants.DevelopmentEnvironment;
         }
 
-        private static bool IsStagingEnvironment(this IConfiguration configuration)
+        public static bool IsStagingEnvironment(this IConfiguration configuration)
         {
             return configuration.GetValue<string>(Constants.ServiceEnvironment) == Constants.StagingEnvironment;
         }

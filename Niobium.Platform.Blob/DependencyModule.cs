@@ -17,7 +17,7 @@ namespace Niobium.Platform.Blob
         {
             builder.Services.AddFile(builder.Configuration.GetSection(nameof(StorageBlobOptions)).Bind);
 
-            bool isDevelopment = builder.Configuration.IsPreProductionEnvironment();
+            bool isDevelopment = builder.Configuration.IsDevelopmentEnvironment();
             if (isDevelopment)
             {
                 builder.Services.PostConfigure<StorageBlobOptions>(opt => opt.EnableInteractiveIdentity = true);
