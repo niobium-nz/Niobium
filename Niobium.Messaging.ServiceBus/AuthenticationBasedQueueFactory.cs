@@ -10,13 +10,11 @@ namespace Niobium.Messaging.ServiceBus
     internal sealed class AuthenticationBasedQueueFactory(
         Lazy<IAuthenticator> authenticator,
         IOptions<ServiceBusOptions> options)
-        : IAsyncDisposable
     {
         private static readonly ConcurrentDictionary<string, ServiceBusClient> clients = [];
         private static readonly Dictionary<string, ServiceBusSender> senders = [];
         private static readonly Dictionary<string, ServiceBusReceiver> receivers = [];
         private ServiceBusOptions? configuration;
-        private bool disposed;
 
         public ServiceBusOptions Configuration
         {
@@ -101,41 +99,6 @@ namespace Niobium.Messaging.ServiceBus
             }
 
             return result;
-        }
-
-        private static async ValueTask DisposeAsync(bool disposing)
-        {
-            if (disposing)
-            {
-                foreach (string receiver in receivers.Keys)
-                {
-                    await receivers[receiver].DisposeAsync();
-                }
-                receivers.Clear();
-
-                foreach (string sender in senders.Keys)
-                {
-                    await senders[sender].DisposeAsync();
-                }
-                senders.Clear();
-
-                foreach (string client in clients.Keys)
-                {
-                    await clients[client].DisposeAsync();
-                }
-                clients.Clear();
-            }
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            if (!disposed)
-            {
-                await DisposeAsync(true);
-            }
-
-            disposed = true;
-            GC.SuppressFinalize(this);
         }
     }
 }
