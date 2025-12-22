@@ -12,6 +12,7 @@ namespace Niobium.Platform.Captcha.ReCaptcha
         : IVisitorRiskAssessor
     {
         private const string recaptchaAPI = "https://www.google.com/recaptcha/api/siteverify";
+        private const string wwwPrefix = "www.";
 
         public virtual async Task<bool> AssessAsync(
             string token,
@@ -41,7 +42,10 @@ namespace Niobium.Platform.Captcha.ReCaptcha
 
             if (!options.Value.Secrets.TryGetValue(hostname, out string? secret))
             {
-                throw new ApplicationException(Niobium.InternalError.InternalServerError, $"Missing tenant secret: {hostname}");
+                if (!hostname.StartsWith(wwwPrefix, StringComparison.OrdinalIgnoreCase) || !options.Value.Secrets.TryGetValue(hostname[4..], out secret))
+                {
+                    throw new ApplicationException(Niobium.InternalError.InternalServerError, $"Missing tenant secret: {hostname}");
+                }
             }
 
             List<KeyValuePair<string, string>> parameters = new([
@@ -70,7 +74,19 @@ namespace Niobium.Platform.Captcha.ReCaptcha
                 return false;
             }
 
-            bool lowrisk = result.Success && result.Hostname.Equals(hostname, StringComparison.OrdinalIgnoreCase);
+            bool lowrisk = result.Success;
+            
+            if (lowrisk)
+            {
+                lowrisk = result.Hostname == null || result.Hostname.Equals(hostname, StringComparison.OrdinalIgnoreCase);
+                if (!lowrisk && result.Hostname != null && hostname != null)
+                {
+                    var baseDomain1 = hostname.StartsWith(wwwPrefix, StringComparison.OrdinalIgnoreCase) ? hostname[4..] : hostname;
+                    var baseDomain2 = result.Hostname.StartsWith(wwwPrefix, StringComparison.OrdinalIgnoreCase) ? result.Hostname[4..] : result.Hostname;
+                    lowrisk = baseDomain1.Equals(baseDomain2, StringComparison.OrdinalIgnoreCase);
+                }
+            }
+
             if (throwsExceptionWhenFail && !lowrisk)
             {
                 logger?.LogWarning($"{clientIP} is considered high risk for request {requestID}: {respbody}");
