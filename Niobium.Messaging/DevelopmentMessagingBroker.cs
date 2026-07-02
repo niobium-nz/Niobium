@@ -16,11 +16,14 @@ namespace Niobium.Messaging
 
         public Task EnqueueAsync(IEnumerable<MessagingEntry<T>> messages, CancellationToken cancellationToken = default)
         {
+#if DEBUG
             foreach (MessagingEntry<T> message in messages)
             {
+#pragma warning disable CA1873 // Avoid potentially expensive logging
                 logger.LogInformation($"[DevelopmentMessagingBroker] Enqueued message: {JsonMarshaller.Marshall(message)}");
+#pragma warning restore CA1873 // Avoid potentially expensive logging
             }
-
+#endif
             return Task.CompletedTask;
         }
 

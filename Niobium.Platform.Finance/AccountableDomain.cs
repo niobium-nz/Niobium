@@ -315,7 +315,9 @@ namespace Niobium.Platform.Finance
             long diff = credits + debits - delta;
             long b = previousBalance + credits + debits;
             string principal = AccountingPrincipal;
+#pragma warning disable CA1873 // Avoid potentially expensive logging
             Logger.LogInformation($"账务主体 {principal} 从 {transactionSearchFrom} 开始，截止到 {input} 为止的账务变化为 {credits}/{debits} 与该日缓存相差 {diff} 截止此时余额为 {b}");
+#pragma warning restore CA1873 // Avoid potentially expensive logging
 
             //if (Math.Abs(diff) > 1)
             //{

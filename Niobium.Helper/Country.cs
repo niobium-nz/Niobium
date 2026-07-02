@@ -404,7 +404,7 @@
             {
                 return false;
             }
-            nameOrCode = nameOrCode.Trim();
+            nameOrCode = nameOrCode.Trim().ToUpperInvariant();
 
             if (alpha2.ContainsKey(nameOrCode))
             {

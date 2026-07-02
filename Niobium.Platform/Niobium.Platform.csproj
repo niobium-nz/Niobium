@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <ImplicitUsings>enable</ImplicitUsings>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -38,11 +38,8 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Azure.Identity" Version="1.17.0" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Core" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.10" />
+    <PackageReference Include="Azure.Identity" Version="1.21.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Core" Version="2.52.0" />
   </ItemGroup>
 
   <ItemGroup>

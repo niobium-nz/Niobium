@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <ImplicitUsings>enable</ImplicitUsings>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -37,7 +37,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="jose-jwt" Version="5.2.0" />
+    <PackageReference Include="jose-jwt" Version="5.3.0" />
   </ItemGroup>
 
   <ItemGroup>

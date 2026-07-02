@@ -20,7 +20,7 @@ namespace Niobium.File.Blob
         public async IAsyncEnumerable<string> ListAsync(string partition, string? prefix = null, bool createIfNotExist = true, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             BlobContainerClient container = await GetBlobContainerAsync(FilePermissions.List, partition, createIfNotExist, cancellationToken);
-            AsyncPageable<BlobItem> blobs = container.GetBlobsAsync(prefix: prefix, cancellationToken: cancellationToken);
+            AsyncPageable<BlobItem> blobs = container.GetBlobsAsync(new GetBlobsOptions { Prefix = prefix }, cancellationToken: cancellationToken);
             await foreach (BlobItem blob in blobs)
             {
                 yield return blob.Name;

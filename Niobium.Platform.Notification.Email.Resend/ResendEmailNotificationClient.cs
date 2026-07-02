@@ -45,7 +45,9 @@ namespace Niobium.Platform.Notification.Email.Resend
             }
 
             string respbody = await response.Content.ReadAsStringAsync(cancellationToken);
+#pragma warning disable CA1873 // Avoid potentially expensive logging
             logger.LogInformation($"Email sent: {respbody}");
+#pragma warning restore CA1873 // Avoid potentially expensive logging
             return true;
         }
 

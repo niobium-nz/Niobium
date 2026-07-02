@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <ImplicitUsings>enable</ImplicitUsings>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -37,8 +37,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Azure" Version="1.13.0" />
-    <PackageReference Include="Microsoft.Azure.Devices" Version="1.40.0" />
+    <PackageReference Include="Microsoft.Extensions.Azure" Version="1.14.0" />
+    <PackageReference Include="Microsoft.Azure.Devices" Version="1.41.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <ImplicitUsings>enable</ImplicitUsings>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -36,9 +36,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Identity" Version="1.17.0" />
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.26.0" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.10" />
+    <PackageReference Include="Azure.Identity" Version="1.21.0" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.29.1" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.9" />
     <ProjectReference Include="..\Niobium.File\Niobium.File.csproj" />
     <ProjectReference Include="..\Niobium.Identity\Niobium.Identity.csproj" />
   </ItemGroup>
