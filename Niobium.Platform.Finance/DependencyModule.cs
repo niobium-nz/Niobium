@@ -35,10 +35,7 @@ namespace Niobium.Platform.Finance
             return builder;
         }
 
-        public static IApplicationBuilder UsePlatformPayment<TDepositHandler, TAccountableDomain, TAccountableEntity>(this IApplicationBuilder builder)
-            where TDepositHandler : AccountDepositRecorder<TAccountableDomain, TAccountableEntity>
-            where TAccountableDomain : AccountableDomain<TAccountableEntity>
-            where TAccountableEntity : class, new()
+        public static IApplicationBuilder UsePlatformPayment(this IApplicationBuilder builder)
         {
             builder.UsePlatform();
             builder.UseMiddleware<PaymentRequestMiddleware>();
