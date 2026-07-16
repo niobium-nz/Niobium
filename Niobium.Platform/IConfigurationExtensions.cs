@@ -11,17 +11,21 @@ namespace Niobium.Platform
 
         public static bool IsDevelopmentEnvironment(this IConfiguration configuration)
         {
-            return configuration.GetValue<string>(Constants.ServiceEnvironment) == Constants.DevelopmentEnvironment;
+            return configuration.GetServiceEnvironment() == Constants.DevelopmentEnvironment;
         }
 
         public static bool IsStagingEnvironment(this IConfiguration configuration)
         {
-            return configuration.GetValue<string>(Constants.ServiceEnvironment) == Constants.StagingEnvironment;
+            return configuration.GetServiceEnvironment() == Constants.StagingEnvironment;
         }
 
         public static bool IsProductionEnvironment(this IConfiguration configuration)
         {
-            return configuration.GetValue<string>(Constants.ServiceEnvironment) == Constants.ProductionEnvironment;
+            return configuration.GetServiceEnvironment() == Constants.ProductionEnvironment;
         }
+
+        private static string? GetServiceEnvironment(this IConfiguration configuration)
+          => configuration.GetValue<string>(Constants.ServiceEnvironment)
+            ?? configuration.GetValue<string>(Constants.AspNetCoreEnvironment);
     }
 }

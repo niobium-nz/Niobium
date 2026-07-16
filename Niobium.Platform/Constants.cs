@@ -3,6 +3,7 @@ namespace Niobium.Platform
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores", Justification = "CustomNaming")]
     public abstract class Constants : Niobium.Constants
     {
+        public const string AspNetCoreEnvironment = "ASPNETCORE_ENVIRONMENT";
         public const string ServiceEnvironment = "AZURE_FUNCTIONS_ENVIRONMENT";
         public const string ProductionEnvironment = "Production";
         public const string StagingEnvironment = "Staging";
