@@ -7,6 +7,7 @@ namespace Niobium.Platform
         public const string ServiceEnvironment = "AZURE_FUNCTIONS_ENVIRONMENT";
         public const string ProductionEnvironment = "Production";
         public const string StagingEnvironment = "Staging";
+        public const string TestEnvironment = "Test";
         public const string DevelopmentEnvironment = "Development";
 
         public const string STORAGE_CONNECTION_NAME = "STORAGE_ACCOUNT";

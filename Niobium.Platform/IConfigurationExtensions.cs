@@ -11,17 +11,18 @@ namespace Niobium.Platform
 
         public static bool IsDevelopmentEnvironment(this IConfiguration configuration)
         {
-            return configuration.GetServiceEnvironment() == Constants.DevelopmentEnvironment;
+            return Constants.DevelopmentEnvironment.Equals(configuration.GetServiceEnvironment(), StringComparison.OrdinalIgnoreCase);
         }
 
         public static bool IsStagingEnvironment(this IConfiguration configuration)
         {
-            return configuration.GetServiceEnvironment() == Constants.StagingEnvironment;
+            return Constants.StagingEnvironment.Equals(configuration.GetServiceEnvironment(), StringComparison.OrdinalIgnoreCase)
+                || Constants.TestEnvironment.Equals(configuration.GetServiceEnvironment(), StringComparison.OrdinalIgnoreCase);
         }
 
         public static bool IsProductionEnvironment(this IConfiguration configuration)
         {
-            return configuration.GetServiceEnvironment() == Constants.ProductionEnvironment;
+            return Constants.ProductionEnvironment.Equals(configuration.GetServiceEnvironment(), StringComparison.OrdinalIgnoreCase);
         }
 
         private static string? GetServiceEnvironment(this IConfiguration configuration)
