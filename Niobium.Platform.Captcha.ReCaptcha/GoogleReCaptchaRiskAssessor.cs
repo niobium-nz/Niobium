@@ -44,7 +44,7 @@ namespace Niobium.Platform.Captcha.ReCaptcha
             {
                 if (!hostname.StartsWith(wwwPrefix, StringComparison.OrdinalIgnoreCase) || !options.Value.Secrets.TryGetValue(hostname[4..], out secret))
                 {
-                    var escapeHostname = hostname.Replace(".", "_");
+                    var escapeHostname = hostname.Replace(".", "_").ToUpperInvariant();
                     if (!options.Value.Secrets.TryGetValue(escapeHostname, out secret))
                     {
                         if (!escapeHostname.StartsWith(wwwPrefix, StringComparison.OrdinalIgnoreCase) || !options.Value.Secrets.TryGetValue(escapeHostname[4..], out secret))
