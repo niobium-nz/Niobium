@@ -8,9 +8,78 @@ on:
 
 jobs:
   build:
-    uses: niobium-nz/Niobium.DevOps/.github/workflows/generic_dotnet_build.yml@main
-    with:
-      pushPackage: true
+    runs-on: ubuntu-latest
+    env:
       buildVersion: "4.0"
-    secrets:
-      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v7
+      with:
+        submodules: true
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: ${{ inputs.dotnetVersion }}
+
+    - name: Restore Packages
+      run: dotnet restore
+
+    - name: Build Projects
+      run: dotnet build --configuration Release /p:BUILD_BUILDNUMBER=${{ inputs.buildVersion }}.${{ github.run_number }}
+
+    - name: Run Unit Tests
+      run: dotnet test --configuration Release /p:BUILD_BUILDNUMBER=${{ inputs.buildVersion }}.${{ github.run_number }} --logger trx --collect "Code coverage"
+
+    - name: Publish Test Results
+      uses: dorny/test-reporter@v3
+      with:
+        name: Test Results
+        path: '**/*.trx'
+        reporter: dotnet-trx
+      continue-on-error: true
+
+    - name: Generate Coverage Report
+      uses: danielpalme/ReportGenerator-GitHub-Action@5.5.10
+      with:
+        reports: '**/TestResults/*/coverage.cobertura.xml'
+        targetdir: 'coverage-report'
+        reporttypes: 'HtmlInline;Cobertura'
+      continue-on-error: true
+
+    - name: Upload Coverage Report
+      uses: actions/upload-artifact@v7
+      with:
+        name: coverage-report
+        path: coverage-report
+
+    - name: Publish NuGet Package
+      run: |
+        Get-ChildItem -Path . -Recurse -Filter *.nupkg | ForEach-Object {
+          dotnet nuget push $_.FullName --source "${{ inputs.nugetFeedUrl }}" --api-key "$env:NUGET_API_KEY"
+        }
+        Get-ChildItem -Path . -Recurse -Filter *.snupkg | ForEach-Object {
+          dotnet nuget push $_.FullName --source "${{ inputs.nugetFeedUrl }}" --api-key "$env:NUGET_API_KEY"
+        }
+      shell: pwsh
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
+    - name: Publish Build
+      if: ${{ inputs.projectToPublish != '' }}
+      run: dotnet publish "${{ inputs.projectToPublish }}" /p:BUILD_BUILDNUMBER=${{ inputs.buildVersion }}.${{ github.run_number }} --configuration Release --output ./publish/
+
+    - name: Archive Build
+      if: ${{ inputs.zipArtifact && inputs.projectToPublish != '' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: build-zip
+        path: ./publish/
+
+    - name: Stage Build (Unzipped)
+      if: ${{ !inputs.zipArtifact && inputs.projectToPublish != '' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: build-folder
+        path: ./publish/

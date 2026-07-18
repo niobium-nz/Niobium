@@ -1,0 +1,50 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".github/workflows/main.yaml" />
+    <File Path="global.json" />
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="Niobium.Abstractions/Niobium.Abstractions.csproj" />
+  <Project Path="Niobium.Channel.Blazor.Fluent/Niobium.Channel.Blazor.Fluent.csproj" />
+  <Project Path="Niobium.Channel.Blazor/Niobium.Channel.Blazor.csproj" />
+  <Project Path="Niobium.Channel.Identity.Blazor/Niobium.Channel.Identity.Blazor.csproj" />
+  <Project Path="Niobium.Channel.Identity/Niobium.Channel.Identity.csproj" />
+  <Project Path="Niobium.Channel.Profile/Niobium.Channel.Profile.csproj" />
+  <Project Path="Niobium.Channel.Speech.Blazor/Niobium.Channel.Speech.Blazor.csproj" />
+  <Project Path="Niobium.Channel.Speech/Niobium.Channel.Speech.csproj" />
+  <Project Path="Niobium.Channel/Niobium.Channel.csproj" />
+  <Project Path="Niobium.Database.StorageTable/Niobium.Database.StorageTable.csproj" />
+  <Project Path="Niobium.Device.IoTHub/Niobium.Device.IoTHub.csproj" />
+  <Project Path="Niobium.Device/Niobium.Device.csproj" />
+  <Project Path="Niobium.File.Blob/Niobium.File.Blob.csproj" />
+  <Project Path="Niobium.File/Niobium.File.csproj" />
+  <Project Path="Niobium.Finance/Niobium.Finance.csproj" />
+  <Project Path="Niobium.Helper/Niobium.Helper.csproj" />
+  <Project Path="Niobium.Identity/Niobium.Identity.csproj" />
+  <Project Path="Niobium.Messaging.ServiceBus/Niobium.Messaging.ServiceBus.csproj" />
+  <Project Path="Niobium.Messaging.StorageAccount/Niobium.Messaging.StorageAccount.csproj" />
+  <Project Path="Niobium.Messaging/Niobium.Messaging.csproj" />
+  <Project Path="Niobium.Platform.Blob/Niobium.Platform.Blob.csproj" />
+  <Project Path="Niobium.Platform.Captcha.ReCaptcha/Niobium.Platform.Captcha.ReCaptcha.csproj" />
+  <Project Path="Niobium.Platform.Finance.Stripe/Niobium.Platform.Finance.Stripe.csproj" />
+  <Project Path="Niobium.Platform.Finance/Niobium.Platform.Finance.csproj" />
+  <Project Path="Niobium.Platform.Identity/Niobium.Platform.Identity.csproj" />
+  <Project Path="Niobium.Platform.Notification.Apple/Niobium.Platform.Notification.Apple.csproj" />
+  <Project Path="Niobium.Platform.Notification.Email.Resend/Niobium.Platform.Notification.Email.Resend.csproj" />
+  <Project Path="Niobium.Platform.Notification.Email/Niobium.Platform.Notification.Email.csproj" />
+  <Project Path="Niobium.Platform.Notification.Firebase/Niobium.Platform.Notification.Firebase.csproj" />
+  <Project Path="Niobium.Platform.Notification/Niobium.Platform.Notification.csproj" />
+  <Project Path="Niobium.Platform.OpenAI/Niobium.Platform.OpenAI.csproj" />
+  <Project Path="Niobium.Platform.Profile/Niobium.Platform.Profile.csproj" />
+  <Project Path="Niobium.Platform.ServiceBus/Niobium.Platform.ServiceBus.csproj" />
+  <Project Path="Niobium.Platform.Speech/Niobium.Platform.Speech.csproj" />
+  <Project Path="Niobium.Platform.StorageTable/Niobium.Platform.StorageTable.csproj" />
+  <Project Path="Niobium.Platform/Niobium.Platform.csproj" />
+  <Project Path="Niobium.Profile/Niobium.Profile.csproj" />
+</Solution>
