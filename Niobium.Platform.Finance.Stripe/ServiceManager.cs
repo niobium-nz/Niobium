@@ -17,7 +17,15 @@ namespace Niobium.Platform.Finance.Stripe
                 {
                     if (!services.ContainsKey(tenant))
                     {
-                        StripeConfiguration.ApiKey = options.Value.Secrets[tenant];
+                        if (!options.Value.Secrets.TryGetValue(tenant, out var key))
+                        {
+                            if (!options.Value.Secrets.TryGetValue(tenant.Replace("-", "_"), out key))
+                            {
+                                throw new InvalidOperationException($"No Stripe secret found for tenant '{tenant}'");
+                            }
+                        }
+
+                        StripeConfiguration.ApiKey = key;
                         var client = StripeConfiguration.StripeClient!;
                         StripeConfiguration.StripeClient = null;
                         services[tenant] = [];

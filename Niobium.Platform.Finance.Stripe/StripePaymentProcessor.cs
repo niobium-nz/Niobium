@@ -276,8 +276,11 @@ namespace Niobium.Platform.Finance.Stripe
 
                 if (!options.Value.Hashes.TryGetValue(tenant, out var hashKey))
                 {
-                    logger.LogError($"No hash key configured for tenant {tenant}.");
-                    return new OperationResult<ChargeResult>(Niobium.InternalError.InternalServerError);
+                    if (!options.Value.Hashes.TryGetValue(tenant.Replace("-", "_"), out hashKey))
+                    {
+                        logger.LogError($"No hash key configured for tenant {tenant}.");
+                        return new OperationResult<ChargeResult>(Niobium.InternalError.InternalServerError);
+                    }
                 }
 
                 string serverHash = SHA.SHA256Hash(valueToHash, hashKey);
@@ -336,8 +339,11 @@ namespace Niobium.Platform.Finance.Stripe
 
                 if (!options.Value.Hashes.TryGetValue(tenant, out var hashKey))
                 {
-                    logger.LogError($"No hash key configured for tenant {tenant}.");
-                    return new OperationResult<ChargeResult>(Niobium.InternalError.InternalServerError);
+                    if (!options.Value.Hashes.TryGetValue(tenant.Replace("-", "_"), out hashKey))
+                    {
+                        logger.LogError($"No hash key configured for tenant {tenant}.");
+                        return new OperationResult<ChargeResult>(Niobium.InternalError.InternalServerError);
+                    }
                 }
                 string serverHash = SHA.SHA256Hash(valueToHash, hashKey);
                 if (!serverHash.Equals(paymentHash, StringComparison.OrdinalIgnoreCase))

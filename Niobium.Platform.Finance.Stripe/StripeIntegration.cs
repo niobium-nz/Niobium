@@ -84,7 +84,10 @@ namespace Niobium.Platform.Finance.Stripe
 
             if (!serviceOptions.Value.Hashes.TryGetValue(tenant, out var hashKey))
             {
-                return new OperationResult<PaymentIntent>(Niobium.InternalError.InternalServerError);
+                if (!serviceOptions.Value.Hashes.TryGetValue(tenant.Replace("-", "_"), out hashKey))
+                {
+                    return new OperationResult<PaymentIntent>(Niobium.InternalError.InternalServerError);
+                }
             }
 
             try
