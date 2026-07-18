@@ -12,8 +12,7 @@ jobs:
     env:
       buildVersion: "4.0"
       projectToPublish: "**/*.csproj"
-      zipArtifact: true
-      runTests: false
+      runTests: "false"
       nugetFeedUrl: "https://api.nuget.org/v3/index.json"
 
     steps:
@@ -161,11 +160,11 @@ jobs:
         "package_ids=$packageIds" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
     - name: Run Unit Tests
-      if: ${{ env.runTests }}
+      if: ${{ env.runTests == 'true' }}
       run: dotnet test --configuration Release /p:BUILD_BUILDNUMBER=${{ env.buildVersion }}.${{ github.run_number }} --logger trx --collect "Code coverage"
 
     - name: Publish Test Results
-      if: ${{ env.runTests }}
+      if: ${{ env.runTests == 'true' }}
       uses: dorny/test-reporter@v3
       with:
         name: Test Results
@@ -174,7 +173,7 @@ jobs:
       continue-on-error: true
 
     - name: Generate Coverage Report
-      if: ${{ env.runTests }}
+      if: ${{ env.runTests == 'true' }}
       uses: danielpalme/ReportGenerator-GitHub-Action@5.5.10
       with:
         reports: '**/TestResults/*/coverage.cobertura.xml'
@@ -183,7 +182,7 @@ jobs:
       continue-on-error: true
 
     - name: Upload Coverage Report
-      if: ${{ env.runTests }}
+      if: ${{ env.runTests == 'true' }}
       uses: actions/upload-artifact@v7
       with:
         name: coverage-report
@@ -221,21 +220,3 @@ jobs:
     - name: Skip NuGet Publish
       if: ${{ steps.changed-packages.outputs.has_changes != 'true' }}
       run: echo "No project changes detected for NuGet publishing."
-
-    - name: Publish Build
-      if: ${{ env.projectToPublish != '' }}
-      run: dotnet publish "${{ env.projectToPublish }}" /p:BUILD_BUILDNUMBER=${{ env.buildVersion }}.${{ github.run_number }} --configuration Release --output ./publish/
-
-    - name: Archive Build
-      if: ${{ env.zipArtifact && env.projectToPublish != '' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: build-zip
-        path: ./publish/
-
-    - name: Stage Build (Unzipped)
-      if: ${{ !env.zipArtifact && env.projectToPublish != '' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: build-folder
-        path: ./publish/
