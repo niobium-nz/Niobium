@@ -68,6 +68,7 @@ jobs:
         $changedFiles | ForEach-Object { Write-Host "Changed: $_" }
 
         $projects = Get-ChildItem -Path . -Recurse -Filter *.csproj | ForEach-Object {
+          $projectFile = $_
           [xml]$projectXml = Get-Content -LiteralPath $_.FullName
           $packageIdNode = $projectXml.Project.PropertyGroup.PackageId | Select-Object -First 1
           $packageId = if ([string]::IsNullOrWhiteSpace($packageIdNode)) { $_.BaseName } else { $packageIdNode }
@@ -77,7 +78,7 @@ jobs:
           $projectDirectory = [System.IO.Path]::GetRelativePath($PWD.Path, $_.DirectoryName).Replace('\\', '/')
           $projectReferences = @($projectXml.SelectNodes('//ProjectReference') | ForEach-Object {
             if (-not [string]::IsNullOrWhiteSpace($_.Include)) {
-              $fullReferencePath = [System.IO.Path]::GetFullPath((Join-Path $_.OwnerDocument.BaseURI $_.Include))
+              $fullReferencePath = [System.IO.Path]::GetFullPath((Join-Path $projectFile.DirectoryName $_.Include))
               [System.IO.Path]::GetRelativePath($PWD.Path, $fullReferencePath).Replace('\\', '/')
             }
           })
