@@ -21,6 +21,7 @@ jobs:
       uses: actions/checkout@v7
       with:
         submodules: true
+        fetch-depth: 0
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v6
@@ -32,6 +33,131 @@ jobs:
 
     - name: Build Projects
       run: dotnet build --configuration Release /p:BUILD_BUILDNUMBER=${{ env.buildVersion }}.${{ github.run_number }}
+
+    - name: Detect Changed NuGet Projects
+      id: changed-packages
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Stop'
+
+        if ('${{ github.event_name }}' -eq 'pull_request') {
+          $base = '${{ github.event.pull_request.base.sha }}'
+          $head = '${{ github.event.pull_request.head.sha }}'
+          git fetch --no-tags origin $base --depth=1
+          git fetch --no-tags origin $head --depth=1
+        }
+        else {
+          $head = '${{ github.sha }}'
+          $base = '${{ github.event.before }}'
+
+          if ([string]::IsNullOrWhiteSpace($base) -or $base -eq '0000000000000000000000000000000000000000') {
+            $base = (git rev-list --max-parents=0 HEAD | Select-Object -First 1)
+          }
+        }
+
+        Write-Host "Comparing changes from $base to $head"
+
+        $changedFiles = git diff --name-only $base $head | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+        if (-not $changedFiles) {
+          Write-Host 'No changed files detected.'
+          "has_changes=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "package_ids=" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          exit 0
+        }
+
+        $changedFiles | ForEach-Object { Write-Host "Changed: $_" }
+
+        $projects = Get-ChildItem -Path . -Recurse -Filter *.csproj | ForEach-Object {
+          [xml]$projectXml = Get-Content -LiteralPath $_.FullName
+          $packageIdNode = $projectXml.Project.PropertyGroup.PackageId | Select-Object -First 1
+          $packageId = if ([string]::IsNullOrWhiteSpace($packageIdNode)) { $_.BaseName } else { $packageIdNode }
+          $isPackableNode = $projectXml.Project.PropertyGroup.IsPackable | Select-Object -First 1
+          $isPackable = -not ($isPackableNode -and $isPackableNode.Trim().Equals('false', [System.StringComparison]::OrdinalIgnoreCase))
+          $projectPath = [System.IO.Path]::GetRelativePath($PWD.Path, $_.FullName).Replace('\\', '/')
+          $projectDirectory = [System.IO.Path]::GetRelativePath($PWD.Path, $_.DirectoryName).Replace('\\', '/')
+          $projectReferences = @($projectXml.SelectNodes('//ProjectReference') | ForEach-Object {
+            if (-not [string]::IsNullOrWhiteSpace($_.Include)) {
+              $fullReferencePath = [System.IO.Path]::GetFullPath((Join-Path $_.OwnerDocument.BaseURI $_.Include))
+              [System.IO.Path]::GetRelativePath($PWD.Path, $fullReferencePath).Replace('\\', '/')
+            }
+          })
+
+          [PSCustomObject]@{
+            Path = $projectPath
+            Directory = $projectDirectory
+            PackageId = $packageId
+            IsPackable = $isPackable
+            ProjectReferences = $projectReferences
+          }
+        }
+
+        $projectMap = @{}
+        foreach ($project in $projects) {
+          $projectMap[$project.Path] = $project
+        }
+
+        $changedProjectPaths = New-Object System.Collections.Generic.HashSet[string]([System.StringComparer]::OrdinalIgnoreCase)
+
+        foreach ($file in $changedFiles) {
+          $normalizedFile = $file.Replace('\\', '/')
+
+          foreach ($project in $projects) {
+            $projectDirectory = $project.Directory
+            if ($projectDirectory -eq '.') {
+              $projectDirectory = ''
+            }
+
+            if (-not [string]::IsNullOrEmpty($projectDirectory) -and $normalizedFile.StartsWith("$projectDirectory/", [System.StringComparison]::OrdinalIgnoreCase)) {
+              $null = $changedProjectPaths.Add($project.Path)
+            }
+          }
+        }
+
+        if ($changedProjectPaths.Count -eq 0) {
+          Write-Host 'No project-scoped changes detected for package publishing.'
+          "has_changes=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "package_ids=" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          exit 0
+        }
+
+        $selectedProjectPaths = New-Object System.Collections.Generic.HashSet[string]([System.StringComparer]::OrdinalIgnoreCase)
+        $projectsToVisit = New-Object System.Collections.Generic.Queue[string]
+
+        foreach ($projectPath in $changedProjectPaths) {
+          $projectsToVisit.Enqueue($projectPath)
+        }
+
+        while ($projectsToVisit.Count -gt 0) {
+          $currentProjectPath = $projectsToVisit.Dequeue()
+          if (-not $selectedProjectPaths.Add($currentProjectPath)) {
+            continue
+          }
+
+          $currentProject = $projectMap[$currentProjectPath]
+          if (-not $currentProject) {
+            continue
+          }
+
+          foreach ($projectReference in $currentProject.ProjectReferences) {
+            if ($projectMap.ContainsKey($projectReference)) {
+              $projectsToVisit.Enqueue($projectReference)
+            }
+          }
+        }
+
+        $changedPackageIds = New-Object System.Collections.Generic.HashSet[string]([System.StringComparer]::OrdinalIgnoreCase)
+        foreach ($projectPath in $selectedProjectPaths) {
+          $project = $projectMap[$projectPath]
+          if ($project -and $project.IsPackable) {
+            $null = $changedPackageIds.Add($project.PackageId)
+          }
+        }
+
+        $packageIds = [string]::Join(',', ($changedPackageIds | Sort-Object))
+        Write-Host "Changed package IDs: $packageIds"
+
+        "has_changes=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        "package_ids=$packageIds" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
     - name: Run Unit Tests
       if: ${{ env.runTests }}
@@ -63,17 +189,37 @@ jobs:
         path: coverage-report
 
     - name: Publish NuGet Package
+      if: ${{ steps.changed-packages.outputs.has_changes == 'true' }}
       run: |
-        Get-ChildItem -Path . -Recurse -Filter *.nupkg | ForEach-Object {
-          dotnet nuget push $_.FullName --source "$env:NUGET_FEED_URL" --api-key "$env:NUGET_API_KEY"
+        $packageIds = $env:CHANGED_PACKAGE_IDS -split ',' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+        $published = New-Object System.Collections.Generic.HashSet[string]([System.StringComparer]::OrdinalIgnoreCase)
+
+        foreach ($packageId in $packageIds) {
+          $escapedPackageId = [regex]::Escape($packageId)
+          $packages = Get-ChildItem -Path . -Recurse -File | Where-Object {
+            $_.Name -match "^$escapedPackageId\.[0-9].*\.(snupkg|nupkg)$"
+          }
+
+          foreach ($package in $packages) {
+            if ($published.Add($package.FullName)) {
+              Write-Host "Publishing $($package.Name)"
+              dotnet nuget push $package.FullName --source "$env:NUGET_FEED_URL" --api-key "$env:NUGET_API_KEY"
+            }
+          }
         }
-        Get-ChildItem -Path . -Recurse -Filter *.snupkg | ForEach-Object {
-          dotnet nuget push $_.FullName --source "$env:NUGET_FEED_URL" --api-key "$env:NUGET_API_KEY"
+
+        if ($published.Count -eq 0) {
+          Write-Host 'No matching package artifacts found for changed projects.'
         }
       shell: pwsh
       env:
         NUGET_FEED_URL: ${{ env.nugetFeedUrl }}
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        CHANGED_PACKAGE_IDS: ${{ steps.changed-packages.outputs.package_ids }}
+
+    - name: Skip NuGet Publish
+      if: ${{ steps.changed-packages.outputs.has_changes != 'true' }}
+      run: echo "No project changes detected for NuGet publishing."
 
     - name: Publish Build
       if: ${{ env.projectToPublish != '' }}
