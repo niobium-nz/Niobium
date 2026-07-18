@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Options;
 using Stripe;
 
 namespace Niobium.Platform.Finance.Stripe
@@ -19,7 +19,7 @@ namespace Niobium.Platform.Finance.Stripe
                     {
                         if (!options.Value.Secrets.TryGetValue(tenant, out var key))
                         {
-                            if (!options.Value.Secrets.TryGetValue(tenant.Replace("-", "_"), out key))
+                            if (!options.Value.Secrets.TryGetValue(tenant.Replace("-", "_").ToUpperInvariant(), out key))
                             {
                                 throw new InvalidOperationException($"No Stripe secret found for tenant '{tenant}'");
                             }
