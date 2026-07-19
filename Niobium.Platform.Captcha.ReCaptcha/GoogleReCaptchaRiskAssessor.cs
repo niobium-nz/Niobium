@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -47,7 +47,7 @@ namespace Niobium.Platform.Captcha.ReCaptcha
                     var escapeHostname = hostname.Replace(".", "_").ToUpperInvariant();
                     if (!options.Value.Secrets.TryGetValue(escapeHostname, out secret))
                     {
-                        if (!escapeHostname.StartsWith(wwwPrefix, StringComparison.OrdinalIgnoreCase) || !options.Value.Secrets.TryGetValue(escapeHostname[4..], out secret))
+                        if (!hostname.StartsWith(wwwPrefix, StringComparison.OrdinalIgnoreCase) || !options.Value.Secrets.TryGetValue(escapeHostname[4..], out secret))
                         {
                             throw new ApplicationException(Niobium.InternalError.InternalServerError, $"Missing tenant secret: {hostname}");
                         }
