@@ -1,8 +1,8 @@
-﻿using System.Text;
+using System.Text;
 
 namespace Niobium
 {
-    public class ApplicationException(int errorCode, string? internalMessage = null, Exception? innerException = null) : Exception(internalMessage, innerException)
+    public class ApplicationException(int errorCode, string? internalMessage = null, Exception? innerException = null) : Exception(null, innerException)
     {
         private const int SuccessCode = 0;
         private readonly Func<string> getMessage = () =>
@@ -33,6 +33,8 @@ namespace Niobium
         public int ErrorCode { get; set; } = errorCode;
 
         public override string Message => getMessage();
+
+        public string? InternalMessage => internalMessage;
 
         public object? Reference { get; set; }
     }

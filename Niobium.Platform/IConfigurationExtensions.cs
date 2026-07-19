@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 
 namespace Niobium.Platform
 {
@@ -11,7 +11,9 @@ namespace Niobium.Platform
 
         public static bool IsDevelopmentEnvironment(this IConfiguration configuration)
         {
-            return Constants.DevelopmentEnvironment.Equals(configuration.GetServiceEnvironment(), StringComparison.OrdinalIgnoreCase);
+            return Constants.DevelopmentEnvironment.Equals(configuration.GetServiceEnvironment(), StringComparison.OrdinalIgnoreCase)
+                || Constants.DevEnvironment.Equals(configuration.GetServiceEnvironment(), StringComparison.OrdinalIgnoreCase)
+                || Constants.LocalEnvironment.Equals(configuration.GetServiceEnvironment(), StringComparison.OrdinalIgnoreCase);
         }
 
         public static bool IsStagingEnvironment(this IConfiguration configuration)
@@ -22,7 +24,8 @@ namespace Niobium.Platform
 
         public static bool IsProductionEnvironment(this IConfiguration configuration)
         {
-            return Constants.ProductionEnvironment.Equals(configuration.GetServiceEnvironment(), StringComparison.OrdinalIgnoreCase);
+            return Constants.ProductionEnvironment.Equals(configuration.GetServiceEnvironment(), StringComparison.OrdinalIgnoreCase)
+                || Constants.ProdEnvironment.Equals(configuration.GetServiceEnvironment(), StringComparison.OrdinalIgnoreCase);
         }
 
         private static string? GetServiceEnvironment(this IConfiguration configuration)

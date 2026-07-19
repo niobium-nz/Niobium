@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Text.Json;
@@ -34,7 +34,7 @@ namespace Niobium.Platform
                         Reference = ex.Reference,
                     };
                 await context.Response.WriteAsJsonAsync(payload, serializationOptions, responseContentType, context.RequestAborted);
-                logger.LogError(ex, $"Error handling request: {ex.Message}", payload);
+                logger.LogError(ex, $"Error handling request: {ex.Message} {ex.InternalMessage}", payload);
             }
         }
     }
