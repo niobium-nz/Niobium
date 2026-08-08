@@ -12,7 +12,6 @@ namespace Niobium.Platform.Captcha.ReCaptcha
         : IVisitorRiskAssessor
     {
         private const string recaptchaAPI = "https://www.google.com/recaptcha/api/siteverify";
-        private const string wwwPrefix = "www.";
 
         public virtual async Task<bool> AssessAsync(
             string token,
@@ -23,43 +22,50 @@ namespace Niobium.Platform.Captcha.ReCaptcha
             CancellationToken cancellationToken = default)
         {
             requestID ??= Guid.NewGuid().ToString();
-            if (string.IsNullOrWhiteSpace(token))
+            if (String.IsNullOrWhiteSpace(token))
             {
                 throw new ApplicationException(Niobium.InternalError.BadRequest, "Missing captcha token in request.");
             }
 
-            if (string.IsNullOrWhiteSpace(hostname))
+            if (String.IsNullOrWhiteSpace(hostname))
             {
                 hostname = httpContextAccessor.Value.HttpContext?.Request.GetSourceHostname()
                     ?? throw new ApplicationException(Niobium.InternalError.BadRequest, "Cannot retrieve hostname from request.");
             }
 
-            if (string.IsNullOrWhiteSpace(clientIP))
+            if (String.IsNullOrWhiteSpace(clientIP))
             {
                 clientIP = httpContextAccessor.Value.HttpContext?.Request.GetRemoteIP()
                     ?? throw new ApplicationException(Niobium.InternalError.BadRequest, "unable to get client IP from request.");
             }
 
+            hostname = hostname.ToUpperInvariant();
             if (!options.Value.Secrets.TryGetValue(hostname, out string? secret))
             {
-                if (!hostname.StartsWith(wwwPrefix, StringComparison.OrdinalIgnoreCase) || !options.Value.Secrets.TryGetValue(hostname[4..], out secret))
+                string escapeHostname = hostname.Replace(".", "_");
+                if (!options.Value.Secrets.TryGetValue(escapeHostname, out secret))
                 {
-                    var escapeHostname = hostname.Replace(".", "_").ToUpperInvariant();
-                    if (!options.Value.Secrets.TryGetValue(escapeHostname, out secret))
+                    foreach (string key in options.Value.Secrets.Keys)
                     {
-                        if (!hostname.StartsWith(wwwPrefix, StringComparison.OrdinalIgnoreCase) || !options.Value.Secrets.TryGetValue(escapeHostname[4..], out secret))
+                        if (escapeHostname.EndsWith(key, StringComparison.OrdinalIgnoreCase))
                         {
-                            throw new ApplicationException(Niobium.InternalError.InternalServerError, $"Missing tenant secret: {hostname}");
+                            secret = options.Value.Secrets[key];
+                            break;
                         }
                     }
                 }
+            }
+
+            if (secret == null)
+            {
+                throw new ApplicationException(Niobium.InternalError.InternalServerError, $"Missing tenant secret: {hostname}");
             }
 
             List<KeyValuePair<string, string>> parameters = new([
                 new KeyValuePair<string, string>("secret", secret),
                 new KeyValuePair<string, string>("response", token),
             ]);
-            if (!string.IsNullOrWhiteSpace(clientIP))
+            if (!String.IsNullOrWhiteSpace(clientIP))
             {
                 parameters.Add(new KeyValuePair<string, string>("remoteip", clientIP));
             }
@@ -82,15 +88,14 @@ namespace Niobium.Platform.Captcha.ReCaptcha
             }
 
             bool lowrisk = result.Success;
-            
+
             if (lowrisk)
             {
                 lowrisk = result.Hostname == null || result.Hostname.Equals(hostname, StringComparison.OrdinalIgnoreCase);
                 if (!lowrisk && result.Hostname != null && hostname != null)
                 {
-                    var baseDomain1 = hostname.StartsWith(wwwPrefix, StringComparison.OrdinalIgnoreCase) ? hostname[4..] : hostname;
-                    var baseDomain2 = result.Hostname.StartsWith(wwwPrefix, StringComparison.OrdinalIgnoreCase) ? result.Hostname[4..] : result.Hostname;
-                    lowrisk = baseDomain1.Equals(baseDomain2, StringComparison.OrdinalIgnoreCase);
+                    string baseDomain = result.Hostname.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ? result.Hostname[4..] : result.Hostname;
+                    lowrisk = hostname.EndsWith(baseDomain, StringComparison.OrdinalIgnoreCase);
                 }
             }
 
