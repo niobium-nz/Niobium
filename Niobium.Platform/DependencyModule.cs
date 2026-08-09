@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.Functions.Worker;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Niobium.Platform.Analytics;
@@ -9,8 +8,50 @@ namespace Niobium.Platform
 {
     public static class DependencyModule
     {
+        private static volatile bool added;
         private static volatile bool used;
         private static volatile bool loaded;
+
+        public static IHostApplicationBuilder AddPlatform(this IHostApplicationBuilder builder)
+        {
+            if (added)
+            {
+                return builder;
+            }
+
+            added = true;
+            builder.AddServiceDefaults();
+            builder.Services.AddProblemDetails();
+            builder.Services.AddOpenApi();
+            builder.Services.AddPlatform();
+            return builder;
+        }
+
+        public static IApplicationBuilder UsePlatform(this IApplicationBuilder builder)
+        {
+            if (used)
+            {
+                return builder;
+            }
+
+            used = true;
+
+            builder.UseForwardedHeaders();
+            builder.UseRouting();
+
+            if (builder is WebApplication app)
+            {
+                app.MapControllers();
+
+                if (app.Environment.IsDevelopment())
+                {
+                    app.MapOpenApi();
+                }
+            }
+
+            builder.UseMiddleware<ErrorHandlingMiddleware>();
+            return builder;
+        }
 
         public static IServiceCollection AddPlatform(this IServiceCollection services)
         {
@@ -32,37 +73,23 @@ namespace Niobium.Platform
             services.AddTransient<IConfigurationProvider, ConfigurationProvider>();
 
             services.AddTransient<ErrorHandlingMiddleware>();
-            services.AddTransient<FunctionMiddlewareAdaptor<ErrorHandlingMiddleware>>();
 
             services.AddHttpContextAccessor();
+
+            services.ConfigureHttpClientDefaults(http =>
+            {
+                http.AddStandardResilienceHandler();
+            });
+
+            services.AddControllers();
+            services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+                options.KnownIPNetworks.Clear();
+                options.KnownProxies.Clear();
+            });
+
             return services;
-        }
-
-        public static T UsePlatform<T>(this T builder) where T : IFunctionsWorkerApplicationBuilder
-        {
-            if (used)
-            {
-                return builder;
-            }
-
-            used = true;
-
-            builder.Services.AddSingleton<IHttpContextAccessor, FunctionContextAccessor>();
-            builder.UseMiddleware<FunctionContextAccessorMiddleware>();
-            builder.UseMiddleware<FunctionMiddlewareAdaptor<ErrorHandlingMiddleware>>();
-            return builder;
-        }
-
-        public static IApplicationBuilder UsePlatform(this IApplicationBuilder builder)
-        {
-            if (used)
-            {
-                return builder;
-            }
-
-            used = true;
-            builder.UseMiddleware<ErrorHandlingMiddleware>();
-            return builder;
         }
     }
 }
