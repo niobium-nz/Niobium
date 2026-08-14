@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace Niobium.Platform
 {
-    internal sealed class ErrorHandlingMiddleware(ILogger<ErrorHandlingMiddleware> logger) : IMiddleware
+    public sealed class ErrorHandlingMiddleware(ILogger<ErrorHandlingMiddleware> logger) : IMiddleware
     {
         private const string responseContentType = "application/json";
         private static readonly JsonSerializerOptions serializationOptions = new(JsonSerializerDefaults.Web);

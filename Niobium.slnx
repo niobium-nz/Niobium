@@ -34,6 +34,7 @@
   <Project Path="Niobium.Platform.Captcha.ReCaptcha/Niobium.Platform.Captcha.ReCaptcha.csproj" />
   <Project Path="Niobium.Platform.Finance.Stripe/Niobium.Platform.Finance.Stripe.csproj" />
   <Project Path="Niobium.Platform.Finance/Niobium.Platform.Finance.csproj" />
+  <Project Path="Niobium.Platform.Functions/Niobium.Platform.Functions.csproj" Id="a3584b31-2207-417b-b73c-9bfda0bc681c" />
   <Project Path="Niobium.Platform.Identity/Niobium.Platform.Identity.csproj" />
   <Project Path="Niobium.Platform.Notification.Apple/Niobium.Platform.Notification.Apple.csproj" />
   <Project Path="Niobium.Platform.Notification.Email.Resend/Niobium.Platform.Notification.Email.Resend.csproj" />

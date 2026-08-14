@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <Nullable>enable</Nullable>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Authors>Niobium</Authors>
+    <Description>Core infrastructure and utilities for scalable .NET business function apps.</Description>
+    <Copyright>Copyright (c) 2025 Niobium</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Version Condition=" '$(BUILD_BUILDNUMBER)' == '' ">1.0.0.0</Version>
+    <Version Condition=" '$(BUILD_BUILDNUMBER)' != '' ">$(BUILD_BUILDNUMBER)</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.OpenTelemetry" Version="1.2.0" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.17.0" />
+    <PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.8.3" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Core" Version="2.52.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Niobium.Platform\Niobium.Platform.csproj" />
+  </ItemGroup>
+  
+</Project>

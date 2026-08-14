@@ -13,7 +13,7 @@ using OpenTelemetry.Trace;
 
 namespace Niobium.Platform
 {
-    internal static class OpenTelemetryExtensions
+    public static class ServiceDefaultsExtensions
     {
         private const string HealthEndpointPath = "/health";
         private const string AlivenessEndpointPath = "/alive";

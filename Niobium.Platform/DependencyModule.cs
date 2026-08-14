@@ -21,8 +21,18 @@ namespace Niobium.Platform
 
             added = true;
             builder.AddServiceDefaults();
+
             builder.Services.AddProblemDetails();
             builder.Services.AddOpenApi();
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddControllers();
+            builder.Services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+                options.KnownIPNetworks.Clear();
+                options.KnownProxies.Clear();
+            });
+
             builder.Services.AddPlatform();
             return builder;
         }
@@ -74,19 +84,10 @@ namespace Niobium.Platform
 
             services.AddTransient<ErrorHandlingMiddleware>();
 
-            services.AddHttpContextAccessor();
-
             services.ConfigureHttpClientDefaults(http =>
             {
                 http.AddStandardResilienceHandler();
-            });
-
-            services.AddControllers();
-            services.Configure<ForwardedHeadersOptions>(options =>
-            {
-                options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-                options.KnownIPNetworks.Clear();
-                options.KnownProxies.Clear();
+                http.AddServiceDiscovery();
             });
 
             return services;
