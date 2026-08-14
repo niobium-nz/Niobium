@@ -45,7 +45,7 @@ namespace Niobium.Platform.Functions
 
             used = true;
             builder.UseMiddleware<FunctionContextAccessorMiddleware>();
-            builder.UseMiddleware<FunctionMiddlewareAdaptor<ErrorHandlingMiddleware>>();
+            builder.ToMiddlewareHost().UsePlatform();
             return builder;
         }
     }

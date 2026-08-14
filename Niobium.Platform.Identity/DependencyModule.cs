@@ -8,19 +8,21 @@ namespace Niobium.Platform.Identity
 {
     public static class DependencyModule
     {
-        private static volatile bool loaded;
+        private static volatile bool added;
+        private static volatile bool used;
+        private static volatile bool middlewareRegistered;
 
         public static void AddIdentity(this IHostApplicationBuilder builder)
             => builder.Services.AddIdentity(builder.Configuration.GetSection(nameof(IdentityServiceOptions)).Bind);
 
         public static IServiceCollection AddIdentity(this IServiceCollection services, Action<IdentityServiceOptions>? identityOptions)
         {
-            if (loaded)
+            if (added)
             {
                 return services;
             }
 
-            loaded = true;
+            added = true;
 
             services.AddPlatform();
 
@@ -38,6 +40,27 @@ namespace Niobium.Platform.Identity
 
         public static IApplicationBuilder UsePlatformIdentity(this IApplicationBuilder builder)
         {
+            if (used)
+            {
+                return builder;
+            }
+
+            used = true;
+
+            builder.UsePlatform();
+            builder.ToMiddlewareHost().UsePlatformIdentity();
+            return builder;
+        }
+
+        public static IMiddlewareHost UsePlatformIdentity(this IMiddlewareHost builder)
+        {
+            if (middlewareRegistered)
+            {
+                return builder;
+            }
+
+            middlewareRegistered = true;
+
             builder.UsePlatform();
             builder.UseMiddleware<BearerTokenMiddleware>();
             builder.UseMiddleware<AccessTokenMiddleware>();

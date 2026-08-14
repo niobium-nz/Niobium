@@ -5,16 +5,18 @@ namespace Niobium.Platform.Finance
 {
     public static class DependencyModule
     {
-        private static volatile bool loaded;
+        private static volatile bool middlewareRegistered;
+        private static volatile bool added;
+        private static volatile bool used;
 
         public static IServiceCollection AddFinance(this IServiceCollection services, Action<PaymentServiceOptions> options)
         {
-            if (loaded)
+            if (added)
             {
                 return services;
             }
 
-            loaded = true;
+            added = true;
 
             services.Configure<PaymentServiceOptions>(o => options(o));
 
@@ -27,10 +29,30 @@ namespace Niobium.Platform.Finance
 
         public static IApplicationBuilder UsePlatformPayment(this IApplicationBuilder builder)
         {
+            if (used)
+            {
+                return builder;
+            }
+
+            used = true;
+
+            builder.UsePlatform();
+            builder.ToMiddlewareHost().UsePlatformPayment();
+            return builder;
+        }
+
+        public static IMiddlewareHost UsePlatformPayment(this IMiddlewareHost builder)
+        {
+            if (middlewareRegistered)
+            {
+                return builder;
+            }
+
+            middlewareRegistered = true;
+
             builder.UsePlatform();
             builder.UseMiddleware<PaymentRequestMiddleware>();
             builder.UseMiddleware<PaymentWebhookMiddleware>();
-
             return builder;
         }
     }

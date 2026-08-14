@@ -11,6 +11,7 @@ namespace Niobium.Platform
         private static volatile bool added;
         private static volatile bool used;
         private static volatile bool loaded;
+        private static volatile bool middlewareRegistered;
 
         public static IHostApplicationBuilder AddPlatform(this IHostApplicationBuilder builder)
         {
@@ -59,7 +60,7 @@ namespace Niobium.Platform
                 }
             }
 
-            builder.UseMiddleware<ErrorHandlingMiddleware>();
+            builder.ToMiddlewareHost().UsePlatform();
             return builder;
         }
 
@@ -91,6 +92,19 @@ namespace Niobium.Platform
             });
 
             return services;
+        }
+
+        public static IMiddlewareHost UsePlatform(this IMiddlewareHost builder)
+        {
+            if (middlewareRegistered)
+            {
+                return builder;
+            }
+
+            middlewareRegistered = true;
+
+            builder.UseMiddleware<ErrorHandlingMiddleware>();
+            return builder;
         }
     }
 }
