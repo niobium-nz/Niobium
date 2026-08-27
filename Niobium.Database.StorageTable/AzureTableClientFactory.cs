@@ -1,22 +1,25 @@
-﻿using Azure.Core;
+using System.Collections.Concurrent;
+using Azure.Core;
 using Azure.Data.Tables;
 using Azure.Identity;
 using Microsoft.Extensions.Options;
 using Niobium.Identity;
-using System.Collections.Concurrent;
 
 namespace Niobium.Database.StorageTable
 {
     internal sealed class AzureTableClientFactory(IOptions<StorageTableOptions> options, Lazy<IAuthenticator> authenticator) : IAzureTableClientFactory
     {
+        private const string DefaultTableServiceUriSetting = "AzureWebJobsStorage__tableServiceUri";
+        private const string ManagedIdentitySetting = "AzureWebJobsStorage__clientId";
         private static readonly ConcurrentDictionary<string, TableServiceClient> clients = [];
         private static readonly ConcurrentDictionary<string, TokenCredential> credentials = [];
 
         public async Task<TableServiceClient> CreateClientAsync(IEnumerable<DatabasePermissions> permissions, string table, string? partition = null, CancellationToken cancellationToken = default)
         {
-            if (!string.IsNullOrWhiteSpace(options.Value.FullyQualifiedDomainName))
+            if (!String.IsNullOrWhiteSpace(options.Value.FullyQualifiedDomainName)
+                || !String.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(DefaultTableServiceUriSetting)))
             {
-                return await CreateClientAsync(cancellationToken);
+                return await this.CreateClientAsync(cancellationToken);
             }
 
             IEnumerable<ResourcePermission> resourcePermissions = await authenticator.Value.GetResourcePermissionsAsync(cancellationToken) ?? [];
@@ -28,24 +31,39 @@ namespace Niobium.Database.StorageTable
                 ?? throw new ApplicationException(InternalError.Forbidden);
             string sasUri = await authenticator.Value.RetrieveResourceTokenAsync(ResourceType.AzureStorageTable, table, partition: partition ?? permission.Scope, cancellationToken: cancellationToken);
             Uri endpoint = new($"https://{permission.Resource}/{table}?{sasUri}");
-            return clients.GetOrAdd($"{table}//{partition ?? string.Empty}", new TableServiceClient(endpoint, options: BuildClientOptions(options)));
+            return clients.GetOrAdd($"{table}//{partition ?? String.Empty}", new TableServiceClient(endpoint, options: BuildClientOptions(options)));
         }
 
         private Task<TableServiceClient> CreateClientAsync(CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(options.Value.FullyQualifiedDomainName))
+            options.Value.FullyQualifiedDomainName ??= Environment.GetEnvironmentVariable(DefaultTableServiceUriSetting)
+                ?? throw new ApplicationException(InternalError.InternalServerError, "Fully qualified domain name is not specified");
+            if (!Uri.TryCreate(options.Value.FullyQualifiedDomainName, UriKind.Absolute, out Uri? endpointUri)
+                && !Uri.TryCreate($"https://{options.Value.FullyQualifiedDomainName}", UriKind.Absolute, out endpointUri))
             {
-                throw new ApplicationException(InternalError.InternalServerError);
+                throw new ApplicationException(InternalError.InternalServerError, "Invalid table service URI");
             }
 
-            TableServiceClient client = clients.GetOrAdd(options.Value.FullyQualifiedDomainName, _ =>
+            TableServiceClient client = clients.GetOrAdd(endpointUri.AbsoluteUri, _ =>
             {
                 TableClientOptions opt = BuildClientOptions(options);
-                TokenCredential credential = credentials.GetOrAdd(options.Value.FullyQualifiedDomainName, 
-                    _ => new DefaultAzureCredential(includeInteractiveCredentials: options.Value.EnableInteractiveIdentity));
-                return Uri.TryCreate($"https://{options.Value.FullyQualifiedDomainName}", UriKind.Absolute, out Uri? endpointUri)
-                    ? new TableServiceClient(endpointUri, credential, opt)
-                    : throw new ApplicationException(InternalError.InternalServerError);
+                TokenCredential credential = credentials.GetOrAdd(endpointUri.AbsoluteUri,
+                    _ =>
+                    {
+                        DefaultAzureCredentialOptions credentialOptions = new()
+                        {
+                            ExcludeInteractiveBrowserCredential = !options.Value.EnableInteractiveIdentity,
+                        };
+
+                        string? clientId = Environment.GetEnvironmentVariable(ManagedIdentitySetting);
+                        if (!String.IsNullOrWhiteSpace(clientId))
+                        {
+                            credentialOptions.ManagedIdentityClientId = clientId;
+                        }
+
+                        return new DefaultAzureCredential(credentialOptions);
+                    });
+                return new TableServiceClient(endpointUri, credential, opt);
             });
 
             return Task.FromResult(client);

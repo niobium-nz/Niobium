@@ -1,22 +1,25 @@
-﻿using Azure.Core;
+using System.Collections.Concurrent;
+using Azure.Core;
 using Azure.Identity;
 using Azure.Storage.Blobs;
 using Microsoft.Extensions.Options;
 using Niobium.Identity;
-using System.Collections.Concurrent;
 
 namespace Niobium.File.Blob
 {
     internal sealed class AzureBlobClientFactory(IOptions<StorageBlobOptions> options, Lazy<IAuthenticator> authenticator)
     {
+        private const string DefaultBlobServiceUriSetting = "AzureWebJobsStorage__blobServiceUri";
+        private const string ManagedIdentitySetting = "AzureWebJobsStorage__clientId";
         private static readonly ConcurrentDictionary<string, BlobServiceClient> clients = [];
         private static readonly ConcurrentDictionary<string, TokenCredential> credentials = [];
 
         public async Task<BlobServiceClient> CreateClientAsync(IEnumerable<FilePermissions> permissions, string containerName, CancellationToken cancellationToken = default)
         {
-            if (!string.IsNullOrWhiteSpace(options.Value.FullyQualifiedDomainName))
+            if (!String.IsNullOrWhiteSpace(options.Value.FullyQualifiedDomainName)
+                || !String.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(DefaultBlobServiceUriSetting)))
             {
-                return await CreateClientAsync(cancellationToken);
+                return await this.CreateClientAsync(cancellationToken);
             }
 
             IEnumerable<ResourcePermission> resourcePermissions = await authenticator.Value.GetResourcePermissionsAsync(cancellationToken) ?? [];
@@ -37,19 +40,34 @@ namespace Niobium.File.Blob
 
         public Task<BlobServiceClient> CreateClientAsync(CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(options.Value.FullyQualifiedDomainName))
+            options.Value.FullyQualifiedDomainName ??= Environment.GetEnvironmentVariable(DefaultBlobServiceUriSetting)
+                ?? throw new ApplicationException(InternalError.InternalServerError, "Fully qualified domain name is not specified");
+            if (!Uri.TryCreate(options.Value.FullyQualifiedDomainName, UriKind.Absolute, out Uri? endpointUri)
+                && !Uri.TryCreate($"https://{options.Value.FullyQualifiedDomainName}", UriKind.Absolute, out endpointUri))
             {
-                throw new ApplicationException(InternalError.InternalServerError);
+                throw new ApplicationException(InternalError.InternalServerError, "Invalid blob service URI");
             }
 
             BlobServiceClient client = clients.GetOrAdd(options.Value.FullyQualifiedDomainName, _ =>
             {
                 BlobClientOptions opt = BuildClientOptions(options);
                 TokenCredential credential = credentials.GetOrAdd(options.Value.FullyQualifiedDomainName,
-                    _ => new DefaultAzureCredential(includeInteractiveCredentials: options.Value.EnableInteractiveIdentity));
-                return Uri.TryCreate($"https://{options.Value.FullyQualifiedDomainName}", UriKind.Absolute, out Uri? endpointUri)
-                    ? new BlobServiceClient(endpointUri, credential, opt)
-                    : throw new ApplicationException(InternalError.InternalServerError);
+                    _ =>
+                    {
+                        DefaultAzureCredentialOptions credentialOptions = new()
+                        {
+                            ExcludeInteractiveBrowserCredential = !options.Value.EnableInteractiveIdentity,
+                        };
+
+                        string? clientId = Environment.GetEnvironmentVariable(ManagedIdentitySetting);
+                        if (!String.IsNullOrWhiteSpace(clientId))
+                        {
+                            credentialOptions.ManagedIdentityClientId = clientId;
+                        }
+
+                        return new DefaultAzureCredential(credentialOptions);
+                    });
+                return new BlobServiceClient(endpointUri, credential, opt);
             });
 
             return Task.FromResult(client);

@@ -1,9 +1,10 @@
-﻿using Azure;
+using System.Collections.Concurrent;
+using Azure;
+using Azure.Core;
 using Azure.Identity;
 using Azure.Messaging.ServiceBus;
 using Microsoft.Extensions.Options;
 using Niobium.Identity;
-using System.Collections.Concurrent;
 
 namespace Niobium.Messaging.ServiceBus
 {
@@ -11,19 +12,21 @@ namespace Niobium.Messaging.ServiceBus
         Lazy<IAuthenticator> authenticator,
         IOptions<ServiceBusOptions> options)
     {
+        private const string DefaultServiceBusFQDNSetting = "AzureWebJobsServiceBus__fullyQualifiedNamespace";
+        private const string ManagedIdentitySetting = "AzureWebJobsStorage__clientId";
         private static readonly ConcurrentDictionary<string, ServiceBusClient> clients = [];
+        private static readonly ConcurrentDictionary<string, TokenCredential> credentials = [];
         private static readonly Dictionary<string, ServiceBusSender> senders = [];
         private static readonly Dictionary<string, ServiceBusReceiver> receivers = [];
-        private ServiceBusOptions? configuration;
 
         public ServiceBusOptions Configuration
         {
-            get => configuration ?? options.Value;
+            get => field ?? options.Value;
             set
             {
                 if (value != null)
                 {
-                    configuration = value;
+                    field = value;
                 }
             }
         }
@@ -35,7 +38,7 @@ namespace Niobium.Messaging.ServiceBus
                 return cache;
             }
 
-            ServiceBusClient client = await CreateClientAsync(permissions, name, cancellationToken);
+            ServiceBusClient client = await this.CreateClientAsync(permissions, name, cancellationToken);
             ServiceBusReceiver receiver = client.CreateReceiver(name);
             receivers.Add(name, receiver);
             return receiver;
@@ -48,7 +51,7 @@ namespace Niobium.Messaging.ServiceBus
                 return cache;
             }
 
-            ServiceBusClient client = await CreateClientAsync(permissions, name, cancellationToken);
+            ServiceBusClient client = await this.CreateClientAsync(permissions, name, cancellationToken);
             ServiceBusSender sender = client.CreateSender(name);
             senders.Add(name, sender);
             return sender;
@@ -56,12 +59,22 @@ namespace Niobium.Messaging.ServiceBus
 
         private async Task<ServiceBusClient> CreateClientAsync(IEnumerable<MessagingPermissions> permissions, string name, CancellationToken cancellationToken = default)
         {
-            if (!string.IsNullOrWhiteSpace(Configuration.FullyQualifiedNamespace))
+            string? fqdn = this.Configuration.FullyQualifiedNamespace ?? Environment.GetEnvironmentVariable(DefaultServiceBusFQDNSetting);
+            if (!String.IsNullOrWhiteSpace(fqdn))
             {
-                return clients.GetOrAdd(Configuration.FullyQualifiedNamespace, new ServiceBusClient(
-                    Configuration.FullyQualifiedNamespace,
-                    new DefaultAzureCredential(includeInteractiveCredentials: Configuration.EnableInteractiveIdentity),
-                    options: CreateOptions(Configuration)));
+                DefaultAzureCredentialOptions credentialOptions = new()
+                {
+                    ExcludeInteractiveBrowserCredential = !this.Configuration.EnableInteractiveIdentity,
+                };
+
+                string? clientId = Environment.GetEnvironmentVariable(ManagedIdentitySetting);
+                if (!String.IsNullOrWhiteSpace(clientId))
+                {
+                    credentialOptions.ManagedIdentityClientId = clientId;
+                }
+
+                TokenCredential credential = credentials.GetOrAdd(fqdn, new DefaultAzureCredential(credentialOptions));
+                return clients.GetOrAdd(fqdn, new ServiceBusClient(fqdn, credential, options: CreateOptions(this.Configuration)));
             }
             else
             {
@@ -76,7 +89,7 @@ namespace Niobium.Messaging.ServiceBus
                 return clients.GetOrAdd(name, new ServiceBusClient(
                     permission.Resource,
                     new AzureSasCredential($"SharedAccessSignature {token}"),
-                    options: CreateOptions(Configuration)));
+                    options: CreateOptions(this.Configuration)));
             }
         }
 
