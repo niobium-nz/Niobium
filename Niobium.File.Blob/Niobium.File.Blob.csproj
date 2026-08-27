@@ -37,8 +37,8 @@
 
   <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.21.0" />
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.29.1" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.10" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.29.2" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.11" />
     <ProjectReference Include="..\Niobium.File\Niobium.File.csproj" />
     <ProjectReference Include="..\Niobium.Identity\Niobium.Identity.csproj" />
   </ItemGroup>
