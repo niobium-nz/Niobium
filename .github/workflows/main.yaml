@@ -7,7 +7,9 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  build-and-publish:
+    permissions:
+      id-token: write
     runs-on: ubuntu-latest
     env:
       buildVersion: "4.0"
@@ -188,6 +190,12 @@ jobs:
         name: coverage-report
         path: coverage-report
 
+    - name: NuGet login (OIDC → temp API key)
+      uses: NuGet/login@v1
+      id: login
+      with:
+        user: ${{ secrets.NUGET_USER }}
+    
     - name: Publish NuGet Package
       if: ${{ steps.changed-packages.outputs.has_changes == 'true' }}
       run: |
@@ -214,7 +222,7 @@ jobs:
       shell: pwsh
       env:
         NUGET_FEED_URL: ${{ env.nugetFeedUrl }}
-        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        NUGET_API_KEY: ${{steps.login.outputs.NUGET_API_KEY}}
         CHANGED_PACKAGE_IDS: ${{ steps.changed-packages.outputs.package_ids }}
 
     - name: Skip NuGet Publish
