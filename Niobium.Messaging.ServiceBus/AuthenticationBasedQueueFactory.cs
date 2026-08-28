@@ -3,6 +3,7 @@ using Azure;
 using Azure.Core;
 using Azure.Identity;
 using Azure.Messaging.ServiceBus;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Niobium.Identity;
 
@@ -10,10 +11,11 @@ namespace Niobium.Messaging.ServiceBus
 {
     internal sealed class AuthenticationBasedQueueFactory(
         Lazy<IAuthenticator> authenticator,
+        IConfiguration config,
         IOptions<ServiceBusOptions> options)
     {
-        private const string DefaultServiceBusFQDNSetting = "AzureWebJobsServiceBus__fullyQualifiedNamespace";
-        private const string ManagedIdentitySetting = "AzureWebJobsStorage__clientId";
+        private const string DefaultServiceBusFQDNSetting = "AzureWebJobsServiceBus:fullyQualifiedNamespace";
+        private const string ManagedIdentitySetting = "AzureWebJobsStorage:clientId";
         private static readonly ConcurrentDictionary<string, ServiceBusClient> clients = [];
         private static readonly ConcurrentDictionary<string, TokenCredential> credentials = [];
         private static readonly Dictionary<string, ServiceBusSender> senders = [];
@@ -59,7 +61,7 @@ namespace Niobium.Messaging.ServiceBus
 
         private async Task<ServiceBusClient> CreateClientAsync(IEnumerable<MessagingPermissions> permissions, string name, CancellationToken cancellationToken = default)
         {
-            string? fqdn = this.Configuration.FullyQualifiedNamespace ?? Environment.GetEnvironmentVariable(DefaultServiceBusFQDNSetting);
+            string? fqdn = this.Configuration.FullyQualifiedNamespace ?? config[DefaultServiceBusFQDNSetting];
             if (!String.IsNullOrWhiteSpace(fqdn))
             {
                 DefaultAzureCredentialOptions credentialOptions = new()
@@ -67,7 +69,7 @@ namespace Niobium.Messaging.ServiceBus
                     ExcludeInteractiveBrowserCredential = !this.Configuration.EnableInteractiveIdentity,
                 };
 
-                string? clientId = Environment.GetEnvironmentVariable(ManagedIdentitySetting);
+                string? clientId = config[ManagedIdentitySetting];
                 if (!String.IsNullOrWhiteSpace(clientId))
                 {
                     credentialOptions.ManagedIdentityClientId = clientId;

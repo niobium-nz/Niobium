@@ -2,22 +2,23 @@ using System.Collections.Concurrent;
 using Azure.Core;
 using Azure.Data.Tables;
 using Azure.Identity;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Niobium.Identity;
 
 namespace Niobium.Database.StorageTable
 {
-    internal sealed class AzureTableClientFactory(IOptions<StorageTableOptions> options, Lazy<IAuthenticator> authenticator) : IAzureTableClientFactory
+    internal sealed class AzureTableClientFactory(IOptions<StorageTableOptions> options, IConfiguration configuration, Lazy<IAuthenticator> authenticator) : IAzureTableClientFactory
     {
-        private const string DefaultTableServiceUriSetting = "AzureWebJobsStorage__tableServiceUri";
-        private const string ManagedIdentitySetting = "AzureWebJobsStorage__clientId";
+        private const string DefaultTableServiceUriSetting = "AzureWebJobsStorage:tableServiceUri";
+        private const string ManagedIdentitySetting = "AzureWebJobsStorage:clientId";
         private static readonly ConcurrentDictionary<string, TableServiceClient> clients = [];
         private static readonly ConcurrentDictionary<string, TokenCredential> credentials = [];
 
         public async Task<TableServiceClient> CreateClientAsync(IEnumerable<DatabasePermissions> permissions, string table, string? partition = null, CancellationToken cancellationToken = default)
         {
             if (!String.IsNullOrWhiteSpace(options.Value.FullyQualifiedDomainName)
-                || !String.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(DefaultTableServiceUriSetting)))
+                || !String.IsNullOrWhiteSpace(configuration[DefaultTableServiceUriSetting]))
             {
                 return await this.CreateClientAsync(cancellationToken);
             }
@@ -36,7 +37,7 @@ namespace Niobium.Database.StorageTable
 
         private Task<TableServiceClient> CreateClientAsync(CancellationToken cancellationToken = default)
         {
-            options.Value.FullyQualifiedDomainName ??= Environment.GetEnvironmentVariable(DefaultTableServiceUriSetting)
+            options.Value.FullyQualifiedDomainName ??= configuration[DefaultTableServiceUriSetting]
                 ?? throw new ApplicationException(InternalError.InternalServerError, "Fully qualified domain name is not specified");
             if (!Uri.TryCreate(options.Value.FullyQualifiedDomainName, UriKind.Absolute, out Uri? endpointUri)
                 && !Uri.TryCreate($"https://{options.Value.FullyQualifiedDomainName}", UriKind.Absolute, out endpointUri))
@@ -55,7 +56,7 @@ namespace Niobium.Database.StorageTable
                             ExcludeInteractiveBrowserCredential = !options.Value.EnableInteractiveIdentity,
                         };
 
-                        string? clientId = Environment.GetEnvironmentVariable(ManagedIdentitySetting);
+                        string? clientId = configuration[ManagedIdentitySetting];
                         if (!String.IsNullOrWhiteSpace(clientId))
                         {
                             credentialOptions.ManagedIdentityClientId = clientId;
