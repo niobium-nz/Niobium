@@ -10,15 +10,13 @@ namespace Niobium.File.Blob
 {
     internal sealed class AzureBlobClientFactory(IOptions<StorageBlobOptions> options, IConfiguration configuration, Lazy<IAuthenticator> authenticator)
     {
-        private const string DefaultBlobServiceUriSetting = "AzureWebJobsStorage:blobServiceUri";
-        private const string ManagedIdentitySetting = "AzureWebJobsStorage:clientId";
         private static readonly ConcurrentDictionary<string, BlobServiceClient> clients = [];
         private static readonly ConcurrentDictionary<string, TokenCredential> credentials = [];
 
         public async Task<BlobServiceClient> CreateClientAsync(IEnumerable<FilePermissions> permissions, string containerName, CancellationToken cancellationToken = default)
         {
             if (!String.IsNullOrWhiteSpace(options.Value.FullyQualifiedDomainName)
-                || !String.IsNullOrWhiteSpace(configuration[DefaultBlobServiceUriSetting]))
+                || !String.IsNullOrWhiteSpace(configuration[Constants.DefaultBlobServiceUriSetting]))
             {
                 return await this.CreateClientAsync(cancellationToken);
             }
@@ -41,7 +39,7 @@ namespace Niobium.File.Blob
 
         public Task<BlobServiceClient> CreateClientAsync(CancellationToken cancellationToken = default)
         {
-            options.Value.FullyQualifiedDomainName ??= configuration[DefaultBlobServiceUriSetting]
+            options.Value.FullyQualifiedDomainName ??= configuration[Constants.DefaultBlobServiceUriSetting]
                 ?? throw new ApplicationException(InternalError.InternalServerError, "Fully qualified domain name is not specified");
             if (!Uri.TryCreate(options.Value.FullyQualifiedDomainName, UriKind.Absolute, out Uri? endpointUri)
                 && !Uri.TryCreate($"https://{options.Value.FullyQualifiedDomainName}", UriKind.Absolute, out endpointUri))
@@ -60,7 +58,7 @@ namespace Niobium.File.Blob
                             ExcludeInteractiveBrowserCredential = !options.Value.EnableInteractiveIdentity,
                         };
 
-                        string? clientId = configuration[ManagedIdentitySetting];
+                        string? clientId = configuration[Constants.ManagedIdentitySetting];
                         if (!String.IsNullOrWhiteSpace(clientId))
                         {
                             credentialOptions.ManagedIdentityClientId = clientId;

@@ -14,8 +14,6 @@ namespace Niobium.Messaging.ServiceBus
         IConfiguration config,
         IOptions<ServiceBusOptions> options)
     {
-        private const string DefaultServiceBusFQDNSetting = "AzureWebJobsServiceBus:fullyQualifiedNamespace";
-        private const string ManagedIdentitySetting = "AzureWebJobsStorage:clientId";
         private static readonly ConcurrentDictionary<string, ServiceBusClient> clients = [];
         private static readonly ConcurrentDictionary<string, TokenCredential> credentials = [];
         private static readonly Dictionary<string, ServiceBusSender> senders = [];
@@ -61,7 +59,7 @@ namespace Niobium.Messaging.ServiceBus
 
         private async Task<ServiceBusClient> CreateClientAsync(IEnumerable<MessagingPermissions> permissions, string name, CancellationToken cancellationToken = default)
         {
-            string? fqdn = this.Configuration.FullyQualifiedNamespace ?? config[DefaultServiceBusFQDNSetting];
+            string? fqdn = this.Configuration.FullyQualifiedNamespace ?? config[Constants.DefaultServiceBusFQDNSetting];
             if (!String.IsNullOrWhiteSpace(fqdn))
             {
                 DefaultAzureCredentialOptions credentialOptions = new()
@@ -69,7 +67,7 @@ namespace Niobium.Messaging.ServiceBus
                     ExcludeInteractiveBrowserCredential = !this.Configuration.EnableInteractiveIdentity,
                 };
 
-                string? clientId = config[ManagedIdentitySetting];
+                string? clientId = config[Constants.ManagedIdentitySetting];
                 if (!String.IsNullOrWhiteSpace(clientId))
                 {
                     credentialOptions.ManagedIdentityClientId = clientId;

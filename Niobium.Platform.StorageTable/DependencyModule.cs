@@ -54,15 +54,13 @@ namespace Niobium.Platform.StorageTable
             DatabasePermissions permissions,
             Func<IServiceProvider, string> resolveTableName,
             Func<IServiceProvider, string> resolveFullyQualifiedDomainName)
-        {
-            return services.AddTransient<IEntitlementDescriptor>(sp =>
+            => services.AddTransient<IEntitlementDescriptor>(sp =>
             {
                 string role = resolveRole(sp);
                 string table = resolveTableName(sp);
                 string fullyQualifiedDomainName = resolveFullyQualifiedDomainName(sp);
                 return new RoleBasedEntitlementDescriptor(role, permissions, fullyQualifiedDomainName, table);
             });
-        }
 
         public static IServiceCollection GrantDatabasePersonalizedEntitlementTo(
             this IServiceCollection services,
@@ -70,47 +68,52 @@ namespace Niobium.Platform.StorageTable
             DatabasePermissions permissions,
             Func<IServiceProvider, string> resolveTableName,
             Func<IServiceProvider, string> resolveFullyQualifiedDomainName)
-        {
-            return services.AddTransient<IEntitlementDescriptor>(sp =>
+            => services.AddTransient<IEntitlementDescriptor>(sp =>
             {
                 string role = resolveRole(sp);
                 string table = resolveTableName(sp);
                 string fullyQualifiedDomainName = resolveFullyQualifiedDomainName(sp);
                 return new PersonalizedEntitlementDescriptor(role, permissions, fullyQualifiedDomainName, table);
             });
-        }
 
         public static IServiceCollection AddDatabaseResourceTokenSupport(this IHostApplicationBuilder builder)
-        {
-            return builder.Services.AddDatabaseResourceTokenSupport(builder.Configuration.GetSection(nameof(IdentityServiceOptions)).Bind);
-        }
+            => builder.Services.AddDatabaseResourceTokenSupport(builder.Configuration.GetSection(nameof(IdentityServiceOptions)).Bind);
 
         public static IServiceCollection GrantDatabaseEntitlementTo(this IServiceCollection services, string role, DatabasePermissions permissions, string tableName, string fullyQualifiedDomainName)
-        {
-            return services.GrantDatabaseEntitlementTo(_ => role, permissions, _ => tableName, _ => fullyQualifiedDomainName);
-        }
+            => services.GrantDatabaseEntitlementTo(_ => role, permissions, _ => tableName, _ => fullyQualifiedDomainName);
 
         public static IServiceCollection GrantDatabasePersonalizedEntitlementTo(this IServiceCollection services, string role, DatabasePermissions permissions, string tableName, string fullyQualifiedDomainName)
-        {
-            return services.GrantDatabasePersonalizedEntitlementTo(_ => role, permissions, _ => tableName, _ => fullyQualifiedDomainName);
-        }
+            => services.GrantDatabasePersonalizedEntitlementTo(_ => role, permissions, _ => tableName, _ => fullyQualifiedDomainName);
 
         public static IServiceCollection GrantDatabasePersonalizedEntitlementTo(this IServiceCollection services, string table, DatabasePermissions permissions = DatabasePermissions.Query)
-        {
-            return services.GrantDatabasePersonalizedEntitlementTo(
+            => services.GrantDatabasePersonalizedEntitlementTo(
                 sp => sp.GetRequiredService<IOptions<IdentityServiceOptions>>().Value.DefaultRole,
                 permissions,
                 sp => table,
-                sp => sp.GetRequiredService<IOptions<StorageTableOptions>>().Value.FullyQualifiedDomainName!);
-        }
+                GetFullyQualifiedDomainName);
 
         public static IServiceCollection GrantDatabaseEntitlementTo(this IServiceCollection services, string table, DatabasePermissions permissions = DatabasePermissions.Query)
-        {
-            return services.GrantDatabaseEntitlementTo(
+            => services.GrantDatabaseEntitlementTo(
                 sp => sp.GetRequiredService<IOptions<IdentityServiceOptions>>().Value.DefaultRole,
                 permissions,
                 sp => table,
-                sp => sp.GetRequiredService<IOptions<StorageTableOptions>>().Value.FullyQualifiedDomainName!);
+                GetFullyQualifiedDomainName);
+
+        private static string GetFullyQualifiedDomainName(IServiceProvider sp)
+        {
+            IOptions<StorageTableOptions> option = sp.GetRequiredService<IOptions<StorageTableOptions>>();
+            string? fdqn = option.Value.FullyQualifiedDomainName;
+            if (fdqn != null)
+            {
+                IConfiguration config = sp.GetRequiredService<IConfiguration>();
+                string? uri = config[Database.StorageTable.Constants.DefaultTableServiceUriSetting];
+                if (!Uri.TryCreate(uri, UriKind.Absolute, out Uri? parsedUri))
+                {
+                    throw new InvalidOperationException($"Invalid URI for table service: {uri}");
+                }
+                fdqn = parsedUri.Host;
+            }
+            return fdqn ?? throw new InvalidOperationException("Fully qualified domain name is not available");
         }
     }
 }

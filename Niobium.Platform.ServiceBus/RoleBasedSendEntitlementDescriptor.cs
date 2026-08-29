@@ -1,11 +1,13 @@
-﻿using Niobium.Identity;
+using Niobium.Identity;
 using Niobium.Messaging;
 using System.Text;
 
 namespace Niobium.Platform.ServiceBus
 {
-    internal sealed class RoleBasedSendEntitlementDescriptor(string roleToGrant, string fullyQualifiedNamespace, string queueName, MessagingPermissions permissions) : IEntitlementDescriptor
+    internal class RoleBasedSendEntitlementDescriptor(string roleToGrant, string fullyQualifiedNamespace, string queueName, MessagingPermissions permissions) : IEntitlementDescriptor
     {
+        protected string FullyQualifiedDomainName { get; } = ValidateFullyQualifiedDomainName(fullyQualifiedNamespace);
+
         public bool IsHighOverhead => false;
 
         public bool CanDescribe(Guid tenant, Guid user, string role)
@@ -51,10 +53,15 @@ namespace Niobium.Platform.ServiceBus
                 new()
                 {
                     Permission = permissionDesc,
-                    Resource = $"{fullyQualifiedNamespace}/{queueName}",
+                    Resource = $"{this.FullyQualifiedDomainName}/{queueName}",
                     Type = ResourceType.AzureServiceBus,
                 }
             ]);
         }
+        private static string ValidateFullyQualifiedDomainName(string? fullyQualifiedDomainName)
+            => String.IsNullOrWhiteSpace(fullyQualifiedDomainName)
+                ? throw new ApplicationException(Niobium.InternalError.InternalServerError, "Fully qualified domain name is not specified")
+                : Uri.TryCreate(fullyQualifiedDomainName, UriKind.Absolute, out Uri? endpointUri) ? endpointUri.Host : fullyQualifiedDomainName
+            ?? throw new ApplicationException(Niobium.InternalError.InternalServerError, "Fully qualified domain name is not specified");
     }
 }

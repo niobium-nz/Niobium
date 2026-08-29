@@ -1,15 +1,16 @@
-﻿using Microsoft.Extensions.Options;
-using Niobium.Database.StorageTable;
 using System.Security.Claims;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+using Niobium.Database.StorageTable;
 
 namespace Niobium.Platform.StorageTable
 {
-    internal sealed class DefaultTableControl(IOptions<StorageTableOptions> options) : IResourceControl
+    internal sealed class DefaultTableControl(IOptions<StorageTableOptions> options, IConfiguration configuration) : IResourceControl
     {
         public bool Grantable(ResourceType type, string resource)
-        {
-            return type == ResourceType.AzureStorageTable && options.Value.FullyQualifiedDomainName != null && options.Value.Key != null;
-        }
+            => type == ResourceType.AzureStorageTable
+                && (!String.IsNullOrWhiteSpace(options.Value.FullyQualifiedDomainName) || !String.IsNullOrWhiteSpace(configuration[Database.StorageTable.Constants.DefaultTableServiceUriSetting]))
+                && options.Value.Key != null;
 
         public Task<StorageControl?> GrantAsync(ClaimsPrincipal principal, ResourceType type, string resource, string? partition, string? row, CancellationToken cancellationToken = default)
         {

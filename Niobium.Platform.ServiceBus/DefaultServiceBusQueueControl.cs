@@ -1,16 +1,18 @@
-﻿using Microsoft.Extensions.Options;
+using System.Security.Claims;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Niobium.Messaging;
 using Niobium.Messaging.ServiceBus;
-using Niobium.Platform;
-using System.Security.Claims;
 
 namespace Niobium.Platform.ServiceBus
 {
-    internal sealed class DefaultServiceBusQueueControl(IOptions<ServiceBusOptions> options) : IResourceControl
+    internal sealed class DefaultServiceBusQueueControl(IOptions<ServiceBusOptions> options, IConfiguration configuration) : IResourceControl
     {
         public bool Grantable(ResourceType type, string resource)
         {
-            return type == ResourceType.AzureServiceBus && resource == options.Value.FullyQualifiedNamespace;
+            string? fdqn = options.Value.FullyQualifiedNamespace
+                ?? configuration[Messaging.ServiceBus.Constants.DefaultServiceBusFQDNSetting];
+            return type == ResourceType.AzureServiceBus && resource == fdqn;
         }
 
         public Task<StorageControl?> GrantAsync(ClaimsPrincipal principal, ResourceType type, string resource, string? partition, string? row, CancellationToken cancellationToken = default)
@@ -20,7 +22,7 @@ namespace Niobium.Platform.ServiceBus
             IEnumerable<string> entitlements = permissions
                 .Where(p => p.Type == ResourceType.AzureServiceBus
                     && p.Resource == resource
-                    && (partition == p.Partition || partition != null && p.Partition != null && partition.StartsWith(p.Partition)))
+                    && (partition == p.Partition || (partition != null && p.Partition != null && partition.StartsWith(p.Partition))))
                 .SelectMany(p => p.Entitlements);
 
             if (entitlements != null && entitlements.Any())

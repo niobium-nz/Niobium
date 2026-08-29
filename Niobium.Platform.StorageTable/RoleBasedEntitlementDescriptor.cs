@@ -1,18 +1,15 @@
-﻿using Niobium.Identity;
 using System.Text;
+using Niobium.Identity;
 
 namespace Niobium.Platform.StorageTable
 {
     internal class RoleBasedEntitlementDescriptor(string roleToGrant, DatabasePermissions permissions, string fullyQualifiedDomainName, string tableName) : IEntitlementDescriptor
     {
-        protected string FullyQualifiedDomainName { get; private set; } = fullyQualifiedDomainName;
+        protected string FullyQualifiedDomainName { get; private set; } = ValidateFullyQualifiedDomainName(fullyQualifiedDomainName);
 
         public bool IsHighOverhead => false;
 
-        public bool CanDescribe(Guid tenant, Guid user, string role)
-        {
-            return roleToGrant == role;
-        }
+        public bool CanDescribe(Guid tenant, Guid user, string role) => roleToGrant == role;
 
         public Task<IEnumerable<EntitlementDescription>> DescribeAsync(Guid tenant, Guid user, string role)
         {
@@ -47,7 +44,7 @@ namespace Niobium.Platform.StorageTable
                 permissionDesc = permissionDesc[..^1];
             }
 
-            IEnumerable<EntitlementDescription> result = BuildDescription(tenant, user, role, tableName, permissionDesc);
+            IEnumerable<EntitlementDescription> result = this.BuildDescription(tenant, user, role, tableName, permissionDesc);
             return Task.FromResult(result);
         }
 
@@ -56,14 +53,16 @@ namespace Niobium.Platform.StorageTable
             Guid user,
             string role,
             string tableName,
-            string permissionDescription)
-        {
-            return [new EntitlementDescription
+            string permissionDescription) => [new EntitlementDescription
             {
                 Permission = permissionDescription,
-                Resource = $"{FullyQualifiedDomainName}/{tableName}/",
+                Resource = $"{this.FullyQualifiedDomainName}/{tableName}/",
                 Type = ResourceType.AzureStorageTable,
             }];
-        }
+
+        private static string ValidateFullyQualifiedDomainName(string fullyQualifiedDomainName)
+            => String.IsNullOrWhiteSpace(fullyQualifiedDomainName)
+                ? throw new ApplicationException(Niobium.InternalError.InternalServerError, "Fully qualified domain name is not specified")
+                : Uri.TryCreate(fullyQualifiedDomainName, UriKind.Absolute, out Uri? endpointUri) ? endpointUri.Host : fullyQualifiedDomainName;
     }
 }

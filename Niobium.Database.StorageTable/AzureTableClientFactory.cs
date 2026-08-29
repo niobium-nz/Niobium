@@ -10,15 +10,13 @@ namespace Niobium.Database.StorageTable
 {
     internal sealed class AzureTableClientFactory(IOptions<StorageTableOptions> options, IConfiguration configuration, Lazy<IAuthenticator> authenticator) : IAzureTableClientFactory
     {
-        private const string DefaultTableServiceUriSetting = "AzureWebJobsStorage:tableServiceUri";
-        private const string ManagedIdentitySetting = "AzureWebJobsStorage:clientId";
         private static readonly ConcurrentDictionary<string, TableServiceClient> clients = [];
         private static readonly ConcurrentDictionary<string, TokenCredential> credentials = [];
 
         public async Task<TableServiceClient> CreateClientAsync(IEnumerable<DatabasePermissions> permissions, string table, string? partition = null, CancellationToken cancellationToken = default)
         {
             if (!String.IsNullOrWhiteSpace(options.Value.FullyQualifiedDomainName)
-                || !String.IsNullOrWhiteSpace(configuration[DefaultTableServiceUriSetting]))
+                || !String.IsNullOrWhiteSpace(configuration[Constants.DefaultTableServiceUriSetting]))
             {
                 return await this.CreateClientAsync(cancellationToken);
             }
@@ -37,7 +35,7 @@ namespace Niobium.Database.StorageTable
 
         private Task<TableServiceClient> CreateClientAsync(CancellationToken cancellationToken = default)
         {
-            options.Value.FullyQualifiedDomainName ??= configuration[DefaultTableServiceUriSetting]
+            options.Value.FullyQualifiedDomainName ??= configuration[Constants.DefaultTableServiceUriSetting]
                 ?? throw new ApplicationException(InternalError.InternalServerError, "Fully qualified domain name is not specified");
             if (!Uri.TryCreate(options.Value.FullyQualifiedDomainName, UriKind.Absolute, out Uri? endpointUri)
                 && !Uri.TryCreate($"https://{options.Value.FullyQualifiedDomainName}", UriKind.Absolute, out endpointUri))
@@ -56,7 +54,7 @@ namespace Niobium.Database.StorageTable
                             ExcludeInteractiveBrowserCredential = !options.Value.EnableInteractiveIdentity,
                         };
 
-                        string? clientId = configuration[ManagedIdentitySetting];
+                        string? clientId = configuration[Constants.ManagedIdentitySetting];
                         if (!String.IsNullOrWhiteSpace(clientId))
                         {
                             credentialOptions.ManagedIdentityClientId = clientId;

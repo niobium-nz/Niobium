@@ -1,19 +1,17 @@
 using Azure.Data.Tables;
 using Azure.Data.Tables.Sas;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Niobium.Database.StorageTable;
 
 namespace Niobium.Platform.StorageTable
 {
-    internal sealed class AzureTableSignatureIssuer(IOptions<StorageTableOptions> options) : ISignatureIssuer
+    internal sealed class AzureTableSignatureIssuer(IOptions<StorageTableOptions> options, IConfiguration configuration) : ISignatureIssuer
     {
-        public bool CanIssue(ResourceType storageType, StorageControl control)
-        {
-            return storageType == ResourceType.AzureStorageTable
-                && !string.IsNullOrWhiteSpace(options.Value.Key)
-                && !string.IsNullOrWhiteSpace(options.Value.FullyQualifiedDomainName)
-                && !string.IsNullOrWhiteSpace(control.Resource);
-        }
+        public bool CanIssue(ResourceType storageType, StorageControl control) => storageType == ResourceType.AzureStorageTable
+                && !String.IsNullOrWhiteSpace(options.Value.Key)
+                && (!String.IsNullOrWhiteSpace(options.Value.FullyQualifiedDomainName) || !String.IsNullOrWhiteSpace(configuration[Database.StorageTable.Constants.DefaultTableServiceUriSetting]))
+                && !String.IsNullOrWhiteSpace(control.Resource);
 
         public Task<(string, DateTimeOffset)> IssueAsync(ResourceType storageType, StorageControl control, DateTimeOffset expires, CancellationToken cancellationToken = default)
         {
@@ -51,16 +49,20 @@ namespace Niobium.Platform.StorageTable
                 RowKeyStart = control.StartRowKey,
                 RowKeyEnd = control.EndRowKey,
             };
-            string accountName = ParseAccountName(options.Value.FullyQualifiedDomainName!);
+
+            string fdqn = options.Value.FullyQualifiedDomainName ?? configuration[Database.StorageTable.Constants.DefaultTableServiceUriSetting]!;
+            if (Uri.TryCreate(fdqn, UriKind.Absolute, out Uri? fdqnUri))
+            {
+                fdqn = fdqnUri.Host;
+            }
+
+            string accountName = ParseAccountName(fdqn);
             TableSharedKeyCredential cred = new(accountName, options.Value.Key);
             TableSasQueryParameters sas = builder.ToSasQueryParameters(cred);
 
             return Task.FromResult((sas.ToString(), expires));
         }
 
-        private static string ParseAccountName(string fqdn)
-        {
-            return fqdn.Split('.').First();
-        }
+        private static string ParseAccountName(string fqdn) => fqdn.Split('.').First();
     }
 }

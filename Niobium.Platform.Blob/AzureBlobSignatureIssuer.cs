@@ -1,23 +1,23 @@
-﻿using Azure.Storage;
+using Azure.Storage;
 using Azure.Storage.Sas;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Niobium.File;
 using Niobium.File.Blob;
 
 namespace Niobium.Platform.Blob
 {
-    internal sealed class AzureBlobSignatureIssuer(IOptions<StorageBlobOptions> options) : ISignatureIssuer
+    internal sealed class AzureBlobSignatureIssuer(IOptions<StorageBlobOptions> options, IConfiguration configuration) : ISignatureIssuer
     {
         public bool CanIssue(ResourceType storageType, StorageControl control)
-        {
-            return storageType == ResourceType.AzureStorageBlob
-                && !string.IsNullOrWhiteSpace(options.Value.Key)
-                && !string.IsNullOrWhiteSpace(options.Value.FullyQualifiedDomainName);
-        }
+            => storageType == ResourceType.AzureStorageBlob
+                && !String.IsNullOrWhiteSpace(options.Value.Key)
+                && (!String.IsNullOrWhiteSpace(options.Value.FullyQualifiedDomainName)
+                    || !String.IsNullOrWhiteSpace(configuration[File.Blob.Constants.DefaultBlobServiceUriSetting]));
 
         public Task<(string, DateTimeOffset)> IssueAsync(ResourceType storageType, StorageControl control, DateTimeOffset expires, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(options.Value.Key))
+            if (String.IsNullOrWhiteSpace(options.Value.Key))
             {
                 throw new ApplicationException(Niobium.InternalError.InternalServerError);
             }
@@ -75,16 +75,20 @@ namespace Niobium.Platform.Blob
             {
                 BlobContainerName = control.StartPartitionKey
             };
-            string accountName = ParseAccountName(options.Value.FullyQualifiedDomainName);
+
+            string fdqn = options.Value.FullyQualifiedDomainName ?? configuration[File.Blob.Constants.DefaultBlobServiceUriSetting]!;
+            if (Uri.TryCreate(fdqn, UriKind.Absolute, out Uri? fdqnUri))
+            {
+                fdqn = fdqnUri.Host;
+            }
+
+            string accountName = ParseAccountName(fdqn);
             StorageSharedKeyCredential cred = new(accountName, options.Value.Key);
             BlobSasQueryParameters sas = builder.ToSasQueryParameters(cred);
 
             return Task.FromResult((sas.ToString(), expires));
         }
 
-        private static string ParseAccountName(string fqdn)
-        {
-            return fqdn.Split('.').First();
-        }
+        private static string ParseAccountName(string fqdn) => fqdn.Split('.').First();
     }
 }
