@@ -1,10 +1,18 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Niobium.Database.StorageTable
 {
     public static class DependencyModule
     {
         private static volatile bool loaded;
+
+        public static IHostApplicationBuilder AddDatabase(IHostApplicationBuilder builder)
+        {
+            builder.Services.AddDatabase(builder.Configuration.GetSection(nameof(StorageTableOptions)).Bind);
+            return builder;
+        }
 
         public static IServiceCollection AddDatabase(this IServiceCollection services, Action<StorageTableOptions>? options = null)
         {

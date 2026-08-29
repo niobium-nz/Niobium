@@ -38,7 +38,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Azure" Version="1.14.1" />
-    <PackageReference Include="Microsoft.Azure.Devices" Version="1.41.0" />
+    <PackageReference Include="Microsoft.Azure.Devices" Version="1.41.1" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Niobium.Profile;
@@ -18,15 +17,7 @@ namespace Niobium.Platform.Profile
 
             loaded = true;
 
-            bool isDevelopment = builder.Environment.IsDevelopment();
-            Niobium.Profile.DependencyModule.AddProfile(
-                builder.Services,
-                options => 
-                {
-                    builder.Configuration.GetSection(nameof(ProfileOptions)).Bind(options);
-                    options.TestMode = isDevelopment;
-                },
-                isDevelopment);
+            Niobium.Profile.DependencyModule.AddProfile(builder);
 
             if (useServicePrincipalAuthentication)
             {

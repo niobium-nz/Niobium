@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration;
 
-namespace Niobium.Platform
+namespace Niobium
 {
     public static class IConfigurationExtensions
     {
@@ -29,7 +29,7 @@ namespace Niobium.Platform
         }
 
         private static string? GetServiceEnvironment(this IConfiguration configuration)
-          => configuration.GetValue<string>(Constants.ServiceEnvironment)
-            ?? configuration.GetValue<string>(Constants.AspNetCoreEnvironment);
+          => configuration[Constants.ServiceEnvironment]
+            ?? configuration[Constants.AspNetCoreEnvironment];
     }
 }

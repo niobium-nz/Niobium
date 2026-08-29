@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace Niobium.Profile
@@ -6,6 +8,15 @@ namespace Niobium.Profile
     public static class DependencyModule
     {
         private static volatile bool loaded;
+
+        public static IHostApplicationBuilder AddProfile(IHostApplicationBuilder builder)
+        {
+            AddProfile(
+                builder.Services,
+                builder.Configuration.GetSection(nameof(ProfileOptions)).Bind,
+                builder.Environment.IsDevelopment());
+            return builder;
+        }
 
         public static IServiceCollection AddProfile(IServiceCollection services, Action<ProfileOptions>? options, bool testMode = false)
         {
