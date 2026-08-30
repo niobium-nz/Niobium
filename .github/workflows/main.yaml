@@ -5,6 +5,13 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      buildAllProjects:
+        description: Build and publish all NuGet projects
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build-and-publish:
@@ -38,8 +45,31 @@ jobs:
     - name: Detect Changed NuGet Projects
       id: changed-packages
       shell: pwsh
+      env:
+        BUILD_ALL_PROJECTS: ${{ inputs.buildAllProjects }}
       run: |
         $ErrorActionPreference = 'Stop'
+
+        if ('${{ github.event_name }}' -eq 'workflow_dispatch' -and $env:BUILD_ALL_PROJECTS -eq 'true') {
+          Write-Host 'Manual build requested for all NuGet projects.'
+
+          $packageIds = Get-ChildItem -Path . -Recurse -Filter *.csproj | ForEach-Object {
+            [xml]$projectXml = Get-Content -LiteralPath $_.FullName
+            $isPackableNode = $projectXml.Project.PropertyGroup.IsPackable | Select-Object -First 1
+            $isPackable = -not ($isPackableNode -and $isPackableNode.Trim().Equals('false', [System.StringComparison]::OrdinalIgnoreCase))
+
+            if ($isPackable) {
+              $packageIdNode = $projectXml.Project.PropertyGroup.PackageId | Select-Object -First 1
+              if ([string]::IsNullOrWhiteSpace($packageIdNode)) { $_.BaseName } else { $packageIdNode }
+            }
+          } | Sort-Object -Unique
+
+          $packageIds = [string]::Join(',', $packageIds)
+          Write-Host "Package IDs selected for publishing: $packageIds"
+          "has_changes=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "package_ids=$packageIds" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          exit 0
+        }
 
         if ('${{ github.event_name }}' -eq 'pull_request') {
           $base = '${{ github.event.pull_request.base.sha }}'
