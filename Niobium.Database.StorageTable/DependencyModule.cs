@@ -8,7 +8,7 @@ namespace Niobium.Database.StorageTable
     {
         private static volatile bool loaded;
 
-        public static IHostApplicationBuilder AddDatabase(IHostApplicationBuilder builder)
+        public static TBuilder AddDatabase<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
         {
             builder.Services.AddDatabase(builder.Configuration.GetSection(nameof(StorageTableOptions)).Bind);
             return builder;

@@ -26,8 +26,7 @@ namespace Niobium.Platform.Functions
             if (!String.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
             {
                 builder.Services.AddOpenTelemetry()
-                    .UseFunctionsWorkerDefaults()
-                    .UseAzureMonitorExporter();
+                    .UseFunctionsWorkerDefaults();
             }
 
             builder.Services.AddPlatform();

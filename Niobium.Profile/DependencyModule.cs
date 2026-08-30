@@ -9,16 +9,15 @@ namespace Niobium.Profile
     {
         private static volatile bool loaded;
 
-        public static IHostApplicationBuilder AddProfile(IHostApplicationBuilder builder)
+        public static TBuilder AddProfile<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
         {
-            AddProfile(
-                builder.Services,
+            builder.Services.AddProfile(
                 builder.Configuration.GetSection(nameof(ProfileOptions)).Bind,
                 builder.Environment.IsDevelopment());
             return builder;
         }
 
-        public static IServiceCollection AddProfile(IServiceCollection services, Action<ProfileOptions>? options, bool testMode = false)
+        public static IServiceCollection AddProfile(this IServiceCollection services, Action<ProfileOptions>? options, bool testMode = false)
         {
             if (loaded)
             {
