@@ -5,6 +5,7 @@ $scriptRoot = Split-Path -Parent $PSScriptRoot
 $detector = Join-Path $scriptRoot 'Detect-ChangedNuGetProjects.ps1'
 $versionGenerator = Join-Path $scriptRoot 'New-ProjectVersionProps.ps1'
 $cleanup = Join-Path $scriptRoot 'Remove-ProjectVersionProps.ps1'
+$publisher = Join-Path $scriptRoot 'Publish-NuGetPackages.ps1'
 $testCount = 0
 
 function Assert-Equal {
@@ -107,6 +108,18 @@ try {
 
 	& $cleanup -RepositoryRoot $tempRoot
 	Assert-Equal -Expected $false -Actual (Test-Path -LiteralPath $propsPath) -Message 'Cleanup should remove generated props.'
+
+	$releaseDirectory = Join-Path $tempRoot 'Package/bin/Release'
+	$null = New-Item -ItemType Directory -Path $releaseDirectory
+	$expectedPackage = Join-Path $releaseDirectory 'Example.Package.4.0.62.nupkg'
+	$unexpectedVersion = Join-Path $releaseDirectory 'Example.Package.4.0.61.nupkg'
+	$unexpectedLocation = Join-Path $tempRoot 'Example.Package.4.0.62.nupkg'
+	New-Item -ItemType File -Path $expectedPackage | Out-Null
+	New-Item -ItemType File -Path $unexpectedVersion | Out-Null
+	New-Item -ItemType File -Path $unexpectedLocation | Out-Null
+
+	$discoveredPackages = @(& $publisher -RepositoryRoot $tempRoot -PackageIds 'Example.Package' -PackageVersion '4.0.62' -DiscoverOnly)
+	Assert-SequenceEqual -Expected @($expectedPackage) -Actual $discoveredPackages -Message 'Publishing should discover only the exact package version directly under bin/Release.'
 
 	Write-Host "All $testCount workflow script assertions passed."
 }
