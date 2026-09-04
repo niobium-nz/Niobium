@@ -19,7 +19,7 @@ jobs:
       id-token: write
     runs-on: ubuntu-latest
     env:
-      buildVersion: "4.0"
+      buildVersion: "4.2"
       projectToPublish: "**/*.csproj"
       runTests: "false"
       nugetFeedUrl: "https://api.nuget.org/v3/index.json"
