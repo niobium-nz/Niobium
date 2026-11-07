@@ -47,4 +47,7 @@
   <Project Path="Niobium.Platform.StorageTable/Niobium.Platform.StorageTable.csproj" />
   <Project Path="Niobium.Platform/Niobium.Platform.csproj" />
   <Project Path="Niobium.Profile/Niobium.Profile.csproj" />
+  <Folder Name="/Tests/">
+    <Project Path="tests/Niobium.Platform.Tests/Niobium.Platform.Tests.csproj" />
+  </Folder>
 </Solution>

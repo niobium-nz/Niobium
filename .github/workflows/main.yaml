@@ -61,6 +61,16 @@ jobs:
     - name: Build Projects
       run: dotnet build --configuration Release
 
+    - name: Test HTTP client configuration
+      run: dotnet run --project tests/Niobium.Platform.Tests --configuration Release --no-build -- --report-trx --results-directory artifacts/platform-tests
+
+    - name: Upload HTTP client test results
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: platform-test-results
+        path: artifacts/platform-tests
+
     - name: Run Unit Tests
       if: ${{ env.runTests == 'true' }}
       run: dotnet test --configuration Release --logger trx --collect "Code coverage"
