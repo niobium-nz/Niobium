@@ -37,9 +37,15 @@ The default Blob grant is container-scoped. A requested row/id is not used as a 
 
 `GetAsync` checks existence, downloads the blob, copies it into a `MemoryStream`, rewinds the stream and returns it. A missing blob returns null. The caller owns the returned stream. The current adapter buffers the whole content in memory; it is not a zero-copy streaming API or an application-level size limiter.
 
-Get and List default `createIfNotExist` to true. Read paths can therefore attempt container creation. Production containers should normally be provisioned explicitly, with read-only operations using `createIfNotExist: false` where appropriate. This is a recommended calling convention, not a change to the current defaults.
+[`IFileService.GetAsync`, `ListAsync`, `PutAsync` and `DeleteAsync`](../Niobium.File/IFileService.cs) all default `createIfNotExist` to true. With that flag enabled, `CloudBlobRepository.GetBlobContainerAsync` calls `CreateIfNotExistsAsync` before the intended blob operation. This is not limited to reads or uploads.
 
-Illustrative server-side read of an already authorized, provisioned location:
+**For delegated access using the framework's container-scoped service SAS, provision the container through an authorized server/infrastructure path and pass `createIfNotExist: false` to all four operations.** That SAS cannot authorize [Create Container](https://learn.microsoft.com/en-us/rest/api/storageservices/create-container). Leaving creation enabled can fail at the preliminary container request even when the credential has the intended blob permissions; do not rely on the container already existing to make that request authorized.
+
+[`AzureBlobSignatureIssuer`](../Niobium.Platform.Blob/AzureBlobSignatureIssuer.cs) maps `FilePermissions.Create` to the Blob SAS Create permission. That permission concerns creating blobs, snapshots or copies, **not creating containers**. See the [service SAS permissions and unsupported operations](https://learn.microsoft.com/en-us/rest/api/storageservices/create-service-sas#specify-permissions). Do not broaden client credentials or disclose an account key to work around a container-creation failure.
+
+For server-credential calls, explicitly provisioning containers and disabling creation on read-only paths is also the recommended least-privilege convention. These are calling requirements/recommendations, not changes to the adapter's defaults.
+
+Illustrative read of an already authorized, provisioned location, with container creation disabled:
 
 ```csharp
 // container and blobName must already have passed application authorization.
@@ -79,5 +85,7 @@ Treat template content and metadata as privileged inputs. HTML-encoding a substi
 Before introducing a new file feature, specify its tenant-to-container/path mapping, authorized readers/writers, overwrite/version expectations, content and size limits, and retention/deletion policy. Do not log full SAS URLs, account keys, private template contents or recipient data.
 
 Test missing containers and blobs, read-only credentials, `createIfNotExist` on/off, leading-slash compatibility, overwrite conflicts, upload-success/tag-failure, cancellation, large content, unauthorized tenant paths and account switching. For delegated mode, also test credential expiry and SDK-client reuse: the static resource client cache is keyed by container, not every host/principal/expiry dimension.
+
+For each of Get, List, Put and Delete, use a provisioned container and a service SAS with the intended blob permissions. Verify that `createIfNotExist: false` avoids the container-creation request; separately exercise the enabled/default path and its authorization failure. A missing container should be handled by the server/provisioning path, not by escalating the client's grant. These are recommended integration cases, not live Azure tests run by this documentation.
 
 Keep these tests separate from template rendering tests. A fake `IFileService` can prove application path selection and stream disposal, but not backend permission scope or Azure credential refresh. See [security review](security-review-checklist.md) for related framework follow-ups.

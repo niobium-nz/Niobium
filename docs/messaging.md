@@ -24,14 +24,39 @@ The outbound envelope has:
 | --- | --- |
 | Body | `MessagingEntry.Body`, carrying the serialized command/event rather than a JSON wrapper containing the whole entry |
 | `ContentType` | Exactly `application/json` |
-| `MessageId` | Entry ID; a GUID string is generated only when it is blank |
+| `MessageId` | `MessagingEntry<T>.ID`, initialized to a new GUID string when the entry is constructed; the broker generates another GUID only if that entry ID is blank at send time |
 | Application `Content-Type` property | Optional entry type metadata, distinct from the Service Bus content type |
 | Application `Authorization` property | An available authenticator access token as Bearer metadata; absence is allowed |
 | `ScheduledEnqueueTime` | The entry's optional `Schedule` value |
 
 Enqueue of an enumerable sends messages one by one. It is not an atomic send batch. Earlier messages can be accepted before a later send fails or the caller loses the acknowledgement.
 
-Assign a stable business-operation ID at the producer and preserve it across retries. An automatically generated ID on every retry cannot identify one logical operation. The framework setting `MessageId` does not establish that broker duplicate detection is enabled, how long its window lasts, or that a consumer has an inbox/idempotency policy.
+### Business IDs, body IDs and envelope IDs
+
+A **business-operation ID** identifies the logical work and must be persisted or reconstructible across retries. The **body ID**, such as `command.ID`, is a field in the serialized command. The **envelope MessageId** is the transport identity taken from `MessagingEntry<T>.ID`. These values can deliberately agree, but the framework does not automatically synchronize them.
+
+[MessagingEntry<T>](../Niobium.Messaging/MessagingEntry.cs) initializes its ID independently. Setting `Value = command` serializes the command but does not copy `command.ID` to the entry ID. Reconstructing `new MessagingEntry<NotifyCommand> { Value = command }` on each attempt therefore creates different envelope IDs even when the command's body ID is unchanged.
+
+For a producer whose stable command ID is also the intended transport identity, assign both explicitly:
+
+```csharp
+using Niobium.Messaging;
+using Niobium.Notification;
+
+// command is an already validated NotifyCommand; broker is IMessagingBroker<NotifyCommand>.
+// Persist or reconstruct command.ID for the same logical operation across attempts.
+ArgumentException.ThrowIfNullOrWhiteSpace(command.ID);
+MessagingEntry<NotifyCommand> entry = new()
+{
+    ID = command.ID,
+    Value = command
+};
+await broker.EnqueueAsync(entry, cancellationToken);
+```
+
+This fragment uses the [single-entry enqueue extension](../Niobium.Messaging/IMessagingBrokerExtensions.cs). It does not generate an ID on retry or establish a complete producer/outbox implementation. When one operation emits multiple distinct messages, define a stable identity for each message rather than reusing one operation ID indiscriminately.
+
+[Service Bus duplicate detection](https://learn.microsoft.com/en-us/azure/service-bus-messaging/duplicate-detection) uses the envelope `MessageId` rather than an ID inside the JSON body; partitioning also affects its uniqueness rule. Setting a stable envelope ID does not enable duplicate detection, define its retention window or give the consumer an inbox/idempotency policy. The scheduled-recovery caveat below still applies.
 
 ## The two parsing APIs are different
 
@@ -70,6 +95,8 @@ Functions-triggered consumers use the binding/runtime's settlement path, not thi
 
 [`EnableExternalEvent`](../Niobium.Messaging/DependencyModule.cs) registers an [EventMessagingBroker](../Niobium.Messaging/EventMessagingBroker.cs). It forwards eligible internally sourced events targeted externally. The domain's persistence and later event dispatch remain separate operations.
 
+The current event adapter constructs `new MessagingEntry<TEvent> { Value = e }` without assigning the envelope ID. Re-dispatching the same event therefore does not preserve its transport identity automatically, even if `e.ID` is stable. `EnableExternalEvent` is not an identity-preserving retry guarantee. Changing that adapter's identity semantics requires separate runtime work and compatibility tests; this guide only documents the behavior.
+
 A successful database write followed by a failed enqueue is a possible partial outcome. Conversely, an ambiguous send can have reached the broker before the producer retries. Design recovery, deduplication and state reconciliation for these boundaries. Neither `SaveAsync(force: true)` nor repeating a send is a substitute for a concurrency/idempotency protocol.
 
 ## Notification's durable pattern
@@ -91,6 +118,8 @@ Notification separately disables automatic redirects and removes HTTP resilience
 ## Tests before adoption
 
 Test direct JSON and entry parsing, missing/malformed type metadata, envelope/body ID differences, same ID with changed content, duplicate and concurrent delivery, send-success/response-loss, consumer failure before/after persistence, token expiry, unauthorized producers, and scheduling under actual duplicate-detection settings.
+
+For producer retry tests, construct separate entries for the same logical command and assert that both envelope IDs equal the intended stable command ID when assigned explicitly. Contrast this with the default entry initialization and current event-adapter path; a stable body ID alone must not be mistaken for stable transport identity. These are recommended regression cases, not tests executed by this documentation.
 
 Test identical queue names in different namespaces and principals in the same process. The current static sender/receiver caches are keyed only by queue name, and the sender/receiver dictionaries are not concurrent dictionaries. Changing options does not prove that a cached sender points to the new namespace. These are shared framework follow-ups, not defects to copy into each application.
 
