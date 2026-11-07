@@ -89,16 +89,78 @@ namespace Niobium.Platform.Tests
         }
 
         [TestMethod]
-        public void SharedDefault_AllowsAnExplicitClientOverride()
+        [DataRow(false, false)]
+        [DataRow(false, true)]
+        [DataRow(true, false)]
+        [DataRow(true, true)]
+        public void SharedDefault_AllowsAnExplicitClientOverride(bool defaultsRegisteredLast, bool unnamedClient)
         {
             ServiceCollection services = new();
-            services.ConfigureHttpClientDefaults(http => http.ConfigureAutoRedirect(false));
+            string overrideName = unnamedClient ? String.Empty : "override";
+            if (!defaultsRegisteredLast)
+            {
+                services.ConfigureHttpClientDefaults(http => http.ConfigureAutoRedirect(false));
+            }
             services.AddHttpClient("default");
-            services.AddHttpClient("override").ConfigureAutoRedirect(true);
+            services.AddHttpClient(overrideName).ConfigureAutoRedirect(true);
+            if (defaultsRegisteredLast)
+            {
+                services.ConfigureHttpClientDefaults(http => http.ConfigureAutoRedirect(false));
+            }
             using ServiceProvider provider = services.BuildServiceProvider();
 
             Assert.IsFalse(((SocketsHttpHandler)Primary(provider, "default")).AllowAutoRedirect);
-            Assert.IsTrue(((SocketsHttpHandler)Primary(provider, "override")).AllowAutoRedirect);
+            Assert.IsTrue(((SocketsHttpHandler)Primary(provider, overrideName)).AllowAutoRedirect);
+        }
+
+        [TestMethod]
+        [DataRow(false, false)]
+        [DataRow(false, true)]
+        [DataRow(true, false)]
+        [DataRow(true, true)]
+        public void SharedDefault_AppliesAfterCustomTransportSelection(bool useSockets, bool defaultsRegisteredLast)
+        {
+            using HttpMessageHandler transport = useSockets
+                ? new SocketsHttpHandler { UseCookies = false }
+                : new HttpClientHandler { UseCookies = false };
+            ServiceCollection services = new();
+            if (!defaultsRegisteredLast)
+            {
+                services.ConfigureHttpClientDefaults(http => http.ConfigureAutoRedirect(false));
+            }
+            services.AddHttpClient("custom").ConfigurePrimaryHttpMessageHandler(() => transport);
+            if (defaultsRegisteredLast)
+            {
+                services.ConfigureHttpClientDefaults(http => http.ConfigureAutoRedirect(false));
+            }
+            using ServiceProvider provider = services.BuildServiceProvider();
+
+            Assert.AreSame(transport, Primary(provider, "custom"));
+            if (transport is SocketsHttpHandler sockets)
+            {
+                Assert.IsFalse(sockets.AllowAutoRedirect);
+                Assert.IsFalse(sockets.UseCookies);
+            }
+            else
+            {
+                Assert.IsFalse(((HttpClientHandler)transport).AllowAutoRedirect);
+                Assert.IsFalse(((HttpClientHandler)transport).UseCookies);
+            }
+        }
+
+        [TestMethod]
+        public void NamedPolicy_SurvivesLaterHandlerSelectionAndOverridesEarlierPolicy()
+        {
+            using HttpClientHandler transport = new();
+            ServiceCollection services = new();
+            services.AddHttpClient("configured")
+                .ConfigureAutoRedirect(true)
+                .ConfigureAutoRedirect(false)
+                .ConfigurePrimaryHttpMessageHandler(() => transport);
+            using ServiceProvider provider = services.BuildServiceProvider();
+
+            Assert.AreSame(transport, Primary(provider, "configured"));
+            Assert.IsFalse(transport.AllowAutoRedirect);
         }
 
         [TestMethod]

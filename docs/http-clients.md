@@ -22,8 +22,11 @@ services.AddHttpClient("redirects-required").ConfigureAutoRedirect(true);
 ```
 
 Existing clients keep their current redirect behavior unless this method is used.
-For a custom primary handler, register the handler before applying this setting.
-An unsupported handler fails during client creation rather than silently ignoring
+The policy applies after client-specific primary-handler selection, even when a
+client selects its custom transport after shared defaults are registered. Explicit
+client settings override shared defaults in either registration order; the last
+setting at the same scope wins. An unsupported handler fails during client creation
+rather than silently ignoring
 the requested policy. Delegating handlers, service discovery, connection lifetime
 and other transport settings remain intact.
 
@@ -54,6 +57,7 @@ selected by its dependency graph. That release requires its own approved PR.
 
 `tests/Niobium.Platform.Tests` exercises both supported transports, preservation of
 factory connection lifetime and existing settings, named/default policy isolation,
+shared defaults with later custom transport selection and explicit client overrides,
 resilience-handler preservation and unsupported transports. A real loopback HTTP
 server verifies that a redirected POST reaches its destination only when enabled.
 
