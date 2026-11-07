@@ -1,5 +1,8 @@
 # Niobium Platform for .NET
 
+Read [rich domains and data access](docs/domain-data-access.md) before business or persistence changes.
+
+
 **COD** is a .NET framework designed to accelerate the development of modern cloud-based applications. It provides ready-to-use integrations with popular PaaS services like Azure Storage Table, Azure Service Bus, Azure Functions, IoT Hub, and more. The framework also features built-in role-based authentication via JWT backed by a cloud-based identity service.
 
 ---
