@@ -1,11 +1,14 @@
 # Niobium Platform for .NET
 
+Start with the [developer documentation](docs/README.md) for architecture, conventions, security, tokens, resource grants, file access, messaging and examples from Store, Notification and Invoicing.
+
 Read [rich domains and data access](docs/domain-data-access.md) before business or persistence changes.
 Read [HTTP client configuration](docs/http-clients.md) before changing outbound transports.
 Read [package releases and consumer upgrades](docs/package-upgrades.md) before changing framework package references.
 
+**Niobium** is a .NET framework designed to accelerate the development of modern cloud-based applications. It provides integrations with PaaS services including Azure Storage Table, Azure Service Bus, Azure Functions and IoT Hub, alongside identity, messaging, file and other application abstractions.
 
-**COD** is a .NET framework designed to accelerate the development of modern cloud-based applications. It provides ready-to-use integrations with popular PaaS services like Azure Storage Table, Azure Service Bus, Azure Functions, IoT Hub, and more. The framework also features built-in role-based authentication via JWT backed by a cloud-based identity service.
+The snippets below are introductory examples, not a complete production security configuration or compiled sample application. Use the detailed guides and the APIs of your resolved packages when implementing a consumer. In particular, [identity middleware does not automatically authorize every endpoint](docs/security-and-tokens.md#authentication-middleware-is-not-authorization-middleware), and [server credentials and delegated resource tokens are different access paths](docs/resource-access.md).
 
 ---
 
@@ -26,13 +29,14 @@ Host.CreateDefaultBuilder(args)
     {
         services.AddDatabase(options =>
         {
-            // Nothing needs to be set here if on client side to use resource token based authentication
+            // Leave the server endpoint unset for the resource-token client path.
+            // That path separately requires an authenticator and authorized grants.
 
-            // Optionally set on service side to use RBAC based authentication
+            // Set on the server to select DefaultAzureCredential authentication.
             options.FullyQualifiedDomainName = "test.table.core.windows.net";
 
-            // Optionally set on service side to use Key based authentication
-            options.Key = "test.table.core.windows.net";
+            // A Key, when needed by the resource-token issuer, is a server-only secret.
+            // It is not the ordinary repository authentication method in current source.
         })
 
         // Optionally enable interactive authentication in development environment on server side
@@ -41,7 +45,7 @@ Host.CreateDefaultBuilder(args)
     .Build()
     .Run();
 
-// CURD Example
+// CRUD Example
 class User
 {
     [EntityKey(EntityKeyKind.PartitionKey)] public required string Prefix { get; set; }
@@ -51,7 +55,7 @@ class User
     // Timestamp is optional. Can be useful for auditing purposes
     [EntityKey(EntityKeyKind.Timestamp)] public DateTimeOffset? Timestamp { get; set; }
 
-    // ETag is optional. Can be useful for optimistic concurrency control
+    // A mapped ETag is needed for the conditional update path; see the data-access guide.
     [EntityKey(EntityKeyKind.ETag)] public string? ETag { get; set; }
 
     public string Name { get; set; }
@@ -78,6 +82,8 @@ var result = await repo.GetAsync("A", user.ID);
 await repo.DeleteAsync(user);
 ```
 
+For meaningful business mutations, use a rich domain rather than copying direct CRUD into every flow. Verify ETag read/write behavior and concurrency requirements in [rich domains and data access](docs/domain-data-access.md).
+
 ---
 
 # Messaging Support with Azure Service Bus
@@ -90,17 +96,19 @@ Install-Package Niobium.Platform.ServiceBus
 
 ## Getting Started
 
+See [messaging and delivery](docs/messaging.md) before selecting queue names, credentials, stable message IDs, parsing or acknowledgement behavior. The adapter supports configured-namespace server credentials and a separate resource-token path; development mode can select a logging-only broker.
+
 ```csharp
 // Configure in Program.cs:
 Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
     {
-        services.AddMessaging(options =>
+        services.AddMessaging(options: options =>
         {
-            // RBAC should be correctly configured and it is the only supported authentication method
+            // Select DefaultAzureCredential for this namespace; provision data-plane rights.
             options.FullyQualifiedNamespace = "test.servicebus.windows.net";
 
-            // Use Web Socket transport in case if this is a Blazor.NET app, or it's server environment but you are behind a firewall
+            // Select AMQP over WebSockets when required by the environment.
             options.UseWebSocket = true;
         })
 
@@ -109,20 +117,9 @@ Host.CreateDefaultBuilder(args)
     })
     .Build()
     .Run();
-
-// Send message example
-class UserCreated { public Guid ID; public string Name; public int Age; }
-
-// Get the sender for UserCreated from dependency injection container
-var sender = host.Services.GetRequiredService<IMessagingBroker<UserCreated>>();
-
-// Create and send a new message
-await sender.EnqueueAsync(new MessagingEntry<UserCreated>
-{
-    ID = Guid.NewGuid(),
-    Value = new UserCreated { ID = Guid.NewGuid(), Name = "Alice", Age = 30 }
-});
 ```
+
+Use a message contract implementing `IDomainEvent`, a string message ID stable across retries, and `IMessagingBroker<T>`. The [consumer guide](docs/consumer-patterns.md) links concrete `NotifyCommand` and `IssueInvoiceCommand` producers and consumers. A successful send is not proof that an external business action completed, and domain callbacks are not a transactional outbox.
 
 ---
 
@@ -143,7 +140,8 @@ Host.CreateDefaultBuilder(args)
     {
         services.AddNotification(options =>
         {
-            options.GlobalAPIKey = "YOUR RESEND API KEY";
+            // Supply through the server's approved secret configuration.
+            options.GlobalAPIKey = context.Configuration["ResendApiKey"];
         });
     })
     .Build()
@@ -156,17 +154,21 @@ var sender = host.Services.GetRequiredService<IEmailNotificationClient>();
 await sender.SendAsync("noreply@example.com", ["recipient@example.com"], "Hello", "<strong>Hi</strong>");
 ```
 
+This is provider integration, not the Notification application's durable-submission policy. See [Notification's consumer pattern](docs/consumer-patterns.md#notification-file-backed-rendering-and-explicit-attempt-ownership) and [HTTP client configuration](docs/http-clients.md) for attempt ownership, redirects and retries.
+
 ---
 
 # Authentication & Authorization
 
-Niobium provides a full authentication flow with support for:
+Read [security, authentication and tokens](docs/security-and-tokens.md) before implementation. Niobium distinguishes:
 
-- **ID Tokens** (issued by central Identity API)
-- **Access Tokens** (issued by tenant applications)
-- **Resource Tokens** (for resource-level access control)
+- **ID tokens**, presented to an application for access-token exchange.
+- **Application access tokens**, carrying identity, roles and entitlements.
+- **Resource tokens**, granting direct backend access within the issued scope.
 
-## Server-side Integration (Azure Function)
+Service-principal tokens and application-specific invoice-link capabilities are separate credentials. Installing an identity package does not deploy the central identity provider or make every endpoint private.
+
+## Server-side Integration (Azure Functions)
 
 ### Nuget Package
 
@@ -174,84 +176,32 @@ Niobium provides a full authentication flow with support for:
 Install-Package Niobium.Platform.Identity
 ```
 
-### Configure in `Program.cs`
+Register identity services and install `UsePlatformIdentity` in the actual host pipeline. [Invoicing's composition](docs/architecture-and-conventions.md#composition-register-services-and-install-middleware) demonstrates the Functions builder and middleware-host pattern. Configure explicit issuer/audience values, trusted ID-token public key and the server-only application signing secret through the approved configuration mechanism. Do not copy a sample secret or assume a generic default audience isolates applications.
 
-```csharp
-Host.CreateDefaultBuilder(args)
-    .ConfigureFunctionsWebApplication(builder =>
-    {
-        builder.UsePlatformIdentity();
-    })
-    .ConfigureServices((context, services) =>
-    {
-        services.AddIdentity(options =>
-        {
-            // Optional. The URL for hosting the endpoint in the current web app so clients cloud request for access token. Default value: "token".
-            options.AccessTokenEndpoint = "token";
-
-            // Optional. The Role claim apart from the access token issued. Default value: "User".
-            options.DefaultRole = "User";
-
-            // Optional. The URL for hosting the endpoint in the current web app so clients cloud request for resource token. Default value: "rsas". For resource authorization only.
-            options.ResourceTokenEndpoint = "rsas";
-
-            // The audience of the ID token issued. It should be defined as a unique ID that could be used to identify an unique tenant application to the centralized Niobium.Platform.Identity.API service.
-            options.IDTokenAudience = "00000000-1111-2222-3333-444444444444";
-
-            // Optional. The audience of the access token issued to the client of the current application. Default value: "niobium.client".
-            options.AccessTokenAudience = "myapp.client";
-
-            // Optional. The issuer of the access token issued to the client of the current application. Default value: "niobium.platform".
-            options.AccessTokenIssuer = "myapp.API";
-
-            // The secret used to issue access token to the client.
-            options.AccessTokenSecret = "01223456789012234567890122345678912";
-
-            // Please use this value when integrating to the Niobium.Platform.Identity.API service. This public key is used to verify the ID token issued by the Niobium.Platform.Identity.API service to the client of the current application to exchange for access token issued by the current application.
-            options.IDTokenPublicKey = "-----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlmuIHhRUT+IvTdTajuOEdPZ75pqJrajOyDdJqf42siofTKHCPCZqtWaftL8Jae5VMHUNCflXzm9aKTLgerAxrGyCL3BkZj/dj4KjbeFoY1Akz5EJd5qjRNtzdoqUkDsuaigJTDDhyHvdVKRHzYAJSKgiw9CLRkzyKDZAp1Fxm2xICzRoF9OfH0jv5Qn11gkMHrkVkB6nv7QD3EGS2rnDwKudjnlsvgjpoNMMNvY7EHqkuxjHdGh4Hy7M3UXl50Bft9ky3gKeCgpvVYRPXHdT6k3e+81J7liEJYdVb5taPeNf3wB8WCP8Xc7FO6vod9ziDIkJv+xqUWYtlyGZBGTBrQIDAQAB-----END PUBLIC KEY-----";
-        });
-    })
-    .Build()
-    .Run();
-```
+The exchange middleware returns an access token in the Authorization response header. Resource-token middleware returns a `StorageSignature` JSON response. See [the protocol and current limitations](docs/security-and-tokens.md) for validation, lifetimes, role handling, browser state and logout concerns.
 
 ### Placeholder Functions
 
-Define your own authentication endpoint as a placeholder for Azure Function app runtime to register this route. No implementation is needed, just make sure the Route matches to what's configured above.
+Register placeholder Functions routes matching the configured access-token and resource-token paths, accounting for the deployed route prefix and proxy arrangement. For example:
 
 ```csharp
 public class Placeholder
 {
     [Function(nameof(Auth))]
-    public IActionResult Auth([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = Niobium.Identity.Constants.DefaultAccessTokenEndpoint)] HttpRequest req) => new OkResult();
+    public IActionResult Auth(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get",
+            Route = Niobium.Identity.Constants.DefaultAccessTokenEndpoint)] HttpRequest req)
+        => new OkResult();
 }
 ```
 
-### Resource Token Support with Azure Storage Table (Optional)
+The placeholder's OK result does not prove token middleware intercepted the request. Test the expected token response and negative authentication cases. Protected business endpoints still need explicit principal, tenant, permission and ownership checks.
 
-Install the package (same as for StorageTable), then enable in startup:
+### Resource Token Support
 
-```csharp
-services.AddDatabase(...dbOptions...)
-    .AddDatabaseResourceTokenSupport(...identityOptions...)
+[Resource authorization](docs/resource-access.md) documents `AddDatabaseResourceTokenSupport`, `AddBlobResourceTokenSupport` and `AddServiceBusResourceTokenSupport`, their entitlement descriptors, control/issuer responsibilities and credential prerequisites.
 
-    // Optionally grant query permission to a specific role to query a specific table on records where PartitionKey == <user-id>
-    .GrantDatabasePersonalizedEntitlementTo(
-        "<role-to-grant-permission-to>",
-        Niobium.DatabasePermissions.Query,
-        "<table-to-grant-permission-to>",
-        "<fully-qualified-domain-name-to-storage-account>");
-```
-
-Define your own resource token endpoint as a placeholder for Azure Function app runtime to register this route. No implementation is needed, just make sure the Route matches to what's configured above.
-
-```csharp
-public class Placeholder
-{
-    [Function(nameof(RSAS))]
-    public IActionResult RSAS([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = Niobium.Identity.Constants.DefaultResourceTokenEndpoint)] HttpRequest req) => new OkResult();
-}
-```
+Invoicing provides examples of personalized Table grants and ownership-controlled child data. The default Blob issuer grants a container, not a single file. Review the actual scope and known cache/configuration limitations before exposing direct backend access.
 
 ---
 
@@ -270,7 +220,7 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.Services.AddIdentityBlazor(options =>
 {
     options.App = Guid.Parse("<same-as-IDTokenAudience>");
-    options.IDTokenHost = "<URL-to-Niobium.Platform.Identity.API>";
+    options.IDTokenHost = "<URL-to-identity-service>";
     options.AccessTokenHost = "<tenant-server-url>";
     options.ResourceTokenHost = "<tenant-server-url>";
 });
@@ -317,6 +267,8 @@ await app.RunAsync();
 @attribute [AllowAnonymous]
 <EmailLogin />
 ```
+
+Client route visibility does not authorize backend operations. Review [client token state](docs/security-and-tokens.md#client-side-token-state), credential-bearing browser storage and the [security checklist](docs/security-review-checklist.md), including non-remembered login, logout, account switching and SDK-client caches.
 
 ---
 
