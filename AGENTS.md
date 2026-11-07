@@ -1,5 +1,12 @@
 # Working in Niobium
 
+Start with the [developer documentation](docs/README.md) for the reviewed framework
+and consumer baselines, architecture and implementation conventions. Read
+[security and tokens](docs/security-and-tokens.md), [resource access](docs/resource-access.md)
+and the [security checklist](docs/security-review-checklist.md) before changing
+identity, grants, tenant boundaries or credential/client caches. Current behavior,
+consumer-specific policy and recommended hardening must remain distinct.
+
 Read [rich domains and data access](docs/domain-data-access.md) before changing
 business abstractions, repositories, mapping or examples. It records the source
 and package versions inspected and distinguishes current behavior from follow-ups.
@@ -23,3 +30,12 @@ and package versions inspected and distinguishes current behavior from follow-up
   Configure redirects through shared framework support; preserve existing handlers
   and keep redirect policy separate from retry ownership. Verify that a consumer's
   existing package references resolve an actual release containing the new API.
+- Read [messaging](docs/messaging.md) before queue changes. Specify producer trust,
+  stable operation identity, partial-failure recovery and settlement. Do not equate
+  token propagation with authorization, disposal with harmless cleanup, or domain
+  callbacks with a transactional outbox.
+- Read [file access](docs/files-and-blob-storage.md) before changing Blob paths,
+  stream ownership or file grants. A tenant-looking prefix is not an access boundary.
+- Use the [consumer examples](docs/consumer-patterns.md) as evidence, not universal
+  policy. Update the relevant documentation and negative tests when behavior changes;
+  do not implement a documented limitation as a required pattern.
