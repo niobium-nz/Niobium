@@ -13,9 +13,13 @@ and package versions inspected and distinguishes current behavior from follow-up
 - Execute I/O and state-changing actions before an `if`, then test a named result.
 - Match published package versions to source. Do not assume a source fix has reached
   consumers; document the release/rollout dependency and test actual adapter behavior.
+- Read [package upgrades](docs/package-upgrades.md) before changing consumer package
+  references. Releases include transitive dependent libraries. Upgrade existing
+  higher-level references together and inspect the resolved graph instead of adding
+  redundant lower-level pins. The latest published version can differ by package.
 - Inspect workflow triggers before pushing or opening PRs: this repository has a
   publication workflow. Respect the current task's deployment/publication boundary.
 - Read [HTTP client configuration](docs/http-clients.md) before transport changes.
   Configure redirects through shared framework support; preserve existing handlers
-  and keep redirect policy separate from retry ownership. A consumer must pin an
-  actual released package before relying on a new framework API.
+  and keep redirect policy separate from retry ownership. Verify that a consumer's
+  existing package references resolve an actual release containing the new API.
