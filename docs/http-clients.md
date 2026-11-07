@@ -35,18 +35,26 @@ response from silently resubmitting a POST to another destination. It does not
 disable Niobium's default resilience handlers. Durable operations that own every
 attempt must separately remove HTTP resilience retries from their client.
 
+In the current Microsoft.Extensions.Http.Resilience 10.9.0 dependency,
+`RemoveAllResilienceHandlers()` is marked experimental (`EXTEXP0001`). Notification
+uses the stable `ConfigureAdditionalHttpMessageHandlers` hook to remove
+`ResilienceHandler` instances for its durable provider only. Keep that independent
+of `ConfigureAutoRedirect(false)`; the framework test explicitly verifies that
+redirect configuration preserves an existing resilience pipeline.
+
 ## Notification adoption and release
 
 This addition addresses [Notification PR #2's transport review](https://github.com/niobium-nz/Niobium.Notification/pull/2#discussion_r4500908254).
-Notification currently consumes Niobium.Platform 4.0.60, which has no shared redirect
-setting. Its durable provider must keep redirects disabled until it can consume a
-published version containing this extension. Removing the local handler first would
-restore automatic redirects and weaken the submission protocol.
+[Framework PR #2](https://github.com/niobium-nz/Niobium/pull/2) was merged as
+`f5b1b46a4a8c83e8771d7a3e9ae9dcc7044b62f0`, and
+[Publish run 42358398851](https://github.com/niobium-nz/Niobium/actions/runs/42358398851)
+released Platform and affected dependents at 4.2.70. Notification PR #2 adopts
+`ConfigureAutoRedirect(false)` through its upgraded existing integration references,
+preserving the default `SocketsHttpHandler` and separate retry suppression. See
+[package upgrades](package-upgrades.md) for the dependency graph and current metadata
+limitation; an extra direct Platform reference in Server is unnecessary.
 
-After the framework change is reviewed and released, pin the released package in
-Notification, replace its primary-handler factory with `ConfigureAutoRedirect(false)`,
-and retain the separate suppression of HTTP retries. Run its composition and provider
-tests against the actual packages, including the default `SocketsHttpHandler`.
+Run composition and provider tests against the actual resolved packages.
 Do not treat a source checkout or local candidate package as a published dependency.
 
 The framework PR workflow builds and tests without publication. Merging framework
