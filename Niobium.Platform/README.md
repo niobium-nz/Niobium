@@ -63,6 +63,12 @@ var app = builder.Build();
 - Use HTTP helpers for proxying, signature issuance, and response formatting.
 
 ## How Niobium.Platform is Consumed
+
+For named or typed HTTP clients, `.ConfigureAutoRedirect(false)` disables redirects
+on the existing transport without replacing its handler or changing retry policy.
+See [HTTP client configuration](../docs/http-clients.md) for shared defaults,
+supported handlers, release requirements and tests.
+
 Projects like Niobium.Invoicing.Core reference Niobium.Platform to:
 - Register and use shared infrastructure (caching, config, analytics).
 - Standardize error handling and validation.

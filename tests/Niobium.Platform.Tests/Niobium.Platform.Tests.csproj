@@ -1,0 +1,12 @@
+<Project Sdk="MSTest.Sdk/4.4.0">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Niobium.Platform/Niobium.Platform.csproj" />
+  </ItemGroup>
+</Project>

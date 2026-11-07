@@ -15,3 +15,7 @@ and package versions inspected and distinguishes current behavior from follow-up
   consumers; document the release/rollout dependency and test actual adapter behavior.
 - Inspect workflow triggers before pushing or opening PRs: this repository has a
   publication workflow. Respect the current task's deployment/publication boundary.
+- Read [HTTP client configuration](docs/http-clients.md) before transport changes.
+  Configure redirects through shared framework support; preserve existing handlers
+  and keep redirect policy separate from retry ownership. A consumer must pin an
+  actual released package before relying on a new framework API.
