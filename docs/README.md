@@ -7,6 +7,7 @@ Start here when extending Niobium or building a service on it. These guides desc
 | Task | Read |
 | --- | --- |
 | Understand package boundaries, host composition and coding conventions | [Architecture and conventions](architecture-and-conventions.md) |
+| Name model keys or change ID, JSON or Blob-path representations | [Model contracts](model-contracts.md) |
 | Add a domain, entity, repository or conditional write | [Rich domains and data access](domain-data-access.md) |
 | Add authenticated endpoints or work with identity/access tokens | [Security, authentication and tokens](security-and-tokens.md) |
 | Grant direct access to Tables, Blob containers or queues | [Resource authorization and credentials](resource-access.md) |
@@ -31,6 +32,11 @@ This documentation review was performed on 2026-11-08 against the default `main`
 | [Niobium.Invoicing](https://github.com/niobium-nz/Niobium.Invoicing/tree/1d7bd30b848fa0592656e7ca4a9671603252b918) | `1d7bd30b848fa0592656e7ca4a9671603252b918` |
 
 Framework source links are relative to this checkout. Consumer implementation links are pinned to the inspected commits. When behavior changes, update both the explanation and its source references.
+
+The [model-contract guide](model-contracts.md) adds a separately dated investigation
+on 14 November 2026. It lists its own inventory baselines and pins its proposed
+Notification API example to the companion implementation revision. That example
+does not change the older baseline of the other guides or establish deployment.
 
 ### Source is not the resolved consumer package graph
 

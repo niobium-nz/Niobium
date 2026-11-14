@@ -1,5 +1,12 @@
 # Working in Niobium
 
+Read [model names and contract ownership](docs/model-contracts.md) before adding or
+changing a Table model, key, fingerprint, serialized shape or file reference.
+Use business property names with EntityKey attributes. Models privately own their
+representation; domains own business rules and transitions, flows coordinate,
+and framework adapters map/persist. Keep existing key/wire values compatible and
+follow the documented separate rollout for legacy public contract renames.
+
 Start with the [developer documentation](docs/README.md) for the reviewed framework
 and consumer baselines, architecture and implementation conventions. Read
 [security and tokens](docs/security-and-tokens.md), [resource access](docs/resource-access.md)
