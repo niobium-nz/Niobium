@@ -38,9 +38,12 @@ namespace Niobium.Platform.Identity
 
             if (roles != null)
             {
-                foreach (string role in roles)
+                string[] roleValues = roles.ToArray();
+                if (roleValues.Length > 0)
                 {
-                    claims.Add(ClaimTypes.Role, role);
+                    // Keep the existing single-role wire shape. JWT arrays carry
+                    // multiple values of the same claim without dropping a role.
+                    claims.Add(ClaimTypes.Role, roleValues.Length == 1 ? roleValues[0] : roleValues);
                 }
             }
 

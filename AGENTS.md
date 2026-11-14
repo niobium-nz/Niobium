@@ -14,6 +14,10 @@ and the [security checklist](docs/security-review-checklist.md) before changing
 identity, grants, tenant boundaries or credential/client caches. Current behavior,
 consumer-specific policy and recommended hardening must remain distinct.
 
+Follow the [PR approval and release handoff](docs/pr-approval-handoff.md) for
+owner-authorized implementation delivery. Native review and a separate genuine
+current-head approval are required; pending approval remains work in progress.
+
 Read [rich domains and data access](docs/domain-data-access.md) before changing
 business abstractions, repositories, mapping or examples. It records the source
 and package versions inspected and distinguishes current behavior from follow-ups.
