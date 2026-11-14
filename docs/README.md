@@ -7,6 +7,7 @@ Start here when extending Niobium or building a service on it. These guides desc
 | Task | Read |
 | --- | --- |
 | Understand package boundaries, host composition and coding conventions | [Architecture and conventions](architecture-and-conventions.md) |
+| Name model keys or change ID, JSON or Blob-path representations | [Model contracts](model-contracts.md) |
 | Add a domain, entity, repository or conditional write | [Rich domains and data access](domain-data-access.md) |
 | Add authenticated endpoints or work with identity/access tokens | [Security, authentication and tokens](security-and-tokens.md) |
 | Grant direct access to Tables, Blob containers or queues | [Resource authorization and credentials](resource-access.md) |

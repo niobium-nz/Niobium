@@ -1,5 +1,9 @@
 # Rich domains and data access
 
+Read [model names and contract ownership](model-contracts.md) for the required
+business-key naming and private representation boundary. Models own identity,
+encoding and file/wire formats; rich domains own business decisions and mutations.
+
 This guide records the design used by Niobium.Store, Niobium.Notification and
 Niobium.Invoicing, investigated for Notification PR #2. Business operations belong
 in rich domain objects. A mutable entity or contract is a persistence/transport
@@ -21,7 +25,7 @@ flowchart LR
 
 | Layer | Owns | Avoid |
 | --- | --- | --- |
-| Contracts/entities | Stable wire/storage shapes, key metadata and scalar values | Transport credentials, backend clients or workflows |
+| Contracts/entities | Business property names, key metadata, private identity/format construction and stable wire/storage values | Shared public hash/path implementations, transport credentials, backend clients or workflows |
 | Domain (`GenericDomain<TEntity>`) | Invariants, meaningful state transitions, mutation intent and persistence | Public setters as the only business API; moving all decisions into a flow |
 | Flow (`IFlow`) | Coordinating domains, rendering, messaging and external calls in the required order | Reimplementing domain transitions or database adapters |
 | Domain repository | Constructing/initializing domain objects and managing its local caches | Treating a returned domain as proof that a stored row exists |
