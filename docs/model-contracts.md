@@ -80,7 +80,12 @@ composite-key encoding, container/path conventions and its serialized shape.
 Keep implementation helpers private. Expose the smallest meaningful factory,
 comparison or value-producing operation that callers need.
 
-Notification's corrected API illustrates the intended boundary:
+The companion Notification implementation at
+[revision `12fd243`](https://github.com/niobium-nz/Niobium.Notification/tree/12fd2438f46bf701111e81c374ba8f55a33542d9/src/Niobium.Notification.Core/Delivery)
+illustrates the intended boundary. This revision is pending review when this
+guide is written; it is not the older inspected consumer baseline or evidence of
+a production deployment. The example and representation APIs described below
+refer to that exact companion revision:
 
 ```csharp
 NotificationSubmission request = NotificationSubmission.Create(command);

@@ -33,6 +33,11 @@ This documentation review was performed on 2026-11-08 against the default `main`
 
 Framework source links are relative to this checkout. Consumer implementation links are pinned to the inspected commits. When behavior changes, update both the explanation and its source references.
 
+The [model-contract guide](model-contracts.md) adds a separately dated investigation
+on 14 November 2026. It lists its own inventory baselines and pins its proposed
+Notification API example to the companion implementation revision. That example
+does not change the older baseline of the other guides or establish deployment.
+
 ### Source is not the resolved consumer package graph
 
 The inspected Server project files declare the following direct integration versions:
