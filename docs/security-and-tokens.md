@@ -24,6 +24,20 @@ The [Role model](../Niobium.Platform.Identity/Role.cs) maps tenant to PartitionK
 
 [BearerTokenBuilder](../Niobium.Platform.Identity/BearerTokenBuilder.cs) writes `Sid`, `GroupSid`, a `kid` claim, roles and entitlements. With `AccessTokenSecret`, it signs using HMAC-SHA256. Its alternative RSA/private-key path does not mean the ordinary access-token parser accepts RSA access tokens: that parser constructs a symmetric key. Use the builder and parser pair intentionally.
 
+The multiple-role source correction uses a JSON string for one role and an array
+for multiple roles; null/empty sequences omit the role claim. The validated
+`ClaimsPrincipal` exposes each assigned role with its original spelling and casing.
+This supports the normal default-role-plus-stored-role exchange without dropping
+roles or adding authority. Endpoint action/tenant checks remain necessary.
+[Token role tests](../tests/Niobium.Platform.Tests/TokenRoleTests.cs) verify zero,
+one and multiple roles, the single-role wire shape, unassigned-role denial and
+wrong issuer/audience/key rejection through the actual builder/parser pair.
+
+This correction still requires reviewed publication and consumer adoption.
+Published `Niobium.Platform.Identity` 4.2.70 was independently reproduced failing
+with two roles: its dictionary insertion uses the same claim key twice. A source
+merge alone does not correct applications that still consume that package.
+
 The exchange result is an `Authorization` **response header**, not an OAuth-style JSON response. [DeliverToken](../Niobium.Platform.Identity/HttpRequestExtensions.cs) also exposes that header for cross-origin access. The host still needs the appropriate origin/CORS policy. It should explicitly prevent caching of credential responses and redact headers; the helper itself does not establish all of those controls.
 
 ### Validation parameters and lifetime
@@ -87,9 +101,10 @@ Changing the generation secret does not by itself invalidate already saved links
 
 ## Source-level limitations that must remain visible
 
-These are observations and proposed follow-ups, not fixes in this documentation PR:
+These observations distinguish published behavior, scoped source corrections and
+remaining follow-ups; they do not establish completed consumer hardening:
 
-- The token builder uses `Dictionary.Add(ClaimTypes.Role, role)` for each role. Multiple roles attempt to add the same key, which can fail token issuance. Fix and test role representation before relying on multi-role exchange; do not remove intended roles as a workaround.
+- Published 4.2.70 uses a repeated dictionary key for multiple roles and fails token issuance. The scoped source correction above requires actual package publication and consumer verification before relying on multi-role exchange; do not remove intended roles as a workaround.
 - Audience validation can be disabled by blank configuration. Validate required options and test wrong-audience rejection rather than relying on generic defaults.
 - Resource grants can outlive the access token; claims and grants have no per-request revocation lookup in the inspected paths.
 - Static authenticator and adapter caches need principal/endpoint/permission/expiry isolation and logout/account-switch tests.

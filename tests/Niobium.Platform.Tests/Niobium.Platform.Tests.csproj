@@ -8,5 +8,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../Niobium.Platform/Niobium.Platform.csproj" />
+    <ProjectReference Include="../../Niobium.Platform.Identity/Niobium.Platform.Identity.csproj" />
   </ItemGroup>
 </Project>

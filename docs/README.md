@@ -17,6 +17,7 @@ Start here when extending Niobium or building a service on it. These guides desc
 | Review a security-sensitive change or pick regression tests | [Security review and known limitations](security-review-checklist.md) |
 | Change an outbound HTTP client | [HTTP client configuration](http-clients.md) |
 | Upgrade a consumer or release a framework change | [Package releases and consumer upgrades](package-upgrades.md) |
+| Deliver an authorized implementation through review and release | [PR approval and release handoff](pr-approval-handoff.md) |
 
 For a new consumer, read architecture, security, resource access and messaging before copying a startup module. For framework work, also read the root [AGENTS.md](../AGENTS.md) and the existing package-level README for the affected module.
 
