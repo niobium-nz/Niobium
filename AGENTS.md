@@ -50,3 +50,12 @@ and package versions inspected and distinguishes current behavior from follow-up
 - Use the [consumer examples](docs/consumer-patterns.md) as evidence, not universal
   policy. Update the relevant documentation and negative tests when behavior changes;
   do not implement a documented limitation as a required pattern.
+
+## Azure resource naming
+
+Use `rg-niobium-<service-slug>-<env>` for resource groups and
+`<prefix>-<abbr>-<env>` for named service resources such as Functions and
+vaults. Functions host/package storage uses `<prefix>sts<env>` and application
+data storage uses `<prefix>std<env>`.
+Use the owning service's approved slug and compact prefix when adding deployment examples to the framework.
+[Azure naming guide](https://github.com/niobium-nz/Niobium.DevOps/blob/453d80db4c965223623e1dbacd9775b929e09a07/docs/azure-resource-naming.md) · [Current DevOps documentation](https://github.com/niobium-nz/Niobium.DevOps/tree/main/docs)
