@@ -7,7 +7,7 @@ Start here when extending Niobium or building a service on it. These guides desc
 | Task | Read |
 | --- | --- |
 | Understand package boundaries, host composition and coding conventions | [Architecture and conventions](architecture-and-conventions.md) |
-| Name Azure resources for a service deployment | [Azure naming guide](https://github.com/niobium-nz/Niobium.DevOps/blob/453d80db4c965223623e1dbacd9775b929e09a07/docs/azure-resource-naming.md) · [Current DevOps documentation](https://github.com/niobium-nz/Niobium.DevOps/tree/main/docs) |
+| Name Azure resources for a service deployment | [Azure naming guide](https://github.com/niobium-nz/Niobium.DevOps/blob/f437f5a77dbec45296c0586b5bbe828d36eeb38b/docs/azure-resource-naming.md) · [Current DevOps documentation](https://github.com/niobium-nz/Niobium.DevOps/tree/main/docs) |
 | Name model keys or change ID, JSON or Blob-path representations | [Model contracts](model-contracts.md) |
 | Add a domain, entity, repository or conditional write | [Rich domains and data access](domain-data-access.md) |
 | Add authenticated endpoints or work with identity/access tokens | [Security, authentication and tokens](security-and-tokens.md) |
