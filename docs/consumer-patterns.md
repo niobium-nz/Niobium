@@ -2,6 +2,11 @@
 
 The examples below are pinned to the [reviewed commits](README.md#evidence-baseline). They show how applications compose Niobium, not a certification that every path is production-hardened. Consumer package references differ from current framework source; verify the resolved package graph before copying an API or relying on an implementation detail.
 
+The delivery rows and Notification delivery example use the released
+Notification revision `8b110c03cb2ffd237adc07a2ee22038f199495c0`. The remaining composition
+examples use the shared review baseline.
+[Notification delivery receipt release](https://github.com/niobium-nz/Niobium.Notification/pull/14)
+
 ## What is shared and what is application policy
 
 All three applications demonstrate separation between contracts, Core domains/flows and a Functions host. They use framework repositories and typed messaging rather than putting every backend operation in an HTTP trigger. Their authority models and delivery guarantees are not identical.
@@ -9,9 +14,9 @@ All three applications demonstrate separation between contracts, Core domains/fl
 | Concern | Store | Notification | Invoicing |
 | --- | --- | --- | --- |
 | Representative HTTP entry | Public order request with validation and CAPTCHA | Public contact/subscription paths with their own input/abuse policies | Issuance explicitly checks user/tenant claims; HTML viewing uses a saved link token |
-| Business work | Quote, order transitions, payment coordination, downstream command construction | Template/subscription work and delivery; optional durable submission state machine | Invoice preparation, frozen content, rendering and notification coordination |
+| Business work | Quote, order transitions, payment coordination, downstream command construction | Template and subscription work, with durable submission for queued commands | Invoice preparation, frozen content, rendering and notification coordination |
 | Persistence | Framework domains/repositories over Tables | Tables for metadata/state; Blob file service for template content | Tables with ownership-dependent data access and conditional domain transitions |
-| Messaging | Typed invoice/notification destination overrides | `NotifyCommand` consumption; scheduled recovery when durable mode is enabled | Private `IssueInvoiceCommand` consumption and notification production |
+| Messaging | Typed invoice/notification destination overrides | `NotifyCommand` consumption with scheduled recovery for each eligible provider attempt | Private `IssueInvoiceCommand` consumption and notification production |
 | Identity/resource example | Inspected Server module does not install the Niobium identity pipeline | Inspected Server module does not install the Niobium identity pipeline | Identity middleware, personalized Table entitlements and child-record ownership control |
 
 Composition sources: [Store](https://github.com/niobium-nz/Niobium.Store/blob/db600f117002509c932d8d60321f9892f8cb7263/src/Niobium.Store.Server/DependencyModule.cs), [Notification](https://github.com/niobium-nz/Niobium.Notification/blob/adb9e59dd4428e1c8bf496fc40a42699bd003ba0/src/Niobium.Notification.Server/DependencyModule.cs), [Invoicing](https://github.com/niobium-nz/Niobium.Invoicing/blob/1d7bd30b848fa0592656e7ca4a9671603252b918/src/Niobium.Invoicing.Server/DependencyModule.cs). Absence of identity registration here is not proof that an environment has no external gateway or infrastructure policy; those were not audited.
@@ -32,13 +37,17 @@ Store's host registers separate broker options for invoice and notification cont
 
 [TemplateDomain](https://github.com/niobium-nz/Niobium.Notification/blob/adb9e59dd4428e1c8bf496fc40a42699bd003ba0/src/Niobium.Notification.Core/TemplateDomain.cs) owns template lookup and rendering. It obtains content through `IFileService`, uses a tenant-derived filename and HTML-encodes substituted values. This is a server-read pattern, not a demonstration of per-file client SAS. See [file access](files-and-blob-storage.md) for container scope, path conventions and stream ownership.
 
-[NotifyCommandConsumer](https://github.com/niobium-nz/Niobium.Notification/blob/adb9e59dd4428e1c8bf496fc40a42699bd003ba0/src/Niobium.Notification.Server/NotifyCommandConsumer.cs) parses the direct JSON body, normalizes parameter values and validates the command. Parse/validation failures log and return; this differs from Invoicing's throwing consumer and must be assessed against the desired settlement policy.
+[NotifyCommandConsumer](https://github.com/niobium-nz/Niobium.Notification/blob/8b110c03cb2ffd237adc07a2ee22038f199495c0/src/Niobium.Notification.Server/NotifyCommandConsumer.cs) parses the direct JSON body, normalizes parameter values and validates the command. Parse/validation failures log and return; this differs from Invoicing's throwing consumer and must be assessed against the desired settlement policy.
 
-With `EnableDurableSubmission` enabled, the consumer requires a nonblank envelope MessageId and copies it into the command before calling [DurableNotificationFlow](https://github.com/niobium-nz/Niobium.Notification/blob/adb9e59dd4428e1c8bf496fc40a42699bd003ba0/src/Niobium.Notification.Core/Delivery/DurableNotificationFlow.cs). The flow uses a submission domain, request fingerprint, frozen provider payload, stable idempotency key and scheduled recovery before provider submission. Otherwise the consumer calls the legacy flow.
+The released consumer requires a nonblank envelope MessageId for every tenant
+and copies it into the command. The durable flow uses a submission domain,
+request fingerprint, frozen provider payload, stable idempotency key and scheduled
+recovery before provider submission.
+[Durable notification flow](https://github.com/niobium-nz/Niobium.Notification/blob/8b110c03cb2ffd237adc07a2ee22038f199495c0/src/Niobium.Notification.Core/Delivery/DurableNotificationFlow.cs)
 
 This is a useful model for durable work: the domain owns state transitions and claims; the flow orders transport/provider calls; a provider boundary owns its wire protocol. It is still conditional on infrastructure, provider retention, correct ETags and configuration. Do not generalize it into a guarantee that every `IMessagingBroker` operation is exactly-once.
 
-Notification also gives its durable provider client explicit redirect and retry policy. The two policies are separate; see [HTTP client configuration](http-clients.md). Upgrading a framework package does not by itself enable durable submission or validate deployed queue settings.
+Notification also gives its durable provider client explicit redirect and retry policy. The two policies are separate; see [HTTP client configuration](http-clients.md). Verify the deployed queue settings separately from framework package adoption.
 
 ## Invoicing: three different access boundaries
 
