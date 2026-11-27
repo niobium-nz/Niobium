@@ -45,6 +45,8 @@ and package versions inspected and distinguishes current behavior from follow-up
   stable operation identity, partial-failure recovery and settlement. Do not equate
   token propagation with authorization, disposal with harmless cleanup, or domain
   callbacks with a transactional outbox.
+- Use [typed queue names and explicit routing](docs/messaging.md#confirmed-routing-convention)
+  for default queues and independent receipt destinations.
 - Read [file access](docs/files-and-blob-storage.md) before changing Blob paths,
   stream ownership or file grants. A tenant-looking prefix is not an access boundary.
 - Use the [consumer examples](docs/consumer-patterns.md) as evidence, not universal
