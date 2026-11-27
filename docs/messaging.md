@@ -18,6 +18,33 @@ The per-type registration constructs a fresh options object. Do not assume an om
 
 Renaming a contract type can change its queue. Treat that as an infrastructure and compatibility migration. The inspected consumers bind to names such as `notifycommand` and `issueinvoicecommand`; provision queues and sender/receiver permissions consistently.
 
+### Confirmed routing convention
+
+For normal typed queues, use the broker's contract derived name. Match that name
+in the producer, receiver binding and infrastructure. For example,
+`NotifyCommand` uses `notifycommand`, and `IssueInvoiceCommand` uses
+`issueinvoicecommand`. Preserve the queue name when evolving a wire contract.
+[Notification binding](https://github.com/niobium-nz/Niobium.Notification/blob/8b110c03cb2ffd237adc07a2ee22038f199495c0/src/Niobium.Notification.Server/NotifyCommandConsumer.cs)
+· [Invoicing binding](https://github.com/niobium-nz/Niobium.Invoicing/blob/13f05b1a7df232e363d1649bdd4f3deb5f3c5333/src/Niobium.Invoicing.Server/IssueInvoiceCommandConsumer.cs)
+
+When a fact needs to reach independent consumers, configure each routed
+destination explicitly. The route specifies its namespace, queue and intended
+consumer. Give independent consumers their own delivery paths and preserve
+stable message IDs across retries. Keep the generic typed contract and its
+default queue available to existing callers during rollout. A queue shared by
+multiple readers distributes work among them, so it cannot deliver a copy of
+each event to each reader.
+
+At Notification release `8b110c03cb2ffd237adc07a2ee22038f199495c0`, the typed
+broker publishes `NotificationDeliveryEvent` to `notificationdeliveryevent`.
+Invoicing's separately configured receipt destination is a future application
+increment. That path needs a routing adapter that selects an explicit queue
+and sends a copy of the existing event. The current `ServiceBusOptions` configures
+the namespace and transport. The typed broker still derives the queue name.
+Scope producer and receiver grants to the routed queue and have the receiving
+service check correlation from the event body.
+[Notification receipt contract](https://github.com/niobium-nz/Niobium.Notification/blob/8b110c03cb2ffd237adc07a2ee22038f199495c0/docs/provider-delivery-receipts.md#consumer-contract)
+
 The outbound envelope has:
 
 | Field | Current behavior |
@@ -101,7 +128,7 @@ A successful database write followed by a failed enqueue is a possible partial o
 
 ## Notification's durable pattern
 
-[DurableNotificationFlow](https://github.com/niobium-nz/Niobium.Notification/blob/adb9e59dd4428e1c8bf496fc40a42699bd003ba0/src/Niobium.Notification.Core/Delivery/DurableNotificationFlow.cs) provides a concrete consumer-specific design:
+[DurableNotificationFlow](https://github.com/niobium-nz/Niobium.Notification/blob/8b110c03cb2ffd237adc07a2ee22038f199495c0/src/Niobium.Notification.Core/Delivery/DurableNotificationFlow.cs) provides a concrete consumer-specific design:
 
 1. Require stable message identity and tenant; address a submission domain using tenant and a hash of the ID.
 2. Fingerprint the request and freeze the rendered provider payload for a new submission.
@@ -109,7 +136,9 @@ A successful database write followed by a failed enqueue is a possible partial o
 4. Enqueue a scheduled recovery wake **before** calling the irreversible provider operation.
 5. Submit with a stable provider idempotency key and attempt deadline, then record the outcome through the domain.
 
-[NotifyCommandConsumer](https://github.com/niobium-nz/Niobium.Notification/blob/adb9e59dd4428e1c8bf496fc40a42699bd003ba0/src/Niobium.Notification.Server/NotifyCommandConsumer.cs) selects this path only when `EnableDurableSubmission` is true; otherwise it uses the legacy flow. This is not a generic broker guarantee or proof that a deployment enabled it.
+At the Notification receipt release, every valid queued `NotifyCommand` uses
+durable submission for every tenant. The Notification service owns its retry
+and suppression rules. [Current Notification consumer](https://github.com/niobium-nz/Niobium.Notification/blob/8b110c03cb2ffd237adc07a2ee22038f199495c0/src/Niobium.Notification.Server/NotifyCommandConsumer.cs)
 
 A recovery wake can reuse the same ID as the original request. Broker duplicate-detection settings/windows must be compatible with that recovery design. Provider idempotency retention, ambiguous responses, lease ownership, deadlines and storage ETags also need tests. Do not call the system globally exactly-once merely because one provider supports an idempotency key.
 
